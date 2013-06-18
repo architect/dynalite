@@ -4,7 +4,7 @@
   "description": "A mock implementation of Amazon's DynamoDB",
   "main": "index.js",
   "scripts": {
-    "test": "mocha --require should --reporter spec -t 5s"
+    "test": "mocha --require should --require longjohn --reporter spec -t 5s"
   },
   "repository": {
     "type": "git",
@@ -37,6 +37,7 @@
     "mocha": ">=1.10.0",
     "should": ">=1.2.2",
     "async": ">=0.2.9",
-    "aws4": ">=0.1.10"
+    "aws4": ">=0.1.10",
+    "longjohn": ">=0.2.0"
   }
 }

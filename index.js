@@ -175,7 +175,18 @@ var dynalite = module.exports = http.createServer(function(req, res) {
       if (!body)
         return sendData(req, res, {__type: 'com.amazon.coral.service#SerializationException'}, 400)
 
-      targets[toLowerFirst(target[1])](req, res, data)
+      target = toLowerFirst(target[1])
+
+      var validations = require('./validations/' + target)
+      try {
+        data = checkTypes(data, validations.types)
+        checkValidations(data, validations.validations, validations.custom)
+      } catch (e) {
+        if (e.statusCode) return sendData(req, res, e.body, e.statusCode)
+        throw e
+      }
+
+      targets[target](req, res, data)
     })
   })
 })
@@ -183,313 +194,12 @@ var dynalite = module.exports = http.createServer(function(req, res) {
 var targets = {}
 
 targets.listTables = function listTables(req, res, data) {
-  var types = {
-    ExclusiveStartTableName: 'String',
-    Limit: 'Integer',
-  }, validations = {
-    Limit: {
-      greaterThanOrEqual: 1,
-      lessThanOrEqual: 100,
-    },
-    ExclusiveStartTableName: {
-      regex: '[a-zA-Z0-9_.-]+',
-      lengthGreaterThanOrEqual: 3,
-      lengthLessThanOrEqual: 255,
-    },
-  }
-
-  try {
-    data = checkTypes(data, types)
-    checkValidations(data, validations)
-  } catch (e) {
-    if (e.statusCode) return sendData(req, res, e.body, e.statusCode)
-    throw e
-  }
-
   // needs to be anything > ExclusiveStartTableName
 
   sendData(req, res, {TableNames: []})
 }
 
 targets.createTable = function createTable(req, res, data) {
-  var types = {
-    TableName: 'String',
-    AttributeDefinitions: {
-      type: 'List',
-      children: {
-        type: 'Structure',
-        children: {
-          AttributeName: 'String',
-          AttributeType: 'String',
-        }
-      },
-    },
-    KeySchema: {
-      type: 'List',
-      children: {
-        type: 'Structure',
-        children: {
-          AttributeName: 'String',
-          KeyType: 'String',
-        }
-      },
-    },
-    LocalSecondaryIndexes: {
-      type: 'List',
-      children: {
-        type: 'Structure',
-        children: {
-          IndexName: 'String',
-          KeySchema: {
-            type: 'List',
-            children: {
-              type: 'Structure',
-              children: {
-                AttributeName: 'String',
-                KeyType: 'String',
-              }
-            }
-          },
-          Projection: {
-            type: 'Structure',
-            children: {
-              NonKeyAttributes: {
-                type: 'List',
-                children: 'String'
-              },
-              ProjectionType: 'String'
-            }
-          }
-        }
-      },
-    },
-    ProvisionedThroughput: {
-      type: 'Structure',
-      children: {
-        WriteCapacityUnits: 'Long',
-        ReadCapacityUnits: 'Long',
-      },
-    },
-  }, validations = {
-    AttributeDefinitions: {
-      notNull: true,
-      children: {
-        AttributeName: {
-          notNull: true,
-        },
-        AttributeType: {
-          notNull: true,
-          enum: ['B', 'N', 'S']
-        },
-      },
-    },
-    TableName: {
-      required: true,
-      custom: validateTable,
-      regex: '[a-zA-Z0-9_.-]+',
-      lengthGreaterThanOrEqual: 3,
-      lengthLessThanOrEqual: 255,
-    },
-    ProvisionedThroughput: {
-      notNull: true,
-      children: {
-        WriteCapacityUnits: {
-          notNull: true,
-          greaterThanOrEqual: 1,
-        },
-        ReadCapacityUnits: {
-          notNull: true,
-          greaterThanOrEqual: 1,
-        },
-      },
-    },
-    KeySchema: {
-      notNull: true,
-      lengthGreaterThanOrEqual: 1,
-      lengthLessThanOrEqual: 2,
-      children: {
-        KeyType: {
-          notNull: true,
-          enum: ['HASH', 'RANGE'],
-        },
-        AttributeName: {
-          notNull: true,
-        },
-      },
-    },
-    LocalSecondaryIndexes: {
-      children: {
-        Projection: {
-          notNull: true,
-          children: {
-            ProjectionType: {
-              enum: ['ALL', 'INCLUDE', 'KEYS_ONLY']
-            },
-            NonKeyAttributes: {
-              lengthGreaterThanOrEqual: 1,
-            },
-          }
-        },
-        IndexName: {
-          notNull: true,
-          regex: '[a-zA-Z0-9_.-]+',
-          lengthGreaterThanOrEqual: 3,
-          lengthLessThanOrEqual: 255,
-        },
-        KeySchema: {
-          notNull: true,
-          lengthGreaterThanOrEqual: 1,
-          children: {
-            AttributeName: {
-              notNull: true,
-            },
-            KeyType: {
-              notNull: true,
-            },
-          }
-        },
-      },
-    },
-  }, extra = [
-    function checkCapacity(data) {
-      if (data.ProvisionedThroughput.ReadCapacityUnits > 1000000000000)
-        return 'Given value ' + data.ProvisionedThroughput.ReadCapacityUnits + ' for ReadCapacityUnits is out of bounds'
-      if (data.ProvisionedThroughput.WriteCapacityUnits > 1000000000000)
-        return 'Given value ' + data.ProvisionedThroughput.WriteCapacityUnits + ' for WriteCapacityUnits is out of bounds'
-    },
-    function checkKeysDefinition(data) {
-      if (data.KeySchema.length != 2) return
-      var keys = data.KeySchema.map(function(key) { return key.AttributeName })
-      var defns = data.AttributeDefinitions.map(function(key) { return key.AttributeName })
-      if (keys.some(function(key) { return !~defns.indexOf(key) }) ||
-          // bizarre case - not sure what the general form of it is
-          keys[0] == keys[1] && defns.length == 1)
-        return 'Invalid KeySchema: Some index key attribute have no definition'
-    },
-    function checkKeyDefinition(data) {
-      if (data.KeySchema.length != 1) return
-      var defns = data.AttributeDefinitions.map(function(key) { return key.AttributeName }).reverse()
-      var keys = data.KeySchema.map(function(key) { return key.AttributeName }).reverse()
-      if (keys.some(function(key) { return !~defns.indexOf(key) }))
-        return 'One or more parameter values were invalid: Some index key attributes are not defined in ' +
-          'AttributeDefinitions. Keys: [' + keys.join(', ') + '], AttributeDefinitions: [' + defns.join(', ') + ']'
-    },
-    function checkKeyNames(data) {
-      if (data.KeySchema.length != 2) return
-      if (data.KeySchema[0].AttributeName == data.KeySchema[1].AttributeName)
-        return 'Both the Hash Key and the Range Key element in the KeySchema have the same name'
-    },
-    function checkKeyHash(data) {
-      if (data.KeySchema[0].KeyType != 'HASH')
-        return 'Invalid KeySchema: The first KeySchemaElement is not a HASH key type'
-    },
-    function checkKeyRange(data) {
-      if (data.KeySchema.length != 2) return
-      if (data.KeySchema[1].KeyType != 'RANGE')
-        return 'Invalid KeySchema: The second KeySchemaElement is not a RANGE key type'
-    },
-    function checkKeyRange(data) {
-      if (!data.LocalSecondaryIndexes && data.KeySchema.length != data.AttributeDefinitions.length)
-        return 'One or more parameter values were invalid: Number of attributes in KeySchema does not ' +
-          'exactly match number of attributes defined in AttributeDefinitions'
-    },
-    function checkKeyRange(data) {
-      if (data.LocalSecondaryIndexes && !data.LocalSecondaryIndexes.length)
-        return 'One or more parameter values were invalid: List of indexes is empty'
-    },
-    function checkKeyRange(data) {
-      if (data.LocalSecondaryIndexes && data.KeySchema.length != 2)
-        return 'One or more parameter values were invalid: Table KeySchema does not have a range key'
-    },
-    function checkIndexDefinition(data) {
-      if (!data.LocalSecondaryIndexes) return
-      var keys, defns = data.AttributeDefinitions.map(function(key) { return key.AttributeName }).reverse()
-      for (var i = 0; i < data.LocalSecondaryIndexes.length; i++) {
-        keys = data.LocalSecondaryIndexes[i].KeySchema.map(function(key) { return key.AttributeName }).reverse()
-        if (keys.some(function(key) { return !~defns.indexOf(key) }))
-          return 'One or more parameter values were invalid: ' +
-            'Some index key attributes are not defined in AttributeDefinitions. ' +
-            'Keys: [' + keys.join(', ') + '], AttributeDefinitions: [' + defns.join(', ') + ']'
-      }
-    },
-    function checkIndexKeyNames(data) {
-      if (!data.LocalSecondaryIndexes) return
-      for (var i = 0; i < data.LocalSecondaryIndexes.length; i++) {
-        if (data.LocalSecondaryIndexes[i].KeySchema[1] &&
-            data.LocalSecondaryIndexes[i].KeySchema[0].AttributeName ==
-            data.LocalSecondaryIndexes[i].KeySchema[1].AttributeName)
-          return 'Both the Hash Key and the Range Key element in the KeySchema have the same name'
-      }
-    },
-    function checkIndexTypes(data) {
-      if (!data.LocalSecondaryIndexes) return
-      for (var i = 0; i < data.LocalSecondaryIndexes.length; i++) {
-        if (data.LocalSecondaryIndexes[i].KeySchema[0].KeyType != 'HASH')
-          return 'Invalid KeySchema: The first KeySchemaElement is not a HASH key type'
-        if (data.LocalSecondaryIndexes[i].KeySchema[1] &&
-            data.LocalSecondaryIndexes[i].KeySchema[1].KeyType != 'RANGE')
-          return 'Invalid KeySchema: The second KeySchemaElement is not a RANGE key type'
-      }
-    },
-    function checkIndexRange(data) {
-      if (!data.LocalSecondaryIndexes) return
-      for (var i = 0; i < data.LocalSecondaryIndexes.length; i++) {
-        if (data.LocalSecondaryIndexes[i].KeySchema.length != 2)
-          return 'One or more parameter values were invalid: Index KeySchema does not have a range key for index: ' +
-            data.LocalSecondaryIndexes[i].IndexName
-      }
-    },
-    function checkIndexHashSameAsTable(data) {
-      if (!data.LocalSecondaryIndexes) return
-      var tableHash = data.KeySchema[0].AttributeName
-      for (var i = 0; i < data.LocalSecondaryIndexes.length; i++) {
-        var indexHash = data.LocalSecondaryIndexes[i].KeySchema[0].AttributeName
-        if (indexHash != tableHash)
-          return 'One or more parameter values were invalid: ' +
-            'Index KeySchema does not have the same leading hash key as table KeySchema for index: ' +
-            data.LocalSecondaryIndexes[i].IndexName + '. index hash key: ' + indexHash +
-            ', table hash key: ' + tableHash
-      }
-    },
-    function checkProjectionType(data) {
-      if (!data.LocalSecondaryIndexes) return
-      for (var i = 0; i < data.LocalSecondaryIndexes.length; i++) {
-        if (data.LocalSecondaryIndexes[i].Projection.ProjectionType == null)
-          return 'One or more parameter values were invalid: Unknown ProjectionType: null'
-      }
-    },
-    function checkProjectionForNonKeyAttributes(data) {
-      if (!data.LocalSecondaryIndexes) return
-      for (var i = 0; i < data.LocalSecondaryIndexes.length; i++) {
-        var projectionType = data.LocalSecondaryIndexes[i].Projection.ProjectionType
-        if (data.LocalSecondaryIndexes[i].Projection.NonKeyAttributes && projectionType != 'INCLUDE')
-          return 'One or more parameter values were invalid: ' +
-            'ProjectionType is ' + projectionType + ', but NonKeyAttributes is specified'
-      }
-    },
-    function checkUniqueIndexNames(data) {
-      if (!data.LocalSecondaryIndexes) return
-      var indexNames = Object.create(null)
-      for (var i = 0; i < data.LocalSecondaryIndexes.length; i++) {
-        var indexName = data.LocalSecondaryIndexes[i].IndexName
-        if (indexNames[indexName])
-          return 'One or more parameter values were invalid: Duplicate index name: ' + indexName
-        indexNames[indexName] = true
-      }
-    },
-    function checkIndexCount(data) {
-      if (data.LocalSecondaryIndexes && data.LocalSecondaryIndexes.length > 5)
-        return 'One or more parameter values were invalid: Number of indexes exceeds per-table limit of 5'
-    },
-  ]
-
-  try {
-    data = checkTypes(data, types)
-    checkValidations(data, validations, extra)
-  } catch (e) {
-    if (e.statusCode) return sendData(req, res, e.body, e.statusCode)
-    throw e
-  }
 
   data.CreationDateTime = Date.now() / 1000
   data.ItemCount = 0
@@ -510,25 +220,6 @@ targets.createTable = function createTable(req, res, data) {
 }
 
 targets.describeTable = function describeTable(req, res, data) {
-  var types = {
-    TableName: 'String',
-  }, validations = {
-    TableName: {
-      required: true,
-      custom: validateTable,
-      regex: '[a-zA-Z0-9_.-]+',
-      lengthGreaterThanOrEqual: 3,
-      lengthLessThanOrEqual: 255,
-    },
-  }
-
-  try {
-    data = checkTypes(data, types)
-    checkValidations(data, validations)
-  } catch (e) {
-    if (e.statusCode) return sendData(req, res, e.body, e.statusCode)
-    throw e
-  }
 
   tableDb.get(data.TableName, function(err, table) {
     if (err) {
@@ -544,74 +235,7 @@ targets.describeTable = function describeTable(req, res, data) {
 }
 
 targets.getItem = function getItem(req, res, data) {
-  var types = {
-    TableName: 'String',
-    Key: {
-      type: 'Map',
-      children: {
-        type: 'Structure',
-        children: {
-          S: 'String',
-          B: 'Blob',
-          N: 'String',
-        }
-      }
-    },
-    AttributesToGet: 'List',
-    ConsistentRead: 'Boolean',
-    ReturnConsumedCapacity: 'String',
-  }, validations = {
-    ReturnConsumedCapacity: {
-      enum: ['TOTAL', 'NONE']
-    },
-    AttributesToGet: {
-      lengthGreaterThanOrEqual: 1,
-      lengthLessThanOrEqual: 255,
-    },
-    TableName: {
-      required: true,
-      custom: validateTable,
-      regex: '[a-zA-Z0-9_.-]+',
-      lengthGreaterThanOrEqual: 3,
-      lengthLessThanOrEqual: 255,
-    },
-    Key: {
-      notNull: true,
-    },
-  }, extra = [
-    function checkKeyNames(data) {
-      for (var key in data.Key) {
-        if (!Object.keys(data.Key[key]).length)
-          return 'Supplied AttributeValue is empty, must contain exactly one of the supported datatypes'
-      }
-    },
-    function checkKeyNotEmpty(data) {
-      for (var key in data.Key) {
-        for (var type in data.Key[key]) {
-          if (!data.Key[key][type])
-            return 'One or more parameter values were invalid: An AttributeValue may not contain an empty string.'
-        }
-      }
-    },
-    function checkKeyNotEmpty(data) {
-      for (var key in data.Key) {
-        for (var type in data.Key[key]) {
-          if (type == 'N' && isNaN(Number(data.Key[key][type])))
-            return 'The parameter cannot be converted to a numeric value: ' + data.Key[key][type]
-        }
-      }
-    },
-  ]
-
-  try {
-    data = checkTypes(data, types)
-    checkValidations(data, validations, extra)
-  } catch (e) {
-    if (e.statusCode) return sendData(req, res, e.body, e.statusCode)
-    throw e
-  }
-
-  sendData(req, res, {TableNames: []})
+  sendData(req, res, {})
 }
 
 
@@ -673,7 +297,6 @@ function checkTypes(data, types) {
           case 'boolean':
             throw typeError('class java.lang.Boolean can not be converted to an ' + type)
           case 'number':
-            // TODO: Should coersion happen here or elsewhere?
             if (type != 'Double') val = Math.floor(val)
             break
           case 'string':
@@ -716,8 +339,6 @@ function checkTypes(data, types) {
           throw typeError('\'' + val + '\' can not be converted to a Blob: ' +
             'Invalid last non-pad Base64 character dectected')
         return val
-    //}
-    //switch (type.type) {
       case 'List':
         switch (typeof val) {
           case 'boolean':
@@ -757,7 +378,7 @@ function checkTypes(data, types) {
   }
 }
 
-function checkValidations(data, validations, extra) {
+function checkValidations(data, validations, custom) {
   var attr, msg, errors = []
   function validationError(msg) {
     var err = new Error(msg)
@@ -773,8 +394,8 @@ function checkValidations(data, validations, extra) {
     if (validations[attr].required && data[attr] == null) {
       throw validationError('The paramater \'' + toLowerFirst(attr) + '\' is required but was not present in the request')
     }
-    if (validations[attr].custom) {
-      msg = validations[attr].custom(attr, data)
+    if (validations[attr].tableName) {
+      msg = validateTableName(attr, data)
       if (msg) throw validationError(msg)
     }
   }
@@ -784,14 +405,7 @@ function checkValidations(data, validations, extra) {
     for (attr in validations) {
       for (validation in validations[attr]) {
         if (errors.length >= 10) return
-        //if (validations[attr].required && data[attr] == null) {
-          //throw validationError('The paramater \'' + toLowerFirst(attr) + '\' is required but was not present in the request')
-        //}
-        //if (validations[attr].custom) {
-          //msg = validations[attr].custom(attr, data)
-          //if (msg) throw validationError(msg)
-        //}
-        if (validation == 'required' || validation == 'custom') continue
+        if (validation == 'required' || validation == 'tableName') continue
         if (validation != 'notNull' && data[attr] == null) continue
         if (validation == 'children') {
           //if (data[attr] == null) continue
@@ -811,11 +425,10 @@ function checkValidations(data, validations, extra) {
   if (errors.length)
     throw validationError(errors.length + ' validation error' + (errors.length > 1 ? 's' : '') + ' detected: ' + errors.join('; '))
 
-  if (!extra) return
-  extra.forEach(function(extraValidation) {
-    msg = extraValidation(data)
+  if (custom) {
+    msg = custom(data)
     if (msg) throw validationError(msg)
-  })
+  }
 }
 
 var validateFns = {}
@@ -852,7 +465,7 @@ function validate(predicate, msg, data, parent, key, errors) {
   errors.push('Value ' + value + ' at \'' + parent + toLowerFirst(key) + '\' failed to satisfy constraint: ' + msg)
 }
 
-function validateTable(key, data) {
+function validateTableName(key, data) {
   if (data[key].length < 3 || data[key].length > 255)
     return key + ' must be at least 3 characters long and at most 255 characters long'
 }
