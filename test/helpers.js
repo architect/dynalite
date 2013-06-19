@@ -5,7 +5,14 @@ var http = require('http'),
 var requestOpts = process.env.REMOTE ?  {host: 'dynamodb.ap-southeast-2.amazonaws.com', method: 'POST'} :
   {host: 'localhost', port: 4567, method: 'POST'}
 
-var request = exports.request = function(opts, cb) {
+exports.request = request
+exports.opts = opts
+exports.assertSerialization = assertSerialization
+exports.assertType = assertType
+exports.assertValidation = assertValidation
+exports.assertNotFound = assertNotFound
+
+function request(opts, cb) {
   if (typeof opts === 'function') { cb = opts; opts = {} }
   for (var key in requestOpts) {
     if (opts[key] === undefined)
@@ -25,7 +32,7 @@ var request = exports.request = function(opts, cb) {
   }).on('error', cb).end(opts.body)
 }
 
-var opts = exports.opts = function(target, data) {
+function opts(target, data) {
   return {
     headers: {
       'Content-Type': 'application/x-amz-json-1.0',
@@ -35,7 +42,7 @@ var opts = exports.opts = function(target, data) {
   }
 }
 
-var assertSerialization = exports.assertSerialization = function(target, data, msg, done) {
+function assertSerialization(target, data, msg, done) {
   request(opts(target, data), function(err, res) {
     if (err) return done(err)
     res.statusCode.should.equal(400)
@@ -47,7 +54,7 @@ var assertSerialization = exports.assertSerialization = function(target, data, m
   })
 }
 
-var assertType = exports.assertType = function(target, property, type, done) {
+function assertType(target, property, type, done) {
   var msgs = [], pieces = property.split('.')
   switch(type) {
     case 'Boolean':
@@ -147,7 +154,7 @@ var assertType = exports.assertType = function(target, property, type, done) {
   }, done)
 }
 
-var assertValidation = exports.assertValidation = function(target, data, msg, done) {
+function assertValidation(target, data, msg, done) {
   request(opts(target, data), function(err, res) {
     if (err) return done(err)
     res.statusCode.should.equal(400)
@@ -159,7 +166,7 @@ var assertValidation = exports.assertValidation = function(target, data, msg, do
   })
 }
 
-var assertNotFound = exports.assertNotFound = function(target, data, msg, done) {
+function assertNotFound(target, data, msg, done) {
   request(opts(target, data), function(err, res) {
     if (err) return done(err)
     res.statusCode.should.equal(400)
