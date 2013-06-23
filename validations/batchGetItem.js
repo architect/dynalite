@@ -1,11 +1,18 @@
 exports.types = {
+  ReturnConsumedCapacity: {
+    type: 'String',
+    enum: ['TOTAL', 'NONE'],
+  },
   RequestItems: {
     type: 'Map',
+    requiredMap: true,
+    tableMap: true,
     children: {
       type: 'Structure',
       children: {
         Keys: {
           type: 'List',
+          notNull: true,
           children: {
             type: 'Map',
             children: {
@@ -22,13 +29,6 @@ exports.types = {
         ConsistentRead: 'Boolean',
       }
     }
-  },
-  ReturnConsumedCapacity: 'String',
-}
-
-exports.validations = {
-  ReturnConsumedCapacity: {
-    enum: ['TOTAL', 'NONE']
   },
 }
 

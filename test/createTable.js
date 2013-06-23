@@ -185,7 +185,7 @@ describe('createTable', function() {
         'Member must have length greater than or equal to 1', done)
     })
 
-    it.skip('should return ValidationException for blah', function(done) {
+    it.skip('should return ValidationException for key element names', function(done) {
       assertValidation({TableName: 'abc', AttributeDefinitions: [],
         KeySchema: [{KeyType: 'HASH'}, {AttributeName: 'a'}, {KeyType: 'Woop', AttributeName: 'a'}],
         ProvisionedThroughput: {ReadCapacityUnits: 1000000000001, WriteCapacityUnits: 1000000000001}},
@@ -245,6 +245,15 @@ describe('createTable', function() {
     })
 
     it('should return ValidationException for 2', function(done) {
+      assertValidation({TableName: 'abc', AttributeDefinitions: [{AttributeName: 'b', AttributeType: 'SS'}],
+        KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}, {KeyType: 'HASH', AttributeName: 'a'}],
+        ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},
+        '1 validation error detected: ' +
+        'Value \'SS\' at \'attributeDefinitions.1.member.attributeType\' failed to satisfy constraint: ' +
+        'Member must satisfy enum value set: [B, N, S]', done)
+    })
+
+    it('should return ValidationException for 2.5', function(done) {
       assertValidation({TableName: 'abc', AttributeDefinitions: [{AttributeName: 'b', AttributeType: 'a'}],
         KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}, {KeyType: 'HASH', AttributeName: 'a'}],
         ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},

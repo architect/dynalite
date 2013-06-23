@@ -1,6 +1,7 @@
 exports.checkTypes = checkTypes
 exports.checkValidations = checkValidations
 exports.toLowerFirst = toLowerFirst
+exports.validateAttributeValue = validateAttributeValue
 
 function checkTypes(data, types) {
   var key
@@ -35,7 +36,8 @@ function checkTypes(data, types) {
   function checkType(val, type) {
     // TODO: deal with nulls
     if (val == null) return
-    switch (type.type || type) {
+    var actualType = type.type || type
+    switch (actualType) {
       case 'Boolean':
         switch (typeof val) {
           case 'number':
@@ -58,12 +60,12 @@ function checkTypes(data, types) {
       case 'Double':
         switch (typeof val) {
           case 'boolean':
-            throw typeError('class java.lang.Boolean can not be converted to an ' + type)
+            throw typeError('class java.lang.Boolean can not be converted to an ' + actualType)
           case 'number':
-            if (type != 'Double') val = Math.floor(val)
+            if (actualType != 'Double') val = Math.floor(val)
             break
           case 'string':
-            throw typeError('class java.lang.String can not be converted to an ' + type)
+            throw typeError('class java.lang.String can not be converted to an ' + actualType)
           case 'object':
             if (Array.isArray(val)) throw typeError('Start of list found where not expected')
             throw typeError('Start of structure or map found where not expected.')
@@ -136,12 +138,12 @@ function checkTypes(data, types) {
         }
         return checkTypes(val, type.children)
       default:
-        throw new Error('Unknown type: ' + type)
+        throw new Error('Unknown type: ' + actualType)
     }
   }
 }
 
-function checkValidations(data, validations, custom) {
+function checkValidations(data, validations, custom, target) {
   var attr, msg, errors = []
   function validationError(msg) {
     var err = new Error(msg)
@@ -157,34 +159,57 @@ function checkValidations(data, validations, custom) {
     if (validations[attr].required && data[attr] == null) {
       throw validationError('The paramater \'' + toLowerFirst(attr) + '\' is required but was not present in the request')
     }
+    if (validations[attr].requiredMap && (data[attr] == null || !Object.keys(data[attr]).length)) {
+      throw validationError('The ' + toLowerFirst(attr) + ' parameter is required for ' + target)
+    }
     if (validations[attr].tableName) {
-      msg = validateTableName(attr, data)
+      msg = validateTableName(attr, data[attr])
       if (msg) throw validationError(msg)
+    }
+    if (validations[attr].tableMap && data[attr] != null) {
+      Object.keys(data[attr]).forEach(function(key) {
+        msg = validateTableName('TableName', key)
+        if (msg) throw validationError(msg)
+      })
     }
   }
 
-  (function checkNonRequireds(data, validations, parent) {
-    var attr, validation
-    for (attr in validations) {
-      for (validation in validations[attr]) {
-        if (errors.length >= 10) return
-        if (validation == 'required' || validation == 'tableName') continue
-        if (validation != 'notNull' && data[attr] == null) continue
-        if (validation == 'children') {
-          //if (data[attr] == null) continue
-          if (Array.isArray(data[attr])) {
-            for (var i = 0; i < data[attr].length; i++) {
-              checkNonRequireds(data[attr][i], validations[attr].children, (parent ? parent + '.' : '') + toLowerFirst(attr) + '.' + (i + 1) + '.member')
-            }
-            continue
+  function checkNonRequireds(data, types, parent) {
+    for (var attr in types) {
+      checkNonRequired(attr, data[attr], types[attr], parent)
+    }
+  }
+
+  checkNonRequireds(data, validations)
+
+  function checkNonRequired(attr, data, validations, parent) {
+    if (validations == null || typeof validations != 'object') return
+    for (var validation in validations) {
+      if (errors.length >= 10) return
+      if (~['type', 'required', 'requiredMap', 'tableName', 'tableMap'].indexOf(validation)) continue
+      if (validation != 'notNull' && data == null) continue
+      if (validation == 'children') {
+        if (validations.type == 'List') {
+          for (var i = 0; i < data.length; i++) {
+            checkNonRequired('member', data[i], validations.children,
+              (parent ? parent + '.' : '') + toLowerFirst(attr) + '.' + (i + 1))
           }
-          checkNonRequireds(data[attr], validations[attr].children, (parent ? parent + '.' : '') + toLowerFirst(attr))
+          continue
+        } else if (validations.type == 'Map') {
+          // TODO: Always reverse?
+          Object.keys(data).reverse().forEach(function(key) {
+            checkNonRequired('member', data[key], validations.children,
+              (parent ? parent + '.' : '') + toLowerFirst(attr) + '.' + key)
+          })
           continue
         }
-        validateFns[validation](parent, attr, validations[attr][validation], data, errors)
+        checkNonRequireds(data, validations.children, (parent ? parent + '.' : '') + toLowerFirst(attr))
+        continue
       }
+      validateFns[validation](parent, attr, validations[validation], data, errors)
     }
-  })(data, validations)
+  }
+
   if (errors.length)
     throw validationError(errors.length + ' validation error' + (errors.length > 1 ? 's' : '') + ' detected: ' + errors.join('; '))
 
@@ -195,45 +220,84 @@ function checkValidations(data, validations, custom) {
 }
 
 var validateFns = {}
-validateFns.required = function(parent, key, val, data, errors) {
-  validate(data[key] != null, 'Member is required', data, parent, key, errors)
-}
 validateFns.notNull = function(parent, key, val, data, errors) {
-  validate(data[key] != null, 'Member must not be null', data, parent, key, errors)
+  validate(data != null, 'Member must not be null', data, parent, key, errors)
 }
 validateFns.greaterThanOrEqual = function(parent, key, val, data, errors) {
-  validate(data[key] >= val, 'Member must have value greater than or equal to ' + val, data, parent, key, errors)
+  validate(data >= val, 'Member must have value greater than or equal to ' + val, data, parent, key, errors)
 }
 validateFns.lessThanOrEqual = function(parent, key, val, data, errors) {
-  validate(data[key] <= val, 'Member must have value less than or equal to ' + val, data, parent, key, errors)
+  validate(data <= val, 'Member must have value less than or equal to ' + val, data, parent, key, errors)
 }
 validateFns.regex = function(parent, key, pattern, data, errors) {
-  validate(RegExp('^' + pattern + '$').test(data[key]), 'Member must satisfy regular expression pattern: ' + pattern, data, parent, key, errors)
+  validate(RegExp('^' + pattern + '$').test(data), 'Member must satisfy regular expression pattern: ' + pattern, data, parent, key, errors)
 }
 validateFns.lengthGreaterThanOrEqual = function(parent, key, val, data, errors) {
-  validate(data[key].length >= val, 'Member must have length greater than or equal to ' + val, data, parent, key, errors)
+  validate(data.length >= val, 'Member must have length greater than or equal to ' + val, data, parent, key, errors)
 }
 validateFns.lengthLessThanOrEqual = function(parent, key, val, data, errors) {
-  validate(data[key].length <= val, 'Member must have length less than or equal to ' + val, data, parent, key, errors)
+  validate(data.length <= val, 'Member must have length less than or equal to ' + val, data, parent, key, errors)
 }
 validateFns.enum = function(parent, key, val, data, errors) {
-  validate(~val.indexOf(data[key]), 'Member must satisfy enum value set: [' + val.join(', ') + ']', data, parent, key, errors)
+  validate(~val.indexOf(data), 'Member must satisfy enum value set: [' + val.join(', ') + ']', data, parent, key, errors)
 }
 
 function validate(predicate, msg, data, parent, key, errors) {
   if (predicate) return
-  var value = data[key] == null ? 'null' : Array.isArray(data[key]) ? '[' + data[key] + ']' : data[key]
+  var value = data == null ? 'null' : Array.isArray(data) ? '[' + data + ']' : data
   if (value != 'null') value = '\'' + value + '\''
   parent = parent ? parent + '.' : ''
   errors.push('Value ' + value + ' at \'' + parent + toLowerFirst(key) + '\' failed to satisfy constraint: ' + msg)
 }
 
-function validateTableName(key, data) {
-  if (data[key].length < 3 || data[key].length > 255)
+function validateTableName(key, val) {
+  if (val == null) return
+  if (val.length < 3 || val.length > 255)
     return key + ' must be at least 3 characters long and at most 255 characters long'
 }
 
 function toLowerFirst(str) {
   return str[0].toLowerCase() + str.slice(1)
+}
+
+function validateAttributeValue(value) {
+  var types = Object.keys(value)
+  if (!types.length)
+    return 'Supplied AttributeValue is empty, must contain exactly one of the supported datatypes'
+
+  for (var type in value) {
+    if (type == 'N' && !value[type])
+      return 'The parameter cannot be converted to a numeric value'
+
+    if (type == 'N' && isNaN(Number(value[type])))
+      return 'The parameter cannot be converted to a numeric value: ' + value[type]
+
+    if (type == 'B' && !value[type])
+      return 'One or more parameter values were invalid: An AttributeValue may not contain an empty binary type.'
+
+    if (type == 'S' && !value[type])
+      return 'One or more parameter values were invalid: An AttributeValue may not contain an empty string.'
+
+    if ((type == 'SS' || type == 'NS' || type == 'BS') && !value[type].length)
+      return 'One or more parameter values were invalid: An AttributeValue may not contain an empty set.'
+
+    if (type == 'SS' && value[type].some(function(x) { return !x }))
+      return 'One or more parameter values were invalid: An AttributeValue may not contain an empty string.'
+
+    if (type == 'BS' && value[type].some(function(x) { return !x }))
+      return 'One or more parameter values were invalid: Binary sets may not contain null or empty values'
+
+    if (type == 'NS' && value[type].some(function(x) { return !x }))
+      return 'The parameter cannot be converted to a numeric value'
+
+    if (type == 'NS') {
+      var nonNum = value[type].filter(function(x) { return isNaN(x) })[0]
+      if (nonNum)
+        return 'The parameter cannot be converted to a numeric value: ' + nonNum
+    }
+  }
+
+  if (types.length > 1)
+    return 'Supplied AttributeValue has more than one datatypes set, must contain exactly one of the supported datatypes'
 }
 

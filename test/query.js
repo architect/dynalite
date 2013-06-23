@@ -135,6 +135,284 @@ describe('query', function() {
 
   describe('validations', function() {
 
+    it('should return ValidationException for no TableName', function(done) {
+      assertValidation({},
+        'The paramater \'tableName\' is required but was not present in the request', done)
+    })
+
+    it('should return ValidationException for empty TableName', function(done) {
+      assertValidation({TableName: ''},
+        'TableName must be at least 3 characters long and at most 255 characters long', done)
+    })
+
+    it('should return ValidationException for short TableName', function(done) {
+      assertValidation({TableName: 'a;'},
+        'TableName must be at least 3 characters long and at most 255 characters long', done)
+    })
+
+    it('should return ValidationException for long TableName', function(done) {
+      var name = '', i
+      for (i = 0; i < 256; i++) name += 'a'
+      assertValidation({TableName: name},
+        'TableName must be at least 3 characters long and at most 255 characters long', done)
+    })
+
+    it('should return ValidationException for empty IndexName', function(done) {
+      assertValidation({TableName: 'abc', IndexName: ''},
+        'IndexName must be at least 3 characters long and at most 255 characters long', done)
+    })
+
+    it('should return ValidationException for short IndexName', function(done) {
+      assertValidation({TableName: 'abc', IndexName: 'a;'},
+        'IndexName must be at least 3 characters long and at most 255 characters long', done)
+    })
+
+    it('should return ValidationException for long IndexName', function(done) {
+      var name = '', i
+      for (i = 0; i < 256; i++) name += 'a'
+      assertValidation({TableName: 'abc', IndexName: name},
+        'IndexName must be at least 3 characters long and at most 255 characters long', done)
+    })
+
+    it('should return ValidationException for incorrect attributes', function(done) {
+      assertValidation({TableName: 'abc;', ReturnConsumedCapacity: 'hi', AttributesToGet: [],
+        IndexName: 'abc;', Select: 'hi', Limit: -1, KeyConditions: {a: {}, b: {ComparisonOperator: ''}}},
+        '8 validation errors detected: ' +
+        'Value \'-1\' at \'limit\' failed to satisfy constraint: ' +
+        'Member must have value greater than or equal to 1; ' +
+        'Value \'\' at \'keyConditions.b.member.comparisonOperator\' failed to satisfy constraint: ' +
+        'Member must satisfy enum value set: [IN, NULL, BETWEEN, LT, NOT_CONTAINS, EQ, GT, NOT_NULL, NE, LE, BEGINS_WITH, GE, CONTAINS]; ' +
+        'Value null at \'keyConditions.a.member.comparisonOperator\' failed to satisfy constraint: ' +
+        'Member must not be null; ' +
+        'Value \'hi\' at \'returnConsumedCapacity\' failed to satisfy constraint: ' +
+        'Member must satisfy enum value set: [TOTAL, NONE]; ' +
+        'Value \'[]\' at \'attributesToGet\' failed to satisfy constraint: ' +
+        'Member must have length greater than or equal to 1; ' +
+        'Value \'abc;\' at \'tableName\' failed to satisfy constraint: ' +
+        'Member must satisfy regular expression pattern: [a-zA-Z0-9_.-]+; ' +
+        'Value \'hi\' at \'select\' failed to satisfy constraint: ' +
+        'Member must satisfy enum value set: [SPECIFIC_ATTRIBUTES, COUNT, ALL_ATTRIBUTES, ALL_PROJECTED_ATTRIBUTES]; ' +
+        'Value \'abc;\' at \'indexName\' failed to satisfy constraint: ' +
+        'Member must satisfy regular expression pattern: [a-zA-Z0-9_.-]+', done)
+    })
+
+    it('should return ValidationException for null conditions', function(done) {
+      assertValidation({TableName: 'abc'},
+        'Conditions must not be null', done)
+    })
+
+    it('should return ValidationException for empty conditions', function(done) {
+      assertValidation({TableName: 'abc', KeyConditions: {}},
+        'Conditions can be of length 1 or 2 only', done)
+    })
+
+    it('should return ValidationException for incorrect number of filter arguments', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        KeyConditions: {
+          a: {ComparisonOperator: 'EQ'},
+          b: {ComparisonOperator: 'NULL'},
+          c: {ComparisonOperator: 'NULL'},
+        }},
+        'The attempted filter operation is not supported for the provided filter argument count', done)
+    })
+
+    it('should return ValidationException for bad key type', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        KeyConditions: {
+          a: {ComparisonOperator: 'EQ', AttributeValueList: [{}]},
+          b: {ComparisonOperator: 'NULL'},
+          c: {ComparisonOperator: 'NULL'},
+        }},
+        'Supplied AttributeValue is empty, must contain exactly one of the supported datatypes', done)
+    })
+
+    it('should return ValidationException for bad key type', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        KeyConditions: {
+          a: {ComparisonOperator: 'EQ', AttributeValueList: [{a: ''}]},
+          b: {ComparisonOperator: 'NULL'},
+          c: {ComparisonOperator: 'NULL'},
+        }},
+        'Supplied AttributeValue is empty, must contain exactly one of the supported datatypes', done)
+    })
+
+    it('should return ValidationException for empty key', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        KeyConditions: {
+          a: {ComparisonOperator: 'EQ', AttributeValueList: [{S: ''}]},
+          b: {ComparisonOperator: 'NULL'},
+          c: {ComparisonOperator: 'NULL'},
+        }},
+        'One or more parameter values were invalid: An AttributeValue may not contain an empty string.', done)
+    })
+
+    it('should return empty response if key has incorrect numeric type', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        KeyConditions: {
+          a: {ComparisonOperator: 'EQ', AttributeValueList: [{N: 'b'}]},
+          b: {ComparisonOperator: 'NULL'},
+          c: {ComparisonOperator: 'NULL'},
+        }},
+        'The parameter cannot be converted to a numeric value: b', done)
+    })
+
+    it('should return ValidationException for too many filter args', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        KeyConditions: {
+          a: {ComparisonOperator: 'EQ', AttributeValueList: [{S: 'a'}, {S: 'a'}]},
+          b: {ComparisonOperator: 'NULL'},
+          c: {ComparisonOperator: 'NULL'},
+        }},
+        'The attempted filter operation is not supported for the provided filter argument count', done)
+    })
+
+    // Weird - only checks this *after* it finds the table
+    it.skip('should return ValidationException for unsupported comparison', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        KeyConditions: {
+          a: {ComparisonOperator: 'CONTAINS', AttributeValueList: [{S: 'a'}]},
+          b: {ComparisonOperator: 'NULL'},
+        }},
+        'Query key condition not supported', done)
+    })
+
+    it('should return ValidationException for too many conditions', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        ExclusiveStartKey: {},
+        KeyConditions: {
+          a: {ComparisonOperator: 'NULL'},
+          b: {ComparisonOperator: 'NULL'},
+          c: {ComparisonOperator: 'NULL'},
+        }},
+        'Conditions can be of length 1 or 2 only', done)
+    })
+
+    // TODO: It only reports this if the table exists, otherwise a ResourceNotFoundException
+    it.skip('should return ValidationException for empty ExclusiveStartKey', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        ExclusiveStartKey: {},
+        KeyConditions: {a: {ComparisonOperator: 'NULL'}}},
+        'The provided starting key is invalid', done)
+    })
+
+    it('should return ValidationException for empty object ExclusiveStartKey', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        ExclusiveStartKey: {a: {}},
+        KeyConditions: {a: {ComparisonOperator: 'NULL'}}},
+        'The provided starting key is invalid: ' +
+        'Supplied AttributeValue is empty, must contain exactly one of the supported datatypes', done)
+    })
+
+    it('should return ValidationException for wrong attribute ExclusiveStartKey', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        ExclusiveStartKey: {a: {a: ''}},
+        KeyConditions: {a: {ComparisonOperator: 'NULL'}}},
+        'The provided starting key is invalid: ' +
+        'Supplied AttributeValue is empty, must contain exactly one of the supported datatypes', done)
+    })
+
+    it('should return ValidationException for empty string ExclusiveStartKey', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        ExclusiveStartKey: {a: {S: ''}},
+        KeyConditions: {a: {ComparisonOperator: 'NULL'}}},
+        'The provided starting key is invalid: ' +
+        'One or more parameter values were invalid: An AttributeValue may not contain an empty string.', done)
+    })
+
+    it('should return ValidationException for empty binary', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        ExclusiveStartKey: {a: {B: ''}},
+        KeyConditions: {a: {ComparisonOperator: 'NULL'}}},
+        'The provided starting key is invalid: ' +
+        'One or more parameter values were invalid: An AttributeValue may not contain an empty binary type.', done)
+    })
+
+    // Somehow allows set types for keys
+    it('should return ValidationException for empty set key', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        ExclusiveStartKey: {a: {SS: []}},
+        KeyConditions: {a: {ComparisonOperator: 'NULL'}}},
+        'The provided starting key is invalid: ' +
+        'One or more parameter values were invalid: An AttributeValue may not contain an empty set.', done)
+    })
+
+    it('should return ValidationException for empty string in set', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        ExclusiveStartKey: {a: {SS: ['a', '']}},
+        KeyConditions: {a: {ComparisonOperator: 'NULL'}}},
+        'The provided starting key is invalid: ' +
+        'One or more parameter values were invalid: An AttributeValue may not contain an empty string.', done)
+    })
+
+    it('should return ValidationException for empty binary in set', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        ExclusiveStartKey: {a: {BS: ['aaaa', '']}},
+        KeyConditions: {a: {ComparisonOperator: 'NULL'}}},
+        'The provided starting key is invalid: ' +
+        'One or more parameter values were invalid: Binary sets may not contain null or empty values', done)
+    })
+
+    it('should return ValidationException for multiple types', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        ExclusiveStartKey: {a: {S: 'a', N: '1'}},
+        KeyConditions: {a: {ComparisonOperator: 'NULL'}}},
+        'The provided starting key is invalid: ' +
+        'Supplied AttributeValue has more than one datatypes set, must contain exactly one of the supported datatypes', done)
+    })
+
+    it('should return ValidationException if key has empty numeric type', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        ExclusiveStartKey: {a: {N: ''}},
+        KeyConditions: {a: {ComparisonOperator: 'NULL'}}},
+        'The provided starting key is invalid: ' +
+        'The parameter cannot be converted to a numeric value', done)
+    })
+
+    it('should return ValidationException if key has incorrect numeric type', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        ExclusiveStartKey: {a: {N: 'b'}},
+        KeyConditions: {a: {ComparisonOperator: 'NULL'}}},
+        'The provided starting key is invalid: ' +
+        'The parameter cannot be converted to a numeric value: b', done)
+    })
+
+    it('should return ValidationException if key has empty numeric type in set', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        ExclusiveStartKey: {a: {NS: ['1', '']}},
+        KeyConditions: {a: {ComparisonOperator: 'NULL'}}},
+        'The provided starting key is invalid: ' +
+        'The parameter cannot be converted to a numeric value', done)
+    })
+
+    it('should return ValidationException if key has incorrect numeric type in set', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        ExclusiveStartKey: {a: {NS: ['1', 'b', 'a']}},
+        KeyConditions: {a: {ComparisonOperator: 'NULL'}}},
+        'The provided starting key is invalid: ' +
+        'The parameter cannot be converted to a numeric value: b', done)
+    })
+
   })
 
 })

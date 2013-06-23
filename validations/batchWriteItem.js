@@ -1,6 +1,16 @@
 exports.types = {
+  ReturnConsumedCapacity: {
+    type: 'String',
+    enum: ['TOTAL', 'NONE']
+  },
+  ReturnItemCollectionMetrics: {
+    type: 'String',
+    enum: ['SIZE', 'NONE']
+  },
   RequestItems: {
     type: 'Map',
+    requiredMap: true,
+    tableMap: true,
     children: {
       type: 'List',
       children: {
@@ -11,6 +21,7 @@ exports.types = {
             children: {
               Key: {
                 type: 'Map',
+                notNull: true,
                 children: {
                   type: 'Structure',
                   children: {
@@ -27,6 +38,7 @@ exports.types = {
             children: {
               Item: {
                 type: 'Map',
+                notNull: true,
                 children: {
                   type: 'Structure',
                   children: {
@@ -53,14 +65,6 @@ exports.types = {
         },
       }
     }
-  },
-  ReturnConsumedCapacity: 'String',
-  ReturnItemCollectionMetrics: 'String',
-}
-
-exports.validations = {
-  ReturnConsumedCapacity: {
-    enum: ['TOTAL', 'NONE']
   },
 }
 

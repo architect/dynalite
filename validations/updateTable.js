@@ -1,30 +1,21 @@
 exports.types = {
-  TableName: 'String',
-  ProvisionedThroughput: {
-    type: 'Structure',
-    children: {
-      WriteCapacityUnits: 'Long',
-      ReadCapacityUnits: 'Long',
-    },
-  },
-}
-
-exports.validations = {
   TableName: {
+    type: 'String',
     required: true,
     tableName: true,
     regex: '[a-zA-Z0-9_.-]+',
-    lengthGreaterThanOrEqual: 3,
-    lengthLessThanOrEqual: 255,
   },
   ProvisionedThroughput: {
+    type: 'Structure',
     notNull: true,
     children: {
       WriteCapacityUnits: {
+        type: 'Long',
         notNull: true,
         greaterThanOrEqual: 1,
       },
       ReadCapacityUnits: {
+        type: 'Long',
         notNull: true,
         greaterThanOrEqual: 1,
       },

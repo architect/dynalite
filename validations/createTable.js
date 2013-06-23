@@ -1,141 +1,110 @@
 exports.types = {
-  TableName: 'String',
   AttributeDefinitions: {
     type: 'List',
+    notNull: true,
     children: {
       type: 'Structure',
       children: {
-        AttributeName: 'String',
-        AttributeType: 'String',
-      }
-    },
-  },
-  KeySchema: {
-    type: 'List',
-    children: {
-      type: 'Structure',
-      children: {
-        AttributeName: 'String',
-        KeyType: 'String',
-      }
-    },
-  },
-  LocalSecondaryIndexes: {
-    type: 'List',
-    children: {
-      type: 'Structure',
-      children: {
-        IndexName: 'String',
-        KeySchema: {
-          type: 'List',
-          children: {
-            type: 'Structure',
-            children: {
-              AttributeName: 'String',
-              KeyType: 'String',
-            }
-          }
+        AttributeName: {
+          type: 'String',
+          notNull: true,
         },
-        Projection: {
-          type: 'Structure',
-          children: {
-            NonKeyAttributes: {
-              type: 'List',
-              children: 'String'
-            },
-            ProjectionType: 'String'
-          }
+        AttributeType: {
+          type: 'String',
+          notNull: true,
+          enum: ['B', 'N', 'S'],
         }
       }
     },
   },
-  ProvisionedThroughput: {
-    type: 'Structure',
-    children: {
-      WriteCapacityUnits: 'Long',
-      ReadCapacityUnits: 'Long',
-    },
-  },
-}
-
-exports.validations = {
-  AttributeDefinitions: {
-    notNull: true,
-    children: {
-      AttributeName: {
-        notNull: true,
-      },
-      AttributeType: {
-        notNull: true,
-        enum: ['B', 'N', 'S']
-      },
-    },
-  },
   TableName: {
+    type: 'String',
     required: true,
     tableName: true,
     regex: '[a-zA-Z0-9_.-]+',
-    lengthGreaterThanOrEqual: 3,
-    lengthLessThanOrEqual: 255,
   },
   ProvisionedThroughput: {
+    type: 'Structure',
     notNull: true,
     children: {
       WriteCapacityUnits: {
+        type: 'Long',
         notNull: true,
         greaterThanOrEqual: 1,
       },
       ReadCapacityUnits: {
+        type: 'Long',
         notNull: true,
         greaterThanOrEqual: 1,
-      },
+      }
     },
   },
   KeySchema: {
+    type: 'List',
     notNull: true,
     lengthGreaterThanOrEqual: 1,
     lengthLessThanOrEqual: 2,
     children: {
-      KeyType: {
-        notNull: true,
-        enum: ['HASH', 'RANGE'],
-      },
-      AttributeName: {
-        notNull: true,
-      },
+      type: 'Structure',
+      children: {
+        AttributeName: {
+          type: 'String',
+          notNull: true,
+        },
+        KeyType: {
+          type: 'String',
+          notNull: true,
+          enum: ['HASH', 'RANGE'],
+        }
+      }
     },
   },
   LocalSecondaryIndexes: {
+    type: 'List',
     children: {
-      Projection: {
-        notNull: true,
-        children: {
-          ProjectionType: {
-            enum: ['ALL', 'INCLUDE', 'KEYS_ONLY']
-          },
-          NonKeyAttributes: {
-            lengthGreaterThanOrEqual: 1,
-          },
-        }
-      },
-      IndexName: {
-        notNull: true,
-        regex: '[a-zA-Z0-9_.-]+',
-        lengthGreaterThanOrEqual: 3,
-        lengthLessThanOrEqual: 255,
-      },
-      KeySchema: {
-        notNull: true,
-        lengthGreaterThanOrEqual: 1,
-        children: {
-          AttributeName: {
-            notNull: true,
-          },
-          KeyType: {
-            notNull: true,
-          },
-        }
-      },
+      type: 'Structure',
+      children: {
+        Projection: {
+          type: 'Structure',
+          notNull: true,
+          children: {
+            ProjectionType: {
+              type: 'String',
+              enum: ['ALL', 'INCLUDE', 'KEYS_ONLY'],
+            },
+            NonKeyAttributes: {
+              type: 'List',
+              lengthGreaterThanOrEqual: 1,
+              children: 'String'
+            },
+          }
+        },
+        IndexName: {
+          type: 'String',
+          notNull: true,
+          regex: '[a-zA-Z0-9_.-]+',
+          lengthGreaterThanOrEqual: 3,
+          lengthLessThanOrEqual: 255,
+        },
+        KeySchema: {
+          type: 'List',
+          notNull: true,
+          lengthGreaterThanOrEqual: 1,
+          children: {
+            type: 'Structure',
+            children: {
+              AttributeName: {
+                type: 'String',
+                notNull: true,
+              },
+              KeyType: {
+                type: 'String',
+                notNull: true,
+              }
+            }
+          }
+        },
+      }
     },
   },
 }

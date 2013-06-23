@@ -71,6 +71,30 @@ describe('batchGetItem', function() {
 
   describe('validations', function() {
 
+    it('should return ValidationException for missing RequestItems', function(done) {
+      assertValidation({ReturnConsumedCapacity: 'hi', ReturnItemCollectionMetrics: 'hi'},
+        'The requestItems parameter is required for BatchGetItem', done)
+    })
+
+    it('should return ValidationException for empty RequestItems', function(done) {
+      assertValidation({RequestItems: {}},
+        'The requestItems parameter is required for BatchGetItem', done)
+    })
+
+    it('should return ValidationException for short table name', function(done) {
+      assertValidation({RequestItems: {a:{}}, ReturnConsumedCapacity: 'hi', ReturnItemCollectionMetrics: 'hi'},
+        'TableName must be at least 3 characters long and at most 255 characters long', done)
+    })
+
+    it('should return ValidationException for incorrect attributes', function(done) {
+      assertValidation({RequestItems: {'aa;': {}}, ReturnConsumedCapacity: 'hi'},
+        '2 validation errors detected: ' +
+        'Value \'hi\' at \'returnConsumedCapacity\' failed to satisfy constraint: ' +
+        'Member must satisfy enum value set: [TOTAL, NONE]; ' +
+        'Value null at \'requestItems.aa;.member.keys\' failed to satisfy constraint: ' +
+        'Member must not be null', done)
+    })
+
   })
 
 })

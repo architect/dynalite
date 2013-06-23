@@ -1,7 +1,17 @@
 exports.types = {
-  TableName: 'String',
+  ReturnConsumedCapacity: {
+    type: 'String',
+    enum: ['TOTAL', 'NONE']
+  },
+  TableName: {
+    type: 'String',
+    required: true,
+    tableName: true,
+    regex: '[a-zA-Z0-9_.-]+',
+  },
   Item: {
     type: 'Map',
+    notNull: true,
     children: {
       type: 'Structure',
       children: {
@@ -52,25 +62,17 @@ exports.types = {
       }
     }
   },
-  ReturnConsumedCapacity: 'String',
-  ReturnItemCollectionMetrics: 'String',
-  ReturnValues: 'String',
+  ReturnValues: {
+    type: 'String',
+    enum: ['ALL_NEW', 'UPDATED_OLD', 'ALL_OLD', 'NONE', 'UPDATED_NEW']
+  },
+  ReturnItemCollectionMetrics: {
+    type: 'String',
+    enum: ['SIZE', 'NONE']
+  },
 }
 
 exports.validations = {
-  ReturnConsumedCapacity: {
-    enum: ['TOTAL', 'NONE']
-  },
-  TableName: {
-    required: true,
-    tableName: true,
-    regex: '[a-zA-Z0-9_.-]+',
-    lengthGreaterThanOrEqual: 3,
-    lengthLessThanOrEqual: 255,
-  },
-  Item: {
-    notNull: true
-  },
 }
 
 exports.custom = function(data) {

@@ -98,18 +98,64 @@ describe('getItem', function() {
         'Member must not be null', done)
     })
 
+    it('should return ValidationException for empty key type', function(done) {
+      assertValidation({TableName: 'abc', Key: {a: {}}},
+        'Supplied AttributeValue is empty, must contain exactly one of the supported datatypes', done)
+    })
+
     it('should return ValidationException for bad key type', function(done) {
       assertValidation({TableName: 'abc', Key: {a: {a: ''}}},
         'Supplied AttributeValue is empty, must contain exactly one of the supported datatypes', done)
     })
 
-    it('should return ValidationException for empty key', function(done) {
+    it('should return ValidationException for empty string', function(done) {
       assertValidation({TableName: 'abc', Key: {a: {S: ''}}},
         'One or more parameter values were invalid: An AttributeValue may not contain an empty string.', done)
     })
 
+    it('should return ValidationException for empty binary', function(done) {
+      assertValidation({TableName: 'abc', Key: {a: {B: ''}}},
+        'One or more parameter values were invalid: An AttributeValue may not contain an empty binary type.', done)
+    })
+
+    // Somehow allows set types for keys
+    it('should return ValidationException for empty set key', function(done) {
+      assertValidation({TableName: 'abc', Key: {a: {SS: []}}},
+        'One or more parameter values were invalid: An AttributeValue may not contain an empty set.', done)
+    })
+
+    it('should return ValidationException for empty string in set', function(done) {
+      assertValidation({TableName: 'abc', Key: {a: {SS: ['a', '']}}},
+        'One or more parameter values were invalid: An AttributeValue may not contain an empty string.', done)
+    })
+
+    it('should return ValidationException for empty binary in set', function(done) {
+      assertValidation({TableName: 'abc', Key: {a: {BS: ['aaaa', '']}}},
+        'One or more parameter values were invalid: Binary sets may not contain null or empty values', done)
+    })
+
+    it('should return ValidationException for multiple types', function(done) {
+      assertValidation({TableName: 'abc', Key: {a: {S: 'a', N: '1'}}},
+        'Supplied AttributeValue has more than one datatypes set, must contain exactly one of the supported datatypes', done)
+    })
+
+    it('should return empty response if key has empty numeric type', function(done) {
+      assertValidation({TableName: 'abc', Key: {a: {N: ''}}},
+        'The parameter cannot be converted to a numeric value', done)
+    })
+
     it('should return empty response if key has incorrect numeric type', function(done) {
       assertValidation({TableName: 'abc', Key: {a: {N: 'b'}}},
+        'The parameter cannot be converted to a numeric value: b', done)
+    })
+
+    it('should return empty response if key has empty numeric type in set', function(done) {
+      assertValidation({TableName: 'abc', Key: {a: {NS: ['1', '']}}},
+        'The parameter cannot be converted to a numeric value', done)
+    })
+
+    it('should return empty response if key has incorrect numeric type in set', function(done) {
+      assertValidation({TableName: 'abc', Key: {a: {NS: ['1', 'b', 'a']}}},
         'The parameter cannot be converted to a numeric value: b', done)
     })
 
@@ -134,6 +180,21 @@ describe('getItem', function() {
     it.skip('should return empty response if key is incorrect numeric type', function(done) {
       var name = 'abc1006858535'
       assertValidation({TableName: name, Key: {a: {N: '1'}}},
+        'The provided key element does not match the schema', done)
+    })
+
+    it.skip('should return empty response if key is incorrect string set type', function(done) {
+      assertValidation({TableName: 'abc', Key: {a: {SS: ['a']}}},
+        'The provided key element does not match the schema', done)
+    })
+
+    it.skip('should return empty response if key is incorrect numeric set type', function(done) {
+      assertValidation({TableName: 'abc', Key: {a: {NS: ['1']}}},
+        'The provided key element does not match the schema', done)
+    })
+
+    it.skip('should return empty response if key is incorrect binary set type', function(done) {
+      assertValidation({TableName: 'abc', Key: {a: {BS: ['aaaa']}}},
         'The provided key element does not match the schema', done)
     })
 

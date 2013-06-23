@@ -162,14 +162,19 @@ describe('putItem', function() {
     })
 
     it('should return ValidationException for incorrect attributes', function(done) {
-      assertValidation({TableName: 'abc;', ReturnConsumedCapacity: 'hi'},
-        '3 validation errors detected: ' +
+      assertValidation({TableName: 'abc;', ReturnConsumedCapacity: 'hi',
+        ReturnItemCollectionMetrics: 'hi', ReturnValues: 'hi'},
+        '5 validation errors detected: ' +
         'Value \'hi\' at \'returnConsumedCapacity\' failed to satisfy constraint: ' +
         'Member must satisfy enum value set: [TOTAL, NONE]; ' +
         'Value \'abc;\' at \'tableName\' failed to satisfy constraint: ' +
         'Member must satisfy regular expression pattern: [a-zA-Z0-9_.-]+; ' +
         'Value null at \'item\' failed to satisfy constraint: ' +
-        'Member must not be null', done)
+        'Member must not be null; ' +
+        'Value \'hi\' at \'returnValues\' failed to satisfy constraint: ' +
+        'Member must satisfy enum value set: [ALL_NEW, UPDATED_OLD, ALL_OLD, NONE, UPDATED_NEW]; ' +
+        'Value \'hi\' at \'returnItemCollectionMetrics\' failed to satisfy constraint: ' +
+        'Member must satisfy enum value set: [SIZE, NONE]', done)
     })
 
   })

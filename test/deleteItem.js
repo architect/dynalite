@@ -138,12 +138,17 @@ describe('deleteItem', function() {
     })
 
     it('should return ValidationException for incorrect attributes', function(done) {
-      assertValidation({TableName: 'abc;', ReturnConsumedCapacity: 'hi'},
-        '3 validation errors detected: ' +
+      assertValidation({TableName: 'abc;', ReturnConsumedCapacity: 'hi',
+        ReturnItemCollectionMetrics: 'hi', ReturnValues: 'hi'},
+        '5 validation errors detected: ' +
         'Value \'hi\' at \'returnConsumedCapacity\' failed to satisfy constraint: ' +
         'Member must satisfy enum value set: [TOTAL, NONE]; ' +
         'Value \'abc;\' at \'tableName\' failed to satisfy constraint: ' +
         'Member must satisfy regular expression pattern: [a-zA-Z0-9_.-]+; ' +
+        'Value \'hi\' at \'returnValues\' failed to satisfy constraint: ' +
+        'Member must satisfy enum value set: [ALL_NEW, UPDATED_OLD, ALL_OLD, NONE, UPDATED_NEW]; ' +
+        'Value \'hi\' at \'returnItemCollectionMetrics\' failed to satisfy constraint: ' +
+        'Member must satisfy enum value set: [SIZE, NONE]; ' +
         'Value null at \'key\' failed to satisfy constraint: ' +
         'Member must not be null', done)
     })
@@ -161,100 +166,6 @@ describe('deleteItem', function() {
     it('should return empty response if key has incorrect numeric type', function(done) {
       assertValidation({TableName: 'abc', Key: {a: {N: 'b'}}},
         'The parameter cannot be converted to a numeric value: b', done)
-    })
-
-    it.skip('should return empty response if key has incorrect attributes', function(done) {
-      var name = 'abc1006858535'
-      assertValidation({TableName: name, Key: {b: {S: 'a'}}},
-        'The provided key element does not match the schema', done)
-    })
-
-    it.skip('should return empty response if key has extra attributes', function(done) {
-      var name = 'abc1006858535'
-      assertValidation({TableName: name, Key: {a: {S: 'a'}, b: {S: 'a'}}},
-        'The provided key element does not match the schema', done)
-    })
-
-    it.skip('should return empty response if key is incorrect binary type', function(done) {
-      var name = 'abc1006858535'
-      assertValidation({TableName: name, Key: {a: {B: 'abcd'}}},
-        'The provided key element does not match the schema', done)
-    })
-
-    it.skip('should return empty response if key is incorrect numeric type', function(done) {
-      var name = 'abc1006858535'
-      assertValidation({TableName: name, Key: {a: {N: '1'}}},
-        'The provided key element does not match the schema', done)
-    })
-
-    it.skip('should return ResourceNotFoundException if table does not exist', function(done) {
-      var name = String(Math.random() * 0x100000000)
-      assertNotFound({TableName: name, Key: {a: {S: 'a'}}},
-        'Requested resource not found', done)
-    })
-
-    it.skip('should return ResourceNotFoundException if table is being created', function(done) {
-      var name = 'abc' + Math.random() * 0x100000000, table = {
-        TableName: name,
-        AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}],
-        KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}],
-        ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
-      }
-      request(helpers.opts('DynamoDB_20120810.CreateTable', table), function(err, res) {
-        if (err) return done(err)
-        assertNotFound({TableName: name, Key: {a: {S: 'a'}}},
-          'Requested resource not found', done)
-      })
-    })
-
-    it.skip('should return empty response if key does not exist', function(done) {
-      var name = 'abc1006858535'
-      request(opts({TableName: name, Key: {a: {S: 'a'}}}), function(err, res) {
-        if (err) return done(err)
-        res.statusCode.should.equal(200)
-        res.body.should.eql({})
-        done()
-      })
-    })
-
-    it.skip('should return ConsumedCapacity if specified', function(done) {
-      var name = 'abc1006858535'
-      request(opts({TableName: name, Key: {a: {S: 'a'}}, ReturnConsumedCapacity: 'TOTAL'}), function(err, res) {
-        if (err) return done(err)
-        res.statusCode.should.equal(200)
-        res.body.should.eql({ConsumedCapacity: {CapacityUnits: 0.5, TableName: name}})
-        done()
-      })
-    })
-
-    it.skip('should return ConsumedCapacity if specified and consistent read is double', function(done) {
-      var name = 'abc1006858535'
-      request(opts({TableName: name, Key: {a: {S: 'a'}}, ReturnConsumedCapacity: 'TOTAL', ConsistentRead: 0.5}), function(err, res) {
-        if (err) return done(err)
-        res.statusCode.should.equal(200)
-        res.body.should.eql({ConsumedCapacity: {CapacityUnits: 0.5, TableName: name}})
-        done()
-      })
-    })
-
-    it.skip('should return full ConsumedCapacity if specified', function(done) {
-      var name = 'abc1006858535'
-      request(opts({TableName: name, Key: {a: {S: 'a'}}, ReturnConsumedCapacity: 'TOTAL', ConsistentRead: true}), function(err, res) {
-        if (err) return done(err)
-        res.statusCode.should.equal(200)
-        res.body.should.eql({ConsumedCapacity: {CapacityUnits: 1, TableName: name}})
-        done()
-      })
-    })
-
-    it.skip('should return full ConsumedCapacity if specified and double', function(done) {
-      var name = 'abc1006858535'
-      request(opts({TableName: name, Key: {a: {S: 'a'}}, ReturnConsumedCapacity: 'TOTAL', ConsistentRead: -1.1}), function(err, res) {
-        if (err) return done(err)
-        res.statusCode.should.equal(200)
-        res.body.should.eql({ConsumedCapacity: {CapacityUnits: 1, TableName: name}})
-        done()
-      })
     })
 
   })

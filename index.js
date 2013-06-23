@@ -170,7 +170,7 @@ var dynalite = module.exports = http.createServer(function(req, res) {
       var actionValidations = require('./validations/' + action)
       try {
         data = validations.checkTypes(data, actionValidations.types)
-        validations.checkValidations(data, actionValidations.validations, actionValidations.custom)
+        validations.checkValidations(data, actionValidations.types, actionValidations.custom, target[1])
       } catch (e) {
         if (e.statusCode) return sendData(req, res, e.body, e.statusCode)
         throw e

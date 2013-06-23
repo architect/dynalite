@@ -65,32 +65,6 @@ describe('deleteTable', function() {
       assertNotFound({TableName: name}, 'Requested resource not found: Table: ' + name + ' not found', done)
     })
 
-    it.skip('should succeed for basic', function(done) {
-      var name = 'abc' + Math.random() * 0x100000000, table = {
-        TableName: name,
-        AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}],
-        KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}],
-        ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
-      }
-      request(helpers.opts('DynamoDB_20120810.CreateTable', table), function(err, res) {
-        if (err) return done(err)
-        request(opts({TableName: name}), function(err, res) {
-          if (err) return done(err)
-          res.statusCode.should.equal(200)
-          should.exist(res.body.Table)
-          var desc = res.body.Table
-          desc.CreationDateTime.should.be.above(1371362773)
-          ;delete desc.CreationDateTime
-          table.ItemCount = 0
-          table.ProvisionedThroughput.NumberOfDecreasesToday = 0
-          table.TableSizeBytes = 0
-          table.TableStatus = 'CREATING'
-          desc.should.eql(table)
-          done()
-        })
-      })
-    })
-
   })
 
 })
