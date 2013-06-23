@@ -98,7 +98,18 @@ exports.custom = function(data) {
   var msg = ''
   var lengths = {
     NULL: 0,
+    NOT_NULL: 0,
     EQ: 1,
+    NE: 1,
+    LE: 1,
+    LT: 1,
+    GE: 1,
+    GT: 1,
+    CONTAINS: 1,
+    NOT_CONTAINS: 1,
+    BEGINS_WITH: 1,
+    IN: [1],
+    BETWEEN: 2,
   }
   for (var key in data.ScanFilter) {
     var comparisonOperator = data.ScanFilter[key].ComparisonOperator
@@ -107,7 +118,8 @@ exports.custom = function(data) {
       msg = validateAttributeValue(attrValList[i])
       if (msg) return msg
     }
-    if (lengths[comparisonOperator] != attrValList.length)
+    if ((typeof lengths[comparisonOperator] == 'number' && attrValList.length != lengths[comparisonOperator]) ||
+        (attrValList.length < lengths[comparisonOperator][0] || attrValList.length > lengths[comparisonOperator][1]))
       return 'The attempted filter operation is not supported for the provided filter argument count'
   }
 

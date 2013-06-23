@@ -243,6 +243,161 @@ describe('scan', function() {
         'The attempted filter operation is not supported for the provided filter argument count', done)
     })
 
+    it('should return ValidationException for 1 arg to NULL', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        ScanFilter: {a: {ComparisonOperator: 'NULL', AttributeValueList: [{S: 'a'}]}}},
+        'The attempted filter operation is not supported for the provided filter argument count', done)
+    })
+
+    it('should return ValidationException for 1 arg to NOT_NULL', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        ScanFilter: {a: {ComparisonOperator: 'NOT_NULL', AttributeValueList: [{S: 'a'}]}}},
+        'The attempted filter operation is not supported for the provided filter argument count', done)
+    })
+
+    it('should return ValidationException for 0 args to NE', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        ScanFilter: {a: {ComparisonOperator: 'NE'}}},
+        'The attempted filter operation is not supported for the provided filter argument count', done)
+    })
+
+    it('should return ValidationException for 2 args to NE', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        ScanFilter: {a: {ComparisonOperator: 'NE', AttributeValueList: [{S: 'a'}, {S: 'a'}]}}},
+        'The attempted filter operation is not supported for the provided filter argument count', done)
+    })
+
+    it('should return ValidationException for 0 args to LE', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        ScanFilter: {a: {ComparisonOperator: 'LE'}}},
+        'The attempted filter operation is not supported for the provided filter argument count', done)
+    })
+
+    it('should return ValidationException for 2 args to LE', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        ScanFilter: {a: {ComparisonOperator: 'LE', AttributeValueList: [{S: 'a'}, {S: 'a'}]}}},
+        'The attempted filter operation is not supported for the provided filter argument count', done)
+    })
+
+    it('should return ValidationException for 0 args to LT', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        ScanFilter: {a: {ComparisonOperator: 'LT'}}},
+        'The attempted filter operation is not supported for the provided filter argument count', done)
+    })
+
+    it('should return ValidationException for 2 args to LT', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        ScanFilter: {a: {ComparisonOperator: 'LT', AttributeValueList: [{S: 'a'}, {S: 'a'}]}}},
+        'The attempted filter operation is not supported for the provided filter argument count', done)
+    })
+
+    it('should return ValidationException for 0 args to GE', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        ScanFilter: {a: {ComparisonOperator: 'GE'}}},
+        'The attempted filter operation is not supported for the provided filter argument count', done)
+    })
+
+    it('should return ValidationException for 2 args to GE', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        ScanFilter: {a: {ComparisonOperator: 'GE', AttributeValueList: [{S: 'a'}, {S: 'a'}]}}},
+        'The attempted filter operation is not supported for the provided filter argument count', done)
+    })
+
+    it('should return ValidationException for 0 args to GT', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        ScanFilter: {a: {ComparisonOperator: 'GT'}}},
+        'The attempted filter operation is not supported for the provided filter argument count', done)
+    })
+
+    it('should return ValidationException for 2 args to GT', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        ScanFilter: {a: {ComparisonOperator: 'GT', AttributeValueList: [{S: 'a'}, {S: 'a'}]}}},
+        'The attempted filter operation is not supported for the provided filter argument count', done)
+    })
+
+    it('should return ValidationException for 0 args to CONTAINS', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        ScanFilter: {a: {ComparisonOperator: 'CONTAINS'}}},
+        'The attempted filter operation is not supported for the provided filter argument count', done)
+    })
+
+    it('should return ValidationException for 2 args to CONTAINS', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        ScanFilter: {a: {ComparisonOperator: 'CONTAINS', AttributeValueList: [{S: 'a'}, {S: 'a'}]}}},
+        'The attempted filter operation is not supported for the provided filter argument count', done)
+    })
+
+    it('should return ValidationException for 0 args to NOT_CONTAINS', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        ScanFilter: {a: {ComparisonOperator: 'NOT_CONTAINS'}}},
+        'The attempted filter operation is not supported for the provided filter argument count', done)
+    })
+
+    it('should return ValidationException for 2 args to NOT_CONTAINS', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        ScanFilter: {a: {ComparisonOperator: 'NOT_CONTAINS', AttributeValueList: [{S: 'a'}, {S: 'a'}]}}},
+        'The attempted filter operation is not supported for the provided filter argument count', done)
+    })
+
+    it('should return ValidationException for 0 args to BEGINS_WITH', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        ScanFilter: {a: {ComparisonOperator: 'BEGINS_WITH'}}},
+        'The attempted filter operation is not supported for the provided filter argument count', done)
+    })
+
+    it('should return ValidationException for 2 args to BEGINS_WITH', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        ScanFilter: {a: {ComparisonOperator: 'BEGINS_WITH', AttributeValueList: [{S: 'a'}, {S: 'a'}]}}},
+        'The attempted filter operation is not supported for the provided filter argument count', done)
+    })
+
+    it('should return ValidationException for 0 args to IN', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        ScanFilter: {a: {ComparisonOperator: 'IN'}}},
+        'The attempted filter operation is not supported for the provided filter argument count', done)
+    })
+
+    // TODO: Will have to come back to this one - not sure what the upper bound is
+    it.skip('should return ValidationException for 3 args to IN', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        ScanFilter: {a: {ComparisonOperator: 'IN', AttributeValueList: [{S: 'a'}, {S: 'a'}, {S: 'a'}]}}},
+        'The attempted filter operation is not supported for the provided filter argument count', done)
+    })
+
+    it('should return ValidationException for 0 args to BETWEEN', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        ScanFilter: {a: {ComparisonOperator: 'BETWEEN'}}},
+        'The attempted filter operation is not supported for the provided filter argument count', done)
+    })
+
+    it('should return ValidationException for 3 args to BETWEEN', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        ScanFilter: {a: {ComparisonOperator: 'BETWEEN', AttributeValueList: [{S: 'a'}, {S: 'a'}, {S: 'a'}]}}},
+        'The attempted filter operation is not supported for the provided filter argument count', done)
+    })
+
     // Weird - only checks this *after* it finds the table
     it.skip('should return ValidationException for unsupported comparison', function(done) {
       assertValidation({
