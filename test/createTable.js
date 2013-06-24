@@ -680,6 +680,36 @@ describe('createTable', function() {
       })
     })
 
+    it.skip('should change state to ACTIVE after a period', function(done) {
+      this.timeout(100000)
+      var table = {
+        TableName: 'abc' + Math.random() * 0x100000000,
+        AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}],
+        KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}],
+        ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
+      }
+      request(opts(table), function(err, res) {
+        if (err) return done(err)
+        res.body.TableDescription.TableStatus.should.equal('CREATING')
+
+        function waitUntilActive(done) {
+          request(helpers.opts('DynamoDB_20120810.DescribeTable', table), function(err, res) {
+            if (err) return done(err)
+            if (res.body.Table.TableStatus != 'CREATING') return done(null, res)
+            setTimeout(waitUntilActive, 1000, done)
+          })
+        }
+
+        var start = Date.now()
+        waitUntilActive(function(err, res) {
+          if (err) return done(err)
+          res.body.Table.TableStatus.should.equal('ACTIVE')
+          //console.log(Date.now() - start)
+          done()
+        })
+      })
+    })
+
     it.skip('should succeed for indexes', function(done) {
       var table = {
         TableName: 'abc' + Math.random() * 0x100000000,

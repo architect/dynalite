@@ -28,7 +28,7 @@
     "levelup": ">=0.10.0",
     "memdown": ">=0.2.0",
     "level-sublevel": ">=4.7.0",
-    "level-update": ">=0.0.5"
+    "lock": ">=0.0.4"
   },
   "optionalDependencies": {
     "leveldown": ">=0.6.1"

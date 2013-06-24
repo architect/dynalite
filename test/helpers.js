@@ -11,6 +11,7 @@ exports.assertSerialization = assertSerialization
 exports.assertType = assertType
 exports.assertValidation = assertValidation
 exports.assertNotFound = assertNotFound
+exports.assertInUse = assertInUse
 
 function request(opts, cb) {
   if (typeof opts === 'function') { cb = opts; opts = {} }
@@ -178,4 +179,15 @@ function assertNotFound(target, data, msg, done) {
   })
 }
 
+function assertInUse(target, data, msg, done) {
+  request(opts(target, data), function(err, res) {
+    if (err) return done(err)
+    res.statusCode.should.equal(400)
+    res.body.should.eql({
+      __type: 'com.amazonaws.dynamodb.v20120810#ResourceInUseException',
+      message: msg,
+    })
+    done()
+  })
+}
 
