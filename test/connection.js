@@ -3,14 +3,6 @@ var request = require('./helpers').request,
 
 describe('dynalite connections', function() {
 
-  before(function(done) {
-    dynalite.listen(4567, done)
-  })
-
-  after(function(done) {
-    dynalite.close(done)
-  })
-
   describe('basic', function() {
 
     function assert404(done) {

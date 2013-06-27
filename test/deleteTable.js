@@ -3,8 +3,9 @@ var async = require('async'),
     should = require('should'),
     dynalite = require('..')
 
-var target = 'DynamoDB_20120810.DeleteTable',
+var target = 'DeleteTable',
     request = helpers.request,
+    prefix = helpers.prefix,
     opts = helpers.opts.bind(null, target),
     assertSerialization = helpers.assertSerialization.bind(null, target),
     assertType = helpers.assertType.bind(null, target),
@@ -13,14 +14,6 @@ var target = 'DynamoDB_20120810.DeleteTable',
     assertInUse = helpers.assertInUse.bind(null, target)
 
 describe('deleteTable', function() {
-
-  beforeEach(function(done) {
-    dynalite.listen(4567, done)
-  })
-
-  afterEach(function(done) {
-    dynalite.close(done)
-  })
 
   describe('serializations', function() {
 
@@ -66,56 +59,40 @@ describe('deleteTable', function() {
       assertNotFound({TableName: name}, 'Requested resource not found: Table: ' + name + ' not found', done)
     })
 
-    it.skip('should return ResourceInUseException if table is being created', function(done) {
+    it('should return ResourceInUseException if table is being created', function(done) {
       var table = {
-        TableName: 'abc' + Math.random() * 0x100000000,
+        TableName: prefix + Math.random() * 0x100000000,
         AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}],
         KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}],
         ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
       }
-      request(helpers.opts('DynamoDB_20120810.CreateTable', table), function(err) {
+      request(helpers.opts('CreateTable', table), function(err) {
         if (err) return done(err)
         assertInUse({TableName: table.TableName},
           'Attempt to change a resource which is still in use: Table is being created: ' + table.TableName, done)
       })
     })
 
-    it.skip('should eventually delete', function(done) {
+    it('should eventually delete', function(done) {
       this.timeout(100000)
       var table = {
-        TableName: 'abc' + Math.random() * 0x100000000,
+        TableName: prefix + Math.random() * 0x100000000,
         AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}],
         KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}],
         ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
       }
-      request(helpers.opts('DynamoDB_20120810.CreateTable', table), function(err, res) {
+      request(helpers.opts('CreateTable', table), function(err, res) {
         if (err) return done(err)
 
-        function waitUntilActive(done) {
-          request(helpers.opts('DynamoDB_20120810.DescribeTable', table), function(err, res) {
-            if (err) return done(err)
-            if (res.body.Table.TableStatus != 'CREATING') return done(null, res)
-            setTimeout(waitUntilActive, 1000, done)
-          })
-        }
-
-        waitUntilActive(function(err) {
+        helpers.waitUntilActive(table.TableName, function(err) {
           if (err) return done(err)
 
           request(opts(table), function(err, res) {
             if (err) return done(err)
             res.body.TableDescription.TableStatus.should.equal('DELETING')
 
-            function waitUntilDeleted(done) {
-              request(helpers.opts('DynamoDB_20120810.DescribeTable', table), function(err, res) {
-                if (err) return done(err)
-                if (!res.body.Table || res.body.Table.TableStatus != 'DELETING') return done(null, res)
-                setTimeout(waitUntilDeleted, 1000, done)
-              })
-            }
-
             var start = Date.now()
-            waitUntilDeleted(function(err, res) {
+            helpers.waitUntilDeleted(table.TableName, function(err, res) {
               if (err) return done(err)
               res.body.__type.should.equal('com.amazonaws.dynamodb.v20120810#ResourceNotFoundException')
               //console.log(Date.now() - start)

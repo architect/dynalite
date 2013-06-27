@@ -1,25 +1,50 @@
 var http = require('http'),
     aws4 = require('aws4'),
-    async = require('async')
+    async = require('async'),
+    once = require('once'),
+    dynalite = require('..')
 
 var requestOpts = process.env.REMOTE ?  {host: 'dynamodb.ap-southeast-2.amazonaws.com', method: 'POST'} :
   {host: 'localhost', port: 4567, method: 'POST'}
 
+exports.version = 'DynamoDB_20120810'
 exports.request = request
 exports.opts = opts
+exports.createAndWait = createAndWait
+exports.deleteAndWait = deleteAndWait
+exports.waitUntilActive = waitUntilActive
+exports.waitUntilDeleted = waitUntilDeleted
 exports.assertSerialization = assertSerialization
 exports.assertType = assertType
 exports.assertValidation = assertValidation
 exports.assertNotFound = assertNotFound
 exports.assertInUse = assertInUse
+exports.strDecrement = strDecrement
+exports.prefix = '__dynalite_test_'
+
+before(function(done) {
+  dynalite.listen(4567, done)
+})
+
+after(function(done) {
+  this.timeout(200000)
+  deleteTestTables(function(err) {
+    if (err) return done(err)
+    dynalite.close(done)
+  })
+})
 
 function request(opts, cb) {
   if (typeof opts === 'function') { cb = opts; opts = {} }
+  cb = once(cb)
   for (var key in requestOpts) {
     if (opts[key] === undefined)
       opts[key] = requestOpts[key]
   }
-  if (!opts.noSign) aws4.sign(opts)
+  if (!opts.noSign) {
+    aws4.sign(opts)
+    opts.noSign = true // don't sign twice if calling recursively
+  }
   //console.log(opts)
   http.request(opts, function(res) {
     res.setEncoding('utf8')
@@ -28,6 +53,8 @@ function request(opts, cb) {
     res.on('data', function(chunk) { res.body += chunk })
     res.on('end', function() {
       try { res.body = JSON.parse(res.body) } catch (e) {}
+      if (res.body.__type == 'com.amazon.coral.availability#ThrottlingException')
+        return setTimeout(request, 1000, opts, cb)
       cb(null, res)
     })
   }).on('error', cb).end(opts.body)
@@ -37,10 +64,50 @@ function opts(target, data) {
   return {
     headers: {
       'Content-Type': 'application/x-amz-json-1.0',
-      'X-Amz-Target': target,
+      'X-Amz-Target': exports.version + '.' + target,
     },
     body: JSON.stringify(data),
   }
+}
+
+function deleteTestTables(done) {
+  request(opts('ListTables', {}), function(err, res) {
+    if (err) return done(err)
+    var names = res.body.TableNames.filter(function(name) { return name.indexOf(exports.prefix) === 0 })
+    async.forEach(names, deleteAndWait, done)
+  })
+}
+
+function createAndWait(table, done) {
+  request(opts('CreateTable', table), function(err) {
+    if (err) return done(err)
+    setTimeout(waitUntilActive, 1000, name, done)
+  })
+}
+
+function deleteAndWait(name, done) {
+  request(opts('DeleteTable', {TableName: name}), function(err, res) {
+    if (err) return done(err)
+    if (res.body.__type == 'com.amazonaws.dynamodb.v20120810#ResourceInUseException')
+      return setTimeout(deleteAndWait, 1000, name, done)
+    setTimeout(waitUntilDeleted, 1000, name, done)
+  })
+}
+
+function waitUntilActive(name, done) {
+  request(opts('DescribeTable', {TableName: name}), function(err, res) {
+    if (err) return done(err)
+    if (res.body.Table.TableStatus != 'CREATING') return done(null, res)
+    setTimeout(waitUntilActive, 1000, name, done)
+  })
+}
+
+function waitUntilDeleted(name, done) {
+  request(opts('DescribeTable', {TableName: name}), function(err, res) {
+    if (err) return done(err)
+    if (res.body.__type == 'com.amazonaws.dynamodb.v20120810#ResourceNotFoundException') return done(null, res)
+    setTimeout(waitUntilDeleted, 1000, name, done)
+  })
 }
 
 function assertSerialization(target, data, msg, done) {
@@ -189,5 +256,18 @@ function assertInUse(target, data, msg, done) {
     })
     done()
   })
+}
+
+function strDecrement(str, regex, length) {
+  regex = regex || /.?/
+  length = length || 255
+  var lastIx = str.length - 1, lastChar = str.charCodeAt(lastIx) - 1, prefix = str.slice(0, lastIx), finalChar = 255
+  while (lastChar >= 0 && !regex.test(String.fromCharCode(lastChar))) lastChar--
+  if (lastChar < 0) return prefix
+  prefix += String.fromCharCode(lastChar)
+  while (finalChar >= 0 && !regex.test(String.fromCharCode(finalChar))) finalChar--
+  if (lastChar < 0) return prefix
+  while (prefix.length < length) prefix += String.fromCharCode(finalChar)
+  return prefix
 }
 

@@ -3,22 +3,15 @@ var async = require('async'),
     should = require('should'),
     dynalite = require('..')
 
-var target = 'DynamoDB_20120810.CreateTable',
+var target = 'CreateTable',
     request = helpers.request,
+    prefix = helpers.prefix,
     opts = helpers.opts.bind(null, target),
     assertSerialization = helpers.assertSerialization.bind(null, target),
     assertType = helpers.assertType.bind(null, target),
     assertValidation = helpers.assertValidation.bind(null, target)
 
 describe('createTable', function() {
-
-  beforeEach(function(done) {
-    dynalite.listen(4567, done)
-  })
-
-  afterEach(function(done) {
-    dynalite.close(done)
-  })
 
   describe('serializations', function() {
 
@@ -657,9 +650,9 @@ describe('createTable', function() {
         'One or more parameter values were invalid: Number of indexes exceeds per-table limit of 5', done)
     })
 
-    it.skip('should succeed for basic', function(done) {
+    it('should succeed for basic', function(done) {
       var table = {
-        TableName: 'abc' + Math.random() * 0x100000000,
+        TableName: prefix + Math.random() * 0x100000000,
         AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}],
         KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}],
         ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
@@ -680,10 +673,10 @@ describe('createTable', function() {
       })
     })
 
-    it.skip('should change state to ACTIVE after a period', function(done) {
+    it('should change state to ACTIVE after a period', function(done) {
       this.timeout(100000)
       var table = {
-        TableName: 'abc' + Math.random() * 0x100000000,
+        TableName: prefix + Math.random() * 0x100000000,
         AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}],
         KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}],
         ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
@@ -692,16 +685,8 @@ describe('createTable', function() {
         if (err) return done(err)
         res.body.TableDescription.TableStatus.should.equal('CREATING')
 
-        function waitUntilActive(done) {
-          request(helpers.opts('DynamoDB_20120810.DescribeTable', table), function(err, res) {
-            if (err) return done(err)
-            if (res.body.Table.TableStatus != 'CREATING') return done(null, res)
-            setTimeout(waitUntilActive, 1000, done)
-          })
-        }
-
-        var start = Date.now()
-        waitUntilActive(function(err, res) {
+        //var start = Date.now()
+        helpers.waitUntilActive(table.TableName, function(err, res) {
           if (err) return done(err)
           res.body.Table.TableStatus.should.equal('ACTIVE')
           //console.log(Date.now() - start)
@@ -710,9 +695,9 @@ describe('createTable', function() {
       })
     })
 
-    it.skip('should succeed for indexes', function(done) {
+    it('should succeed for indexes', function(done) {
       var table = {
-        TableName: 'abc' + Math.random() * 0x100000000,
+        TableName: prefix + Math.random() * 0x100000000,
         AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}, {AttributeName: 'b', AttributeType: 'S'}],
         KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}, {KeyType: 'RANGE', AttributeName: 'b'}],
         LocalSecondaryIndexes: [{
@@ -742,9 +727,13 @@ describe('createTable', function() {
       })
     })
 
+    // TODO: Implement this error:
+    //{ __type: 'com.amazonaws.dynamodb.v20120810#LimitExceededException',
+    //message: 'Subscriber limit exceeded: Only 1 table with local secondary index can be created simultaneously' }
+    //
     it.skip('should succeed for multiple indexes', function(done) {
       var table = {
-        TableName: 'abc' + Math.random() * 0x100000000,
+        TableName: prefix + Math.random() * 0x100000000,
         AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}, {AttributeName: 'b', AttributeType: 'S'}],
         KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}, {KeyType: 'RANGE', AttributeName: 'b'}],
         LocalSecondaryIndexes: [{

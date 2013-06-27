@@ -3,7 +3,7 @@ var async = require('async'),
     should = require('should'),
     dynalite = require('..')
 
-var target = 'DynamoDB_20120810.BatchWriteItem',
+var target = 'BatchWriteItem',
     request = helpers.request,
     opts = helpers.opts.bind(null, target),
     assertSerialization = helpers.assertSerialization.bind(null, target),
@@ -12,14 +12,6 @@ var target = 'DynamoDB_20120810.BatchWriteItem',
     assertNotFound = helpers.assertNotFound.bind(null, target)
 
 describe('batchWriteItem', function() {
-
-  beforeEach(function(done) {
-    dynalite.listen(4567, done)
-  })
-
-  afterEach(function(done) {
-    dynalite.close(done)
-  })
 
   describe('serializations', function() {
 

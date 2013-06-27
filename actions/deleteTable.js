@@ -1,4 +1,5 @@
-var db = require('../db')
+var db = require('../db'),
+    tableDb = db.tableDb
 
 module.exports = function deleteTable(data, cb) {
 
@@ -20,12 +21,12 @@ module.exports = function deleteTable(data, cb) {
 
     table.TableStatus = 'DELETING'
 
-    db.tableDb.put(key, table, function(err) {
+    tableDb.put(key, table, function(err) {
       if (err) return cb(err)
 
       setTimeout(function() {
         // TODO: Delete items too
-        db.tableDb.del(key, function(err) {
+        tableDb.del(key, function(err) {
           // TODO: Need to check this
           if (err) console.error(err)
         })

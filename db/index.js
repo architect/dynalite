@@ -10,8 +10,8 @@ var db = sublevel(levelup('./mydb', {db: function(location) { return new MemDown
 exports.tableDb = tableDb
 exports.itemDb = itemDb
 exports.getTable = getTable
-exports.createTableMs = 1000
-exports.deleteTableMs = 1000
+exports.createTableMs = 500
+exports.deleteTableMs = 500
 
 tableDb.lock = new Lock()
 

@@ -3,7 +3,7 @@ var async = require('async'),
     should = require('should'),
     dynalite = require('..')
 
-var target = 'DynamoDB_20120810.UpdateTable',
+var target = 'UpdateTable',
     request = helpers.request,
     opts = helpers.opts.bind(null, target),
     assertSerialization = helpers.assertSerialization.bind(null, target),
@@ -11,14 +11,6 @@ var target = 'DynamoDB_20120810.UpdateTable',
     assertValidation = helpers.assertValidation.bind(null, target)
 
 describe('updateTable', function() {
-
-  beforeEach(function(done) {
-    dynalite.listen(4567, done)
-  })
-
-  afterEach(function(done) {
-    dynalite.close(done)
-  })
 
   describe('serializations', function() {
 

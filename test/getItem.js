@@ -3,7 +3,7 @@ var async = require('async'),
     should = require('should'),
     dynalite = require('..')
 
-var target = 'DynamoDB_20120810.GetItem',
+var target = 'GetItem',
     request = helpers.request,
     opts = helpers.opts.bind(null, target),
     assertSerialization = helpers.assertSerialization.bind(null, target),
@@ -12,14 +12,6 @@ var target = 'DynamoDB_20120810.GetItem',
     assertNotFound = helpers.assertNotFound.bind(null, target)
 
 describe('getItem', function() {
-
-  beforeEach(function(done) {
-    dynalite.listen(4567, done)
-  })
-
-  afterEach(function(done) {
-    dynalite.close(done)
-  })
 
   describe('serializations', function() {
 
@@ -205,13 +197,13 @@ describe('getItem', function() {
     })
 
     it.skip('should return ResourceNotFoundException if table is being created', function(done) {
-      var name = 'abc' + Math.random() * 0x100000000, table = {
+      var name = prefix + Math.random() * 0x100000000, table = {
         TableName: name,
         AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}],
         KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}],
         ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
       }
-      request(helpers.opts('DynamoDB_20120810.CreateTable', table), function(err, res) {
+      request(helpers.opts('CreateTable', table), function(err, res) {
         if (err) return done(err)
         assertNotFound({TableName: name, Key: {a: {S: 'a'}}},
           'Requested resource not found', done)
