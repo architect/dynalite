@@ -5,6 +5,7 @@ var async = require('async'),
 
 var target = 'GetItem',
     request = helpers.request,
+    randomName = helpers.randomName,
     opts = helpers.opts.bind(null, target),
     assertSerialization = helpers.assertSerialization.bind(null, target),
     assertType = helpers.assertType.bind(null, target),
@@ -90,6 +91,16 @@ describe('getItem', function() {
         'Member must not be null', done)
     })
 
+    it('should return ResourceNotFoundException if key is empty and table does not exist', function(done) {
+      assertNotFound({TableName: helpers.randomString(), Key: {}},
+        'Requested resource not found', done)
+    })
+
+    it('should return ValidationException if key is empty and table does exist', function(done) {
+      assertValidation({TableName: helpers.testHashTable, Key: {}},
+        'The provided key element does not match the schema', done)
+    })
+
     it('should return ValidationException for empty key type', function(done) {
       assertValidation({TableName: 'abc', Key: {a: {}}},
         'Supplied AttributeValue is empty, must contain exactly one of the supported datatypes', done)
@@ -126,6 +137,26 @@ describe('getItem', function() {
         'One or more parameter values were invalid: Binary sets may not contain null or empty values', done)
     })
 
+    it('should return empty response if key has empty numeric in set', function(done) {
+      assertValidation({TableName: 'abc', Key: {a: {NS: ['1', '']}}},
+        'The parameter cannot be converted to a numeric value', done)
+    })
+
+    it('should return ValidationException for duplicate string in set', function(done) {
+      assertValidation({TableName: 'abc', Key: {a: {SS: ['a', 'a']}}},
+        'One or more parameter values were invalid: Input collection [a, a] contains duplicates.', done)
+    })
+
+    it('should return ValidationException for duplicate number in set', function(done) {
+      assertValidation({TableName: 'abc', Key: {a: {NS: ['1', '1']}}},
+        'Input collection contains duplicates.', done)
+    })
+
+    it('should return ValidationException for duplicate binary in set', function(done) {
+      assertValidation({TableName: 'abc', Key: {a: {BS: ['Yg==', 'Yg==']}}},
+        'One or more parameter values were invalid: Input collection [Yg==, Yg==]of type BS contains duplicates.', done)
+    })
+
     it('should return ValidationException for multiple types', function(done) {
       assertValidation({TableName: 'abc', Key: {a: {S: 'a', N: '1'}}},
         'Supplied AttributeValue has more than one datatypes set, must contain exactly one of the supported datatypes', done)
@@ -141,78 +172,77 @@ describe('getItem', function() {
         'The parameter cannot be converted to a numeric value: b', done)
     })
 
-    it('should return empty response if key has empty numeric type in set', function(done) {
-      assertValidation({TableName: 'abc', Key: {a: {NS: ['1', '']}}},
-        'The parameter cannot be converted to a numeric value', done)
-    })
-
     it('should return empty response if key has incorrect numeric type in set', function(done) {
       assertValidation({TableName: 'abc', Key: {a: {NS: ['1', 'b', 'a']}}},
         'The parameter cannot be converted to a numeric value: b', done)
     })
 
-    it.skip('should return empty response if key has incorrect attributes', function(done) {
-      var name = 'abc1006858535'
-      assertValidation({TableName: name, Key: {b: {S: 'a'}}},
+    it('should return empty response if key has incorrect attributes', function(done) {
+      assertValidation({TableName: helpers.testHashTable, Key: {b: {S: 'a'}}},
         'The provided key element does not match the schema', done)
     })
 
-    it.skip('should return empty response if key has extra attributes', function(done) {
-      var name = 'abc1006858535'
-      assertValidation({TableName: name, Key: {a: {S: 'a'}, b: {S: 'a'}}},
+    it('should return empty response if key has extra attributes', function(done) {
+      assertValidation({TableName: helpers.testHashTable, Key: {a: {S: 'a'}, b: {S: 'a'}}},
         'The provided key element does not match the schema', done)
     })
 
-    it.skip('should return empty response if key is incorrect binary type', function(done) {
-      var name = 'abc1006858535'
-      assertValidation({TableName: name, Key: {a: {B: 'abcd'}}},
+    it('should return empty response if key is incorrect binary type', function(done) {
+      assertValidation({TableName: helpers.testHashTable, Key: {a: {B: 'abcd'}}},
         'The provided key element does not match the schema', done)
     })
 
-    it.skip('should return empty response if key is incorrect numeric type', function(done) {
-      var name = 'abc1006858535'
-      assertValidation({TableName: name, Key: {a: {N: '1'}}},
+    it('should return empty response if key is incorrect numeric type', function(done) {
+      assertValidation({TableName: helpers.testHashTable, Key: {a: {N: '1'}}},
         'The provided key element does not match the schema', done)
     })
 
-    it.skip('should return empty response if key is incorrect string set type', function(done) {
-      assertValidation({TableName: 'abc', Key: {a: {SS: ['a']}}},
+    it('should return empty response if key is incorrect string set type', function(done) {
+      assertValidation({TableName: helpers.testHashTable, Key: {a: {SS: ['a']}}},
         'The provided key element does not match the schema', done)
     })
 
-    it.skip('should return empty response if key is incorrect numeric set type', function(done) {
-      assertValidation({TableName: 'abc', Key: {a: {NS: ['1']}}},
+    it('should return empty response if key is incorrect numeric set type', function(done) {
+      assertValidation({TableName: helpers.testHashTable, Key: {a: {NS: ['1']}}},
         'The provided key element does not match the schema', done)
     })
 
-    it.skip('should return empty response if key is incorrect binary set type', function(done) {
-      assertValidation({TableName: 'abc', Key: {a: {BS: ['aaaa']}}},
+    it('should return empty response if key is incorrect binary set type', function(done) {
+      assertValidation({TableName: helpers.testHashTable, Key: {a: {BS: ['aaaa']}}},
         'The provided key element does not match the schema', done)
     })
 
-    it.skip('should return ResourceNotFoundException if table does not exist', function(done) {
-      var name = String(Math.random() * 0x100000000)
-      assertNotFound({TableName: name, Key: {a: {S: 'a'}}},
-        'Requested resource not found', done)
-    })
-
-    it.skip('should return ResourceNotFoundException if table is being created', function(done) {
-      var name = prefix + Math.random() * 0x100000000, table = {
-        TableName: name,
+    it('should return ResourceNotFoundException if table is being created', function(done) {
+      var table = {
+        TableName: randomName(),
         AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}],
         KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}],
         ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
       }
-      request(helpers.opts('CreateTable', table), function(err, res) {
+      request(helpers.opts('CreateTable', table), function(err) {
         if (err) return done(err)
-        assertNotFound({TableName: name, Key: {a: {S: 'a'}}},
+        assertNotFound({TableName: table.TableName, Key: {a: {S: 'a'}}},
           'Requested resource not found', done)
       })
     })
 
-    it.skip('should return empty response if key does not exist', function(done) {
-      var name = 'abc1006858535'
-      request(opts({TableName: name, Key: {a: {S: 'a'}}}), function(err, res) {
+  })
+
+  describe('functionality', function() {
+
+    var hashItem = {a: {S: helpers.randomString()}, b: {S: 'a'}, c: {N: '23'}},
+        rangeItem = {a: {S: helpers.randomString()}, b: {S: helpers.randomString()}, c: {N: '23'}}
+
+    before(function(done) {
+      var putItems = [
+        {TableName: helpers.testHashTable, Item: hashItem},
+        {TableName: helpers.testRangeTable, Item: rangeItem},
+      ]
+      async.forEach(putItems, function(putItem, cb) { request(helpers.opts('PutItem', putItem), cb) }, done)
+    })
+
+    it('should return empty response if key does not exist', function(done) {
+      request(opts({TableName: helpers.testHashTable, Key: {a: {S: helpers.randomString()}}}), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
         res.body.should.eql({})
@@ -220,42 +250,65 @@ describe('getItem', function() {
       })
     })
 
-    it.skip('should return ConsumedCapacity if specified', function(done) {
-      var name = 'abc1006858535'
-      request(opts({TableName: name, Key: {a: {S: 'a'}}, ReturnConsumedCapacity: 'TOTAL'}), function(err, res) {
+    it('should return ConsumedCapacity if specified', function(done) {
+      request(opts({TableName: helpers.testHashTable, Key: {a: {S: 'a'}}, ReturnConsumedCapacity: 'TOTAL'}), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        res.body.should.eql({ConsumedCapacity: {CapacityUnits: 0.5, TableName: name}})
+        res.body.should.eql({ConsumedCapacity: {CapacityUnits: 0.5, TableName: helpers.testHashTable}})
         done()
       })
     })
 
-    it.skip('should return ConsumedCapacity if specified and consistent read is double', function(done) {
-      var name = 'abc1006858535'
-      request(opts({TableName: name, Key: {a: {S: 'a'}}, ReturnConsumedCapacity: 'TOTAL', ConsistentRead: 0.5}), function(err, res) {
+    it('should return ConsumedCapacity if specified and consistent read is double', function(done) {
+      request(opts({TableName: helpers.testHashTable, Key: {a: {S: 'a'}}, ReturnConsumedCapacity: 'TOTAL', ConsistentRead: 0.5}), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        res.body.should.eql({ConsumedCapacity: {CapacityUnits: 0.5, TableName: name}})
+        res.body.should.eql({ConsumedCapacity: {CapacityUnits: 0.5, TableName: helpers.testHashTable}})
         done()
       })
     })
 
-    it.skip('should return full ConsumedCapacity if specified', function(done) {
-      var name = 'abc1006858535'
-      request(opts({TableName: name, Key: {a: {S: 'a'}}, ReturnConsumedCapacity: 'TOTAL', ConsistentRead: true}), function(err, res) {
+    it('should return full ConsumedCapacity if specified', function(done) {
+      request(opts({TableName: helpers.testHashTable, Key: {a: {S: 'a'}}, ReturnConsumedCapacity: 'TOTAL', ConsistentRead: true}), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        res.body.should.eql({ConsumedCapacity: {CapacityUnits: 1, TableName: name}})
+        res.body.should.eql({ConsumedCapacity: {CapacityUnits: 1, TableName: helpers.testHashTable}})
         done()
       })
     })
 
-    it.skip('should return full ConsumedCapacity if specified and double', function(done) {
-      var name = 'abc1006858535'
-      request(opts({TableName: name, Key: {a: {S: 'a'}}, ReturnConsumedCapacity: 'TOTAL', ConsistentRead: -1.1}), function(err, res) {
+    it('should return full ConsumedCapacity if specified and double', function(done) {
+      request(opts({TableName: helpers.testHashTable, Key: {a: {S: 'a'}}, ReturnConsumedCapacity: 'TOTAL', ConsistentRead: -1.1}), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        res.body.should.eql({ConsumedCapacity: {CapacityUnits: 1, TableName: name}})
+        res.body.should.eql({ConsumedCapacity: {CapacityUnits: 1, TableName: helpers.testHashTable}})
+        done()
+      })
+    })
+
+    it('should return object by hash key', function(done) {
+      request(opts({TableName: helpers.testHashTable, Key: {a: hashItem.a}, ConsistentRead: true}), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        res.body.should.eql({Item: hashItem})
+        done()
+      })
+    })
+
+    it('should return object by range key', function(done) {
+      request(opts({TableName: helpers.testRangeTable, Key: {a: rangeItem.a, b: rangeItem.b}, ConsistentRead: true}), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        res.body.should.eql({Item: rangeItem})
+        done()
+      })
+    })
+
+    it('should only return requested attributes', function(done) {
+      request(opts({TableName: helpers.testHashTable, Key: {a: hashItem.a}, AttributesToGet: ['b', 'c'], ConsistentRead: true}), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        res.body.should.eql({Item: {b: hashItem.b, c: hashItem.c}})
         done()
       })
     })

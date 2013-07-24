@@ -1,3 +1,5 @@
+var validateAttributeValue = require('./index').validateAttributeValue
+
 exports.types = {
   ReturnConsumedCapacity: {
     type: 'String',
@@ -72,9 +74,24 @@ exports.types = {
   },
 }
 
-exports.validations = {
-}
-
 exports.custom = function(data) {
+  for (var key in data.Item) {
+    var msg = validateAttributeValue(data.Item[key])
+    if (msg) return msg
+  }
+  if (data.Expected) {
+    for (var key in data.Expected) {
+      var exists = data.Expected[key].Exists == null || data.Expected[key].Exists
+      if (exists && data.Expected[key].Value == null)
+        return 'One or more parameter values were invalid: ' +
+          '\'Exists\' is set to ' + (data.Expected[key].Exists == null ? 'null' : data.Expected[key].Exists) + '. ' +
+          '\'Exists\' must be set to false when no Attribute value is specified'
+      else if (!exists && data.Expected[key].Value != null)
+        return 'One or more parameter values were invalid: ' +
+          'Cannot expect an attribute to have a specified value while expecting it to not exist'
+    }
+  }
+  if (data.ReturnValues && data.ReturnValues != 'ALL_OLD' && data.ReturnValues != 'NONE')
+    return 'ReturnValues can only be ALL_OLD or NONE'
 }
 

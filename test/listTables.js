@@ -3,7 +3,7 @@ var async = require('async'),
 
 var target = 'ListTables',
     request = helpers.request,
-    prefix = helpers.prefix,
+    randomName = helpers.randomName,
     opts = helpers.opts.bind(null, target),
     assertSerialization = helpers.assertSerialization.bind(null, target),
     assertType = helpers.assertType.bind(null, target),
@@ -137,7 +137,7 @@ describe('listTables', function() {
     })
 
     it('should return list with new table in it', function(done) {
-      var name = prefix + Math.random() * 0x100000000, table = {
+      var name = randomName(), table = {
         TableName: name,
         AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}],
         KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}],
@@ -156,17 +156,16 @@ describe('listTables', function() {
     })
 
     it('should return list using ExclusiveStartTableName and Limit', function(done) {
-      var name1 = helpers.prefix + 'a' + Math.random() * 0x100000000,
-          name2 = helpers.prefix + 'b' + Math.random() * 0x100000000,
-          beforeName1 = helpers.strDecrement(name1, /[a-zA-Z0-9_.-]+/, 255),
+      var names = [randomName(), randomName()].sort(),
+          beforeName = helpers.strDecrement(names[0], /[a-zA-Z0-9_.-]+/, 255),
           table1 = {
-            TableName: name1,
+            TableName: names[0],
             AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}],
             KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}],
             ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
           },
           table2 = {
-            TableName: name2,
+            TableName: names[1],
             AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}],
             KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}],
             ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
@@ -180,20 +179,20 @@ describe('listTables', function() {
 
         async.parallel([
           function(done) {
-            request(opts({ExclusiveStartTableName: name1}), function(err, res) {
+            request(opts({ExclusiveStartTableName: names[0]}), function(err, res) {
               if (err) return done(err)
               res.statusCode.should.equal(200)
-              res.body.TableNames.should.not.include(name1)
-              res.body.TableNames.should.include(name2)
+              res.body.TableNames.should.not.include(names[0])
+              res.body.TableNames.should.include(names[1])
               done()
             })
           },
           function(done) {
-            request(opts({ExclusiveStartTableName: beforeName1}), function(err, res) {
+            request(opts({ExclusiveStartTableName: beforeName}), function(err, res) {
               if (err) return done(err)
               res.statusCode.should.equal(200)
-              res.body.TableNames.should.include(name1)
-              res.body.TableNames.should.include(name2)
+              res.body.TableNames.should.include(names[0])
+              res.body.TableNames.should.include(names[1])
               done()
             })
           },
@@ -206,11 +205,11 @@ describe('listTables', function() {
             })
           },
           function(done) {
-            request(opts({ExclusiveStartTableName: beforeName1, Limit: 1}), function(err, res) {
+            request(opts({ExclusiveStartTableName: beforeName, Limit: 1}), function(err, res) {
               if (err) return done(err)
               res.statusCode.should.equal(200)
-              res.body.TableNames.should.eql([name1])
-              res.body.LastEvaluatedTableName.should.eql(name1)
+              res.body.TableNames.should.eql([names[0]])
+              res.body.LastEvaluatedTableName.should.eql(names[0])
               done()
             })
           },

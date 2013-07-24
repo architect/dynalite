@@ -9,7 +9,8 @@ var target = 'PutItem',
     assertSerialization = helpers.assertSerialization.bind(null, target),
     assertType = helpers.assertType.bind(null, target),
     assertValidation = helpers.assertValidation.bind(null, target),
-    assertNotFound = helpers.assertNotFound.bind(null, target)
+    assertNotFound = helpers.assertNotFound.bind(null, target),
+    assertConditional = helpers.assertConditional.bind(null, target)
 
 describe('putItem', function() {
 
@@ -167,6 +168,262 @@ describe('putItem', function() {
         'Member must satisfy enum value set: [ALL_NEW, UPDATED_OLD, ALL_OLD, NONE, UPDATED_NEW]; ' +
         'Value \'hi\' at \'returnItemCollectionMetrics\' failed to satisfy constraint: ' +
         'Member must satisfy enum value set: [SIZE, NONE]', done)
+    })
+
+    it('should return ValidationException if no value and no exists', function(done) {
+      assertValidation({TableName: 'abc', Item: {}, Expected: {a: {}}},
+        'One or more parameter values were invalid: ' +
+        '\'Exists\' is set to null. ' +
+        '\'Exists\' must be set to false when no Attribute value is specified', done)
+    })
+
+    it('should return ValidationException for Exists true with no value', function(done) {
+      assertValidation({TableName: 'abc', Item: {}, Expected: {a: {Exists: true}}},
+        'One or more parameter values were invalid: ' +
+        '\'Exists\' is set to true. ' +
+        '\'Exists\' must be set to false when no Attribute value is specified', done)
+    })
+
+    it('should return ValidationException for Exists false with value', function(done) {
+      assertValidation({TableName: 'abc', Item: {}, Expected: {a: {Exists: false, Value: {S: 'a'}}}},
+        'One or more parameter values were invalid: ' +
+        'Cannot expect an attribute to have a specified value while expecting it to not exist', done)
+    })
+
+    it('should return ValidationException for incorrect ReturnValues', function(done) {
+      async.forEach(['UPDATED_OLD', 'ALL_NEW', 'UPDATED_NEW'], function(returnValues, cb) {
+        assertValidation({TableName: 'abc', Item: {}, ReturnValues: returnValues},
+          'ReturnValues can only be ALL_OLD or NONE', cb)
+      }, done)
+    })
+
+    it('should return ResourceNotFoundException if item is empty and table does not exist', function(done) {
+      assertNotFound({TableName: 'abc', Item: {}}, 'Requested resource not found', done)
+    })
+
+    it('should return ValidationException if item is empty and table does exist', function(done) {
+      assertValidation({TableName: helpers.testHashTable, Item: {}},
+        'One or more parameter values were invalid: Missing the key a in the item', done)
+    })
+
+    it('should return ValidationException for half empty key on range table', function(done) {
+      assertValidation({TableName: helpers.testRangeTable, Item: {a: {S: 'a'}}},
+        'One or more parameter values were invalid: Missing the key b in the item', done)
+    })
+
+    it('should return ValidationException for incorrect hash key type', function(done) {
+      assertValidation({TableName: helpers.testHashTable, Item: {a: {N: '23'}}},
+        'One or more parameter values were invalid: Type mismatch for key a expected: S actual: N', done)
+    })
+
+    it('should return ValidationException for incorrect range key type in hash', function(done) {
+      assertValidation({TableName: helpers.testRangeTable, Item: {a: {N: '23'}, b: {N: '23'}}},
+        'One or more parameter values were invalid: Type mismatch for key a expected: S actual: N', done)
+    })
+
+    it('should return ValidationException for incorrect range key type in range', function(done) {
+      assertValidation({TableName: helpers.testRangeTable, Item: {a: {S: 'a'}, b: {N: '23'}}},
+        'One or more parameter values were invalid: Type mismatch for key b expected: S actual: N', done)
+    })
+
+  })
+
+  describe('functionality', function() {
+
+    it('should put basic item', function(done) {
+      var item = {a: {S: helpers.randomString()}}
+      request(opts({TableName: helpers.testHashTable, Item: item}), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        res.body.should.eql({})
+        request(helpers.opts('GetItem', {TableName: helpers.testHashTable, Key: {a: item.a}, ConsistentRead: true}), function(err, res) {
+          res.statusCode.should.equal(200)
+          res.body.should.eql({Item: item})
+          done()
+        })
+      })
+    })
+
+    it('should put multi attribute item', function(done) {
+      var item = {a: {S: helpers.randomString()}, b: {S: 'a'}, c: {S: 'a'}}
+      request(opts({TableName: helpers.testHashTable, Item: item}), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        res.body.should.eql({})
+        request(helpers.opts('GetItem', {TableName: helpers.testHashTable, Key: {a: item.a}, ConsistentRead: true}), function(err, res) {
+          res.statusCode.should.equal(200)
+          res.body.should.eql({Item: item})
+          done()
+        })
+      })
+    })
+
+    it('should return old values', function(done) {
+      var item = {a: {S: helpers.randomString()}, b: {S: 'a'}, c: {S: 'a'}}
+      request(opts({TableName: helpers.testHashTable, Item: item}), function(err) {
+        if (err) return done(err)
+        item.b.S = 'b'
+        request(opts({TableName: helpers.testHashTable, Item: item, ReturnValues: 'ALL_OLD'}), function(err, res) {
+          res.statusCode.should.equal(200)
+          item.b.S = 'a'
+          res.body.should.eql({Attributes: item})
+          done()
+        })
+      })
+    })
+
+    it('should put basic range item', function(done) {
+      var item = {a: {S: helpers.randomString()}, b: {S: 'a'}, c: {S: 'a'}}
+      request(opts({TableName: helpers.testRangeTable, Item: item}), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        res.body.should.eql({})
+        // Put another item with the same hash key to prove we're retrieving the correct one
+        request(opts({TableName: helpers.testRangeTable, Item: {a: item.a, b: {S: 'b'}}}), function(err, res) {
+          if (err) return done(err)
+          request(helpers.opts('GetItem', {TableName: helpers.testRangeTable, Key: {a: item.a, b: item.b}, ConsistentRead: true}), function(err, res) {
+            res.statusCode.should.equal(200)
+            res.body.should.eql({Item: item})
+            done()
+          })
+        })
+      })
+    })
+
+    it('should return ConditionalCheckFailedException if expecting non-existent key to exist', function(done) {
+      assertConditional({
+        TableName: helpers.testHashTable,
+        Item: {a: {S: helpers.randomString()}},
+        Expected: {a: {Value: {S: helpers.randomString()}}},
+      }, done)
+    })
+
+    it('should return ConditionalCheckFailedException if expecting existing key to not exist', function(done) {
+      var item = {a: {S: helpers.randomString()}}
+      request(opts({TableName: helpers.testHashTable, Item: item}), function(err) {
+        if (err) return done(err)
+        assertConditional({
+          TableName: helpers.testHashTable,
+          Item: item,
+          Expected: {a: {Exists: false}},
+        }, done)
+      })
+    })
+
+    it('should succeed if conditional key is different and exists is false', function(done) {
+      var item = {a: {S: helpers.randomString()}}
+      request(opts({TableName: helpers.testHashTable, Item: item}), function(err) {
+        if (err) return done(err)
+        request(opts({
+          TableName: helpers.testHashTable,
+          Item: {a: {S: helpers.randomString()}},
+          Expected: {a: {Exists: false}},
+        }), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.should.eql({})
+          done()
+        })
+      })
+    })
+
+    it('should succeed if conditional key is same and exists is true', function(done) {
+      var item = {a: {S: helpers.randomString()}}
+      request(opts({TableName: helpers.testHashTable, Item: item}), function(err) {
+        if (err) return done(err)
+        request(opts({
+          TableName: helpers.testHashTable,
+          Item: item,
+          Expected: {a: {Value: item.a}},
+        }), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.should.eql({})
+          done()
+        })
+      })
+    })
+
+    it('should succeed if expecting non-existant value to not exist', function(done) {
+      var item = {a: {S: helpers.randomString()}}
+      request(opts({TableName: helpers.testHashTable, Item: item}), function(err) {
+        if (err) return done(err)
+        request(opts({
+          TableName: helpers.testHashTable,
+          Item: item,
+          Expected: {b: {Exists: false}},
+        }), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.should.eql({})
+          done()
+        })
+      })
+    })
+
+    it('should return ConditionalCheckFailedException if expecting existing value to not exist if different value specified', function(done) {
+      var item = {a: {S: helpers.randomString()}, b: {S: helpers.randomString()}}
+      request(opts({TableName: helpers.testHashTable, Item: item}), function(err) {
+        if (err) return done(err)
+        assertConditional({
+          TableName: helpers.testHashTable,
+          Item: {a: item.a, b: {S: helpers.randomString()}},
+          Expected: {b: {Exists: false}},
+        }, done)
+      })
+    })
+
+    it('should return ConditionalCheckFailedException if expecting existing value to not exist if value not specified', function(done) {
+      var item = {a: {S: helpers.randomString()}, b: {S: helpers.randomString()}}
+      request(opts({TableName: helpers.testHashTable, Item: item}), function(err) {
+        if (err) return done(err)
+        assertConditional({
+          TableName: helpers.testHashTable,
+          Item: {a: item.a},
+          Expected: {b: {Exists: false}},
+        }, done)
+      })
+    })
+
+    it('should return ConditionalCheckFailedException if expecting existing value to not exist if same value specified', function(done) {
+      var item = {a: {S: helpers.randomString()}, b: {S: helpers.randomString()}}
+      request(opts({TableName: helpers.testHashTable, Item: item}), function(err) {
+        if (err) return done(err)
+        assertConditional({
+          TableName: helpers.testHashTable,
+          Item: item,
+          Expected: {b: {Exists: false}},
+        }, done)
+      })
+    })
+
+    it('should succeed for multiple conditional checks if all are valid', function(done) {
+      var item = {a: {S: helpers.randomString()}, c: {S: helpers.randomString()}}
+      request(opts({TableName: helpers.testHashTable, Item: item}), function(err) {
+        if (err) return done(err)
+        request(opts({
+          TableName: helpers.testHashTable,
+          Item: item,
+          Expected: {a: {Value: item.a}, b: {Exists: false}, c: {Value: item.c}},
+        }), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.should.eql({})
+          done()
+        })
+      })
+    })
+
+    it('should return ConditionalCheckFailedException for multiple conditional checks if one is invalid', function(done) {
+      var item = {a: {S: helpers.randomString()}, c: {S: helpers.randomString()}}
+      request(opts({TableName: helpers.testHashTable, Item: item}), function(err) {
+        if (err) return done(err)
+        assertConditional({
+          TableName: helpers.testHashTable,
+          Item: item,
+          Expected: {a: {Value: item.a}, b: {Exists: false}, c: {Value: {S: helpers.randomString()}}},
+        }, done)
+      })
     })
 
   })

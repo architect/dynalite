@@ -34,15 +34,18 @@ function checkTypes(data, types) {
   }
 
   function checkType(val, type) {
-    // TODO: deal with nulls
     if (val == null) return
     var actualType = type.type || type
     switch (actualType) {
       case 'Boolean':
         switch (typeof val) {
           case 'number':
-            // TODO: Strangely floats seem to be fine...?
-            throw typeError('class ' + classForNumber(val) + ' can not be converted to an Boolean')
+            // Strangely floats seem to be fine...?
+            var numClass = classForNumber(val)
+            if (numClass != 'java.lang.Double')
+              throw typeError('class ' + numClass + ' can not be converted to an Boolean')
+            val = Math.abs(val) >= 1
+            break
           case 'string':
             //"\'HELLOWTF\' can not be converted to an Boolean"
             // seems to convert to uppercase
@@ -244,7 +247,7 @@ validateFns.enum = function(parent, key, val, data, errors) {
 
 function validate(predicate, msg, data, parent, key, errors) {
   if (predicate) return
-  var value = data == null ? 'null' : Array.isArray(data) ? '[' + data + ']' : data
+  var value = valueStr(data)
   if (value != 'null') value = '\'' + value + '\''
   parent = parent ? parent + '.' : ''
   errors.push('Value ' + value + ' at \'' + parent + toLowerFirst(key) + '\' failed to satisfy constraint: ' + msg)
@@ -295,9 +298,30 @@ function validateAttributeValue(value) {
       if (nonNum)
         return 'The parameter cannot be converted to a numeric value: ' + nonNum
     }
+
+    if (type == 'SS' && hasDuplicates(value[type]))
+      return 'One or more parameter values were invalid: Input collection ' + valueStr(value[type]) + ' contains duplicates.'
+
+    if (type == 'NS' && hasDuplicates(value[type].map(Number)))
+      return 'Input collection contains duplicates.'
+
+    if (type == 'BS' && hasDuplicates(value[type]))
+      return 'One or more parameter values were invalid: Input collection ' + valueStr(value[type]) + 'of type BS contains duplicates.'
   }
 
   if (types.length > 1)
     return 'Supplied AttributeValue has more than one datatypes set, must contain exactly one of the supported datatypes'
 }
 
+function valueStr(data) {
+  return data == null ? 'null' : Array.isArray(data) ? '[' + data.join(', ') + ']' : data
+}
+
+function hasDuplicates(array) {
+  var setObj = {}
+  return array.some(function(val) {
+    if (setObj[val]) return true
+    setObj[val] = true
+    return false
+  })
+}

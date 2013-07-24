@@ -5,7 +5,7 @@ var async = require('async'),
 
 var target = 'CreateTable',
     request = helpers.request,
-    prefix = helpers.prefix,
+    randomName = helpers.randomName,
     opts = helpers.opts.bind(null, target),
     assertSerialization = helpers.assertSerialization.bind(null, target),
     assertType = helpers.assertType.bind(null, target),
@@ -178,6 +178,7 @@ describe('createTable', function() {
         'Member must have length greater than or equal to 1', done)
     })
 
+    // TODO: Need to create toString methods for things like KeySchemaElement, etc
     it.skip('should return ValidationException for key element names', function(done) {
       assertValidation({TableName: 'abc', AttributeDefinitions: [],
         KeySchema: [{KeyType: 'HASH'}, {AttributeName: 'a'}, {KeyType: 'Woop', AttributeName: 'a'}],
@@ -652,7 +653,7 @@ describe('createTable', function() {
 
     it('should succeed for basic', function(done) {
       var table = {
-        TableName: prefix + Math.random() * 0x100000000,
+        TableName: randomName(),
         AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}],
         KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}],
         ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
@@ -676,7 +677,7 @@ describe('createTable', function() {
     it('should change state to ACTIVE after a period', function(done) {
       this.timeout(100000)
       var table = {
-        TableName: prefix + Math.random() * 0x100000000,
+        TableName: randomName(),
         AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}],
         KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}],
         ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
@@ -685,11 +686,9 @@ describe('createTable', function() {
         if (err) return done(err)
         res.body.TableDescription.TableStatus.should.equal('CREATING')
 
-        //var start = Date.now()
         helpers.waitUntilActive(table.TableName, function(err, res) {
           if (err) return done(err)
           res.body.Table.TableStatus.should.equal('ACTIVE')
-          //console.log(Date.now() - start)
           done()
         })
       })
@@ -697,7 +696,7 @@ describe('createTable', function() {
 
     it('should succeed for indexes', function(done) {
       var table = {
-        TableName: prefix + Math.random() * 0x100000000,
+        TableName: randomName(),
         AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}, {AttributeName: 'b', AttributeType: 'S'}],
         KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}, {KeyType: 'RANGE', AttributeName: 'b'}],
         LocalSecondaryIndexes: [{
@@ -733,7 +732,7 @@ describe('createTable', function() {
     //
     it.skip('should succeed for multiple indexes', function(done) {
       var table = {
-        TableName: prefix + Math.random() * 0x100000000,
+        TableName: randomName(),
         AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}, {AttributeName: 'b', AttributeType: 'S'}],
         KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}, {KeyType: 'RANGE', AttributeName: 'b'}],
         LocalSecondaryIndexes: [{

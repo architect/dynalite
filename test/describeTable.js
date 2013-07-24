@@ -53,7 +53,7 @@ describe('describeTable', function() {
     })
 
     it('should return ResourceNotFoundException if table does not exist', function(done) {
-      var name = String(Math.random() * 0x100000000)
+      var name = helpers.randomString()
       assertNotFound({TableName: name}, 'Requested resource not found: Table: ' + name + ' not found', done)
     })
 

@@ -5,7 +5,7 @@ var async = require('async'),
 
 var target = 'DeleteTable',
     request = helpers.request,
-    prefix = helpers.prefix,
+    randomName = helpers.randomName,
     opts = helpers.opts.bind(null, target),
     assertSerialization = helpers.assertSerialization.bind(null, target),
     assertType = helpers.assertType.bind(null, target),
@@ -55,13 +55,13 @@ describe('deleteTable', function() {
     })
 
     it('should return ResourceNotFoundException if table does not exist', function(done) {
-      var name = String(Math.random() * 0x100000000)
+      var name = helpers.randomString()
       assertNotFound({TableName: name}, 'Requested resource not found: Table: ' + name + ' not found', done)
     })
 
     it('should return ResourceInUseException if table is being created', function(done) {
       var table = {
-        TableName: prefix + Math.random() * 0x100000000,
+        TableName: randomName(),
         AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}],
         KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}],
         ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
@@ -76,7 +76,7 @@ describe('deleteTable', function() {
     it('should eventually delete', function(done) {
       this.timeout(100000)
       var table = {
-        TableName: prefix + Math.random() * 0x100000000,
+        TableName: randomName(),
         AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}],
         KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}],
         ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},

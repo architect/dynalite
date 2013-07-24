@@ -4,10 +4,12 @@ var http = require('http'),
     once = require('once'),
     dynalite = require('..')
 
-var requestOpts = process.env.REMOTE ?  {host: 'dynamodb.ap-southeast-2.amazonaws.com', method: 'POST'} :
+//var requestOpts = process.env.REMOTE ?  {host: 'dynamodb.ap-southeast-2.amazonaws.com', method: 'POST'} :
+var requestOpts = process.env.REMOTE ?  {host: 'dynamodb.us-west-1.amazonaws.com', method: 'POST'} :
   {host: 'localhost', port: 4567, method: 'POST'}
 
 exports.version = 'DynamoDB_20120810'
+exports.prefix = '__dynalite_test_'
 exports.request = request
 exports.opts = opts
 exports.createAndWait = createAndWait
@@ -19,11 +21,19 @@ exports.assertType = assertType
 exports.assertValidation = assertValidation
 exports.assertNotFound = assertNotFound
 exports.assertInUse = assertInUse
+exports.assertConditional = assertConditional
 exports.strDecrement = strDecrement
-exports.prefix = '__dynalite_test_'
+exports.randomString = randomString
+exports.randomName = randomName
+exports.testHashTable = randomName()
+exports.testRangeTable = randomName()
 
 before(function(done) {
-  dynalite.listen(4567, done)
+  this.timeout(200000)
+  dynalite.listen(4567, function(err) {
+    if (err) return done(err)
+    createTestTables(done)
+  })
 })
 
 after(function(done) {
@@ -70,6 +80,29 @@ function opts(target, data) {
   }
 }
 
+function randomString() {
+  return String(Math.random() * 0x100000000)
+}
+
+function randomName() {
+  return exports.prefix + randomString()
+}
+
+function createTestTables(done) {
+  var tables = [{
+    TableName: exports.testHashTable,
+    AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}],
+    KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}],
+    ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
+  }, {
+    TableName: exports.testRangeTable,
+    AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}, {AttributeName: 'b', AttributeType: 'S'}],
+    KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}, {KeyType: 'RANGE', AttributeName: 'b'}],
+    ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
+  }]
+  async.forEach(tables, createAndWait, done)
+}
+
 function deleteTestTables(done) {
   request(opts('ListTables', {}), function(err, res) {
     if (err) return done(err)
@@ -81,7 +114,7 @@ function deleteTestTables(done) {
 function createAndWait(table, done) {
   request(opts('CreateTable', table), function(err) {
     if (err) return done(err)
-    setTimeout(waitUntilActive, 1000, name, done)
+    setTimeout(waitUntilActive, 1000, table.TableName, done)
   })
 }
 
@@ -253,6 +286,18 @@ function assertInUse(target, data, msg, done) {
     res.body.should.eql({
       __type: 'com.amazonaws.dynamodb.v20120810#ResourceInUseException',
       message: msg,
+    })
+    done()
+  })
+}
+
+function assertConditional(target, data, done) {
+  request(opts(target, data), function(err, res) {
+    if (err) return done(err)
+    res.statusCode.should.equal(400)
+    res.body.should.eql({
+      __type: 'com.amazonaws.dynamodb.v20120810#ConditionalCheckFailedException',
+      message: 'The conditional request failed',
     })
     done()
   })
