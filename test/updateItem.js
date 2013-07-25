@@ -1,15 +1,15 @@
 var async = require('async'),
     helpers = require('./helpers'),
-    should = require('should'),
-    dynalite = require('..')
+    should = require('should')
 
 var target = 'UpdateItem',
     request = helpers.request,
+    randomName = helpers.randomName,
     opts = helpers.opts.bind(null, target),
-    assertSerialization = helpers.assertSerialization.bind(null, target),
     assertType = helpers.assertType.bind(null, target),
     assertValidation = helpers.assertValidation.bind(null, target),
-    assertNotFound = helpers.assertNotFound.bind(null, target)
+    assertNotFound = helpers.assertNotFound.bind(null, target),
+    assertConditional = helpers.assertConditional.bind(null, target)
 
 describe('updateItem', function() {
 
@@ -197,23 +197,304 @@ describe('updateItem', function() {
         'Member must not be null', done)
     })
 
+    it('should return ValidationException for empty key type', function(done) {
+      assertValidation({TableName: 'abc', Key: {a: {}}},
+        'Supplied AttributeValue is empty, must contain exactly one of the supported datatypes', done)
+    })
+
     it('should return ValidationException for bad key type', function(done) {
       assertValidation({TableName: 'abc', Key: {a: {a: ''}}},
         'Supplied AttributeValue is empty, must contain exactly one of the supported datatypes', done)
     })
 
-    it('should return ValidationException for empty key', function(done) {
+    it('should return ValidationException for empty string', function(done) {
       assertValidation({TableName: 'abc', Key: {a: {S: ''}}},
         'One or more parameter values were invalid: An AttributeValue may not contain an empty string.', done)
     })
 
-    it('should return empty response if key has incorrect numeric type', function(done) {
+    it('should return ValidationException for empty binary', function(done) {
+      assertValidation({TableName: 'abc', Key: {a: {B: ''}}},
+        'One or more parameter values were invalid: An AttributeValue may not contain an empty binary type.', done)
+    })
+
+    // Somehow allows set types for keys
+    it('should return ValidationException for empty set key', function(done) {
+      assertValidation({TableName: 'abc', Key: {a: {SS: []}}},
+        'One or more parameter values were invalid: An AttributeValue may not contain an empty set.', done)
+    })
+
+    it('should return ValidationException for empty string in set', function(done) {
+      assertValidation({TableName: 'abc', Key: {a: {SS: ['a', '']}}},
+        'One or more parameter values were invalid: An AttributeValue may not contain an empty string.', done)
+    })
+
+    it('should return ValidationException for empty binary in set', function(done) {
+      assertValidation({TableName: 'abc', Key: {a: {BS: ['aaaa', '']}}},
+        'One or more parameter values were invalid: Binary sets may not contain null or empty values', done)
+    })
+
+    it('should return ValidationException if key has empty numeric in set', function(done) {
+      assertValidation({TableName: 'abc', Key: {a: {NS: ['1', '']}}},
+        'The parameter cannot be converted to a numeric value', done)
+    })
+
+    it('should return ValidationException for duplicate string in set', function(done) {
+      assertValidation({TableName: 'abc', Key: {a: {SS: ['a', 'a']}}},
+        'One or more parameter values were invalid: Input collection [a, a] contains duplicates.', done)
+    })
+
+    it('should return ValidationException for duplicate number in set', function(done) {
+      assertValidation({TableName: 'abc', Key: {a: {NS: ['1', '1']}}},
+        'Input collection contains duplicates', done)
+    })
+
+    it('should return ValidationException for duplicate binary in set', function(done) {
+      assertValidation({TableName: 'abc', Key: {a: {BS: ['Yg==', 'Yg==']}}},
+        'One or more parameter values were invalid: Input collection [Yg==, Yg==]of type BS contains duplicates.', done)
+    })
+
+    it('should return ValidationException for multiple types', function(done) {
+      assertValidation({TableName: 'abc', Key: {a: {S: 'a', N: '1'}}},
+        'Supplied AttributeValue has more than one datatypes set, must contain exactly one of the supported datatypes', done)
+    })
+
+    it('should return ValidationException if key has empty numeric type', function(done) {
+      assertValidation({TableName: 'abc', Key: {a: {N: ''}}},
+        'The parameter cannot be converted to a numeric value', done)
+    })
+
+    it('should return ValidationException if key has incorrect numeric type', function(done) {
       assertValidation({TableName: 'abc', Key: {a: {N: 'b'}}},
         'The parameter cannot be converted to a numeric value: b', done)
     })
 
+    it('should return ValidationException if key has incorrect numeric type in set', function(done) {
+      assertValidation({TableName: 'abc', Key: {a: {NS: ['1', 'b', 'a']}}},
+        'The parameter cannot be converted to a numeric value: b', done)
+    })
+
+    it('should return ResourceNotFoundException if key is empty and table does not exist', function(done) {
+      assertNotFound({TableName: helpers.randomString(), Key: {}},
+        'Requested resource not found', done)
+    })
+
+    it('should return ValidationException if key is empty and table does exist', function(done) {
+      assertValidation({TableName: helpers.testHashTable, Key: {}},
+        'The provided key element does not match the schema', done)
+    })
+
+    it('should return ValidationException if key has incorrect attributes', function(done) {
+      assertValidation({TableName: helpers.testHashTable, Key: {b: {S: 'a'}}},
+        'The provided key element does not match the schema', done)
+    })
+
+    it('should return ValidationException if key has extra attributes', function(done) {
+      assertValidation({TableName: helpers.testHashTable, Key: {a: {S: 'a'}, b: {S: 'a'}}},
+        'The provided key element does not match the schema', done)
+    })
+
+    it('should return ValidationException if key is incorrect binary type', function(done) {
+      assertValidation({TableName: helpers.testHashTable, Key: {a: {B: 'abcd'}}},
+        'The provided key element does not match the schema', done)
+    })
+
+    it('should return ValidationException if key is incorrect numeric type', function(done) {
+      assertValidation({TableName: helpers.testHashTable, Key: {a: {N: '1'}}},
+        'The provided key element does not match the schema', done)
+    })
+
+    it('should return ValidationException if key is incorrect string set type', function(done) {
+      assertValidation({TableName: helpers.testHashTable, Key: {a: {SS: ['a']}}},
+        'The provided key element does not match the schema', done)
+    })
+
+    it('should return ValidationException if key is incorrect numeric set type', function(done) {
+      assertValidation({TableName: helpers.testHashTable, Key: {a: {NS: ['1']}}},
+        'The provided key element does not match the schema', done)
+    })
+
+    it('should return ValidationException if key is incorrect binary set type', function(done) {
+      assertValidation({TableName: helpers.testHashTable, Key: {a: {BS: ['aaaa']}}},
+        'The provided key element does not match the schema', done)
+    })
+
+    it('should return ValidationException if missing range key', function(done) {
+      assertValidation({TableName: helpers.testRangeTable, Key: {a: {S: 'a'}}},
+        'The provided key element does not match the schema', done)
+    })
+
+    it('should return ResourceNotFoundException if table is being created', function(done) {
+      var table = {
+        TableName: randomName(),
+        AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}],
+        KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}],
+        ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
+      }
+      request(helpers.opts('CreateTable', table), function(err) {
+        if (err) return done(err)
+        assertNotFound({TableName: table.TableName, Key: {a: {S: 'a'}}},
+          'Requested resource not found', done)
+      })
+    })
+
+    it('should return ValidationException for empty update value', function(done) {
+      assertValidation({TableName: 'abc', Key: {a: {S: 'a'}}, AttributeUpdates: {a: {Value: {}}}},
+        'Supplied AttributeValue is empty, must contain exactly one of the supported datatypes', done)
+    })
+
+    it('should return ValidationException if update value has empty numeric in set', function(done) {
+      assertValidation({TableName: 'abc', Key: {a: {S: 'a'}}, AttributeUpdates: {a: {Value: {NS: ['1', '']}}}},
+        'The parameter cannot be converted to a numeric value', done)
+    })
+
+    it('should return ValidationException for empty expected value', function(done) {
+      assertValidation({TableName: 'abc', Key: {a: {S: 'a'}}, Expected: {a: {Value: {}}}},
+        'Supplied AttributeValue is empty, must contain exactly one of the supported datatypes', done)
+    })
+
+    it('should return ValidationException if expected value has empty numeric in set', function(done) {
+      assertValidation({TableName: 'abc', Key: {a: {S: 'a'}}, Expected: {a: {Value: {NS: ['1', '']}}}},
+        'The parameter cannot be converted to a numeric value', done)
+    })
+
+    it('should return ValidationException if update has no value', function(done) {
+      assertValidation({
+        TableName: helpers.testHashTable,
+        Key: {a: {S: helpers.randomString()}},
+        AttributeUpdates: {a: {x: 'whatever'}},
+      }, 'One or more parameter values were invalid: ' +
+        'Only DELETE action is allowed when no attribute value is specified', done)
+    })
+
+    it('should return ValidationException if trying to delete type S', function(done) {
+      assertValidation({
+        TableName: helpers.testHashTable,
+        Key: {a: {S: helpers.randomString()}},
+        AttributeUpdates: {a: {Action: 'DELETE', Value: {S: helpers.randomString()}}},
+      }, 'One or more parameter values were invalid: ' +
+        'Action DELETE is not supported for the type S', done)
+    })
+
+    it('should return ValidationException if trying to delete type N', function(done) {
+      assertValidation({
+        TableName: helpers.testHashTable,
+        Key: {a: {S: helpers.randomString()}},
+        AttributeUpdates: {a: {Action: 'DELETE', Value: {N: helpers.randomString()}}},
+      }, 'One or more parameter values were invalid: ' +
+        'Action DELETE is not supported for the type N', done)
+    })
+
+    it('should return ValidationException if trying to delete type B', function(done) {
+      assertValidation({
+        TableName: helpers.testHashTable,
+        Key: {a: {S: helpers.randomString()}},
+        AttributeUpdates: {a: {Action: 'DELETE', Value: {B: 'Yg=='}}},
+      }, 'One or more parameter values were invalid: ' +
+        'Action DELETE is not supported for the type B', done)
+    })
+
+    it('should return ValidationException if trying to update key', function(done) {
+      assertValidation({
+        TableName: helpers.testHashTable,
+        Key: {a: {S: helpers.randomString()}},
+        AttributeUpdates: {a: {Value: {S: helpers.randomString()}}},
+      }, 'One or more parameter values were invalid: ' +
+        'Cannot update attribute a. This attribute is part of the key', done)
+    })
+
   })
 
+  describe('functionality', function() {
+
+    it('should return ConditionalCheckFailedException if expecting non-existent key to exist', function(done) {
+      assertConditional({
+        TableName: helpers.testHashTable,
+        Key: {a: {S: helpers.randomString()}},
+        Expected: {a: {Value: {S: helpers.randomString()}}},
+      }, done)
+    })
+
+    it('should just add item with key if no action', function(done) {
+      var key = {a: {S: helpers.randomString()}}
+      request(opts({TableName: helpers.testHashTable, Key: key}), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        res.body.should.eql({})
+        request(helpers.opts('GetItem', {TableName: helpers.testHashTable, Key: key, ConsistentRead: true}), function(err, res) {
+          res.statusCode.should.equal(200)
+          res.body.should.eql({Item: key})
+          done()
+        })
+      })
+    })
+
+    it('should return empty when there are no old values', function(done) {
+      var key = {a: {S: helpers.randomString()}}
+      request(opts({TableName: helpers.testHashTable, Key: key, ReturnValues: 'ALL_OLD'}), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        res.body.should.eql({})
+        done()
+      })
+    })
+
+    it('should return all old values when they exist', function(done) {
+      var key = {a: {S: helpers.randomString()}}
+      var updates = {b: {Value: {S: 'a'}}}
+      request(opts({TableName: helpers.testHashTable, Key: key, AttributeUpdates: updates}), function(err) {
+        if (err) return done(err)
+        updates.b.Value.S = 'b'
+        request(opts({TableName: helpers.testHashTable, Key: key, AttributeUpdates: updates, ReturnValues: 'ALL_OLD'}), function(err, res) {
+          res.statusCode.should.equal(200)
+          res.body.should.eql({Attributes: {a: key.a, b: {S: 'a'}}})
+          done()
+        })
+      })
+    })
+
+    it('should return updated old values when they exist', function(done) {
+      var key = {a: {S: helpers.randomString()}}
+      var updates = {b: {Value: {S: 'a'}}, c: {Value: {S: 'a'}}}
+      request(opts({TableName: helpers.testHashTable, Key: key, AttributeUpdates: updates}), function(err) {
+        if (err) return done(err)
+        updates.b.Value.S = 'b'
+        request(opts({TableName: helpers.testHashTable, Key: key, AttributeUpdates: updates, ReturnValues: 'UPDATED_OLD'}), function(err, res) {
+          res.statusCode.should.equal(200)
+          res.body.should.eql({Attributes: {b: {S: 'a'}, c: {S: 'a'}}})
+          done()
+        })
+      })
+    })
+
+    it('should return all new values when they exist', function(done) {
+      var key = {a: {S: helpers.randomString()}}
+      var updates = {b: {Value: {S: 'a'}}}
+      request(opts({TableName: helpers.testHashTable, Key: key, AttributeUpdates: updates}), function(err) {
+        if (err) return done(err)
+        updates.b.Value.S = 'b'
+        request(opts({TableName: helpers.testHashTable, Key: key, AttributeUpdates: updates, ReturnValues: 'ALL_NEW'}), function(err, res) {
+          res.statusCode.should.equal(200)
+          res.body.should.eql({Attributes: {a: key.a, b: {S: 'b'}}})
+          done()
+        })
+      })
+    })
+
+    it('should return updated new values when they exist', function(done) {
+      var key = {a: {S: helpers.randomString()}}
+      var updates = {b: {Value: {S: 'a'}}, c: {Value: {S: 'a'}}}
+      request(opts({TableName: helpers.testHashTable, Key: key, AttributeUpdates: updates}), function(err) {
+        if (err) return done(err)
+        updates.b.Value.S = 'b'
+        request(opts({TableName: helpers.testHashTable, Key: key, AttributeUpdates: updates, ReturnValues: 'UPDATED_NEW'}), function(err, res) {
+          res.statusCode.should.equal(200)
+          res.body.should.eql({Attributes: {b: {S: 'b'}, c: {S: 'a'}}})
+          done()
+        })
+      })
+    })
+
+  })
 })
 
 

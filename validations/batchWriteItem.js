@@ -28,6 +28,18 @@ exports.types = {
                     S: 'String',
                     B: 'Blob',
                     N: 'String',
+                    BS: {
+                      type: 'List',
+                      children: 'Blob',
+                    },
+                    NS: {
+                      type: 'List',
+                      children: 'String',
+                    },
+                    SS: {
+                      type: 'List',
+                      children: 'String',
+                    }
                   }
                 }
               }

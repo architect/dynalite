@@ -7,7 +7,6 @@ var target = 'GetItem',
     request = helpers.request,
     randomName = helpers.randomName,
     opts = helpers.opts.bind(null, target),
-    assertSerialization = helpers.assertSerialization.bind(null, target),
     assertType = helpers.assertType.bind(null, target),
     assertValidation = helpers.assertValidation.bind(null, target),
     assertNotFound = helpers.assertNotFound.bind(null, target)
@@ -91,16 +90,6 @@ describe('getItem', function() {
         'Member must not be null', done)
     })
 
-    it('should return ResourceNotFoundException if key is empty and table does not exist', function(done) {
-      assertNotFound({TableName: helpers.randomString(), Key: {}},
-        'Requested resource not found', done)
-    })
-
-    it('should return ValidationException if key is empty and table does exist', function(done) {
-      assertValidation({TableName: helpers.testHashTable, Key: {}},
-        'The provided key element does not match the schema', done)
-    })
-
     it('should return ValidationException for empty key type', function(done) {
       assertValidation({TableName: 'abc', Key: {a: {}}},
         'Supplied AttributeValue is empty, must contain exactly one of the supported datatypes', done)
@@ -137,7 +126,7 @@ describe('getItem', function() {
         'One or more parameter values were invalid: Binary sets may not contain null or empty values', done)
     })
 
-    it('should return empty response if key has empty numeric in set', function(done) {
+    it('should return ValidationException if key has empty numeric in set', function(done) {
       assertValidation({TableName: 'abc', Key: {a: {NS: ['1', '']}}},
         'The parameter cannot be converted to a numeric value', done)
     })
@@ -149,7 +138,7 @@ describe('getItem', function() {
 
     it('should return ValidationException for duplicate number in set', function(done) {
       assertValidation({TableName: 'abc', Key: {a: {NS: ['1', '1']}}},
-        'Input collection contains duplicates.', done)
+        'Input collection contains duplicates', done)
     })
 
     it('should return ValidationException for duplicate binary in set', function(done) {
@@ -162,53 +151,68 @@ describe('getItem', function() {
         'Supplied AttributeValue has more than one datatypes set, must contain exactly one of the supported datatypes', done)
     })
 
-    it('should return empty response if key has empty numeric type', function(done) {
+    it('should return ValidationException if key has empty numeric type', function(done) {
       assertValidation({TableName: 'abc', Key: {a: {N: ''}}},
         'The parameter cannot be converted to a numeric value', done)
     })
 
-    it('should return empty response if key has incorrect numeric type', function(done) {
+    it('should return ValidationException if key has incorrect numeric type', function(done) {
       assertValidation({TableName: 'abc', Key: {a: {N: 'b'}}},
         'The parameter cannot be converted to a numeric value: b', done)
     })
 
-    it('should return empty response if key has incorrect numeric type in set', function(done) {
+    it('should return ValidationException if key has incorrect numeric type in set', function(done) {
       assertValidation({TableName: 'abc', Key: {a: {NS: ['1', 'b', 'a']}}},
         'The parameter cannot be converted to a numeric value: b', done)
     })
 
-    it('should return empty response if key has incorrect attributes', function(done) {
+    it('should return ResourceNotFoundException if key is empty and table does not exist', function(done) {
+      assertNotFound({TableName: helpers.randomString(), Key: {}},
+        'Requested resource not found', done)
+    })
+
+    it('should return ValidationException if key is empty and table does exist', function(done) {
+      assertValidation({TableName: helpers.testHashTable, Key: {}},
+        'The provided key element does not match the schema', done)
+    })
+
+    it('should return ValidationException if key has incorrect attributes', function(done) {
       assertValidation({TableName: helpers.testHashTable, Key: {b: {S: 'a'}}},
         'The provided key element does not match the schema', done)
     })
 
-    it('should return empty response if key has extra attributes', function(done) {
+    it('should return ValidationException if key has extra attributes', function(done) {
       assertValidation({TableName: helpers.testHashTable, Key: {a: {S: 'a'}, b: {S: 'a'}}},
         'The provided key element does not match the schema', done)
     })
 
-    it('should return empty response if key is incorrect binary type', function(done) {
+    it('should return ValidationException if key is incorrect binary type', function(done) {
       assertValidation({TableName: helpers.testHashTable, Key: {a: {B: 'abcd'}}},
         'The provided key element does not match the schema', done)
     })
 
-    it('should return empty response if key is incorrect numeric type', function(done) {
+    it('should return ValidationException if key is incorrect numeric type', function(done) {
       assertValidation({TableName: helpers.testHashTable, Key: {a: {N: '1'}}},
         'The provided key element does not match the schema', done)
     })
 
-    it('should return empty response if key is incorrect string set type', function(done) {
+    it('should return ValidationException if key is incorrect string set type', function(done) {
       assertValidation({TableName: helpers.testHashTable, Key: {a: {SS: ['a']}}},
         'The provided key element does not match the schema', done)
     })
 
-    it('should return empty response if key is incorrect numeric set type', function(done) {
+    it('should return ValidationException if key is incorrect numeric set type', function(done) {
       assertValidation({TableName: helpers.testHashTable, Key: {a: {NS: ['1']}}},
         'The provided key element does not match the schema', done)
     })
 
-    it('should return empty response if key is incorrect binary set type', function(done) {
+    it('should return ValidationException if key is incorrect binary set type', function(done) {
       assertValidation({TableName: helpers.testHashTable, Key: {a: {BS: ['aaaa']}}},
+        'The provided key element does not match the schema', done)
+    })
+
+    it('should return ValidationException if missing range key', function(done) {
+      assertValidation({TableName: helpers.testRangeTable, Key: {a: {S: 'a'}}},
         'The provided key element does not match the schema', done)
     })
 

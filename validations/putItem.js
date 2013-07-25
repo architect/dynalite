@@ -89,6 +89,10 @@ exports.custom = function(data) {
       else if (!exists && data.Expected[key].Value != null)
         return 'One or more parameter values were invalid: ' +
           'Cannot expect an attribute to have a specified value while expecting it to not exist'
+      if (data.Expected[key].Value != null) {
+        var msg = validateAttributeValue(data.Expected[key].Value)
+        if (msg) return msg
+      }
     }
   }
   if (data.ReturnValues && data.ReturnValues != 'ALL_OLD' && data.ReturnValues != 'NONE')

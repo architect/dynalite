@@ -1,12 +1,11 @@
 var async = require('async'),
     helpers = require('./helpers'),
-    should = require('should'),
-    dynalite = require('..')
+    should = require('should')
 
 var target = 'PutItem',
     request = helpers.request,
+    randomName = helpers.randomName,
     opts = helpers.opts.bind(null, target),
-    assertSerialization = helpers.assertSerialization.bind(null, target),
     assertType = helpers.assertType.bind(null, target),
     assertValidation = helpers.assertValidation.bind(null, target),
     assertNotFound = helpers.assertNotFound.bind(null, target),
@@ -197,35 +196,150 @@ describe('putItem', function() {
       }, done)
     })
 
-    it('should return ResourceNotFoundException if item is empty and table does not exist', function(done) {
-      assertNotFound({TableName: 'abc', Item: {}}, 'Requested resource not found', done)
+    it('should return ValidationException for empty key type', function(done) {
+      assertValidation({TableName: 'abc', Item: {a: {}}},
+        'Supplied AttributeValue is empty, must contain exactly one of the supported datatypes', done)
     })
 
-    it('should return ValidationException if item is empty and table does exist', function(done) {
+    it('should return ValidationException for bad key type', function(done) {
+      assertValidation({TableName: 'abc', Item: {a: {a: ''}}},
+        'Supplied AttributeValue is empty, must contain exactly one of the supported datatypes', done)
+    })
+
+    it('should return ValidationException for empty string', function(done) {
+      assertValidation({TableName: 'abc', Item: {a: {S: ''}}},
+        'One or more parameter values were invalid: An AttributeValue may not contain an empty string.', done)
+    })
+
+    it('should return ValidationException for empty binary', function(done) {
+      assertValidation({TableName: 'abc', Item: {a: {B: ''}}},
+        'One or more parameter values were invalid: An AttributeValue may not contain an empty binary type.', done)
+    })
+
+    // Somehow allows set types for keys
+    it('should return ValidationException for empty set key', function(done) {
+      assertValidation({TableName: 'abc', Item: {a: {SS: []}}},
+        'One or more parameter values were invalid: An AttributeValue may not contain an empty set.', done)
+    })
+
+    it('should return ValidationException for empty string in set', function(done) {
+      assertValidation({TableName: 'abc', Item: {a: {SS: ['a', '']}}},
+        'One or more parameter values were invalid: An AttributeValue may not contain an empty string.', done)
+    })
+
+    it('should return ValidationException for empty binary in set', function(done) {
+      assertValidation({TableName: 'abc', Item: {a: {BS: ['aaaa', '']}}},
+        'One or more parameter values were invalid: Binary sets may not contain null or empty values', done)
+    })
+
+    it('should return ValidationException if key has empty numeric in set', function(done) {
+      assertValidation({TableName: 'abc', Item: {a: {NS: ['1', '']}}},
+        'The parameter cannot be converted to a numeric value', done)
+    })
+
+    it('should return ValidationException for duplicate string in set', function(done) {
+      assertValidation({TableName: 'abc', Item: {a: {SS: ['a', 'a']}}},
+        'One or more parameter values were invalid: Input collection [a, a] contains duplicates.', done)
+    })
+
+    it('should return ValidationException for duplicate number in set', function(done) {
+      assertValidation({TableName: 'abc', Item: {a: {NS: ['1', '1']}}},
+        'Input collection contains duplicates', done)
+    })
+
+    it('should return ValidationException for duplicate binary in set', function(done) {
+      assertValidation({TableName: 'abc', Item: {a: {BS: ['Yg==', 'Yg==']}}},
+        'One or more parameter values were invalid: Input collection [Yg==, Yg==]of type BS contains duplicates.', done)
+    })
+
+    it('should return ValidationException for multiple types', function(done) {
+      assertValidation({TableName: 'abc', Item: {a: {S: 'a', N: '1'}}},
+        'Supplied AttributeValue has more than one datatypes set, must contain exactly one of the supported datatypes', done)
+    })
+
+    it('should return ValidationException if key has empty numeric type', function(done) {
+      assertValidation({TableName: 'abc', Item: {a: {N: ''}}},
+        'The parameter cannot be converted to a numeric value', done)
+    })
+
+    it('should return ValidationException if key has incorrect numeric type', function(done) {
+      assertValidation({TableName: 'abc', Item: {a: {N: 'b'}}},
+        'The parameter cannot be converted to a numeric value: b', done)
+    })
+
+    it('should return ValidationException if key has incorrect numeric type in set', function(done) {
+      assertValidation({TableName: 'abc', Item: {a: {NS: ['1', 'b', 'a']}}},
+        'The parameter cannot be converted to a numeric value: b', done)
+    })
+
+    it('should return ValidationException for empty expected value', function(done) {
+      assertValidation({TableName: 'abc', Item: {}, Expected: {a: {Value: {}}}},
+        'Supplied AttributeValue is empty, must contain exactly one of the supported datatypes', done)
+    })
+
+    it('should return ValidationException if expected value has empty numeric in set', function(done) {
+      assertValidation({TableName: 'abc', Item: {}, Expected: {a: {Value: {NS: ['1', '']}}}},
+        'The parameter cannot be converted to a numeric value', done)
+    })
+
+    it('should return ResourceNotFoundException if key is empty and table does not exist', function(done) {
+      assertNotFound({TableName: helpers.randomString(), Item: {}},
+        'Requested resource not found', done)
+    })
+
+    it('should return ValidationException if key is empty and table does exist', function(done) {
       assertValidation({TableName: helpers.testHashTable, Item: {}},
         'One or more parameter values were invalid: Missing the key a in the item', done)
     })
 
-    it('should return ValidationException for half empty key on range table', function(done) {
+    it('should return ValidationException if key has incorrect attributes', function(done) {
+      assertValidation({TableName: helpers.testHashTable, Item: {b: {S: 'a'}}},
+        'One or more parameter values were invalid: Missing the key a in the item', done)
+    })
+
+    it('should return ValidationException if key is incorrect binary type', function(done) {
+      assertValidation({TableName: helpers.testHashTable, Item: {a: {B: 'abcd'}}},
+        'One or more parameter values were invalid: Type mismatch for key a expected: S actual: B', done)
+    })
+
+    it('should return ValidationException if key is incorrect numeric type', function(done) {
+      assertValidation({TableName: helpers.testHashTable, Item: {a: {N: '1'}}},
+        'One or more parameter values were invalid: Type mismatch for key a expected: S actual: N', done)
+    })
+
+    it('should return ValidationException if key is incorrect string set type', function(done) {
+      assertValidation({TableName: helpers.testHashTable, Item: {a: {SS: ['a']}}},
+        'One or more parameter values were invalid: Type mismatch for key a expected: S actual: SS', done)
+    })
+
+    it('should return ValidationException if key is incorrect numeric set type', function(done) {
+      assertValidation({TableName: helpers.testHashTable, Item: {a: {NS: ['1']}}},
+        'One or more parameter values were invalid: Type mismatch for key a expected: S actual: NS', done)
+    })
+
+    it('should return ValidationException if key is incorrect binary set type', function(done) {
+      assertValidation({TableName: helpers.testHashTable, Item: {a: {BS: ['aaaa']}}},
+        'One or more parameter values were invalid: Type mismatch for key a expected: S actual: BS', done)
+    })
+
+    it('should return ValidationException if missing range key', function(done) {
       assertValidation({TableName: helpers.testRangeTable, Item: {a: {S: 'a'}}},
         'One or more parameter values were invalid: Missing the key b in the item', done)
     })
 
-    it('should return ValidationException for incorrect hash key type', function(done) {
-      assertValidation({TableName: helpers.testHashTable, Item: {a: {N: '23'}}},
-        'One or more parameter values were invalid: Type mismatch for key a expected: S actual: N', done)
+    it('should return ResourceNotFoundException if table is being created', function(done) {
+      var table = {
+        TableName: randomName(),
+        AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}],
+        KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}],
+        ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
+      }
+      request(helpers.opts('CreateTable', table), function(err) {
+        if (err) return done(err)
+        assertNotFound({TableName: table.TableName, Item: {a: {S: 'a'}}},
+          'Requested resource not found', done)
+      })
     })
-
-    it('should return ValidationException for incorrect range key type in hash', function(done) {
-      assertValidation({TableName: helpers.testRangeTable, Item: {a: {N: '23'}, b: {N: '23'}}},
-        'One or more parameter values were invalid: Type mismatch for key a expected: S actual: N', done)
-    })
-
-    it('should return ValidationException for incorrect range key type in range', function(done) {
-      assertValidation({TableName: helpers.testRangeTable, Item: {a: {S: 'a'}, b: {N: '23'}}},
-        'One or more parameter values were invalid: Type mismatch for key b expected: S actual: N', done)
-    })
-
   })
 
   describe('functionality', function() {
@@ -258,7 +372,17 @@ describe('putItem', function() {
       })
     })
 
-    it('should return old values', function(done) {
+    it('should return empty when there are no old values', function(done) {
+      var item = {a: {S: helpers.randomString()}, b: {S: 'a'}, c: {S: 'a'}}
+      request(opts({TableName: helpers.testHashTable, Item: item, ReturnValues: 'ALL_OLD'}), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        res.body.should.eql({})
+        done()
+      })
+    })
+
+    it('should return correct old values when they exist', function(done) {
       var item = {a: {S: helpers.randomString()}, b: {S: 'a'}, c: {S: 'a'}}
       request(opts({TableName: helpers.testHashTable, Item: item}), function(err) {
         if (err) return done(err)

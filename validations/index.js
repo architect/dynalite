@@ -303,7 +303,7 @@ function validateAttributeValue(value) {
       return 'One or more parameter values were invalid: Input collection ' + valueStr(value[type]) + ' contains duplicates.'
 
     if (type == 'NS' && hasDuplicates(value[type].map(Number)))
-      return 'Input collection contains duplicates.'
+      return 'Input collection contains duplicates'
 
     if (type == 'BS' && hasDuplicates(value[type]))
       return 'One or more parameter values were invalid: Input collection ' + valueStr(value[type]) + 'of type BS contains duplicates.'

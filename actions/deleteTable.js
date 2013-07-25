@@ -5,7 +5,7 @@ module.exports = function deleteTable(data, cb) {
 
   var key = data.TableName
 
-  db.getTable(key, function(err, table) {
+  db.getTable(key, false, function(err, table) {
     if (err) return cb(err)
 
     // Check if table is ACTIVE or not?
