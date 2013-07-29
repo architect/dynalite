@@ -4,16 +4,13 @@ var http = require('http'),
     once = require('once'),
     dynalite = require('..')
 
-//var requestOpts = process.env.REMOTE ?  {host: 'dynamodb.ap-southeast-2.amazonaws.com', method: 'POST'} :
-var requestOpts = process.env.REMOTE ?  {host: 'dynamodb.us-west-1.amazonaws.com', method: 'POST'} :
+var requestOpts = process.env.REMOTE ?  {host: 'dynamodb.ap-southeast-2.amazonaws.com', method: 'POST'} :
   {host: 'localhost', port: 4567, method: 'POST'}
 
 exports.version = 'DynamoDB_20120810'
 exports.prefix = '__dynalite_test_'
 exports.request = request
 exports.opts = opts
-exports.createAndWait = createAndWait
-exports.deleteAndWait = deleteAndWait
 exports.waitUntilActive = waitUntilActive
 exports.waitUntilDeleted = waitUntilDeleted
 exports.assertSerialization = assertSerialization
@@ -63,7 +60,8 @@ function request(opts, cb) {
     res.on('data', function(chunk) { res.body += chunk })
     res.on('end', function() {
       try { res.body = JSON.parse(res.body) } catch (e) {}
-      if (res.body.__type == 'com.amazon.coral.availability#ThrottlingException')
+      if (res.body.__type == 'com.amazon.coral.availability#ThrottlingException' ||
+          res.body.__type == 'com.amazonaws.dynamodb.v20120810#LimitExceededException')
         return setTimeout(request, 1000, opts, cb)
       cb(null, res)
     })
@@ -112,8 +110,10 @@ function deleteTestTables(done) {
 }
 
 function createAndWait(table, done) {
-  request(opts('CreateTable', table), function(err) {
+  request(opts('CreateTable', table), function(err, res) {
     if (err) return done(err)
+    if (res.body.__type)
+      return done(new Error(res.body.__type + ': ' + res.body.message))
     setTimeout(waitUntilActive, 1000, table.TableName, done)
   })
 }
@@ -123,6 +123,8 @@ function deleteAndWait(name, done) {
     if (err) return done(err)
     if (res.body.__type == 'com.amazonaws.dynamodb.v20120810#ResourceInUseException')
       return setTimeout(deleteAndWait, 1000, name, done)
+    else if (res.body.__type)
+      return done(new Error(res.body.__type + ': ' + res.body.message))
     setTimeout(waitUntilDeleted, 1000, name, done)
   })
 }
@@ -130,7 +132,10 @@ function deleteAndWait(name, done) {
 function waitUntilActive(name, done) {
   request(opts('DescribeTable', {TableName: name}), function(err, res) {
     if (err) return done(err)
-    if (res.body.Table.TableStatus != 'CREATING') return done(null, res)
+    if (res.body.__type)
+      return done(new Error(res.body.__type + ': ' + res.body.message))
+    else if (res.body.Table.TableStatus != 'CREATING')
+      return done(null, res)
     setTimeout(waitUntilActive, 1000, name, done)
   })
 }
@@ -138,7 +143,10 @@ function waitUntilActive(name, done) {
 function waitUntilDeleted(name, done) {
   request(opts('DescribeTable', {TableName: name}), function(err, res) {
     if (err) return done(err)
-    if (res.body.__type == 'com.amazonaws.dynamodb.v20120810#ResourceNotFoundException') return done(null, res)
+    if (res.body.__type == 'com.amazonaws.dynamodb.v20120810#ResourceNotFoundException')
+      return done(null, res)
+    else if (res.body.__type)
+      return done(new Error(res.body.__type + ': ' + res.body.message))
     setTimeout(waitUntilDeleted, 1000, name, done)
   })
 }
