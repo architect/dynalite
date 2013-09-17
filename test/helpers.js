@@ -24,6 +24,9 @@ exports.randomString = randomString
 exports.randomName = randomName
 exports.testHashTable = randomName()
 exports.testRangeTable = randomName()
+// For testing:
+//exports.testHashTable = '__dynalite_test_1'
+//exports.testRangeTable = '__dynalite_test_2'
 
 before(function(done) {
   this.timeout(200000)

@@ -351,6 +351,7 @@ describe('putItem', function() {
         res.statusCode.should.equal(200)
         res.body.should.eql({})
         request(helpers.opts('GetItem', {TableName: helpers.testHashTable, Key: {a: item.a}, ConsistentRead: true}), function(err, res) {
+          if (err) return done(err)
           res.statusCode.should.equal(200)
           res.body.should.eql({Item: item})
           done()
@@ -365,6 +366,7 @@ describe('putItem', function() {
         res.statusCode.should.equal(200)
         res.body.should.eql({})
         request(helpers.opts('GetItem', {TableName: helpers.testHashTable, Key: {a: item.a}, ConsistentRead: true}), function(err, res) {
+          if (err) return done(err)
           res.statusCode.should.equal(200)
           res.body.should.eql({Item: item})
           done()
@@ -388,6 +390,7 @@ describe('putItem', function() {
         if (err) return done(err)
         item.b.S = 'b'
         request(opts({TableName: helpers.testHashTable, Item: item, ReturnValues: 'ALL_OLD'}), function(err, res) {
+          if (err) return done(err)
           res.statusCode.should.equal(200)
           item.b.S = 'a'
           res.body.should.eql({Attributes: item})
@@ -406,6 +409,7 @@ describe('putItem', function() {
         request(opts({TableName: helpers.testRangeTable, Item: {a: item.a, b: {S: 'b'}}}), function(err, res) {
           if (err) return done(err)
           request(helpers.opts('GetItem', {TableName: helpers.testRangeTable, Key: {a: item.a, b: item.b}, ConsistentRead: true}), function(err, res) {
+            if (err) return done(err)
             res.statusCode.should.equal(200)
             res.body.should.eql({Item: item})
             done()

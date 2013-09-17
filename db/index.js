@@ -47,12 +47,7 @@ function getTable(name, checkStatus, cb) {
 }
 
 function lazyStream(stream, errHandler) {
-  if (Readable) {
-    stream = new Readable().wrap(stream)
-    stream.setEncoding('utf8')
-  }
   if (errHandler) stream.on('error', errHandler)
-
   return lazy(stream)
 }
 

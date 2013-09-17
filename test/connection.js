@@ -15,11 +15,27 @@ describe('dynalite connections', function() {
           res.body.should.equal('<SCRIPT language=JavaScript>\n')
         } else {
           res.statusCode.should.equal(404)
-          res.body.should.equal('<UnknownOperationException/>\n')
+          try {
+            res.body.should.equal('<UnknownOperationException/>\n')
+            res.headers['x-amz-crc32'].should.equal('3552371480')
+            res.headers['content-length'].should.equal('29')
+          } catch (e) {
+            // Sometimes it's an HTML page instead of the above
+            res.body.should.equal(
+              '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" ' +
+              '"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">\n' +
+              '<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">\n' +
+              '<head>\n  ' +
+              '<title>Page Not Found</title>\n' +
+              '</head>\n' +
+              '<body>Page Not Found</body>\n' +
+              '</html>'
+            )
+            res.headers['x-amz-crc32'].should.equal('2548615100')
+            res.headers['content-length'].should.equal('272')
+          }
         }
         res.headers['x-amzn-requestid'].length.should.equal(52)
-        res.headers['x-amz-crc32'].should.equal('3552371480')
-        res.headers['content-length'].should.equal('29')
         done()
       }
     }

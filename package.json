@@ -25,21 +25,21 @@
   },
   "dependencies": {
     "buffer-crc32": ">=0.2.1",
-    "levelup": ">=0.10.0",
-    "memdown": ">=0.2.0",
-    "level-sublevel": ">=4.7.0",
+    "levelup": ">=0.16.0",
+    "memdown": ">=0.3.0",
+    "level-sublevel": ">=5.1.1",
     "lock": ">=0.0.4",
     "lazy": ">=1.0.11",
-    "once": ">=1.1.1"
+    "once": ">=1.2.0"
   },
   "optionalDependencies": {
-    "leveldown": ">=0.6.1"
+    "leveldown": ">=0.8.2"
   },
   "devDependencies": {
-    "mocha": ">=1.10.0",
+    "mocha": ">=1.11.0",
     "should": ">=1.2.2",
     "async": ">=0.2.9",
-    "aws4": ">=0.1.10",
+    "aws4": ">=0.1.12",
     "longjohn": ">=0.2.0"
   }
 }

@@ -220,14 +220,14 @@ describe('createTable', function() {
         'Given value 1000000000001 for WriteCapacityUnits is out of bounds', done)
     })
 
-    it('should return ValidationException for thing', function(done) {
+    it('should return ValidationException for missing key attribute definitions', function(done) {
       assertValidation({TableName: 'abc', AttributeDefinitions: [],
         KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}, {KeyType: 'HASH', AttributeName: 'a'}],
         ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},
         'Invalid KeySchema: Some index key attribute have no definition', done)
     })
 
-    it('should return ValidationException for 1', function(done) {
+    it('should return ValidationException for attribute definitions member nulls', function(done) {
       assertValidation({TableName: 'abc', AttributeDefinitions: [{}],
         KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}, {KeyType: 'HASH', AttributeName: 'a'}],
         ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},
@@ -238,7 +238,7 @@ describe('createTable', function() {
         'Member must not be null', done)
     })
 
-    it('should return ValidationException for 2', function(done) {
+    it('should return ValidationException for SS in attr definition', function(done) {
       assertValidation({TableName: 'abc', AttributeDefinitions: [{AttributeName: 'b', AttributeType: 'SS'}],
         KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}, {KeyType: 'HASH', AttributeName: 'a'}],
         ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},
@@ -247,7 +247,7 @@ describe('createTable', function() {
         'Member must satisfy enum value set: [B, N, S]', done)
     })
 
-    it('should return ValidationException for 2.5', function(done) {
+    it('should return ValidationException for random attr definition', function(done) {
       assertValidation({TableName: 'abc', AttributeDefinitions: [{AttributeName: 'b', AttributeType: 'a'}],
         KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}, {KeyType: 'HASH', AttributeName: 'a'}],
         ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},
@@ -256,14 +256,14 @@ describe('createTable', function() {
         'Member must satisfy enum value set: [B, N, S]', done)
     })
 
-    it('should return ValidationException for 3', function(done) {
+    it('should return ValidationException for missing key attr definition when double', function(done) {
       assertValidation({TableName: 'abc', AttributeDefinitions: [{AttributeName: 'b', AttributeType: 'S'}],
         KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}, {KeyType: 'HASH', AttributeName: 'a'}],
         ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},
         'Invalid KeySchema: Some index key attribute have no definition', done)
     })
 
-    it('should return ValidationException for 3.5', function(done) {
+    it('should return ValidationException for missing key attr definition', function(done) {
       assertValidation({TableName: 'abc', AttributeDefinitions: [{AttributeName: 'b', AttributeType: 'S'}],
         KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}],
         ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},
@@ -271,14 +271,14 @@ describe('createTable', function() {
         'AttributeDefinitions. Keys: [a], AttributeDefinitions: [b]', done)
     })
 
-    it('should return ValidationException for 3.6', function(done) {
+    it('should return ValidationException for missing key attr definition when double and valid', function(done) {
       assertValidation({TableName: 'abc', AttributeDefinitions: [{AttributeName: 'b', AttributeType: 'S'}],
         KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}, {KeyType: 'RANGE', AttributeName: 'b'}],
         ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},
         'Invalid KeySchema: Some index key attribute have no definition', done)
     })
 
-    it('should return ValidationException for 4', function(done) {
+    it('should return ValidationException for missing key attr definition when double and same', function(done) {
       assertValidation({TableName: 'abc', AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}],
         KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}, {KeyType: 'HASH', AttributeName: 'a'}],
         ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},

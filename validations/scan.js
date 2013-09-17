@@ -111,6 +111,19 @@ exports.custom = function(data) {
     IN: [1],
     BETWEEN: 2,
   }
+  var types = {
+    EQ: ['S', 'N', 'B'],
+    NE: ['S', 'N', 'B'],
+    LE: ['S', 'N', 'B'],
+    LT: ['S', 'N', 'B'],
+    GE: ['S', 'N', 'B'],
+    GT: ['S', 'N', 'B'],
+    CONTAINS: ['S', 'N', 'B'],
+    NOT_CONTAINS: ['S', 'N', 'B'],
+    BEGINS_WITH: ['S', 'B'],
+    IN: ['S', 'N', 'B'],
+    BETWEEN: ['S', 'N', 'B'],
+  }
   for (var key in data.ScanFilter) {
     var comparisonOperator = data.ScanFilter[key].ComparisonOperator
     var attrValList = data.ScanFilter[key].AttributeValueList || []
@@ -118,9 +131,14 @@ exports.custom = function(data) {
       msg = validateAttributeValue(attrValList[i])
       if (msg) return msg
     }
+
     if ((typeof lengths[comparisonOperator] == 'number' && attrValList.length != lengths[comparisonOperator]) ||
         (attrValList.length < lengths[comparisonOperator][0] || attrValList.length > lengths[comparisonOperator][1]))
       return 'The attempted filter operation is not supported for the provided filter argument count'
+
+    if (types[comparisonOperator] &&
+        attrValList.some(function(attrVal) { return !~types[comparisonOperator].indexOf(Object.keys(attrVal)[0]) }))
+      return 'The attempted filter operation is not supported for the provided type'
   }
 
   if (data.ExclusiveStartKey) {

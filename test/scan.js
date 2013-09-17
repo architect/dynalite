@@ -235,6 +235,27 @@ describe('scan', function() {
         'The attempted filter operation is not supported for the provided filter argument count', done)
     })
 
+    it('should return ValidationException for EQ on type SS', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        ScanFilter: {a: {ComparisonOperator: 'EQ', AttributeValueList: [{SS: ['a']}]}}},
+        'The attempted filter operation is not supported for the provided type', done)
+    })
+
+    it('should return ValidationException for EQ on type NS', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        ScanFilter: {a: {ComparisonOperator: 'EQ', AttributeValueList: [{NS: ['1']}]}}},
+        'The attempted filter operation is not supported for the provided type', done)
+    })
+
+    it('should return ValidationException for EQ on type BS', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        ScanFilter: {a: {ComparisonOperator: 'EQ', AttributeValueList: [{BS: ['abcd']}]}}},
+        'The attempted filter operation is not supported for the provided type', done)
+    })
+
     it('should return ValidationException for 1 arg to NULL', function(done) {
       assertValidation({
         TableName: 'abc',
@@ -263,6 +284,27 @@ describe('scan', function() {
         'The attempted filter operation is not supported for the provided filter argument count', done)
     })
 
+    it('should return ValidationException for NE on type SS', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        ScanFilter: {a: {ComparisonOperator: 'NE', AttributeValueList: [{SS: ['a']}]}}},
+        'The attempted filter operation is not supported for the provided type', done)
+    })
+
+    it('should return ValidationException for NE on type NS', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        ScanFilter: {a: {ComparisonOperator: 'NE', AttributeValueList: [{NS: ['1']}]}}},
+        'The attempted filter operation is not supported for the provided type', done)
+    })
+
+    it('should return ValidationException for NE on type BS', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        ScanFilter: {a: {ComparisonOperator: 'NE', AttributeValueList: [{BS: ['abcd']}]}}},
+        'The attempted filter operation is not supported for the provided type', done)
+    })
+
     it('should return ValidationException for 0 args to LE', function(done) {
       assertValidation({
         TableName: 'abc',
@@ -275,6 +317,27 @@ describe('scan', function() {
         TableName: 'abc',
         ScanFilter: {a: {ComparisonOperator: 'LE', AttributeValueList: [{S: 'a'}, {S: 'a'}]}}},
         'The attempted filter operation is not supported for the provided filter argument count', done)
+    })
+
+    it('should return ValidationException for LE on type SS', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        ScanFilter: {a: {ComparisonOperator: 'LE', AttributeValueList: [{SS: ['a']}]}}},
+        'The attempted filter operation is not supported for the provided type', done)
+    })
+
+    it('should return ValidationException for LE on type NS', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        ScanFilter: {a: {ComparisonOperator: 'LE', AttributeValueList: [{NS: ['1']}]}}},
+        'The attempted filter operation is not supported for the provided type', done)
+    })
+
+    it('should return ValidationException for LE on type BS', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        ScanFilter: {a: {ComparisonOperator: 'LE', AttributeValueList: [{BS: ['abcd']}]}}},
+        'The attempted filter operation is not supported for the provided type', done)
     })
 
     it('should return ValidationException for 0 args to LT', function(done) {
@@ -291,6 +354,27 @@ describe('scan', function() {
         'The attempted filter operation is not supported for the provided filter argument count', done)
     })
 
+    it('should return ValidationException for LT on type SS', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        ScanFilter: {a: {ComparisonOperator: 'LT', AttributeValueList: [{SS: ['a']}]}}},
+        'The attempted filter operation is not supported for the provided type', done)
+    })
+
+    it('should return ValidationException for LT on type NS', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        ScanFilter: {a: {ComparisonOperator: 'LT', AttributeValueList: [{NS: ['1']}]}}},
+        'The attempted filter operation is not supported for the provided type', done)
+    })
+
+    it('should return ValidationException for LT on type BS', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        ScanFilter: {a: {ComparisonOperator: 'LT', AttributeValueList: [{BS: ['abcd']}]}}},
+        'The attempted filter operation is not supported for the provided type', done)
+    })
+
     it('should return ValidationException for 0 args to GE', function(done) {
       assertValidation({
         TableName: 'abc',
@@ -303,6 +387,27 @@ describe('scan', function() {
         TableName: 'abc',
         ScanFilter: {a: {ComparisonOperator: 'GE', AttributeValueList: [{S: 'a'}, {S: 'a'}]}}},
         'The attempted filter operation is not supported for the provided filter argument count', done)
+    })
+
+    it('should return ValidationException for GE on type SS', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        ScanFilter: {a: {ComparisonOperator: 'GE', AttributeValueList: [{SS: ['a']}]}}},
+        'The attempted filter operation is not supported for the provided type', done)
+    })
+
+    it('should return ValidationException for GE on type NS', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        ScanFilter: {a: {ComparisonOperator: 'GE', AttributeValueList: [{NS: ['1']}]}}},
+        'The attempted filter operation is not supported for the provided type', done)
+    })
+
+    it('should return ValidationException for GE on type BS', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        ScanFilter: {a: {ComparisonOperator: 'GE', AttributeValueList: [{BS: ['abcd']}]}}},
+        'The attempted filter operation is not supported for the provided type', done)
     })
 
     it('should return ValidationException for 0 args to GT', function(done) {
@@ -319,6 +424,27 @@ describe('scan', function() {
         'The attempted filter operation is not supported for the provided filter argument count', done)
     })
 
+    it('should return ValidationException for GT on type SS', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        ScanFilter: {a: {ComparisonOperator: 'GT', AttributeValueList: [{SS: ['a']}]}}},
+        'The attempted filter operation is not supported for the provided type', done)
+    })
+
+    it('should return ValidationException for GT on type NS', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        ScanFilter: {a: {ComparisonOperator: 'GT', AttributeValueList: [{NS: ['1']}]}}},
+        'The attempted filter operation is not supported for the provided type', done)
+    })
+
+    it('should return ValidationException for GT on type BS', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        ScanFilter: {a: {ComparisonOperator: 'GT', AttributeValueList: [{BS: ['abcd']}]}}},
+        'The attempted filter operation is not supported for the provided type', done)
+    })
+
     it('should return ValidationException for 0 args to CONTAINS', function(done) {
       assertValidation({
         TableName: 'abc',
@@ -331,6 +457,27 @@ describe('scan', function() {
         TableName: 'abc',
         ScanFilter: {a: {ComparisonOperator: 'CONTAINS', AttributeValueList: [{S: 'a'}, {S: 'a'}]}}},
         'The attempted filter operation is not supported for the provided filter argument count', done)
+    })
+
+    it('should return ValidationException for CONTAINS on type SS', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        ScanFilter: {a: {ComparisonOperator: 'CONTAINS', AttributeValueList: [{SS: ['a']}]}}},
+        'The attempted filter operation is not supported for the provided type', done)
+    })
+
+    it('should return ValidationException for CONTAINS on type NS', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        ScanFilter: {a: {ComparisonOperator: 'CONTAINS', AttributeValueList: [{NS: ['1']}]}}},
+        'The attempted filter operation is not supported for the provided type', done)
+    })
+
+    it('should return ValidationException for CONTAINS on type BS', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        ScanFilter: {a: {ComparisonOperator: 'CONTAINS', AttributeValueList: [{BS: ['abcd']}]}}},
+        'The attempted filter operation is not supported for the provided type', done)
     })
 
     it('should return ValidationException for 0 args to NOT_CONTAINS', function(done) {
@@ -347,6 +494,27 @@ describe('scan', function() {
         'The attempted filter operation is not supported for the provided filter argument count', done)
     })
 
+    it('should return ValidationException for NOT_CONTAINS on type SS', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        ScanFilter: {a: {ComparisonOperator: 'NOT_CONTAINS', AttributeValueList: [{SS: ['a']}]}}},
+        'The attempted filter operation is not supported for the provided type', done)
+    })
+
+    it('should return ValidationException for NOT_CONTAINS on type NS', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        ScanFilter: {a: {ComparisonOperator: 'NOT_CONTAINS', AttributeValueList: [{NS: ['1']}]}}},
+        'The attempted filter operation is not supported for the provided type', done)
+    })
+
+    it('should return ValidationException for NOT_CONTAINS on type BS', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        ScanFilter: {a: {ComparisonOperator: 'NOT_CONTAINS', AttributeValueList: [{BS: ['abcd']}]}}},
+        'The attempted filter operation is not supported for the provided type', done)
+    })
+
     it('should return ValidationException for 0 args to BEGINS_WITH', function(done) {
       assertValidation({
         TableName: 'abc',
@@ -359,6 +527,34 @@ describe('scan', function() {
         TableName: 'abc',
         ScanFilter: {a: {ComparisonOperator: 'BEGINS_WITH', AttributeValueList: [{S: 'a'}, {S: 'a'}]}}},
         'The attempted filter operation is not supported for the provided filter argument count', done)
+    })
+
+    it('should return ValidationException for BEGINS_WITH on type N', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        ScanFilter: {a: {ComparisonOperator: 'BEGINS_WITH', AttributeValueList: [{N: '1'}]}}},
+        'The attempted filter operation is not supported for the provided type', done)
+    })
+
+    it('should return ValidationException for BEGINS_WITH on type SS', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        ScanFilter: {a: {ComparisonOperator: 'BEGINS_WITH', AttributeValueList: [{SS: ['a']}]}}},
+        'The attempted filter operation is not supported for the provided type', done)
+    })
+
+    it('should return ValidationException for BEGINS_WITH on type NS', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        ScanFilter: {a: {ComparisonOperator: 'BEGINS_WITH', AttributeValueList: [{NS: ['1']}]}}},
+        'The attempted filter operation is not supported for the provided type', done)
+    })
+
+    it('should return ValidationException for BEGINS_WITH on type BS', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        ScanFilter: {a: {ComparisonOperator: 'BEGINS_WITH', AttributeValueList: [{BS: ['abcd']}]}}},
+        'The attempted filter operation is not supported for the provided type', done)
     })
 
     it('should return ValidationException for 0 args to IN', function(done) {
@@ -376,6 +572,27 @@ describe('scan', function() {
         'The attempted filter operation is not supported for the provided filter argument count', done)
     })
 
+    it('should return ValidationException for IN on type SS', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        ScanFilter: {a: {ComparisonOperator: 'IN', AttributeValueList: [{SS: ['a']}]}}},
+        'The attempted filter operation is not supported for the provided type', done)
+    })
+
+    it('should return ValidationException for IN on type NS', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        ScanFilter: {a: {ComparisonOperator: 'IN', AttributeValueList: [{NS: ['1']}]}}},
+        'The attempted filter operation is not supported for the provided type', done)
+    })
+
+    it('should return ValidationException for IN on type BS', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        ScanFilter: {a: {ComparisonOperator: 'IN', AttributeValueList: [{BS: ['abcd']}]}}},
+        'The attempted filter operation is not supported for the provided type', done)
+    })
+
     it('should return ValidationException for 0 args to BETWEEN', function(done) {
       assertValidation({
         TableName: 'abc',
@@ -388,6 +605,27 @@ describe('scan', function() {
         TableName: 'abc',
         ScanFilter: {a: {ComparisonOperator: 'BETWEEN', AttributeValueList: [{S: 'a'}, {S: 'a'}, {S: 'a'}]}}},
         'The attempted filter operation is not supported for the provided filter argument count', done)
+    })
+
+    it('should return ValidationException for BETWEEN on type SS', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        ScanFilter: {a: {ComparisonOperator: 'BETWEEN', AttributeValueList: [{S: 'a'}, {SS: ['a']}]}}},
+        'The attempted filter operation is not supported for the provided type', done)
+    })
+
+    it('should return ValidationException for BETWEEN on type NS', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        ScanFilter: {a: {ComparisonOperator: 'BETWEEN', AttributeValueList: [{S: 'a'}, {NS: ['1']}]}}},
+        'The attempted filter operation is not supported for the provided type', done)
+    })
+
+    it('should return ValidationException for BETWEEN on type BS', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        ScanFilter: {a: {ComparisonOperator: 'BETWEEN', AttributeValueList: [{S: 'a'}, {BS: ['abcd']}]}}},
+        'The attempted filter operation is not supported for the provided type', done)
     })
 
     // Weird - only checks this *after* it finds the table
@@ -508,6 +746,1089 @@ describe('scan', function() {
         ScanFilter: {a: {ComparisonOperator: 'NULL'}}},
         'The provided starting key is invalid: ' +
         'The parameter cannot be converted to a numeric value: b', done)
+    })
+
+  })
+
+  describe('functionality', function() {
+
+    it('should scan with no filter', function(done) {
+      var item = {a: {S: helpers.randomString()}}
+      request(helpers.opts('PutItem', {TableName: helpers.testHashTable, Item: item}), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        request(opts({TableName: helpers.testHashTable}), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.Items.should.includeEql(item)
+          res.body.Count.should.be.above(0)
+          res.body.ScannedCount.should.be.above(0)
+          done()
+        })
+      })
+    })
+
+    it('should scan by id (type S)', function(done) {
+      var item = {a: {S: helpers.randomString()}}
+      request(helpers.opts('PutItem', {TableName: helpers.testHashTable, Item: item}), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        request(opts({TableName: helpers.testHashTable, ScanFilter: {
+          a: {ComparisonOperator: 'EQ', AttributeValueList: [item.a]}
+        }}), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.Items.should.eql([item])
+          res.body.Count.should.equal(1)
+          res.body.ScannedCount.should.be.above(0)
+          done()
+        })
+      })
+    })
+
+    it('should return empty if no match', function(done) {
+      var item = {a: {S: helpers.randomString()}}
+      request(helpers.opts('PutItem', {TableName: helpers.testHashTable, Item: item}), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        request(opts({TableName: helpers.testHashTable, ScanFilter: {
+          a: {ComparisonOperator: 'EQ', AttributeValueList: [{S: helpers.randomString()}]}
+        }}), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.Items.should.be.empty
+          res.body.Count.should.equal(0)
+          res.body.ScannedCount.should.be.above(0)
+          done()
+        })
+      })
+    })
+
+    it('should scan by a non-id property (type N)', function(done) {
+      var item = {a: {S: helpers.randomString()}, b: {N: helpers.randomString()}},
+          item2 = {a: {S: helpers.randomString()}, b: item.b},
+          item3 = {a: {S: helpers.randomString()}, b: {N: helpers.randomString()}},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testHashTable] = [
+        {PutRequest: {Item: item}},
+        {PutRequest: {Item: item2}},
+        {PutRequest: {Item: item3}},
+      ]
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        request(opts({TableName: helpers.testHashTable, ScanFilter: {
+          b: {ComparisonOperator: 'EQ', AttributeValueList: [item.b]}
+        }}), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.Items.should.includeEql(item)
+          res.body.Items.should.includeEql(item2)
+          res.body.Items.should.have.length(2)
+          res.body.Count.should.equal(2)
+          done()
+        })
+      })
+    })
+
+    it('should scan by multiple properties', function(done) {
+      var item = {a: {S: helpers.randomString()}, b: {N: helpers.randomString()}, c: {N: helpers.randomString()}},
+          item2 = {a: {S: helpers.randomString()}, b: item.b, c: item.c},
+          item3 = {a: {S: helpers.randomString()}, b: item.b, c: {N: helpers.randomString()}},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testHashTable] = [
+        {PutRequest: {Item: item}},
+        {PutRequest: {Item: item2}},
+        {PutRequest: {Item: item3}},
+      ]
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        request(opts({TableName: helpers.testHashTable, ScanFilter: {
+          b: {ComparisonOperator: 'EQ', AttributeValueList: [item.b]},
+          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+        }}), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.Items.should.includeEql(item)
+          res.body.Items.should.includeEql(item2)
+          res.body.Items.should.have.length(2)
+          res.body.Count.should.equal(2)
+          done()
+        })
+      })
+    })
+
+    it('should scan by EQ on type B', function(done) {
+      var item = {a: {S: helpers.randomString()}, b: {B: 'abcd'}, c: {S: helpers.randomString()}},
+          item2 = {a: {S: helpers.randomString()}, b: {B: 'abcd'}, c: item.c},
+          item3 = {a: {S: helpers.randomString()}, b: {B: 'Yg=='}, c: item.c},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testHashTable] = [
+        {PutRequest: {Item: item}},
+        {PutRequest: {Item: item2}},
+        {PutRequest: {Item: item3}},
+      ]
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        request(opts({TableName: helpers.testHashTable, ScanFilter: {
+          b: {ComparisonOperator: 'EQ', AttributeValueList: [item.b]},
+          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+        }}), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.Items.should.includeEql(item)
+          res.body.Items.should.includeEql(item2)
+          res.body.Items.should.have.length(2)
+          res.body.Count.should.equal(2)
+          done()
+        })
+      })
+    })
+
+    it('should scan by EQ on different types', function(done) {
+      var item = {a: {S: helpers.randomString()}, b: {S: '1234'}, c: {S: helpers.randomString()}},
+          item2 = {a: {S: helpers.randomString()}, b: {N: '1234'}, c: item.c},
+          item3 = {a: {S: helpers.randomString()}, b: {B: '1234'}, c: item.c},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testHashTable] = [
+        {PutRequest: {Item: item}},
+        {PutRequest: {Item: item2}},
+        {PutRequest: {Item: item3}},
+      ]
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        request(opts({TableName: helpers.testHashTable, ScanFilter: {
+          b: {ComparisonOperator: 'EQ', AttributeValueList: [item.b]},
+          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+        }}), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.Items.should.eql([item])
+          res.body.Count.should.equal(1)
+          done()
+        })
+      })
+    })
+
+    it('should scan by NE on different types', function(done) {
+      var item = {a: {S: helpers.randomString()}, b: {S: '1234'}, c: {S: helpers.randomString()}},
+          item2 = {a: {S: helpers.randomString()}, b: {N: '1234'}, c: item.c},
+          item3 = {a: {S: helpers.randomString()}, b: {B: '1234'}, c: item.c},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testHashTable] = [
+        {PutRequest: {Item: item}},
+        {PutRequest: {Item: item2}},
+        {PutRequest: {Item: item3}},
+      ]
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        request(opts({TableName: helpers.testHashTable, ScanFilter: {
+          b: {ComparisonOperator: 'NE', AttributeValueList: [item.b]},
+          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+        }}), function(err, res) {
+          if (err) return done(err)
+          res.body.Items.should.includeEql(item2)
+          res.body.Items.should.includeEql(item3)
+          res.body.Items.should.have.length(2)
+          res.body.Count.should.equal(2)
+          done()
+        })
+      })
+    })
+
+    it('should scan by LE on type S', function(done) {
+      var item = {a: {S: helpers.randomString()}, b: {S: 'abd'}, c: {S: helpers.randomString()}},
+          item2 = {a: {S: helpers.randomString()}, b: {S: 'abc\xff'}, c: item.c},
+          item3 = {a: {S: helpers.randomString()}, b: {S: 'abc'}, c: item.c},
+          item4 = {a: {S: helpers.randomString()}, b: {S: 'abd\x00'}, c: item.c},
+          item5 = {a: {S: helpers.randomString()}, b: {S: 'ab'}, c: item.c},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testHashTable] = [
+        {PutRequest: {Item: item}},
+        {PutRequest: {Item: item2}},
+        {PutRequest: {Item: item3}},
+        {PutRequest: {Item: item4}},
+        {PutRequest: {Item: item5}},
+      ]
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        request(opts({TableName: helpers.testHashTable, ScanFilter: {
+          b: {ComparisonOperator: 'LE', AttributeValueList: [item.b]},
+          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+        }}), function(err, res) {
+          if (err) return done(err)
+          res.body.Items.should.includeEql(item)
+          res.body.Items.should.includeEql(item2)
+          res.body.Items.should.includeEql(item3)
+          res.body.Items.should.includeEql(item5)
+          res.body.Items.should.have.length(4)
+          res.body.Count.should.equal(4)
+          done()
+        })
+      })
+    })
+
+    it('should scan by LE on type N', function(done) {
+      var item = {a: {S: helpers.randomString()}, b: {N: '2'}, c: {S: helpers.randomString()}},
+          item2 = {a: {S: helpers.randomString()}, b: {N: '1.9999'}, c: item.c},
+          item3 = {a: {S: helpers.randomString()}, b: {N: '1'}, c: item.c},
+          item4 = {a: {S: helpers.randomString()}, b: {N: '2.00000001'}, c: item.c},
+          item5 = {a: {S: helpers.randomString()}, b: {N: '-0.5'}, c: item.c},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testHashTable] = [
+        {PutRequest: {Item: item}},
+        {PutRequest: {Item: item2}},
+        {PutRequest: {Item: item3}},
+        {PutRequest: {Item: item4}},
+        {PutRequest: {Item: item5}},
+      ]
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        request(opts({TableName: helpers.testHashTable, ScanFilter: {
+          b: {ComparisonOperator: 'LE', AttributeValueList: [item.b]},
+          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+        }}), function(err, res) {
+          if (err) return done(err)
+          res.body.Items.should.includeEql(item)
+          res.body.Items.should.includeEql(item2)
+          res.body.Items.should.includeEql(item3)
+          res.body.Items.should.includeEql(item5)
+          res.body.Items.should.have.length(4)
+          res.body.Count.should.equal(4)
+          done()
+        })
+      })
+    })
+
+    it('should scan by LE on type B', function(done) {
+      var item = {a: {S: helpers.randomString()}, b: {B: new Buffer('abd').toString('base64')}, c: {S: helpers.randomString()}},
+          item2 = {a: {S: helpers.randomString()}, b: {B: new Buffer('abc\xff').toString('base64')}, c: item.c},
+          item3 = {a: {S: helpers.randomString()}, b: {B: new Buffer('abc').toString('base64')}, c: item.c},
+          item4 = {a: {S: helpers.randomString()}, b: {B: new Buffer('abd\x00').toString('base64')}, c: item.c},
+          item5 = {a: {S: helpers.randomString()}, b: {B: new Buffer('ab').toString('base64')}, c: item.c},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testHashTable] = [
+        {PutRequest: {Item: item}},
+        {PutRequest: {Item: item2}},
+        {PutRequest: {Item: item3}},
+        {PutRequest: {Item: item4}},
+        {PutRequest: {Item: item5}},
+      ]
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        request(opts({TableName: helpers.testHashTable, ScanFilter: {
+          b: {ComparisonOperator: 'LE', AttributeValueList: [item.b]},
+          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+        }}), function(err, res) {
+          if (err) return done(err)
+          res.body.Items.should.includeEql(item)
+          res.body.Items.should.includeEql(item2)
+          res.body.Items.should.includeEql(item3)
+          res.body.Items.should.includeEql(item5)
+          res.body.Items.should.have.length(4)
+          res.body.Count.should.equal(4)
+          done()
+        })
+      })
+    })
+
+    it('should scan by LT on type S', function(done) {
+      var item = {a: {S: helpers.randomString()}, b: {S: 'abd'}, c: {S: helpers.randomString()}},
+          item2 = {a: {S: helpers.randomString()}, b: {S: 'abc\xff'}, c: item.c},
+          item3 = {a: {S: helpers.randomString()}, b: {S: 'abc'}, c: item.c},
+          item4 = {a: {S: helpers.randomString()}, b: {S: 'abd\x00'}, c: item.c},
+          item5 = {a: {S: helpers.randomString()}, b: {S: 'ab'}, c: item.c},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testHashTable] = [
+        {PutRequest: {Item: item}},
+        {PutRequest: {Item: item2}},
+        {PutRequest: {Item: item3}},
+        {PutRequest: {Item: item4}},
+        {PutRequest: {Item: item5}},
+      ]
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        request(opts({TableName: helpers.testHashTable, ScanFilter: {
+          b: {ComparisonOperator: 'LT', AttributeValueList: [item.b]},
+          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+        }}), function(err, res) {
+          if (err) return done(err)
+          res.body.Items.should.includeEql(item2)
+          res.body.Items.should.includeEql(item3)
+          res.body.Items.should.includeEql(item5)
+          res.body.Items.should.have.length(3)
+          res.body.Count.should.equal(3)
+          done()
+        })
+      })
+    })
+
+    it('should scan by LT on type N', function(done) {
+      var item = {a: {S: helpers.randomString()}, b: {N: '2'}, c: {S: helpers.randomString()}},
+          item2 = {a: {S: helpers.randomString()}, b: {N: '1.9999'}, c: item.c},
+          item3 = {a: {S: helpers.randomString()}, b: {N: '1'}, c: item.c},
+          item4 = {a: {S: helpers.randomString()}, b: {N: '2.00000001'}, c: item.c},
+          item5 = {a: {S: helpers.randomString()}, b: {N: '-0.5'}, c: item.c},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testHashTable] = [
+        {PutRequest: {Item: item}},
+        {PutRequest: {Item: item2}},
+        {PutRequest: {Item: item3}},
+        {PutRequest: {Item: item4}},
+        {PutRequest: {Item: item5}},
+      ]
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        request(opts({TableName: helpers.testHashTable, ScanFilter: {
+          b: {ComparisonOperator: 'LT', AttributeValueList: [item.b]},
+          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+        }}), function(err, res) {
+          if (err) return done(err)
+          res.body.Items.should.includeEql(item2)
+          res.body.Items.should.includeEql(item3)
+          res.body.Items.should.includeEql(item5)
+          res.body.Items.should.have.length(3)
+          res.body.Count.should.equal(3)
+          done()
+        })
+      })
+    })
+
+    it('should scan by LT on type B', function(done) {
+      var item = {a: {S: helpers.randomString()}, b: {B: new Buffer('abd').toString('base64')}, c: {S: helpers.randomString()}},
+          item2 = {a: {S: helpers.randomString()}, b: {B: new Buffer('abc\xff').toString('base64')}, c: item.c},
+          item3 = {a: {S: helpers.randomString()}, b: {B: new Buffer('abc').toString('base64')}, c: item.c},
+          item4 = {a: {S: helpers.randomString()}, b: {B: new Buffer('abd\x00').toString('base64')}, c: item.c},
+          item5 = {a: {S: helpers.randomString()}, b: {B: new Buffer('ab').toString('base64')}, c: item.c},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testHashTable] = [
+        {PutRequest: {Item: item}},
+        {PutRequest: {Item: item2}},
+        {PutRequest: {Item: item3}},
+        {PutRequest: {Item: item4}},
+        {PutRequest: {Item: item5}},
+      ]
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        request(opts({TableName: helpers.testHashTable, ScanFilter: {
+          b: {ComparisonOperator: 'LT', AttributeValueList: [item.b]},
+          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+        }}), function(err, res) {
+          if (err) return done(err)
+          res.body.Items.should.includeEql(item2)
+          res.body.Items.should.includeEql(item3)
+          res.body.Items.should.includeEql(item5)
+          res.body.Items.should.have.length(3)
+          res.body.Count.should.equal(3)
+          done()
+        })
+      })
+    })
+
+    it('should scan by GE on type S', function(done) {
+      var item = {a: {S: helpers.randomString()}, b: {S: 'abd'}, c: {S: helpers.randomString()}},
+          item2 = {a: {S: helpers.randomString()}, b: {S: 'abc\xff'}, c: item.c},
+          item3 = {a: {S: helpers.randomString()}, b: {S: 'abc'}, c: item.c},
+          item4 = {a: {S: helpers.randomString()}, b: {S: 'abd\x00'}, c: item.c},
+          item5 = {a: {S: helpers.randomString()}, b: {S: 'ab'}, c: item.c},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testHashTable] = [
+        {PutRequest: {Item: item}},
+        {PutRequest: {Item: item2}},
+        {PutRequest: {Item: item3}},
+        {PutRequest: {Item: item4}},
+        {PutRequest: {Item: item5}},
+      ]
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        request(opts({TableName: helpers.testHashTable, ScanFilter: {
+          b: {ComparisonOperator: 'GE', AttributeValueList: [item3.b]},
+          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+        }}), function(err, res) {
+          if (err) return done(err)
+          res.body.Items.should.includeEql(item)
+          res.body.Items.should.includeEql(item2)
+          res.body.Items.should.includeEql(item3)
+          res.body.Items.should.includeEql(item4)
+          res.body.Items.should.have.length(4)
+          res.body.Count.should.equal(4)
+          done()
+        })
+      })
+    })
+
+    it('should scan by GE on type N', function(done) {
+      var item = {a: {S: helpers.randomString()}, b: {N: '2'}, c: {S: helpers.randomString()}},
+          item2 = {a: {S: helpers.randomString()}, b: {N: '1.9999'}, c: item.c},
+          item3 = {a: {S: helpers.randomString()}, b: {N: '1'}, c: item.c},
+          item4 = {a: {S: helpers.randomString()}, b: {N: '2.00000001'}, c: item.c},
+          item5 = {a: {S: helpers.randomString()}, b: {N: '-0.5'}, c: item.c},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testHashTable] = [
+        {PutRequest: {Item: item}},
+        {PutRequest: {Item: item2}},
+        {PutRequest: {Item: item3}},
+        {PutRequest: {Item: item4}},
+        {PutRequest: {Item: item5}},
+      ]
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        request(opts({TableName: helpers.testHashTable, ScanFilter: {
+          b: {ComparisonOperator: 'GE', AttributeValueList: [item2.b]},
+          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+        }}), function(err, res) {
+          if (err) return done(err)
+          res.body.Items.should.includeEql(item)
+          res.body.Items.should.includeEql(item2)
+          res.body.Items.should.includeEql(item4)
+          res.body.Items.should.have.length(3)
+          res.body.Count.should.equal(3)
+          done()
+        })
+      })
+    })
+
+    it('should scan by GE on type B', function(done) {
+      var item = {a: {S: helpers.randomString()}, b: {B: new Buffer('abd').toString('base64')}, c: {S: helpers.randomString()}},
+          item2 = {a: {S: helpers.randomString()}, b: {B: new Buffer('abc\xff').toString('base64')}, c: item.c},
+          item3 = {a: {S: helpers.randomString()}, b: {B: new Buffer('abc').toString('base64')}, c: item.c},
+          item4 = {a: {S: helpers.randomString()}, b: {B: new Buffer('abd\x00').toString('base64')}, c: item.c},
+          item5 = {a: {S: helpers.randomString()}, b: {B: new Buffer('ab').toString('base64')}, c: item.c},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testHashTable] = [
+        {PutRequest: {Item: item}},
+        {PutRequest: {Item: item2}},
+        {PutRequest: {Item: item3}},
+        {PutRequest: {Item: item4}},
+        {PutRequest: {Item: item5}},
+      ]
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        request(opts({TableName: helpers.testHashTable, ScanFilter: {
+          b: {ComparisonOperator: 'GE', AttributeValueList: [item3.b]},
+          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+        }}), function(err, res) {
+          if (err) return done(err)
+          res.body.Items.should.includeEql(item)
+          res.body.Items.should.includeEql(item2)
+          res.body.Items.should.includeEql(item3)
+          res.body.Items.should.includeEql(item4)
+          res.body.Items.should.have.length(4)
+          res.body.Count.should.equal(4)
+          done()
+        })
+      })
+    })
+
+    it('should scan by GT on type S', function(done) {
+      var item = {a: {S: helpers.randomString()}, b: {S: 'abd'}, c: {S: helpers.randomString()}},
+          item2 = {a: {S: helpers.randomString()}, b: {S: 'abc\xff'}, c: item.c},
+          item3 = {a: {S: helpers.randomString()}, b: {S: 'abc'}, c: item.c},
+          item4 = {a: {S: helpers.randomString()}, b: {S: 'abd\x00'}, c: item.c},
+          item5 = {a: {S: helpers.randomString()}, b: {S: 'ab'}, c: item.c},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testHashTable] = [
+        {PutRequest: {Item: item}},
+        {PutRequest: {Item: item2}},
+        {PutRequest: {Item: item3}},
+        {PutRequest: {Item: item4}},
+        {PutRequest: {Item: item5}},
+      ]
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        request(opts({TableName: helpers.testHashTable, ScanFilter: {
+          b: {ComparisonOperator: 'GT', AttributeValueList: [item3.b]},
+          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+        }}), function(err, res) {
+          if (err) return done(err)
+          res.body.Items.should.includeEql(item)
+          res.body.Items.should.includeEql(item2)
+          res.body.Items.should.includeEql(item4)
+          res.body.Items.should.have.length(3)
+          res.body.Count.should.equal(3)
+          done()
+        })
+      })
+    })
+
+    it('should scan by GT on type N', function(done) {
+      var item = {a: {S: helpers.randomString()}, b: {N: '2'}, c: {S: helpers.randomString()}},
+          item2 = {a: {S: helpers.randomString()}, b: {N: '1.9999'}, c: item.c},
+          item3 = {a: {S: helpers.randomString()}, b: {N: '1'}, c: item.c},
+          item4 = {a: {S: helpers.randomString()}, b: {N: '2.00000001'}, c: item.c},
+          item5 = {a: {S: helpers.randomString()}, b: {N: '-0.5'}, c: item.c},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testHashTable] = [
+        {PutRequest: {Item: item}},
+        {PutRequest: {Item: item2}},
+        {PutRequest: {Item: item3}},
+        {PutRequest: {Item: item4}},
+        {PutRequest: {Item: item5}},
+      ]
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        request(opts({TableName: helpers.testHashTable, ScanFilter: {
+          b: {ComparisonOperator: 'GT', AttributeValueList: [item2.b]},
+          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+        }}), function(err, res) {
+          if (err) return done(err)
+          res.body.Items.should.includeEql(item)
+          res.body.Items.should.includeEql(item4)
+          res.body.Items.should.have.length(2)
+          res.body.Count.should.equal(2)
+          done()
+        })
+      })
+    })
+
+    it('should scan by GT on type B', function(done) {
+      var item = {a: {S: helpers.randomString()}, b: {B: new Buffer('abd').toString('base64')}, c: {S: helpers.randomString()}},
+          item2 = {a: {S: helpers.randomString()}, b: {B: new Buffer('abc\xff').toString('base64')}, c: item.c},
+          item3 = {a: {S: helpers.randomString()}, b: {B: new Buffer('abc').toString('base64')}, c: item.c},
+          item4 = {a: {S: helpers.randomString()}, b: {B: new Buffer('abd\x00').toString('base64')}, c: item.c},
+          item5 = {a: {S: helpers.randomString()}, b: {B: new Buffer('ab').toString('base64')}, c: item.c},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testHashTable] = [
+        {PutRequest: {Item: item}},
+        {PutRequest: {Item: item2}},
+        {PutRequest: {Item: item3}},
+        {PutRequest: {Item: item4}},
+        {PutRequest: {Item: item5}},
+      ]
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        request(opts({TableName: helpers.testHashTable, ScanFilter: {
+          b: {ComparisonOperator: 'GT', AttributeValueList: [item3.b]},
+          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+        }}), function(err, res) {
+          if (err) return done(err)
+          res.body.Items.should.includeEql(item)
+          res.body.Items.should.includeEql(item2)
+          res.body.Items.should.includeEql(item4)
+          res.body.Items.should.have.length(3)
+          res.body.Count.should.equal(3)
+          done()
+        })
+      })
+    })
+
+    it('should scan by NOT_NULL', function(done) {
+      var item = {a: {S: helpers.randomString()}, b: {S: helpers.randomString()}, c: {S: helpers.randomString()}},
+          item2 = {a: {S: helpers.randomString()}, b: {S: helpers.randomString()}, c: item.c},
+          item3 = {a: {S: helpers.randomString()}, c: item.c},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testHashTable] = [
+        {PutRequest: {Item: item}},
+        {PutRequest: {Item: item2}},
+        {PutRequest: {Item: item3}},
+      ]
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        request(opts({TableName: helpers.testHashTable, ScanFilter: {
+          b: {ComparisonOperator: 'NOT_NULL'},
+          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+        }}), function(err, res) {
+          if (err) return done(err)
+          res.body.Items.should.includeEql(item)
+          res.body.Items.should.includeEql(item2)
+          res.body.Items.should.have.length(2)
+          res.body.Count.should.equal(2)
+          done()
+        })
+      })
+    })
+
+    it('should scan by NULL', function(done) {
+      var item = {a: {S: helpers.randomString()}, c: {S: helpers.randomString()}},
+          item2 = {a: {S: helpers.randomString()}, c: item.c},
+          item3 = {a: {S: helpers.randomString()}, b: {S: helpers.randomString()}, c: item.c},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testHashTable] = [
+        {PutRequest: {Item: item}},
+        {PutRequest: {Item: item2}},
+        {PutRequest: {Item: item3}},
+      ]
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        request(opts({TableName: helpers.testHashTable, ScanFilter: {
+          b: {ComparisonOperator: 'NULL'},
+          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+        }}), function(err, res) {
+          if (err) return done(err)
+          res.body.Items.should.includeEql(item)
+          res.body.Items.should.includeEql(item2)
+          res.body.Items.should.have.length(2)
+          res.body.Count.should.equal(2)
+          done()
+        })
+      })
+    })
+
+    it('should scan by CONTAINS on type S', function(done) {
+      var item = {a: {S: helpers.randomString()}, b: {S: 'abdef'}, c: {S: helpers.randomString()}},
+          item2 = {a: {S: helpers.randomString()}, b: {SS: ['abd', 'bde']}, c: item.c},
+          item3 = {a: {S: helpers.randomString()}, b: {B: new Buffer('abdef').toString('base64')}, c: item.c},
+          item4 = {a: {S: helpers.randomString()}, b: {BS: ['abcd', new Buffer('bde').toString('base64')]}, c: item.c},
+          item5 = {a: {S: helpers.randomString()}, b: {S: 'bde'}, c: item.c},
+          item6 = {a: {S: helpers.randomString()}, b: {S: 'abd'}, c: item.c},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testHashTable] = [
+        {PutRequest: {Item: item}},
+        {PutRequest: {Item: item2}},
+        {PutRequest: {Item: item3}},
+        {PutRequest: {Item: item4}},
+        {PutRequest: {Item: item5}},
+        {PutRequest: {Item: item6}},
+      ]
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        request(opts({TableName: helpers.testHashTable, ScanFilter: {
+          b: {ComparisonOperator: 'CONTAINS', AttributeValueList: [item5.b]},
+          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+        }}), function(err, res) {
+          if (err) return done(err)
+          res.body.Items.should.includeEql(item)
+          res.body.Items.should.includeEql(item2)
+          res.body.Items.should.includeEql(item5)
+          res.body.Items.should.have.length(3)
+          res.body.Count.should.equal(3)
+          done()
+        })
+      })
+    })
+
+    it('should scan by CONTAINS on type N', function(done) {
+      var item = {a: {S: helpers.randomString()}, b: {N: '1234'}, c: {S: helpers.randomString()}},
+          item2 = {a: {S: helpers.randomString()}, b: {NS: ['123', '234']}, c: item.c},
+          item3 = {a: {S: helpers.randomString()}, b: {B: new Buffer('1234').toString('base64')}, c: item.c},
+          item4 = {a: {S: helpers.randomString()}, b: {BS: [new Buffer('234').toString('base64')]}, c: item.c},
+          item5 = {a: {S: helpers.randomString()}, b: {SS: ['234']}, c: item.c},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testHashTable] = [
+        {PutRequest: {Item: item}},
+        {PutRequest: {Item: item2}},
+        {PutRequest: {Item: item3}},
+        {PutRequest: {Item: item4}},
+        {PutRequest: {Item: item5}},
+      ]
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        request(opts({TableName: helpers.testHashTable, ScanFilter: {
+          b: {ComparisonOperator: 'CONTAINS', AttributeValueList: [{N: '234'}]},
+          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+        }}), function(err, res) {
+          if (err) return done(err)
+          res.body.Items.should.eql([item2])
+          res.body.Count.should.equal(1)
+          done()
+        })
+      })
+    })
+
+    it('should scan by CONTAINS on type B', function(done) {
+      var item = {a: {S: helpers.randomString()}, b: {S: 'abdef'}, c: {S: helpers.randomString()}},
+          item2 = {a: {S: helpers.randomString()}, b: {SS: ['abd', 'bde']}, c: item.c},
+          item3 = {a: {S: helpers.randomString()}, b: {B: new Buffer('abdef').toString('base64')}, c: item.c},
+          item4 = {a: {S: helpers.randomString()}, b: {BS: [new Buffer('bde').toString('base64'), 'abcd']}, c: item.c},
+          item5 = {a: {S: helpers.randomString()}, b: {B: new Buffer('bde').toString('base64')}, c: item.c},
+          item6 = {a: {S: helpers.randomString()}, b: {S: 'abd'}, c: item.c},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testHashTable] = [
+        {PutRequest: {Item: item}},
+        {PutRequest: {Item: item2}},
+        {PutRequest: {Item: item3}},
+        {PutRequest: {Item: item4}},
+        {PutRequest: {Item: item5}},
+        {PutRequest: {Item: item6}},
+      ]
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        request(opts({TableName: helpers.testHashTable, ScanFilter: {
+          b: {ComparisonOperator: 'CONTAINS', AttributeValueList: [item5.b]},
+          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+        }}), function(err, res) {
+          if (err) return done(err)
+          res.body.Items.should.includeEql(item3)
+          res.body.Items.should.includeEql(item4)
+          res.body.Items.should.includeEql(item5)
+          res.body.Items.should.have.length(3)
+          res.body.Count.should.equal(3)
+          done()
+        })
+      })
+    })
+
+    it('should scan by NOT_CONTAINS on type S', function(done) {
+      var item = {a: {S: helpers.randomString()}, b: {S: 'abdef'}, c: {S: helpers.randomString()}},
+          item2 = {a: {S: helpers.randomString()}, b: {SS: ['abd', 'bde']}, c: item.c},
+          item3 = {a: {S: helpers.randomString()}, b: {B: new Buffer('abdef').toString('base64')}, c: item.c},
+          item4 = {a: {S: helpers.randomString()}, b: {BS: [new Buffer('bde').toString('base64'), 'abcd']}, c: item.c},
+          item5 = {a: {S: helpers.randomString()}, b: {S: 'bde'}, c: item.c},
+          item6 = {a: {S: helpers.randomString()}, b: {S: 'abd'}, c: item.c},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testHashTable] = [
+        {PutRequest: {Item: item}},
+        {PutRequest: {Item: item2}},
+        {PutRequest: {Item: item3}},
+        {PutRequest: {Item: item4}},
+        {PutRequest: {Item: item5}},
+        {PutRequest: {Item: item6}},
+      ]
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        request(opts({TableName: helpers.testHashTable, ScanFilter: {
+          b: {ComparisonOperator: 'NOT_CONTAINS', AttributeValueList: [item5.b]},
+          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+        }}), function(err, res) {
+          if (err) return done(err)
+          res.body.Items.should.includeEql(item3)
+          res.body.Items.should.includeEql(item4)
+          res.body.Items.should.includeEql(item6)
+          res.body.Items.should.have.length(3)
+          res.body.Count.should.equal(3)
+          done()
+        })
+      })
+    })
+
+    it('should scan by NOT_CONTAINS on type N', function(done) {
+      var item = {a: {S: helpers.randomString()}, b: {N: '1234'}, c: {S: helpers.randomString()}},
+          item2 = {a: {S: helpers.randomString()}, b: {NS: ['123', '234']}, c: item.c},
+          item3 = {a: {S: helpers.randomString()}, b: {B: new Buffer('1234').toString('base64')}, c: item.c},
+          item4 = {a: {S: helpers.randomString()}, b: {BS: [new Buffer('234').toString('base64')]}, c: item.c},
+          item5 = {a: {S: helpers.randomString()}, b: {SS: ['234']}, c: item.c},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testHashTable] = [
+        {PutRequest: {Item: item}},
+        {PutRequest: {Item: item2}},
+        {PutRequest: {Item: item3}},
+        {PutRequest: {Item: item4}},
+        {PutRequest: {Item: item5}},
+      ]
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        request(opts({TableName: helpers.testHashTable, ScanFilter: {
+          b: {ComparisonOperator: 'NOT_CONTAINS', AttributeValueList: [{N: '234'}]},
+          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+        }}), function(err, res) {
+          if (err) return done(err)
+          res.body.Items.should.includeEql(item)
+          res.body.Items.should.includeEql(item3)
+          res.body.Items.should.includeEql(item4)
+          res.body.Items.should.includeEql(item5)
+          res.body.Items.should.have.length(4)
+          res.body.Count.should.equal(4)
+          done()
+        })
+      })
+    })
+
+    it('should scan by NOT_CONTAINS on type B', function(done) {
+      var item = {a: {S: helpers.randomString()}, b: {S: 'abdef'}, c: {S: helpers.randomString()}},
+          item2 = {a: {S: helpers.randomString()}, b: {SS: ['abd', 'bde']}, c: item.c},
+          item3 = {a: {S: helpers.randomString()}, b: {B: new Buffer('abdef').toString('base64')}, c: item.c},
+          item4 = {a: {S: helpers.randomString()}, b: {BS: [new Buffer('bde').toString('base64'), 'abcd']}, c: item.c},
+          item5 = {a: {S: helpers.randomString()}, b: {B: new Buffer('bde').toString('base64')}, c: item.c},
+          item6 = {a: {S: helpers.randomString()}, b: {S: 'abd'}, c: item.c},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testHashTable] = [
+        {PutRequest: {Item: item}},
+        {PutRequest: {Item: item2}},
+        {PutRequest: {Item: item3}},
+        {PutRequest: {Item: item4}},
+        {PutRequest: {Item: item5}},
+        {PutRequest: {Item: item6}},
+      ]
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        request(opts({TableName: helpers.testHashTable, ScanFilter: {
+          b: {ComparisonOperator: 'NOT_CONTAINS', AttributeValueList: [item5.b]},
+          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+        }}), function(err, res) {
+          if (err) return done(err)
+          res.body.Items.should.includeEql(item)
+          res.body.Items.should.includeEql(item2)
+          res.body.Items.should.includeEql(item6)
+          res.body.Items.should.have.length(3)
+          res.body.Count.should.equal(3)
+          done()
+        })
+      })
+    })
+
+    it('should scan by BEGINS_WITH on type S', function(done) {
+      var item = {a: {S: helpers.randomString()}, b: {S: 'abdef'}, c: {S: helpers.randomString()}},
+          item2 = {a: {S: helpers.randomString()}, b: {SS: ['abd', 'bde']}, c: item.c},
+          item3 = {a: {S: helpers.randomString()}, b: {B: new Buffer('abdef').toString('base64')}, c: item.c},
+          item4 = {a: {S: helpers.randomString()}, b: {S: 'ab'}, c: item.c},
+          item5 = {a: {S: helpers.randomString()}, b: {S: 'abd'}, c: item.c},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testHashTable] = [
+        {PutRequest: {Item: item}},
+        {PutRequest: {Item: item2}},
+        {PutRequest: {Item: item3}},
+        {PutRequest: {Item: item4}},
+        {PutRequest: {Item: item5}},
+      ]
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        request(opts({TableName: helpers.testHashTable, ScanFilter: {
+          b: {ComparisonOperator: 'BEGINS_WITH', AttributeValueList: [item5.b]},
+          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+        }}), function(err, res) {
+          if (err) return done(err)
+          res.body.Items.should.includeEql(item)
+          res.body.Items.should.includeEql(item5)
+          res.body.Items.should.have.length(2)
+          res.body.Count.should.equal(2)
+          done()
+        })
+      })
+    })
+
+    it('should scan by BEGINS_WITH on type B', function(done) {
+      var item = {a: {S: helpers.randomString()}, b: {S: 'abdef'}, c: {S: helpers.randomString()}},
+          item2 = {a: {S: helpers.randomString()}, b: {SS: ['abd', 'bde']}, c: item.c},
+          item3 = {a: {S: helpers.randomString()}, b: {B: new Buffer('abdef').toString('base64')}, c: item.c},
+          item4 = {a: {S: helpers.randomString()}, b: {S: 'ab'}, c: item.c},
+          item5 = {a: {S: helpers.randomString()}, b: {B: new Buffer('abd').toString('base64')}, c: item.c},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testHashTable] = [
+        {PutRequest: {Item: item}},
+        {PutRequest: {Item: item2}},
+        {PutRequest: {Item: item3}},
+        {PutRequest: {Item: item4}},
+        {PutRequest: {Item: item5}},
+      ]
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        request(opts({TableName: helpers.testHashTable, ScanFilter: {
+          b: {ComparisonOperator: 'BEGINS_WITH', AttributeValueList: [item5.b]},
+          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+        }}), function(err, res) {
+          if (err) return done(err)
+          res.body.Items.should.includeEql(item3)
+          res.body.Items.should.includeEql(item5)
+          res.body.Items.should.have.length(2)
+          res.body.Count.should.equal(2)
+          done()
+        })
+      })
+    })
+
+    it('should scan by IN on type S', function(done) {
+      var item = {a: {S: helpers.randomString()}, b: {S: 'abdef'}, c: {S: helpers.randomString()}},
+          item2 = {a: {S: helpers.randomString()}, b: {SS: ['abd', 'bde']}, c: item.c},
+          item3 = {a: {S: helpers.randomString()}, b: {B: new Buffer('abdef').toString('base64')}, c: item.c},
+          item4 = {a: {S: helpers.randomString()}, b: {S: 'ab'}, c: item.c},
+          item5 = {a: {S: helpers.randomString()}, b: {S: 'abd'}, c: item.c},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testHashTable] = [
+        {PutRequest: {Item: item}},
+        {PutRequest: {Item: item2}},
+        {PutRequest: {Item: item3}},
+        {PutRequest: {Item: item4}},
+        {PutRequest: {Item: item5}},
+      ]
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        request(opts({TableName: helpers.testHashTable, ScanFilter: {
+          b: {ComparisonOperator: 'IN', AttributeValueList: [item5.b, item.b]},
+          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+        }}), function(err, res) {
+          if (err) return done(err)
+          res.body.Items.should.includeEql(item)
+          res.body.Items.should.includeEql(item5)
+          res.body.Items.should.have.length(2)
+          res.body.Count.should.equal(2)
+          done()
+        })
+      })
+    })
+
+    it('should scan by IN on type N', function(done) {
+      var item = {a: {S: helpers.randomString()}, b: {S: '1234'}, c: {S: helpers.randomString()}},
+          item2 = {a: {S: helpers.randomString()}, b: {NS: ['1234']}, c: item.c},
+          item3 = {a: {S: helpers.randomString()}, b: {B: new Buffer('1234').toString('base64')}, c: item.c},
+          item4 = {a: {S: helpers.randomString()}, b: {N: '1234'}, c: item.c},
+          item5 = {a: {S: helpers.randomString()}, b: {N: '123.45'}, c: item.c},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testHashTable] = [
+        {PutRequest: {Item: item}},
+        {PutRequest: {Item: item2}},
+        {PutRequest: {Item: item3}},
+        {PutRequest: {Item: item4}},
+        {PutRequest: {Item: item5}},
+      ]
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        request(opts({TableName: helpers.testHashTable, ScanFilter: {
+          b: {ComparisonOperator: 'IN', AttributeValueList: [item4.b, item5.b]},
+          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+        }}), function(err, res) {
+          if (err) return done(err)
+          res.body.Items.should.includeEql(item4)
+          res.body.Items.should.includeEql(item5)
+          res.body.Items.should.have.length(2)
+          res.body.Count.should.equal(2)
+          done()
+        })
+      })
+    })
+
+    it('should scan by IN on type B', function(done) {
+      var item = {a: {S: helpers.randomString()}, b: {S: '1234'}, c: {S: helpers.randomString()}},
+          item2 = {a: {S: helpers.randomString()}, b: {BS: [new Buffer('1234').toString('base64')]}, c: item.c},
+          item3 = {a: {S: helpers.randomString()}, b: {B: new Buffer('1234').toString('base64')}, c: item.c},
+          item4 = {a: {S: helpers.randomString()}, b: {N: '1234'}, c: item.c},
+          item5 = {a: {S: helpers.randomString()}, b: {B: new Buffer('12345').toString('base64')}, c: item.c},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testHashTable] = [
+        {PutRequest: {Item: item}},
+        {PutRequest: {Item: item2}},
+        {PutRequest: {Item: item3}},
+        {PutRequest: {Item: item4}},
+        {PutRequest: {Item: item5}},
+      ]
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        request(opts({TableName: helpers.testHashTable, ScanFilter: {
+          b: {ComparisonOperator: 'IN', AttributeValueList: [item3.b, item5.b]},
+          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+        }}), function(err, res) {
+          if (err) return done(err)
+          res.body.Items.should.includeEql(item3)
+          res.body.Items.should.includeEql(item5)
+          res.body.Items.should.have.length(2)
+          res.body.Count.should.equal(2)
+          done()
+        })
+      })
+    })
+
+    it('should scan by BETWEEN on type S', function(done) {
+      var item = {a: {S: helpers.randomString()}, b: {S: 'abc'}, c: {S: helpers.randomString()}},
+          item2 = {a: {S: helpers.randomString()}, b: {S: 'abd'}, c: item.c},
+          item3 = {a: {S: helpers.randomString()}, b: {S: 'abd\x00'}, c: item.c},
+          item4 = {a: {S: helpers.randomString()}, b: {S: 'abe'}, c: item.c},
+          item5 = {a: {S: helpers.randomString()}, b: {S: 'abe\x00'}, c: item.c},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testHashTable] = [
+        {PutRequest: {Item: item}},
+        {PutRequest: {Item: item2}},
+        {PutRequest: {Item: item3}},
+        {PutRequest: {Item: item4}},
+        {PutRequest: {Item: item5}},
+      ]
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        request(opts({TableName: helpers.testHashTable, ScanFilter: {
+          b: {ComparisonOperator: 'BETWEEN', AttributeValueList: [item2.b, item4.b]},
+          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+        }}), function(err, res) {
+          if (err) return done(err)
+          res.body.Items.should.includeEql(item2)
+          res.body.Items.should.includeEql(item3)
+          res.body.Items.should.includeEql(item4)
+          res.body.Items.should.have.length(3)
+          res.body.Count.should.equal(3)
+          done()
+        })
+      })
+    })
+
+    it('should scan by BETWEEN on type N', function(done) {
+      var item = {a: {S: helpers.randomString()}, b: {N: '123'}, c: {S: helpers.randomString()}},
+          item2 = {a: {S: helpers.randomString()}, b: {N: '124'}, c: item.c},
+          item3 = {a: {S: helpers.randomString()}, b: {N: '124.99999'}, c: item.c},
+          item4 = {a: {S: helpers.randomString()}, b: {N: '125'}, c: item.c},
+          item5 = {a: {S: helpers.randomString()}, b: {N: '125.000001'}, c: item.c},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testHashTable] = [
+        {PutRequest: {Item: item}},
+        {PutRequest: {Item: item2}},
+        {PutRequest: {Item: item3}},
+        {PutRequest: {Item: item4}},
+        {PutRequest: {Item: item5}},
+      ]
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        request(opts({TableName: helpers.testHashTable, ScanFilter: {
+          b: {ComparisonOperator: 'BETWEEN', AttributeValueList: [item2.b, item4.b]},
+          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+        }}), function(err, res) {
+          if (err) return done(err)
+          res.body.Items.should.includeEql(item2)
+          res.body.Items.should.includeEql(item3)
+          res.body.Items.should.includeEql(item4)
+          res.body.Items.should.have.length(3)
+          res.body.Count.should.equal(3)
+          done()
+        })
+      })
+    })
+
+    it('should scan by BETWEEN on type B', function(done) {
+      var item = {a: {S: helpers.randomString()}, b: {B: new Buffer('abc').toString('base64')}, c: {S: helpers.randomString()}},
+          item2 = {a: {S: helpers.randomString()}, b: {B: new Buffer('abd').toString('base64')}, c: item.c},
+          item3 = {a: {S: helpers.randomString()}, b: {B: new Buffer('abd\x00').toString('base64')}, c: item.c},
+          item4 = {a: {S: helpers.randomString()}, b: {B: new Buffer('abe').toString('base64')}, c: item.c},
+          item5 = {a: {S: helpers.randomString()}, b: {B: new Buffer('abe\x00').toString('base64')}, c: item.c},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testHashTable] = [
+        {PutRequest: {Item: item}},
+        {PutRequest: {Item: item2}},
+        {PutRequest: {Item: item3}},
+        {PutRequest: {Item: item4}},
+        {PutRequest: {Item: item5}},
+      ]
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        request(opts({TableName: helpers.testHashTable, ScanFilter: {
+          b: {ComparisonOperator: 'BETWEEN', AttributeValueList: [item2.b, item4.b]},
+          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+        }}), function(err, res) {
+          if (err) return done(err)
+          res.body.Items.should.includeEql(item2)
+          res.body.Items.should.includeEql(item3)
+          res.body.Items.should.includeEql(item4)
+          res.body.Items.should.have.length(3)
+          res.body.Count.should.equal(3)
+          done()
+        })
+      })
     })
 
   })
