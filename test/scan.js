@@ -565,10 +565,13 @@ describe('scan', function() {
     })
 
     // TODO: Will have to come back to this one - not sure what the upper bound is
+    // It seems to be at least greater than 1000000!!!
     it.skip('should return ValidationException for 3 args to IN', function(done) {
+      var attrValList = [], i
+      for (i = 0; i < 1000000; i++) attrValList.push({S: 'a'})
       assertValidation({
         TableName: 'abc',
-        ScanFilter: {a: {ComparisonOperator: 'IN', AttributeValueList: [{S: 'a'}, {S: 'a'}, {S: 'a'}]}}},
+        ScanFilter: {a: {ComparisonOperator: 'IN', AttributeValueList: attrValList}}},
         'The attempted filter operation is not supported for the provided filter argument count', done)
     })
 
@@ -1829,6 +1832,115 @@ describe('scan', function() {
           done()
         })
       })
+    })
+
+    it('should only return requested attributes', function(done) {
+      var item = {a: {S: helpers.randomString()}, b: {S: 'b1'}, c: {S: helpers.randomString()}, d: {S: 'd1'}},
+          item2 = {a: {S: helpers.randomString()}, b: {S: 'b2'}, c: item.c},
+          item3 = {a: {S: helpers.randomString()}, b: {S: 'b3'}, c: item.c, d: {S: 'd3'}, e: {S: 'e3'}},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testHashTable] = [
+        {PutRequest: {Item: item}},
+        {PutRequest: {Item: item2}},
+        {PutRequest: {Item: item3}},
+      ]
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        request(opts({TableName: helpers.testHashTable, ScanFilter: {
+          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+        }, AttributesToGet: ['b', 'd']}), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.Items.should.includeEql({b: {S: 'b1'}, d: {S: 'd1'}})
+          res.body.Items.should.includeEql({b: {S: 'b2'}})
+          res.body.Items.should.includeEql({b: {S: 'b3'}, d: {S: 'd3'}})
+          res.body.Items.should.have.length(3)
+          res.body.Count.should.equal(3)
+          done()
+        })
+      })
+    })
+
+    it('should return COUNT if requested', function(done) {
+      var item = {a: {S: helpers.randomString()}, b: {S: '1'}, c: {S: helpers.randomString()}},
+          item2 = {a: {S: helpers.randomString()}, b: {N: '1'}, c: item.c},
+          item3 = {a: {S: helpers.randomString()}, b: {S: '1'}, c: item.c},
+          item4 = {a: {S: helpers.randomString()}, c: item.c},
+          item5 = {a: {S: helpers.randomString()}, b: {S: '2'}, c: item.c},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testHashTable] = [
+        {PutRequest: {Item: item}},
+        {PutRequest: {Item: item2}},
+        {PutRequest: {Item: item3}},
+        {PutRequest: {Item: item4}},
+        {PutRequest: {Item: item5}},
+      ]
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        request(opts({TableName: helpers.testHashTable, ScanFilter: {
+          b: {ComparisonOperator: 'EQ', AttributeValueList: [item.b]},
+          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+        }, Select: 'COUNT'}), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          should.not.exist(res.body.Items)
+          res.body.Count.should.equal(2)
+          res.body.ScannedCount.should.be.above(1)
+          done()
+        })
+      })
+    })
+
+    it.skip('should return too large', function(done) {
+      this.timeout(200000)
+
+      var b = '', i, c = helpers.randomString(), batchReq = {RequestItems: {}}
+      for (i = 0; i < 65000; i++) b += 'b'
+      batchReq.RequestItems[helpers.testHashTable] = []
+      for (i = 0; i < 25; i++)
+        batchReq.RequestItems[helpers.testHashTable]
+          .push({PutRequest: {Item: {a: {S: c + helpers.randomString()}, b: {S: b}, c: {S: c}}}})
+
+      var batchRes = {}
+      async.doWhilst(
+        function(cb) {
+          request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+            if (err) return cb(err)
+            res.statusCode.should.equal(200)
+            batchRes = res
+            if (res.body.UnprocessedItems && Object.keys(res.body.UnprocessedItems).length) {
+              if (res.body.UnprocessedItems[helpers.testHashTable])
+                console.log('Unprocessed: ' + res.body.UnprocessedItems[helpers.testHashTable].length)
+              batchReq.RequestItems = res.body.UnprocessedItems
+            } else if (/ProvisionedThroughputExceededException/.test(res.body.__type)) {
+              console.log('ProvisionedThroughputExceededException')
+              return setTimeout(cb, 2000)
+            }
+            cb()
+          })
+        },
+        function() {
+          return (batchRes.body.UnprocessedItems && Object.keys(batchRes.body.UnprocessedItems).length) ||
+            /ProvisionedThroughputExceededException/.test(batchRes.body.__type)
+        },
+        function(err) {
+          if (err) return done(err)
+          request(opts({TableName: helpers.testHashTable, ExclusiveStartKey: {a: {S: c}}, ScanFilter: {
+            c: {ComparisonOperator: 'EQ', AttributeValueList: [{S: c}]},
+          }, AttributesToGet: ['a'], ReturnConsumedCapacity: 'TOTAL'}), function(err, res) {
+            if (err) return done(err)
+            res.statusCode.should.equal(200)
+            // Doesn't matter if attributes are selected or not - ScannedCount and ConsumedCapacity are the same
+            res.body.ScannedCount.should.equal(21)
+            res.body.ConsumedCapacity.CapacityUnits.should.equal(130) // 51000 = 129, 52000 = 129, 53000 = 131
+            res.body.LastEvaluatedKey.should.have.property('a')
+            done()
+          })
+        }
+      )
+
     })
 
   })
