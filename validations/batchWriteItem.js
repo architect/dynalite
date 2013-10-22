@@ -81,5 +81,12 @@ exports.types = {
 }
 
 exports.custom = function(data) {
+  for (var table in data.RequestItems) {
+    if (!data.RequestItems[table].length)
+      return 'The batch write request list for a table cannot be null or empty: ' + table
+    if (data.RequestItems[table].some(function(item) { return !Object.keys(item).length }))
+      return 'Supplied AttributeValue has more than one datatypes set, ' +
+        'must contain exactly one of the supported datatypes'
+  }
 }
 

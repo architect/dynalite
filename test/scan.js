@@ -1893,6 +1893,7 @@ describe('scan', function() {
       })
     })
 
+    // TODO: Will have to come back to this - not sure what the exact behaviour is
     it.skip('should return too large', function(done) {
       this.timeout(200000)
 

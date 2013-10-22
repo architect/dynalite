@@ -236,10 +236,12 @@ validateFns.regex = function(parent, key, pattern, data, errors) {
   validate(RegExp('^' + pattern + '$').test(data), 'Member must satisfy regular expression pattern: ' + pattern, data, parent, key, errors)
 }
 validateFns.lengthGreaterThanOrEqual = function(parent, key, val, data, errors) {
-  validate(data.length >= val, 'Member must have length greater than or equal to ' + val, data, parent, key, errors)
+  var length = (typeof data == 'object' && !Array.isArray(data)) ? Object.keys(data).length : data.length
+  validate(length >= val, 'Member must have length greater than or equal to ' + val, data, parent, key, errors)
 }
 validateFns.lengthLessThanOrEqual = function(parent, key, val, data, errors) {
-  validate(data.length <= val, 'Member must have length less than or equal to ' + val, data, parent, key, errors)
+  var length = (typeof data == 'object' && !Array.isArray(data)) ? Object.keys(data).length : data.length
+  validate(length <= val, 'Member must have length less than or equal to ' + val, data, parent, key, errors)
 }
 validateFns.enum = function(parent, key, val, data, errors) {
   validate(~val.indexOf(data), 'Member must satisfy enum value set: [' + val.join(', ') + ']', data, parent, key, errors)
@@ -314,7 +316,7 @@ function validateAttributeValue(value) {
 }
 
 function valueStr(data) {
-  return data == null ? 'null' : Array.isArray(data) ? '[' + data.join(', ') + ']' : data
+  return data == null ? 'null' : Array.isArray(data) ? '[' + data.join(', ') + ']' : typeof data == 'object' ? JSON.stringify(data) : data
 }
 
 function hasDuplicates(array) {

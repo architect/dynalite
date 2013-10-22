@@ -136,5 +136,17 @@ exports.custom = function(data) {
       if (msg) return 'The provided starting key is invalid: ' + msg
     }
   }
+
+  // TODO: Actually need to pull the table out for these
+  for (var key in data.KeyConditions) {
+    var comparisonOperator = data.KeyConditions[key].ComparisonOperator
+    if (~['NULL', 'NOT_NULL', 'CONTAINS', 'NOT_CONTAINS', 'IN'].indexOf(comparisonOperator))
+      return 'Query can be performed only on a table with a HASH,RANGE key schema'
+  }
+
+  var firstKey = Object.keys(data.KeyConditions)[0]
+  var comparisonOperator = data.KeyConditions[firstKey].ComparisonOperator
+  if (~['LE', 'LT', 'GE', 'GT', 'BEGINS_WITH', 'BETWEEN'].indexOf(comparisonOperator))
+    return 'Query can be performed only on a table with a HASH,RANGE key schema'
 }
 

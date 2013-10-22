@@ -397,14 +397,6 @@ describe('query', function() {
         'The attempted filter operation is not supported for the provided filter argument count', done)
     })
 
-    // TODO: Will have to come back to this one - not sure what the upper bound is
-    it.skip('should return ValidationException for 3 args to IN', function(done) {
-      assertValidation({
-        TableName: 'abc',
-        KeyConditions: {a: {ComparisonOperator: 'IN', AttributeValueList: [{S: 'a'}, {S: 'a'}, {S: 'a'}]}}},
-        'The attempted filter operation is not supported for the provided filter argument count', done)
-    })
-
     it('should return ValidationException for 0 args to BETWEEN', function(done) {
       assertValidation({
         TableName: 'abc',
@@ -558,6 +550,108 @@ describe('query', function() {
         KeyConditions: {a: {ComparisonOperator: 'NULL'}}},
         'The provided starting key is invalid: ' +
         'The parameter cannot be converted to a numeric value: b', done)
+    })
+
+    it('should return ValidationException if querying with NULL', function(done) {
+      assertValidation({
+        TableName: helpers.testHashTable,
+        KeyConditions: {a: {ComparisonOperator: 'NULL'}},
+      }, 'Query can be performed only on a table with a HASH,RANGE key schema', done)
+    })
+
+    it('should return ValidationException if querying with NOT_NULL', function(done) {
+      assertValidation({
+        TableName: helpers.testHashTable,
+        KeyConditions: {a: {ComparisonOperator: 'NOT_NULL'}},
+      }, 'Query can be performed only on a table with a HASH,RANGE key schema', done)
+    })
+
+    it('should return ValidationException if querying with CONTAINS', function(done) {
+      assertValidation({
+        TableName: helpers.testHashTable,
+        KeyConditions: {a: {ComparisonOperator: 'CONTAINS', AttributeValueList: [{S: 'a'}]}},
+      }, 'Query can be performed only on a table with a HASH,RANGE key schema', done)
+    })
+
+    it('should return ValidationException if querying with NOT_CONTAINS', function(done) {
+      assertValidation({
+        TableName: helpers.testHashTable,
+        KeyConditions: {a: {ComparisonOperator: 'NOT_CONTAINS', AttributeValueList: [{S: 'a'}]}},
+      }, 'Query can be performed only on a table with a HASH,RANGE key schema', done)
+    })
+
+    it('should return ValidationException if querying with IN', function(done) {
+      assertValidation({
+        TableName: helpers.testHashTable,
+        KeyConditions: {a: {ComparisonOperator: 'IN', AttributeValueList: [{S: 'a'}]}},
+      }, 'Query can be performed only on a table with a HASH,RANGE key schema', done)
+    })
+
+    it('should return ValidationException if querying with LE', function(done) {
+      assertValidation({
+        TableName: helpers.testHashTable,
+        KeyConditions: {a: {ComparisonOperator: 'LE', AttributeValueList: [{S: 'a'}]}},
+      }, 'Query can be performed only on a table with a HASH,RANGE key schema', done)
+    })
+
+    it('should return ValidationException if querying with LT', function(done) {
+      assertValidation({
+        TableName: helpers.testHashTable,
+        KeyConditions: {a: {ComparisonOperator: 'LT', AttributeValueList: [{S: 'a'}]}},
+      }, 'Query can be performed only on a table with a HASH,RANGE key schema', done)
+    })
+
+    it('should return ValidationException if querying with GE', function(done) {
+      assertValidation({
+        TableName: helpers.testHashTable,
+        KeyConditions: {a: {ComparisonOperator: 'GE', AttributeValueList: [{S: 'a'}]}},
+      }, 'Query can be performed only on a table with a HASH,RANGE key schema', done)
+    })
+
+    it('should return ValidationException if querying with GT', function(done) {
+      assertValidation({
+        TableName: helpers.testHashTable,
+        KeyConditions: {a: {ComparisonOperator: 'GT', AttributeValueList: [{S: 'a'}]}},
+      }, 'Query can be performed only on a table with a HASH,RANGE key schema', done)
+    })
+
+    it('should return ValidationException if querying with BEGINS_WITH', function(done) {
+      assertValidation({
+        TableName: helpers.testHashTable,
+        KeyConditions: {a: {ComparisonOperator: 'BEGINS_WITH', AttributeValueList: [{S: 'a'}]}},
+      }, 'Query can be performed only on a table with a HASH,RANGE key schema', done)
+    })
+
+    it('should return ValidationException if querying with BETWEEN', function(done) {
+      assertValidation({
+        TableName: helpers.testHashTable,
+        KeyConditions: {a: {ComparisonOperator: 'BETWEEN', AttributeValueList: [{S: 'a'}, {S: 'b'}]}},
+      }, 'Query can be performed only on a table with a HASH,RANGE key schema', done)
+    })
+
+    it.skip('should return ValidationException if querying hash table with extra param', function(done) {
+      assertValidation({
+        TableName: helpers.testHashTable,
+        KeyConditions: {
+          a: {ComparisonOperator: 'EQ', AttributeValueList: [{S: helpers.randomString()}]},
+          b: {ComparisonOperator: 'EQ', AttributeValueList: [{S: helpers.randomString()}]},
+        },
+      }, 'Query key condition not supported', done)
+    })
+
+  })
+
+  describe('functionality', function() {
+
+    it.skip('should query a hash table', function(done) {
+      request(opts({TableName: helpers.testHashTable, KeyConditions: {
+          a: {ComparisonOperator: 'EQ', AttributeValueList: [{S: helpers.randomString()}]},
+      }}), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        res.body.should.eql({Count: 0, Items: []})
+        done()
+      })
     })
 
   })
