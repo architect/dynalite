@@ -341,7 +341,7 @@ describe('createTable', function() {
         KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}],
         LocalSecondaryIndexes: [],
         ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},
-        'One or more parameter values were invalid: List of indexes is empty', done)
+        'One or more parameter values were invalid: List of LocalSecondaryIndexes is empty', done)
     })
 
     it('should return ValidationException for 12', function(done) {
@@ -402,7 +402,8 @@ describe('createTable', function() {
         KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}],
         LocalSecondaryIndexes: [{IndexName: 'abc', KeySchema: [{AttributeName: 'c', KeyType: 'RANGE'}], Projection: {}}],
         ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},
-        'One or more parameter values were invalid: Table KeySchema does not have a range key', done)
+        'One or more parameter values were invalid: Table KeySchema does not have a range key, ' +
+        'which is required when specifying a LocalSecondaryIndex', done)
     })
 
     it('should return ValidationException for 15', function(done) {

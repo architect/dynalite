@@ -133,24 +133,44 @@ describe('putItem', function() {
 
     it('should return ValidationException for no TableName', function(done) {
       assertValidation({},
-        'The paramater \'tableName\' is required but was not present in the request', done)
+        '2 validation errors detected: ' +
+        'Value null at \'tableName\' failed to satisfy constraint: ' +
+        'Member must not be null; ' +
+        'Value null at \'item\' failed to satisfy constraint: ' +
+        'Member must not be null', done)
     })
 
     it('should return ValidationException for empty TableName', function(done) {
       assertValidation({TableName: ''},
-        'TableName must be at least 3 characters long and at most 255 characters long', done)
+        '3 validation errors detected: ' +
+        'Value \'\' at \'tableName\' failed to satisfy constraint: ' +
+        'Member must satisfy regular expression pattern: [a-zA-Z0-9_.-]+; ' +
+        'Value \'\' at \'tableName\' failed to satisfy constraint: ' +
+        'Member must have length greater than or equal to 3; ' +
+        'Value null at \'item\' failed to satisfy constraint: ' +
+        'Member must not be null', done)
     })
 
     it('should return ValidationException for short TableName', function(done) {
       assertValidation({TableName: 'a;'},
-        'TableName must be at least 3 characters long and at most 255 characters long', done)
+        '3 validation errors detected: ' +
+        'Value \'a;\' at \'tableName\' failed to satisfy constraint: ' +
+        'Member must satisfy regular expression pattern: [a-zA-Z0-9_.-]+; ' +
+        'Value \'a;\' at \'tableName\' failed to satisfy constraint: ' +
+        'Member must have length greater than or equal to 3; ' +
+        'Value null at \'item\' failed to satisfy constraint: ' +
+        'Member must not be null', done)
     })
 
     it('should return ValidationException for long TableName', function(done) {
       var name = '', i
       for (i = 0; i < 256; i++) name += 'a'
       assertValidation({TableName: name},
-        'TableName must be at least 3 characters long and at most 255 characters long', done)
+        '2 validation errors detected: ' +
+        'Value \'' + name + '\' at \'tableName\' failed to satisfy constraint: ' +
+        'Member must have length less than or equal to 255; ' +
+        'Value null at \'item\' failed to satisfy constraint: ' +
+        'Member must not be null', done)
     })
 
     it('should return ValidationException for incorrect attributes', function(done) {
@@ -158,7 +178,7 @@ describe('putItem', function() {
         ReturnItemCollectionMetrics: 'hi', ReturnValues: 'hi'},
         '5 validation errors detected: ' +
         'Value \'hi\' at \'returnConsumedCapacity\' failed to satisfy constraint: ' +
-        'Member must satisfy enum value set: [TOTAL, NONE]; ' +
+        'Member must satisfy enum value set: [INDEXES, TOTAL, NONE]; ' +
         'Value \'abc;\' at \'tableName\' failed to satisfy constraint: ' +
         'Member must satisfy regular expression pattern: [a-zA-Z0-9_.-]+; ' +
         'Value null at \'item\' failed to satisfy constraint: ' +

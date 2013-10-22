@@ -67,18 +67,20 @@ exports.types = {
   },
   ReturnConsumedCapacity: {
     type: 'String',
-    enum: ['TOTAL', 'NONE']
+    enum: ['INDEXES', 'TOTAL', 'NONE']
   },
   AttributesToGet: {
     type: 'List',
     lengthGreaterThanOrEqual: 1,
     lengthLessThanOrEqual: 255,
+    children: 'String',
   },
   TableName: {
     type: 'String',
-    required: true,
-    tableName: true,
+    notNull: true,
     regex: '[a-zA-Z0-9_.-]+',
+    lengthGreaterThanOrEqual: 3,
+    lengthLessThanOrEqual: 255,
   },
   Select: {
     type: 'String',
@@ -87,8 +89,9 @@ exports.types = {
   ConsistentRead: 'Boolean',
   IndexName: {
     type: 'String',
-    tableName: true,
     regex: '[a-zA-Z0-9_.-]+',
+    lengthGreaterThanOrEqual: 3,
+    lengthLessThanOrEqual: 255,
   },
   ScanIndexForward: 'Boolean',
 }
@@ -141,12 +144,12 @@ exports.custom = function(data) {
   for (var key in data.KeyConditions) {
     var comparisonOperator = data.KeyConditions[key].ComparisonOperator
     if (~['NULL', 'NOT_NULL', 'CONTAINS', 'NOT_CONTAINS', 'IN'].indexOf(comparisonOperator))
-      return 'Query can be performed only on a table with a HASH,RANGE key schema'
+      return 'Attempted conditional constraint is not an indexable operation'
   }
 
   var firstKey = Object.keys(data.KeyConditions)[0]
   var comparisonOperator = data.KeyConditions[firstKey].ComparisonOperator
   if (~['LE', 'LT', 'GE', 'GT', 'BEGINS_WITH', 'BETWEEN'].indexOf(comparisonOperator))
-    return 'Query can be performed only on a table with a HASH,RANGE key schema'
+    return 'Query key condition not supported'
 }
 

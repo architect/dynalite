@@ -3,7 +3,7 @@ var validateAttributeValue = require('./index').validateAttributeValue
 exports.types = {
   ReturnConsumedCapacity: {
     type: 'String',
-    enum: ['TOTAL', 'NONE'],
+    enum: ['INDEXES', 'TOTAL', 'NONE'],
   },
   AttributesToGet: {
     type: 'List',
@@ -13,9 +13,10 @@ exports.types = {
   },
   TableName: {
     type: 'String',
-    required: true,
-    tableName: true,
+    notNull: true,
     regex: '[a-zA-Z0-9_.-]+',
+    lengthGreaterThanOrEqual: 3,
+    lengthLessThanOrEqual: 255,
   },
   Key: {
     type: 'Map',

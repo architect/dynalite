@@ -125,24 +125,36 @@ describe('scan', function() {
 
     it('should return ValidationException for no TableName', function(done) {
       assertValidation({},
-        'The paramater \'tableName\' is required but was not present in the request', done)
+        '1 validation error detected: ' +
+        'Value null at \'tableName\' failed to satisfy constraint: ' +
+        'Member must not be null', done)
     })
 
     it('should return ValidationException for empty TableName', function(done) {
       assertValidation({TableName: ''},
-        'TableName must be at least 3 characters long and at most 255 characters long', done)
+        '2 validation errors detected: ' +
+        'Value \'\' at \'tableName\' failed to satisfy constraint: ' +
+        'Member must satisfy regular expression pattern: [a-zA-Z0-9_.-]+; ' +
+        'Value \'\' at \'tableName\' failed to satisfy constraint: ' +
+        'Member must have length greater than or equal to 3', done)
     })
 
     it('should return ValidationException for short TableName', function(done) {
       assertValidation({TableName: 'a;'},
-        'TableName must be at least 3 characters long and at most 255 characters long', done)
+        '2 validation errors detected: ' +
+        'Value \'a;\' at \'tableName\' failed to satisfy constraint: ' +
+        'Member must satisfy regular expression pattern: [a-zA-Z0-9_.-]+; ' +
+        'Value \'a;\' at \'tableName\' failed to satisfy constraint: ' +
+        'Member must have length greater than or equal to 3', done)
     })
 
     it('should return ValidationException for long TableName', function(done) {
       var name = '', i
       for (i = 0; i < 256; i++) name += 'a'
       assertValidation({TableName: name},
-        'TableName must be at least 3 characters long and at most 255 characters long', done)
+        '1 validation error detected: ' +
+        'Value \'' + name + '\' at \'tableName\' failed to satisfy constraint: ' +
+        'Member must have length less than or equal to 255', done)
     })
 
     it('should return ValidationException for incorrect attributes', function(done) {
@@ -154,7 +166,7 @@ describe('scan', function() {
         'Value \'-1\' at \'totalSegments\' failed to satisfy constraint: ' +
         'Member must have value greater than or equal to 1; ' +
         'Value \'hi\' at \'returnConsumedCapacity\' failed to satisfy constraint: ' +
-        'Member must satisfy enum value set: [TOTAL, NONE]; ' +
+        'Member must satisfy enum value set: [INDEXES, TOTAL, NONE]; ' +
         'Value \'[]\' at \'attributesToGet\' failed to satisfy constraint: ' +
         'Member must have length greater than or equal to 1; ' +
         'Value \'hi\' at \'select\' failed to satisfy constraint: ' +
@@ -566,7 +578,7 @@ describe('scan', function() {
 
     // TODO: Will have to come back to this one - not sure what the upper bound is
     // It seems to be at least greater than 1000000!!!
-    it.skip('should return ValidationException for 3 args to IN', function(done) {
+    it.skip('should return ValidationException for 1000000 args to IN', function(done) {
       var attrValList = [], i
       for (i = 0; i < 1000000; i++) attrValList.push({S: 'a'})
       assertValidation({

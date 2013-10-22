@@ -151,10 +151,11 @@ exports.custom = function(data) {
     var indexNames = Object.create(null)
 
     if (!data.LocalSecondaryIndexes.length)
-      return 'One or more parameter values were invalid: List of indexes is empty'
+      return 'One or more parameter values were invalid: List of LocalSecondaryIndexes is empty'
 
     if (data.KeySchema.length != 2)
-      return 'One or more parameter values were invalid: Table KeySchema does not have a range key'
+      return 'One or more parameter values were invalid: Table KeySchema does not have a range key, ' +
+        'which is required when specifying a LocalSecondaryIndex'
 
     for (var i = 0; i < data.LocalSecondaryIndexes.length; i++) {
       var indexName = data.LocalSecondaryIndexes[i].IndexName
