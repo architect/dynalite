@@ -1,18 +1,19 @@
 exports.types = {
   ReturnConsumedCapacity: {
     type: 'String',
-    enum: ['TOTAL', 'NONE'],
+    enum: ['INDEXES', 'TOTAL', 'NONE'],
   },
   RequestItems: {
     type: 'Map',
-    requiredMap: true,
-    tableMap: true,
+    notNull: true,
+    lengthGreaterThanOrEqual: 1,
     children: {
       type: 'Structure',
       children: {
         Keys: {
           type: 'List',
           notNull: true,
+          lengthGreaterThanOrEqual: 1,
           children: {
             type: 'Map',
             children: {

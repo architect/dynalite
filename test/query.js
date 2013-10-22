@@ -125,41 +125,62 @@ describe('query', function() {
 
     it('should return ValidationException for no TableName', function(done) {
       assertValidation({},
-        'The paramater \'tableName\' is required but was not present in the request', done)
+        '1 validation error detected: ' +
+        'Value null at \'tableName\' failed to satisfy constraint: ' +
+        'Member must not be null', done)
     })
 
     it('should return ValidationException for empty TableName', function(done) {
       assertValidation({TableName: ''},
-        'TableName must be at least 3 characters long and at most 255 characters long', done)
+        '2 validation errors detected: ' +
+        'Value \'\' at \'tableName\' failed to satisfy constraint: ' +
+        'Member must satisfy regular expression pattern: [a-zA-Z0-9_.-]+; ' +
+        'Value \'\' at \'tableName\' failed to satisfy constraint: ' +
+        'Member must have length greater than or equal to 3', done)
     })
 
     it('should return ValidationException for short TableName', function(done) {
       assertValidation({TableName: 'a;'},
-        'TableName must be at least 3 characters long and at most 255 characters long', done)
+        '2 validation errors detected: ' +
+        'Value \'a;\' at \'tableName\' failed to satisfy constraint: ' +
+        'Member must satisfy regular expression pattern: [a-zA-Z0-9_.-]+; ' +
+        'Value \'a;\' at \'tableName\' failed to satisfy constraint: ' +
+        'Member must have length greater than or equal to 3', done)
     })
 
     it('should return ValidationException for long TableName', function(done) {
-      var name = '', i
-      for (i = 0; i < 256; i++) name += 'a'
+      var name = new Array(256 + 1).join('a')
       assertValidation({TableName: name},
-        'TableName must be at least 3 characters long and at most 255 characters long', done)
+        '1 validation error detected: ' +
+        'Value \'' + name + '\' at \'tableName\' failed to satisfy constraint: ' +
+        'Member must have length less than or equal to 255', done)
     })
 
     it('should return ValidationException for empty IndexName', function(done) {
       assertValidation({TableName: 'abc', IndexName: ''},
-        'IndexName must be at least 3 characters long and at most 255 characters long', done)
+        '2 validation errors detected: ' +
+        'Value \'\' at \'indexName\' failed to satisfy constraint: ' +
+        'Member must satisfy regular expression pattern: [a-zA-Z0-9_.-]+; ' +
+        'Value \'\' at \'indexName\' failed to satisfy constraint: ' +
+        'Member must have length greater than or equal to 3', done)
     })
 
     it('should return ValidationException for short IndexName', function(done) {
       assertValidation({TableName: 'abc', IndexName: 'a;'},
-        'IndexName must be at least 3 characters long and at most 255 characters long', done)
+        '2 validation errors detected: ' +
+        'Value \'a;\' at \'indexName\' failed to satisfy constraint: ' +
+        'Member must satisfy regular expression pattern: [a-zA-Z0-9_.-]+; ' +
+        'Value \'a;\' at \'indexName\' failed to satisfy constraint: ' +
+        'Member must have length greater than or equal to 3', done)
     })
 
     it('should return ValidationException for long IndexName', function(done) {
       var name = '', i
       for (i = 0; i < 256; i++) name += 'a'
       assertValidation({TableName: 'abc', IndexName: name},
-        'IndexName must be at least 3 characters long and at most 255 characters long', done)
+        '1 validation error detected: ' +
+        'Value \'' + name + '\' at \'indexName\' failed to satisfy constraint: ' +
+        'Member must have length less than or equal to 255', done)
     })
 
     it('should return ValidationException for incorrect attributes', function(done) {
@@ -173,7 +194,7 @@ describe('query', function() {
         'Value null at \'keyConditions.a.member.comparisonOperator\' failed to satisfy constraint: ' +
         'Member must not be null; ' +
         'Value \'hi\' at \'returnConsumedCapacity\' failed to satisfy constraint: ' +
-        'Member must satisfy enum value set: [TOTAL, NONE]; ' +
+        'Member must satisfy enum value set: [INDEXES, TOTAL, NONE]; ' +
         'Value \'[]\' at \'attributesToGet\' failed to satisfy constraint: ' +
         'Member must have length greater than or equal to 1; ' +
         'Value \'abc;\' at \'tableName\' failed to satisfy constraint: ' +
@@ -552,77 +573,77 @@ describe('query', function() {
       assertValidation({
         TableName: helpers.testHashTable,
         KeyConditions: {a: {ComparisonOperator: 'NULL'}},
-      }, 'Query can be performed only on a table with a HASH,RANGE key schema', done)
+      }, 'Attempted conditional constraint is not an indexable operation', done)
     })
 
     it('should return ValidationException if querying with NOT_NULL', function(done) {
       assertValidation({
         TableName: helpers.testHashTable,
         KeyConditions: {a: {ComparisonOperator: 'NOT_NULL'}},
-      }, 'Query can be performed only on a table with a HASH,RANGE key schema', done)
+      }, 'Attempted conditional constraint is not an indexable operation', done)
     })
 
     it('should return ValidationException if querying with CONTAINS', function(done) {
       assertValidation({
         TableName: helpers.testHashTable,
         KeyConditions: {a: {ComparisonOperator: 'CONTAINS', AttributeValueList: [{S: 'a'}]}},
-      }, 'Query can be performed only on a table with a HASH,RANGE key schema', done)
+      }, 'Attempted conditional constraint is not an indexable operation', done)
     })
 
     it('should return ValidationException if querying with NOT_CONTAINS', function(done) {
       assertValidation({
         TableName: helpers.testHashTable,
         KeyConditions: {a: {ComparisonOperator: 'NOT_CONTAINS', AttributeValueList: [{S: 'a'}]}},
-      }, 'Query can be performed only on a table with a HASH,RANGE key schema', done)
+      }, 'Attempted conditional constraint is not an indexable operation', done)
     })
 
     it('should return ValidationException if querying with IN', function(done) {
       assertValidation({
         TableName: helpers.testHashTable,
         KeyConditions: {a: {ComparisonOperator: 'IN', AttributeValueList: [{S: 'a'}]}},
-      }, 'Query can be performed only on a table with a HASH,RANGE key schema', done)
+      }, 'Attempted conditional constraint is not an indexable operation', done)
     })
 
     it('should return ValidationException if querying with LE', function(done) {
       assertValidation({
         TableName: helpers.testHashTable,
         KeyConditions: {a: {ComparisonOperator: 'LE', AttributeValueList: [{S: 'a'}]}},
-      }, 'Query can be performed only on a table with a HASH,RANGE key schema', done)
+      }, 'Query key condition not supported', done)
     })
 
     it('should return ValidationException if querying with LT', function(done) {
       assertValidation({
         TableName: helpers.testHashTable,
         KeyConditions: {a: {ComparisonOperator: 'LT', AttributeValueList: [{S: 'a'}]}},
-      }, 'Query can be performed only on a table with a HASH,RANGE key schema', done)
+      }, 'Query key condition not supported', done)
     })
 
     it('should return ValidationException if querying with GE', function(done) {
       assertValidation({
         TableName: helpers.testHashTable,
         KeyConditions: {a: {ComparisonOperator: 'GE', AttributeValueList: [{S: 'a'}]}},
-      }, 'Query can be performed only on a table with a HASH,RANGE key schema', done)
+      }, 'Query key condition not supported', done)
     })
 
     it('should return ValidationException if querying with GT', function(done) {
       assertValidation({
         TableName: helpers.testHashTable,
         KeyConditions: {a: {ComparisonOperator: 'GT', AttributeValueList: [{S: 'a'}]}},
-      }, 'Query can be performed only on a table with a HASH,RANGE key schema', done)
+      }, 'Query key condition not supported', done)
     })
 
     it('should return ValidationException if querying with BEGINS_WITH', function(done) {
       assertValidation({
         TableName: helpers.testHashTable,
         KeyConditions: {a: {ComparisonOperator: 'BEGINS_WITH', AttributeValueList: [{S: 'a'}]}},
-      }, 'Query can be performed only on a table with a HASH,RANGE key schema', done)
+      }, 'Query key condition not supported', done)
     })
 
     it('should return ValidationException if querying with BETWEEN', function(done) {
       assertValidation({
         TableName: helpers.testHashTable,
         KeyConditions: {a: {ComparisonOperator: 'BETWEEN', AttributeValueList: [{S: 'a'}, {S: 'b'}]}},
-      }, 'Query can be performed only on a table with a HASH,RANGE key schema', done)
+      }, 'Query key condition not supported', done)
     })
 
     it.skip('should return ValidationException if querying hash table with extra param', function(done) {

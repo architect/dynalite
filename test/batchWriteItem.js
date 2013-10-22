@@ -4,7 +4,8 @@ var target = 'BatchWriteItem',
     request = helpers.request,
     opts = helpers.opts.bind(null, target),
     assertType = helpers.assertType.bind(null, target),
-    assertValidation = helpers.assertValidation.bind(null, target)
+    assertValidation = helpers.assertValidation.bind(null, target),
+    assertNotFound = helpers.assertNotFound.bind(null, target)
 
 describe('batchWriteItem', function() {
 
@@ -106,19 +107,49 @@ describe('batchWriteItem', function() {
 
   describe('validations', function() {
 
+    it('should return ValidationException for empty body', function(done) {
+      assertValidation({},
+        '1 validation error detected: ' +
+        'Value null at \'requestItems\' failed to satisfy constraint: ' +
+        'Member must not be null', done)
+    })
+
     it('should return ValidationException for missing RequestItems', function(done) {
       assertValidation({ReturnConsumedCapacity: 'hi', ReturnItemCollectionMetrics: 'hi'},
-        'The requestItems parameter is required for BatchWriteItem', done)
+        '3 validation errors detected: ' +
+        'Value \'hi\' at \'returnConsumedCapacity\' failed to satisfy constraint: ' +
+        'Member must satisfy enum value set: [INDEXES, TOTAL, NONE]; ' +
+        'Value \'hi\' at \'returnItemCollectionMetrics\' failed to satisfy constraint: ' +
+        'Member must satisfy enum value set: [SIZE, NONE]; ' +
+        'Value null at \'requestItems\' failed to satisfy constraint: ' +
+        'Member must not be null', done)
     })
 
     it('should return ValidationException for empty RequestItems', function(done) {
       assertValidation({RequestItems: {}},
-        'The requestItems parameter is required for BatchWriteItem', done)
+        '1 validation error detected: ' +
+        'Value \'{}\' at \'requestItems\' failed to satisfy constraint: ' +
+        'Member must have length greater than or equal to 1', done)
+    })
+
+    it('should return ValidationException for empty list in RequestItems', function(done) {
+      assertValidation({RequestItems: {a: []}},
+        'The batch write request list for a table cannot be null or empty: a', done)
+    })
+
+    it('should return ValidationException for empty item in RequestItems', function(done) {
+      assertValidation({RequestItems: {a: [{}]}},
+        'Supplied AttributeValue has more than one datatypes set, ' +
+        'must contain exactly one of the supported datatypes', done)
     })
 
     it('should return ValidationException for short table name', function(done) {
-      assertValidation({RequestItems: {a:[]}, ReturnConsumedCapacity: 'hi', ReturnItemCollectionMetrics: 'hi'},
-        'TableName must be at least 3 characters long and at most 255 characters long', done)
+      assertValidation({RequestItems: {a: []}, ReturnConsumedCapacity: 'hi', ReturnItemCollectionMetrics: 'hi'},
+        '2 validation errors detected: ' +
+        'Value \'hi\' at \'returnConsumedCapacity\' failed to satisfy constraint: ' +
+        'Member must satisfy enum value set: [INDEXES, TOTAL, NONE]; ' +
+        'Value \'hi\' at \'returnItemCollectionMetrics\' failed to satisfy constraint: ' +
+        'Member must satisfy enum value set: [SIZE, NONE]', done)
     })
 
     it('should return ValidationException for incorrect attributes', function(done) {
@@ -126,7 +157,7 @@ describe('batchWriteItem', function() {
         ReturnConsumedCapacity: 'hi', ReturnItemCollectionMetrics: 'hi'},
         '4 validation errors detected: ' +
         'Value \'hi\' at \'returnConsumedCapacity\' failed to satisfy constraint: ' +
-        'Member must satisfy enum value set: [TOTAL, NONE]; ' +
+        'Member must satisfy enum value set: [INDEXES, TOTAL, NONE]; ' +
         'Value \'hi\' at \'returnItemCollectionMetrics\' failed to satisfy constraint: ' +
         'Member must satisfy enum value set: [SIZE, NONE]; ' +
         'Value null at \'requestItems.aa;.member.1.member.deleteRequest.key\' failed to satisfy constraint: ' +
@@ -147,6 +178,10 @@ describe('batchWriteItem', function() {
           batchReq = {RequestItems: {}}
       batchReq.RequestItems[helpers.testHashTable] = [{DeleteRequest: {Key: {a: item.a}}}, {PutRequest: {Item: item}}]
       assertValidation(batchReq, 'Provided list of item keys contains duplicates', done)
+    })
+
+    it('should return ResourceNotFoundException for short table name', function(done) {
+      assertNotFound({RequestItems: {a: [{PutRequest: {Item: {a: {S: 'a'}}}}]}}, 'Requested resource not found', done)
     })
 
   })

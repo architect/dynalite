@@ -46,8 +46,7 @@ describe('updateTable', function() {
     })
 
     it('should return ValidationException for long TableName', function(done) {
-      var name = '', i
-      for (i = 0; i < 256; i++) name += 'a'
+      var name = new Array(256 + 1).join('a')
       assertValidation({TableName: name},
         'TableName must be at least 3 characters long and at most 255 characters long', done)
     })

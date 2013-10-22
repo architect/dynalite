@@ -58,26 +58,50 @@ describe('batchGetItem', function() {
 
   describe('validations', function() {
 
+    it('should return ValidationException for empty RequestItems', function(done) {
+      assertValidation({},
+        '1 validation error detected: ' +
+        'Value null at \'requestItems\' failed to satisfy constraint: ' +
+        'Member must not be null', done)
+    })
+
     it('should return ValidationException for missing RequestItems', function(done) {
       assertValidation({ReturnConsumedCapacity: 'hi', ReturnItemCollectionMetrics: 'hi'},
-        'The requestItems parameter is required for BatchGetItem', done)
+        '2 validation errors detected: ' +
+        'Value \'hi\' at \'returnConsumedCapacity\' failed to satisfy constraint: ' +
+        'Member must satisfy enum value set: [INDEXES, TOTAL, NONE]; ' +
+        'Value null at \'requestItems\' failed to satisfy constraint: ' +
+        'Member must not be null', done)
     })
 
     it('should return ValidationException for empty RequestItems', function(done) {
       assertValidation({RequestItems: {}},
-        'The requestItems parameter is required for BatchGetItem', done)
+        '1 validation error detected: ' +
+        'Value \'{}\' at \'requestItems\' failed to satisfy constraint: ' +
+        'Member must have length greater than or equal to 1', done)
     })
 
-    it('should return ValidationException for short table name', function(done) {
-      assertValidation({RequestItems: {a:{}}, ReturnConsumedCapacity: 'hi', ReturnItemCollectionMetrics: 'hi'},
-        'TableName must be at least 3 characters long and at most 255 characters long', done)
+    it('should return ValidationException for short table name with no keys', function(done) {
+      assertValidation({RequestItems: {a: {}}, ReturnConsumedCapacity: 'hi', ReturnItemCollectionMetrics: 'hi'},
+        '2 validation errors detected: ' +
+        'Value \'hi\' at \'returnConsumedCapacity\' failed to satisfy constraint: ' +
+        'Member must satisfy enum value set: [INDEXES, TOTAL, NONE]; ' +
+        'Value null at \'requestItems.a.member.keys\' failed to satisfy constraint: ' +
+        'Member must not be null', done)
+    })
+
+    it('should return ValidationException for empty keys', function(done) {
+      assertValidation({RequestItems: {a: {Keys: []}}},
+        '1 validation error detected: ' +
+        'Value \'[]\' at \'requestItems.a.member.keys\' failed to satisfy constraint: ' +
+        'Member must have length greater than or equal to 1', done)
     })
 
     it('should return ValidationException for incorrect attributes', function(done) {
       assertValidation({RequestItems: {'aa;': {}}, ReturnConsumedCapacity: 'hi'},
         '2 validation errors detected: ' +
         'Value \'hi\' at \'returnConsumedCapacity\' failed to satisfy constraint: ' +
-        'Member must satisfy enum value set: [TOTAL, NONE]; ' +
+        'Member must satisfy enum value set: [INDEXES, TOTAL, NONE]; ' +
         'Value null at \'requestItems.aa;.member.keys\' failed to satisfy constraint: ' +
         'Member must not be null', done)
     })
@@ -96,6 +120,11 @@ describe('batchGetItem', function() {
       batchReq.RequestItems[helpers.testHashTable] = {Keys: [key, key2, key]}
       assertValidation(batchReq, 'Provided list of item keys contains duplicates', done)
     })
+
+    it.skip('should return ResourceNotFoundException for short table name with keys', function(done) {
+      assertNotFound({RequestItems: {a: {Keys: [{a: {S: 'a'}}]}}}, 'Requested resource not found', done)
+    })
+
   })
 
   describe('functionality', function() {
