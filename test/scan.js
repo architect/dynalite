@@ -976,7 +976,7 @@ describe('scan', function() {
       })
     })
 
-    it('should scan by LE on type N', function(done) {
+    it('should scan by LE on type N with decimals', function(done) {
       var item = {a: {S: helpers.randomString()}, b: {N: '2'}, c: {S: helpers.randomString()}},
           item2 = {a: {S: helpers.randomString()}, b: {N: '1.9999'}, c: item.c},
           item3 = {a: {S: helpers.randomString()}, b: {N: '1'}, c: item.c},
@@ -1004,6 +1004,38 @@ describe('scan', function() {
           res.body.Items.should.includeEql(item5)
           res.body.Items.should.have.length(4)
           res.body.Count.should.equal(4)
+          done()
+        })
+      })
+    })
+
+    it('should scan by LE on type N without decimals', function(done) {
+      var item = {a: {S: helpers.randomString()}, b: {N: '2'}, c: {S: helpers.randomString()}},
+          item2 = {a: {S: helpers.randomString()}, b: {N: '19999'}, c: item.c},
+          item3 = {a: {S: helpers.randomString()}, b: {N: '1'}, c: item.c},
+          item4 = {a: {S: helpers.randomString()}, b: {N: '200000001'}, c: item.c},
+          item5 = {a: {S: helpers.randomString()}, b: {N: '-5'}, c: item.c},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testHashTable] = [
+        {PutRequest: {Item: item}},
+        {PutRequest: {Item: item2}},
+        {PutRequest: {Item: item3}},
+        {PutRequest: {Item: item4}},
+        {PutRequest: {Item: item5}},
+      ]
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        request(opts({TableName: helpers.testHashTable, ScanFilter: {
+          b: {ComparisonOperator: 'LE', AttributeValueList: [item.b]},
+          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+        }}), function(err, res) {
+          if (err) return done(err)
+          res.body.Items.should.includeEql(item)
+          res.body.Items.should.includeEql(item3)
+          res.body.Items.should.includeEql(item5)
+          res.body.Items.should.have.length(3)
+          res.body.Count.should.equal(3)
           done()
         })
       })

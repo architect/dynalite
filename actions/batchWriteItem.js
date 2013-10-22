@@ -1,8 +1,8 @@
 var putItem = require('./putItem')
 
 module.exports = function batchWriteItem(data, cb) {
-  var remaining = 0
-  for (var table in data.RequestItems) {
+  var remaining = 0, table
+  for (table in data.RequestItems) {
     data.RequestItems[table].map(function(req) { return req.PutRequest.Item }).forEach(function(item) {
       putItem({TableName: table, Item: item}, checkDone)
       remaining++

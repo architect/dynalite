@@ -28,6 +28,10 @@ module.exports = function scan(data, cb) {
             compVal = compVals ? compVals[0][compType] : null,
             attrType = val[attr] ? Object.keys(val[attr])[0] : null,
             attrVal = val[attr] ? val[attr][attrType] : null
+        if (attrType == 'N' && attrType == compType) {
+          attrVal = +attrVal
+          compVal = +compVal
+        }
         switch (comp) {
           case 'EQ':
             if (compType != attrType || attrVal != compVal) return false

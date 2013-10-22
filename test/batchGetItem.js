@@ -89,6 +89,92 @@ describe('batchGetItem', function() {
 
   })
 
+  describe('functionality', function() {
+
+    it('should return empty responses if keys do not exist', function(done) {
+      var batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testHashTable] = {Keys: [{a: {S: helpers.randomString()}}]}
+      batchReq.RequestItems[helpers.testRangeTable] = {Keys: [{a: {S: helpers.randomString()}, b: {S: helpers.randomString()}}]}
+      request(opts(batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        res.body.Responses[helpers.testHashTable].should.eql([])
+        res.body.Responses[helpers.testRangeTable].should.eql([])
+        res.body.UnprocessedKeys.should.eql({})
+        done()
+      })
+    })
+
+    it('should return only items that do exist', function(done) {
+      var item = {a: {S: helpers.randomString()}, b: {N: helpers.randomString()}},
+          item2 = {a: {S: helpers.randomString()}, b: item.b},
+          item3 = {a: {S: helpers.randomString()}, b: {N: helpers.randomString()}},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testHashTable] = [
+        {PutRequest: {Item: item}},
+        {PutRequest: {Item: item2}},
+        {PutRequest: {Item: item3}},
+      ]
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        batchReq = {RequestItems: {}}
+        batchReq.RequestItems[helpers.testHashTable] = {Keys: [
+          {a: item.a},
+          {a: {S: helpers.randomString()}},
+          {a: item3.a},
+          {a: {S: helpers.randomString()}},
+        ], ConsistentRead: true}
+        request(opts(batchReq), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.Responses[helpers.testHashTable].should.includeEql(item)
+          res.body.Responses[helpers.testHashTable].should.includeEql(item3)
+          res.body.Responses[helpers.testHashTable].should.have.length(2)
+          res.body.UnprocessedKeys.should.eql({})
+          done()
+        })
+      })
+    })
+
+    it('should return only requested attributes of items that do exist', function(done) {
+      var item = {a: {S: helpers.randomString()}, b: {N: helpers.randomString()}, c: {S: 'c'}},
+          item2 = {a: {S: helpers.randomString()}, b: item.b},
+          item3 = {a: {S: helpers.randomString()}, b: {N: helpers.randomString()}},
+          item4 = {a: {S: helpers.randomString()}},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testHashTable] = [
+        {PutRequest: {Item: item}},
+        {PutRequest: {Item: item2}},
+        {PutRequest: {Item: item3}},
+        {PutRequest: {Item: item4}},
+      ]
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        batchReq = {RequestItems: {}}
+        batchReq.RequestItems[helpers.testHashTable] = {Keys: [
+          {a: item.a},
+          {a: {S: helpers.randomString()}},
+          {a: item3.a},
+          {a: {S: helpers.randomString()}},
+          {a: item4.a},
+        ], AttributesToGet: ['b', 'c'], ConsistentRead: true}
+        request(opts(batchReq), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.Responses[helpers.testHashTable].should.includeEql({b: item.b, c: item.c})
+          res.body.Responses[helpers.testHashTable].should.includeEql({b: item3.b})
+          res.body.Responses[helpers.testHashTable].should.includeEql({})
+          res.body.Responses[helpers.testHashTable].should.have.length(3)
+          res.body.UnprocessedKeys.should.eql({})
+          done()
+        })
+      })
+    })
+
+  })
+
 })
 
 

@@ -25,7 +25,12 @@ exports.types = {
             }
           }
         },
-        AttributesToGet: 'List',
+        AttributesToGet: {
+          type: 'List',
+          lengthGreaterThanOrEqual: 1,
+          lengthLessThanOrEqual: 255,
+          children: 'String',
+        },
         ConsistentRead: 'Boolean',
       }
     }
