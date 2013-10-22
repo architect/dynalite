@@ -9,7 +9,8 @@ var target = 'DeleteItem',
     assertSerialization = helpers.assertSerialization.bind(null, target),
     assertType = helpers.assertType.bind(null, target),
     assertValidation = helpers.assertValidation.bind(null, target),
-    assertNotFound = helpers.assertNotFound.bind(null, target)
+    assertNotFound = helpers.assertNotFound.bind(null, target),
+    assertConditional = helpers.assertConditional.bind(null, target)
 
 describe('deleteItem', function() {
 
@@ -162,6 +163,163 @@ describe('deleteItem', function() {
 
   })
 
+  describe('functionality', function() {
+
+    it('should return nothing if item does not exist', function(done) {
+      request(opts({TableName: helpers.testHashTable, Key: {a: {S: helpers.randomString()}}}), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        res.body.should.eql({})
+        done()
+      })
+    })
+
+    it('should delete item successfully', function(done) {
+      var item = {a: {S: helpers.randomString()}}
+      request(helpers.opts('PutItem', {TableName: helpers.testHashTable, Item: item}), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        request(opts({TableName: helpers.testHashTable, Key: {a: item.a}}), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.should.eql({})
+          request(helpers.opts('GetItem', {TableName: helpers.testHashTable, Key: {a: item.a}, ConsistentRead: true}), function(err, res) {
+            if (err) return done(err)
+            res.statusCode.should.equal(200)
+            res.body.should.eql({})
+            done()
+          })
+        })
+      })
+    })
+
+    it('should delete item successfully and return old values', function(done) {
+      var item = {a: {S: helpers.randomString()}, b: {S: 'b'}}
+      request(helpers.opts('PutItem', {TableName: helpers.testHashTable, Item: item}), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        request(opts({TableName: helpers.testHashTable, Key: {a: item.a}, ReturnValues: 'ALL_OLD'}), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.should.eql({Attributes: item})
+          done()
+        })
+      })
+    })
+
+    it('should return ConditionalCheckFailedException if expecting non-existent key to exist', function(done) {
+      assertConditional({
+        TableName: helpers.testHashTable,
+        Key: {a: {S: helpers.randomString()}},
+        Expected: {a: {Value: {S: helpers.randomString()}}},
+      }, done)
+    })
+
+    it('should return ConditionalCheckFailedException if expecting existing key to not exist', function(done) {
+      var item = {a: {S: helpers.randomString()}}
+      request(helpers.opts('PutItem', {TableName: helpers.testHashTable, Item: item}), function(err) {
+        if (err) return done(err)
+        assertConditional({
+          TableName: helpers.testHashTable,
+          Key: {a: item.a},
+          Expected: {a: {Exists: false}},
+        }, done)
+      })
+    })
+
+    it('should succeed if conditional key is different and exists is false', function(done) {
+      var item = {a: {S: helpers.randomString()}}
+      request(helpers.opts('PutItem', {TableName: helpers.testHashTable, Item: item}), function(err) {
+        if (err) return done(err)
+        request(opts({
+          TableName: helpers.testHashTable,
+          Key: {a: {S: helpers.randomString()}},
+          Expected: {a: {Exists: false}},
+        }), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.should.eql({})
+          done()
+        })
+      })
+    })
+
+    it('should succeed if conditional key is same and exists is true', function(done) {
+      var item = {a: {S: helpers.randomString()}}
+      request(helpers.opts('PutItem', {TableName: helpers.testHashTable, Item: item}), function(err) {
+        if (err) return done(err)
+        request(opts({
+          TableName: helpers.testHashTable,
+          Key: {a: item.a},
+          Expected: {a: {Value: item.a}},
+        }), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.should.eql({})
+          done()
+        })
+      })
+    })
+
+    it('should succeed if expecting non-existant value to not exist', function(done) {
+      var item = {a: {S: helpers.randomString()}}
+      request(helpers.opts('PutItem', {TableName: helpers.testHashTable, Item: item}), function(err) {
+        if (err) return done(err)
+        request(opts({
+          TableName: helpers.testHashTable,
+          Key: {a: item.a},
+          Expected: {b: {Exists: false}},
+        }), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.should.eql({})
+          done()
+        })
+      })
+    })
+
+    it('should return ConditionalCheckFailedException if expecting existing value to not exist', function(done) {
+      var item = {a: {S: helpers.randomString()}, b: {S: helpers.randomString()}}
+      request(helpers.opts('PutItem', {TableName: helpers.testHashTable, Item: item}), function(err) {
+        if (err) return done(err)
+        assertConditional({
+          TableName: helpers.testHashTable,
+          Key: {a: item.a},
+          Expected: {b: {Exists: false}},
+        }, done)
+      })
+    })
+
+    it('should succeed for multiple conditional checks if all are valid', function(done) {
+      var item = {a: {S: helpers.randomString()}, c: {S: helpers.randomString()}}
+      request(helpers.opts('PutItem', {TableName: helpers.testHashTable, Item: item}), function(err) {
+        if (err) return done(err)
+        request(opts({
+          TableName: helpers.testHashTable,
+          Key: {a: item.a},
+          Expected: {a: {Value: item.a}, b: {Exists: false}, c: {Value: item.c}},
+        }), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.should.eql({})
+          done()
+        })
+      })
+    })
+
+    it('should return ConditionalCheckFailedException for multiple conditional checks if one is invalid', function(done) {
+      var item = {a: {S: helpers.randomString()}, c: {S: helpers.randomString()}}
+      request(helpers.opts('PutItem', {TableName: helpers.testHashTable, Item: item}), function(err) {
+        if (err) return done(err)
+        assertConditional({
+          TableName: helpers.testHashTable,
+          Key: {a: item.a},
+          Expected: {a: {Value: item.a}, b: {Exists: false}, c: {Value: {S: helpers.randomString()}}},
+        }, done)
+      })
+    })
+
+  })
 })
 
 
