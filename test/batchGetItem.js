@@ -87,6 +87,20 @@ describe('batchGetItem', function() {
         'Member must not be null', done)
     })
 
+    it('should return ValidationException for duplicated keys', function(done) {
+      var key = {a: {S: helpers.randomString()}},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testHashTable] = {Keys: [key, key, key]}
+      assertValidation(batchReq, 'Provided list of item keys contains duplicates', done)
+    })
+
+    it('should return ValidationException for duplicated mixed up keys', function(done) {
+      var key = {a: {S: helpers.randomString()}},
+          key2 = {a: {S: helpers.randomString()}},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testHashTable] = {Keys: [key, key2, key]}
+      assertValidation(batchReq, 'Provided list of item keys contains duplicates', done)
+    })
   })
 
   describe('functionality', function() {

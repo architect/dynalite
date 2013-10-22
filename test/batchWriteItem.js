@@ -140,6 +140,111 @@ describe('batchWriteItem', function() {
         'Member must not be null', done)
     })
 
+    it.skip('should return ValidationException for puts and deletes of the same item with put first', function(done) {
+      var item = {a: {S: helpers.randomString()}, c: {S: 'c'}},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testHashTable] = [{PutRequest: {Item: item}}, {DeleteRequest: {Key: {a: item.a}}}]
+      assertValidation(batchReq, 'Provided list of item keys contains duplicates', done)
+    })
+
+    it.skip('should return ValidationException for puts and deletes of the same item with delete first', function(done) {
+      var item = {a: {S: helpers.randomString()}, c: {S: 'c'}},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testHashTable] = [{DeleteRequest: {Key: {a: item.a}}}, {PutRequest: {Item: item}}]
+      assertValidation(batchReq, 'Provided list of item keys contains duplicates', done)
+    })
+
+  })
+
+  describe('functionality', function() {
+
+    it('should write a single item to each table', function(done) {
+      var item = {a: {S: helpers.randomString()}, c: {S: 'c'}},
+          item2 = {a: {S: helpers.randomString()}, b: {S: helpers.randomString()}, c: {S: 'c'}},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testHashTable] = [{PutRequest: {Item: item}}]
+      batchReq.RequestItems[helpers.testRangeTable] = [{PutRequest: {Item: item2}}]
+      request(opts(batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        res.body.should.eql({UnprocessedItems: {}})
+        request(helpers.opts('GetItem', {TableName: helpers.testHashTable, Key: {a: item.a}, ConsistentRead: true}), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.should.eql({Item: item})
+          request(helpers.opts('GetItem', {TableName: helpers.testRangeTable, Key: {a: item2.a, b: item2.b}, ConsistentRead: true}), function(err, res) {
+            if (err) return done(err)
+            res.statusCode.should.equal(200)
+            res.body.should.eql({Item: item2})
+            done()
+          })
+        })
+      })
+    })
+
+    it('should delete an item from each table', function(done) {
+      var item = {a: {S: helpers.randomString()}, c: {S: 'c'}},
+          item2 = {a: {S: helpers.randomString()}, b: {S: helpers.randomString()}, c: {S: 'c'}},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testHashTable] = [{DeleteRequest: {Key: {a: item.a}}}]
+      batchReq.RequestItems[helpers.testRangeTable] = [{DeleteRequest: {Key: {a: item2.a, b: item2.b}}}]
+      request(helpers.opts('PutItem', {TableName: helpers.testHashTable, Item: item}), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        request(helpers.opts('PutItem', {TableName: helpers.testRangeTable, Item: item2}), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          request(opts(batchReq), function(err, res) {
+            if (err) return done(err)
+            res.statusCode.should.equal(200)
+            res.body.should.eql({UnprocessedItems: {}})
+            request(helpers.opts('GetItem', {TableName: helpers.testHashTable, Key: {a: item.a}, ConsistentRead: true}), function(err, res) {
+              if (err) return done(err)
+              res.statusCode.should.equal(200)
+              res.body.should.eql({})
+              request(helpers.opts('GetItem', {TableName: helpers.testRangeTable, Key: {a: item2.a, b: item2.b}, ConsistentRead: true}), function(err, res) {
+                if (err) return done(err)
+                res.statusCode.should.equal(200)
+                res.body.should.eql({})
+                done()
+              })
+            })
+          })
+        })
+      })
+    })
+
+    it('should deal with puts and deletes together', function(done) {
+      var item = {a: {S: helpers.randomString()}, c: {S: 'c'}},
+          item2 = {a: {S: helpers.randomString()}, c: {S: 'c'}},
+          batchReq = {RequestItems: {}}
+      request(helpers.opts('PutItem', {TableName: helpers.testHashTable, Item: item}), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        batchReq.RequestItems[helpers.testHashTable] = [{DeleteRequest: {Key: {a: item.a}}}, {PutRequest: {Item: item2}}]
+        request(opts(batchReq), function(err, res) {
+          if (err) return done(err)
+          res.body.should.eql({UnprocessedItems: {}})
+          batchReq.RequestItems[helpers.testHashTable] = [{PutRequest: {Item: item}}, {DeleteRequest: {Key: {a: item2.a}}}]
+          request(opts(batchReq), function(err, res) {
+            if (err) return done(err)
+            res.body.should.eql({UnprocessedItems: {}})
+            request(helpers.opts('GetItem', {TableName: helpers.testHashTable, Key: {a: item.a}, ConsistentRead: true}), function(err, res) {
+              if (err) return done(err)
+              res.statusCode.should.equal(200)
+              res.body.should.eql({Item: item})
+              request(helpers.opts('GetItem', {TableName: helpers.testHashTable, Key: {a: item2.a}, ConsistentRead: true}), function(err, res) {
+                if (err) return done(err)
+                res.statusCode.should.equal(200)
+                res.body.should.eql({})
+                done()
+              })
+            })
+          })
+        })
+      })
+    })
+
   })
 
 })
