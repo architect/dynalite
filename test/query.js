@@ -643,14 +643,299 @@ describe('query', function() {
 
   describe('functionality', function() {
 
-    it.skip('should query a hash table', function(done) {
+    it('should query a hash table when empty', function(done) {
       request(opts({TableName: helpers.testHashTable, KeyConditions: {
-          a: {ComparisonOperator: 'EQ', AttributeValueList: [{S: helpers.randomString()}]},
+        a: {ComparisonOperator: 'EQ', AttributeValueList: [{S: helpers.randomString()}]},
       }}), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
         res.body.should.eql({Count: 0, Items: []})
         done()
+      })
+    })
+
+    it('should query a hash table with items', function(done) {
+      var item = {a: {S: helpers.randomString()}, b: {N: helpers.randomString()}},
+          item2 = {a: {S: helpers.randomString()}, b: item.b},
+          item3 = {a: {S: helpers.randomString()}, b: {N: helpers.randomString()}},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testHashTable] = [
+        {PutRequest: {Item: item}},
+        {PutRequest: {Item: item2}},
+        {PutRequest: {Item: item3}},
+      ]
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        request(opts({TableName: helpers.testHashTable, KeyConditions: {
+          a: {ComparisonOperator: 'EQ', AttributeValueList: [item2.a]},
+        }}), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.should.eql({Count: 1, Items: [item2]})
+          done()
+        })
+      })
+    })
+
+    it('should query a range table with EQ on just hash key', function(done) {
+      var item = {a: {S: helpers.randomString()}, b: {S: '1'}},
+          item2 = {a: item.a, b: {S: '2'}},
+          item3 = {a: item.a, b: {S: '3'}},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testRangeTable] = [
+        {PutRequest: {Item: item}},
+        {PutRequest: {Item: item2}},
+        {PutRequest: {Item: item3}},
+      ]
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        request(opts({TableName: helpers.testRangeTable, KeyConditions: {
+          a: {ComparisonOperator: 'EQ', AttributeValueList: [item.a]},
+        }}), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.should.eql({Count: 3, Items: [item, item2, item3]})
+          done()
+        })
+      })
+    })
+
+    it('should query a range table with EQ', function(done) {
+      var item = {a: {S: helpers.randomString()}, b: {S: '1'}},
+          item2 = {a: item.a, b: {S: '2'}},
+          item3 = {a: item.a, b: {S: '3'}},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testRangeTable] = [
+        {PutRequest: {Item: item}},
+        {PutRequest: {Item: item2}},
+        {PutRequest: {Item: item3}},
+      ]
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        request(opts({TableName: helpers.testRangeTable, KeyConditions: {
+          a: {ComparisonOperator: 'EQ', AttributeValueList: [item.a]},
+          b: {ComparisonOperator: 'EQ', AttributeValueList: [item2.b]},
+        }}), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.should.eql({Count: 1, Items: [item2]})
+          done()
+        })
+      })
+    })
+
+    it('should query a range table with LE', function(done) {
+      var item = {a: {S: helpers.randomString()}, b: {S: '1'}},
+          item2 = {a: item.a, b: {S: '2'}},
+          item3 = {a: item.a, b: {S: '3'}},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testRangeTable] = [
+        {PutRequest: {Item: item}},
+        {PutRequest: {Item: item2}},
+        {PutRequest: {Item: item3}},
+      ]
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        request(opts({TableName: helpers.testRangeTable, KeyConditions: {
+          a: {ComparisonOperator: 'EQ', AttributeValueList: [item.a]},
+          b: {ComparisonOperator: 'LE', AttributeValueList: [item2.b]},
+        }}), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.should.eql({Count: 2, Items: [item, item2]})
+          done()
+        })
+      })
+    })
+
+    it('should query a range table with LT', function(done) {
+      var item = {a: {S: helpers.randomString()}, b: {S: '1'}},
+          item2 = {a: item.a, b: {S: '2'}},
+          item3 = {a: item.a, b: {S: '3'}},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testRangeTable] = [
+        {PutRequest: {Item: item}},
+        {PutRequest: {Item: item2}},
+        {PutRequest: {Item: item3}},
+      ]
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        request(opts({TableName: helpers.testRangeTable, KeyConditions: {
+          a: {ComparisonOperator: 'EQ', AttributeValueList: [item.a]},
+          b: {ComparisonOperator: 'LT', AttributeValueList: [item2.b]},
+        }}), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.should.eql({Count: 1, Items: [item]})
+          done()
+        })
+      })
+    })
+
+    it('should query a range table with GE', function(done) {
+      var item = {a: {S: helpers.randomString()}, b: {S: '1'}},
+          item2 = {a: item.a, b: {S: '2'}},
+          item3 = {a: item.a, b: {S: '3'}},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testRangeTable] = [
+        {PutRequest: {Item: item}},
+        {PutRequest: {Item: item2}},
+        {PutRequest: {Item: item3}},
+      ]
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        request(opts({TableName: helpers.testRangeTable, KeyConditions: {
+          a: {ComparisonOperator: 'EQ', AttributeValueList: [item.a]},
+          b: {ComparisonOperator: 'GE', AttributeValueList: [item2.b]},
+        }}), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.should.eql({Count: 2, Items: [item2, item3]})
+          done()
+        })
+      })
+    })
+
+    it('should query a range table with GT', function(done) {
+      var item = {a: {S: helpers.randomString()}, b: {S: '1'}},
+          item2 = {a: item.a, b: {S: '2'}},
+          item3 = {a: item.a, b: {S: '3'}},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testRangeTable] = [
+        {PutRequest: {Item: item}},
+        {PutRequest: {Item: item2}},
+        {PutRequest: {Item: item3}},
+      ]
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        request(opts({TableName: helpers.testRangeTable, KeyConditions: {
+          a: {ComparisonOperator: 'EQ', AttributeValueList: [item.a]},
+          b: {ComparisonOperator: 'GT', AttributeValueList: [item2.b]},
+        }}), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.should.eql({Count: 1, Items: [item3]})
+          done()
+        })
+      })
+    })
+
+    it('should query a range table with BEGINS_WITH', function(done) {
+      var item = {a: {S: helpers.randomString()}, b: {S: 'aaa'}},
+          item2 = {a: item.a, b: {S: 'aab'}},
+          item3 = {a: item.a, b: {S: 'abc'}},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testRangeTable] = [
+        {PutRequest: {Item: item}},
+        {PutRequest: {Item: item2}},
+        {PutRequest: {Item: item3}},
+      ]
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        request(opts({TableName: helpers.testRangeTable, KeyConditions: {
+          a: {ComparisonOperator: 'EQ', AttributeValueList: [item.a]},
+          b: {ComparisonOperator: 'BEGINS_WITH', AttributeValueList: [{S: 'aa'}]},
+        }}), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.should.eql({Count: 2, Items: [item, item2]})
+          done()
+        })
+      })
+    })
+
+    it('should query a range table with BETWEEN', function(done) {
+      var item = {a: {S: helpers.randomString()}, b: {S: 'aa'}},
+          item2 = {a: item.a, b: {S: 'ab'}},
+          item3 = {a: item.a, b: {S: 'abc'}},
+          item4 = {a: item.a, b: {S: 'ac'}},
+          item5 = {a: item.a, b: {S: 'aca'}},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testRangeTable] = [
+        {PutRequest: {Item: item}},
+        {PutRequest: {Item: item2}},
+        {PutRequest: {Item: item3}},
+        {PutRequest: {Item: item4}},
+        {PutRequest: {Item: item5}},
+      ]
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        request(opts({TableName: helpers.testRangeTable, KeyConditions: {
+          a: {ComparisonOperator: 'EQ', AttributeValueList: [item.a]},
+          b: {ComparisonOperator: 'BETWEEN', AttributeValueList: [{S: 'ab'}, {S: 'ac'}]},
+        }}), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.should.eql({Count: 3, Items: [item2, item3, item4]})
+          done()
+        })
+      })
+    })
+
+    it('should only return requested attributes', function(done) {
+      var item = {a: {S: helpers.randomString()}, b: {S: 'b1'}, d: {S: 'd1'}},
+          item2 = {a: item.a, b: {S: 'b2'}},
+          item3 = {a: item.a, b: {S: 'b3'}, d: {S: 'd3'}, e: {S: 'e3'}},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testRangeTable] = [
+        {PutRequest: {Item: item}},
+        {PutRequest: {Item: item2}},
+        {PutRequest: {Item: item3}},
+      ]
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        request(opts({TableName: helpers.testRangeTable, KeyConditions: {
+          a: {ComparisonOperator: 'EQ', AttributeValueList: [item.a]},
+        }, AttributesToGet: ['b', 'd']}), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.should.eql({Count: 3, Items: [
+            {b: {S: 'b1'}, d: {S: 'd1'}},
+            {b: {S: 'b2'}},
+            {b: {S: 'b3'}, d: {S: 'd3'}},
+          ]})
+          done()
+        })
+      })
+    })
+
+    it('should return COUNT if requested', function(done) {
+      var item = {a: {S: helpers.randomString()}, b: {S: '2'}},
+          item2 = {a: item.a, b: {S: '1'}},
+          item3 = {a: item.a, b: {S: '3'}},
+          item4 = {a: item.a, b: {S: '4'}},
+          item5 = {a: item.a, b: {S: '5'}},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testRangeTable] = [
+        {PutRequest: {Item: item}},
+        {PutRequest: {Item: item2}},
+        {PutRequest: {Item: item3}},
+        {PutRequest: {Item: item4}},
+        {PutRequest: {Item: item5}},
+      ]
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        request(opts({TableName: helpers.testRangeTable, KeyConditions: {
+          a: {ComparisonOperator: 'EQ', AttributeValueList: [item.a]},
+          b: {ComparisonOperator: 'GE', AttributeValueList: [item.b]},
+        }, Select: 'COUNT'}), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          should.not.exist(res.body.Items)
+          res.body.should.eql({Count: 4})
+          done()
+        })
       })
     })
 

@@ -73,6 +73,7 @@ exports.types = {
     type: 'List',
     lengthGreaterThanOrEqual: 1,
     lengthLessThanOrEqual: 255,
+    children: 'String',
   },
   TableName: {
     type: 'String',
