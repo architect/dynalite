@@ -140,14 +140,14 @@ describe('batchWriteItem', function() {
         'Member must not be null', done)
     })
 
-    it.skip('should return ValidationException for puts and deletes of the same item with put first', function(done) {
+    it('should return ValidationException for puts and deletes of the same item with put first', function(done) {
       var item = {a: {S: helpers.randomString()}, c: {S: 'c'}},
           batchReq = {RequestItems: {}}
       batchReq.RequestItems[helpers.testHashTable] = [{PutRequest: {Item: item}}, {DeleteRequest: {Key: {a: item.a}}}]
       assertValidation(batchReq, 'Provided list of item keys contains duplicates', done)
     })
 
-    it.skip('should return ValidationException for puts and deletes of the same item with delete first', function(done) {
+    it('should return ValidationException for puts and deletes of the same item with delete first', function(done) {
       var item = {a: {S: helpers.randomString()}, c: {S: 'c'}},
           batchReq = {RequestItems: {}}
       batchReq.RequestItems[helpers.testHashTable] = [{DeleteRequest: {Key: {a: item.a}}}, {PutRequest: {Item: item}}]

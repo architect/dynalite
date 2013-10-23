@@ -1,22 +1,52 @@
-var putItem = require('./putItem'),
-    deleteItem = require('./deleteItem')
+var async = require('async'),
+    putItem = require('./putItem'),
+    deleteItem = require('./deleteItem'),
+    db = require('../db')
 
 module.exports = function batchWriteItem(data, cb) {
-  var remaining = 0, table
-  for (table in data.RequestItems) {
-    data.RequestItems[table].forEach(function(req) {
-      if (req.PutRequest)
-        putItem({TableName: table, Item: req.PutRequest.Item}, checkDone)
-      else if (req.DeleteRequest)
-        deleteItem({TableName: table, Key: req.DeleteRequest.Key}, checkDone)
-      else
-        throw new Error('Unknown request: ' + JSON.stringify(req))
-      remaining++
+  var puts = [], deletes = []
+
+  function validateTableKeys(tableName, cb) {
+    db.getTable(tableName, function(err, table) {
+      if (err) return cb(err)
+
+      var reqs = data.RequestItems[tableName], i, req, key, seenKeys = {}
+      for (i = 0; i < reqs.length; i++) {
+        req = reqs[i]
+        if (req.PutRequest) {
+          key = db.validateItem(req.PutRequest.Item, table)
+
+          if (key instanceof Error) return cb(key)
+          if (seenKeys[key])
+            return cb(db.validationError('Provided list of item keys contains duplicates'))
+          seenKeys[key] = true
+
+          puts.push({TableName: tableName, Item: req.PutRequest.Item})
+        } else if (req.DeleteRequest) {
+          key = db.validateKey(req.DeleteRequest.Key, table)
+
+          if (key instanceof Error) return cb(key)
+          if (seenKeys[key])
+            return cb(db.validationError('Provided list of item keys contains duplicates'))
+          seenKeys[key] = true
+
+          deletes.push({TableName: tableName, Key: req.DeleteRequest.Key})
+        }
+      }
+
+      cb()
     })
   }
-  function checkDone(err) {
+
+  async.series([
+    async.apply(async.forEach, Object.keys(data.RequestItems), validateTableKeys),
+    async.apply(async.parallel, [
+      async.apply(async.forEach, puts, putItem),
+      async.apply(async.forEach, deletes, deleteItem),
+    ])
+  ], function(err) {
     if (err) return cb(err)
-    if (!--remaining) return cb(null, {UnprocessedItems: {}})
-  }
+    cb(null, {UnprocessedItems: {}})
+  })
 }
 

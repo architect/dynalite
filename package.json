@@ -24,22 +24,19 @@
     "url": "https://github.com/mhart/dynalite/issues"
   },
   "dependencies": {
-    "buffer-crc32": ">=0.2.1",
-    "levelup": ">=0.16.0",
-    "memdown": ">=0.3.0",
-    "level-sublevel": ">=5.1.1",
-    "lock": ">=0.0.4",
-    "lazy": ">=1.0.11",
-    "once": ">=1.2.0"
-  },
-  "optionalDependencies": {
-    "leveldown": ">=0.8.2"
+    "buffer-crc32": "~0.2.1",
+    "levelup": "~0.17.0",
+    "memdown": "~0.5.1",
+    "level-sublevel": "~5.1.1",
+    "lock": "~0.0.4",
+    "lazy": "~1.0.11",
+    "once": "~1.2.0",
+    "async": "~0.2.9"
   },
   "devDependencies": {
-    "mocha": ">=1.11.0",
-    "should": ">=1.2.2",
-    "async": ">=0.2.9",
-    "aws4": ">=0.1.12",
-    "longjohn": ">=0.2.0"
+    "mocha": "~1.13.0",
+    "should": "~2.0.2",
+    "aws4": "~0.2.0",
+    "longjohn": "~0.2.1"
   }
 }
