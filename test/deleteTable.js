@@ -41,9 +41,7 @@ describe('deleteTable', function() {
     })
 
     it('should return ValidationException for long TableName', function(done) {
-      var name = '', i
-      for (i = 0; i < 256; i++) name += 'a'
-      assertValidation({TableName: name},
+      assertValidation({TableName: new Array(256 + 1).join('a')},
         'TableName must be at least 3 characters long and at most 255 characters long', done)
     })
 

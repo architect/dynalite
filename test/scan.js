@@ -1925,54 +1925,49 @@ describe('scan', function() {
       })
     })
 
-    // TODO: Will have to come back to this - not sure what the exact behaviour is
-    it.skip('should return too large', function(done) {
-      this.timeout(200000)
+    // TODO: Need high capacity to run this
+    it.skip('should return all if just under limit', function(done) {
+      this.timeout(100000)
 
-      var b = '', i, c = helpers.randomString(), batchReq = {RequestItems: {}}
-      for (i = 0; i < 65000; i++) b += 'b'
-      batchReq.RequestItems[helpers.testHashTable] = []
+      var b = new Array(43410 + 1).join('b'), i, items = []
       for (i = 0; i < 25; i++)
-        batchReq.RequestItems[helpers.testHashTable]
-          .push({PutRequest: {Item: {a: {S: c + helpers.randomString()}, b: {S: b}, c: {S: c}}}})
+        items.push({a: {S: ('00' + i).slice(-2)}, b: {S: b}})
 
-      var batchRes = {}
-      async.doWhilst(
-        function(cb) {
-          request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
-            if (err) return cb(err)
-            res.statusCode.should.equal(200)
-            batchRes = res
-            if (res.body.UnprocessedItems && Object.keys(res.body.UnprocessedItems).length) {
-              if (res.body.UnprocessedItems[helpers.testHashTable])
-                console.log('Unprocessed: ' + res.body.UnprocessedItems[helpers.testHashTable].length)
-              batchReq.RequestItems = res.body.UnprocessedItems
-            } else if (/ProvisionedThroughputExceededException/.test(res.body.__type)) {
-              console.log('ProvisionedThroughputExceededException')
-              return setTimeout(cb, 2000)
-            }
-            cb()
-          })
-        },
-        function() {
-          return (batchRes.body.UnprocessedItems && Object.keys(batchRes.body.UnprocessedItems).length) ||
-            /ProvisionedThroughputExceededException/.test(batchRes.body.__type)
-        },
-        function(err) {
+      helpers.replaceTable(helpers.testHashTable, ['a'], items, 10, function(err) {
+        if (err) return done(err)
+
+        request(opts({TableName: helpers.testHashTable, Select: 'COUNT', ReturnConsumedCapacity: 'TOTAL'}), function(err, res) {
           if (err) return done(err)
-          request(opts({TableName: helpers.testHashTable, ExclusiveStartKey: {a: {S: c}}, ScanFilter: {
-            c: {ComparisonOperator: 'EQ', AttributeValueList: [{S: c}]},
-          }, AttributesToGet: ['a'], ReturnConsumedCapacity: 'TOTAL'}), function(err, res) {
-            if (err) return done(err)
-            res.statusCode.should.equal(200)
-            // Doesn't matter if attributes are selected or not - ScannedCount and ConsumedCapacity are the same
-            res.body.ScannedCount.should.equal(21)
-            res.body.ConsumedCapacity.CapacityUnits.should.equal(130) // 51000 = 129, 52000 = 129, 53000 = 131
-            res.body.LastEvaluatedKey.should.have.property('a')
-            done()
-          })
-        }
-      )
+          res.statusCode.should.equal(200)
+          res.body.ScannedCount.should.equal(25)
+          res.body.Count.should.equal(25)
+          res.body.ConsumedCapacity.CapacityUnits.should.equal(132.5)
+          done()
+        })
+      })
+    })
+
+    // TODO: Need high capacity to run this
+    it.skip('should return one less than all if just over limit', function(done) {
+      this.timeout(100000)
+
+      var b = new Array(43411 + 1).join('b'), i, items = []
+      for (i = 0; i < 25; i++)
+        items.push({a: {S: ('00' + i).slice(-2)}, b: {S: b}})
+
+      helpers.replaceTable(helpers.testHashTable, ['a'], items, 10, function(err) {
+        if (err) return done(err)
+
+        request(opts({TableName: helpers.testHashTable, Select: 'COUNT', ReturnConsumedCapacity: 'TOTAL'}), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.ScannedCount.should.equal(24)
+          res.body.Count.should.equal(24)
+          res.body.ConsumedCapacity.CapacityUnits.should.equal(127.5)
+          done()
+        })
+
+      })
 
     })
 
