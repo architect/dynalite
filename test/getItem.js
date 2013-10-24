@@ -1,7 +1,5 @@
 var async = require('async'),
-    helpers = require('./helpers'),
-    should = require('should'),
-    dynalite = require('..')
+    helpers = require('./helpers')
 
 var target = 'GetItem',
     request = helpers.request,

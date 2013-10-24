@@ -1,13 +1,9 @@
-var async = require('async'),
-    helpers = require('./helpers'),
-    should = require('should'),
-    dynalite = require('..')
+var helpers = require('./helpers')
 
 var target = 'DeleteTable',
     request = helpers.request,
     randomName = helpers.randomName,
     opts = helpers.opts.bind(null, target),
-    assertSerialization = helpers.assertSerialization.bind(null, target),
     assertType = helpers.assertType.bind(null, target),
     assertValidation = helpers.assertValidation.bind(null, target),
     assertNotFound = helpers.assertNotFound.bind(null, target),

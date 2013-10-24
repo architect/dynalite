@@ -1,6 +1,5 @@
 var async = require('async'),
-    helpers = require('./helpers'),
-    should = require('should')
+    helpers = require('./helpers')
 
 var target = 'PutItem',
     request = helpers.request,

@@ -1,15 +1,11 @@
-var async = require('async'),
-    helpers = require('./helpers'),
-    should = require('should'),
-    dynalite = require('..')
+var helpers = require('./helpers'),
+    should = require('should')
 
 var target = 'Scan',
     request = helpers.request,
     opts = helpers.opts.bind(null, target),
-    assertSerialization = helpers.assertSerialization.bind(null, target),
     assertType = helpers.assertType.bind(null, target),
-    assertValidation = helpers.assertValidation.bind(null, target),
-    assertNotFound = helpers.assertNotFound.bind(null, target)
+    assertValidation = helpers.assertValidation.bind(null, target)
 
 describe('scan', function() {
 
@@ -1933,6 +1929,8 @@ describe('scan', function() {
       for (i = 0; i < 25; i++)
         items.push({a: {S: ('00' + i).slice(-2)}, b: {S: b}})
 
+      // console.log((items[0].a.S.length + items[0].b.S.length) * 25) // 1085300
+
       helpers.replaceTable(helpers.testHashTable, ['a'], items, 10, function(err) {
         if (err) return done(err)
 
@@ -1941,7 +1939,7 @@ describe('scan', function() {
           res.statusCode.should.equal(200)
           res.body.ScannedCount.should.equal(25)
           res.body.Count.should.equal(25)
-          res.body.ConsumedCapacity.CapacityUnits.should.equal(132.5)
+          res.body.ConsumedCapacity.CapacityUnits.should.equal(132.5) // 133.5 if attr is 255 chars
           done()
         })
       })
@@ -1954,6 +1952,8 @@ describe('scan', function() {
       var b = new Array(43411 + 1).join('b'), i, items = []
       for (i = 0; i < 25; i++)
         items.push({a: {S: ('00' + i).slice(-2)}, b: {S: b}})
+
+      // console.log((items[0].a.S.length + items[0].b.S.length) * 25) // 1085325
 
       helpers.replaceTable(helpers.testHashTable, ['a'], items, 10, function(err) {
         if (err) return done(err)

@@ -8,5 +8,5 @@ A mock implementation of Amazon's DynamoDB, focussed on correctness and performa
 Example
 -------
 
-Not much to see here yet - the whole thing's one ugly hacked up mess at the moment.
+All basic actions have now been implemented. Will create a TODO list soon for the remaining issues.
 

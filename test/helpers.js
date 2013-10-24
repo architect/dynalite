@@ -140,7 +140,7 @@ function waitUntilActive(name, done) {
     if (err) return done(err)
     if (res.body.__type)
       return done(new Error(res.body.__type + ': ' + res.body.message))
-    else if (res.body.Table.TableStatus != 'CREATING')
+    else if (res.body.Table.TableStatus == 'ACTIVE')
       return done(null, res)
     setTimeout(waitUntilActive, 1000, name, done)
   })

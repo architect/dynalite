@@ -1,13 +1,10 @@
-var async = require('async'),
-    helpers = require('./helpers'),
-    should = require('should'),
-    dynalite = require('..')
+var helpers = require('./helpers'),
+    should = require('should')
 
 var target = 'CreateTable',
     request = helpers.request,
     randomName = helpers.randomName,
     opts = helpers.opts.bind(null, target),
-    assertSerialization = helpers.assertSerialization.bind(null, target),
     assertType = helpers.assertType.bind(null, target),
     assertValidation = helpers.assertValidation.bind(null, target)
 
@@ -654,13 +651,13 @@ describe('createTable', function() {
         AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}],
         KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}],
         ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
-      }
+      }, createdAt = Date.now() / 1000
       request(opts(table), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
         should.exist(res.body.TableDescription)
         var desc = res.body.TableDescription
-        desc.CreationDateTime.should.be.above(1371362773)
+        desc.CreationDateTime.should.be.above(createdAt - 5)
         ;delete desc.CreationDateTime
         table.ItemCount = 0
         table.ProvisionedThroughput.NumberOfDecreasesToday = 0
@@ -702,13 +699,13 @@ describe('createTable', function() {
           Projection: {ProjectionType: 'INCLUDE', NonKeyAttributes: ['a']}
         }],
         ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}
-      }
+      }, createdAt = Date.now() / 1000
       request(opts(table), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
         should.exist(res.body.TableDescription)
         var desc = res.body.TableDescription
-        desc.CreationDateTime.should.be.above(1371362773)
+        desc.CreationDateTime.should.be.above(createdAt - 5)
         ;delete desc.CreationDateTime
         table.ItemCount = 0
         table.ProvisionedThroughput.NumberOfDecreasesToday = 0
@@ -754,13 +751,13 @@ describe('createTable', function() {
           Projection: {ProjectionType: 'ALL'}
         }],
         ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}
-      }
+      }, createdAt = Date.now() / 1000
       request(opts(table), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
         should.exist(res.body.TableDescription)
         var desc = res.body.TableDescription
-        desc.CreationDateTime.should.be.above(1371362773)
+        desc.CreationDateTime.should.be.above(createdAt - 5)
         ;delete desc.CreationDateTime
         table.ItemCount = 0
         table.ProvisionedThroughput.NumberOfDecreasesToday = 0

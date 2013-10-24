@@ -1,6 +1,4 @@
-var async = require('async'),
-    helpers = require('./helpers'),
-    should = require('should')
+var helpers = require('./helpers')
 
 var target = 'UpdateItem',
     request = helpers.request,

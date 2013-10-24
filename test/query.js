@@ -1,15 +1,11 @@
-var async = require('async'),
-    helpers = require('./helpers'),
-    should = require('should'),
-    dynalite = require('..')
+var helpers = require('./helpers'),
+    should = require('should')
 
 var target = 'Query',
     request = helpers.request,
     opts = helpers.opts.bind(null, target),
-    assertSerialization = helpers.assertSerialization.bind(null, target),
     assertType = helpers.assertType.bind(null, target),
-    assertValidation = helpers.assertValidation.bind(null, target),
-    assertNotFound = helpers.assertNotFound.bind(null, target)
+    assertValidation = helpers.assertValidation.bind(null, target)
 
 describe('query', function() {
 
