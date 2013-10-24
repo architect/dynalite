@@ -1,6 +1,6 @@
 {
   "name": "dynalite",
-  "version": "0.0.11",
+  "version": "0.0.12",
   "description": "A mock implementation of Amazon's DynamoDB",
   "main": "index.js",
   "scripts": {
