@@ -410,6 +410,24 @@ describe('updateItem', function() {
         'Action DELETE is not supported for the type B', done)
     })
 
+    it('should return ValidationException if trying to add type S', function(done) {
+      assertValidation({
+        TableName: helpers.testHashTable,
+        Key: {a: {S: helpers.randomString()}},
+        AttributeUpdates: {a: {Action: 'ADD', Value: {S: helpers.randomString()}}},
+      }, 'One or more parameter values were invalid: ' +
+        'Action ADD is not supported for the type S', done)
+    })
+
+    it('should return ValidationException if trying to add type B', function(done) {
+      assertValidation({
+        TableName: helpers.testHashTable,
+        Key: {a: {S: helpers.randomString()}},
+        AttributeUpdates: {a: {Action: 'ADD', Value: {B: 'Yg=='}}},
+      }, 'One or more parameter values were invalid: ' +
+        'Action ADD is not supported for the type B', done)
+    })
+
     it('should return ValidationException if trying to update key', function(done) {
       assertValidation({
         TableName: helpers.testHashTable,
@@ -417,6 +435,58 @@ describe('updateItem', function() {
         AttributeUpdates: {a: {Value: {S: helpers.randomString()}}},
       }, 'One or more parameter values were invalid: ' +
         'Cannot update attribute a. This attribute is part of the key', done)
+    })
+
+    it('should return ValidationException if trying to delete NS from SS', function(done) {
+      var key = {a: {S: helpers.randomString()}}
+      var updates = {b: {Value: {SS: ['1']}}}
+      request(opts({TableName: helpers.testHashTable, Key: key, AttributeUpdates: updates}), function(err) {
+        if (err) return done(err)
+        assertValidation({
+          TableName: helpers.testHashTable,
+          Key: key,
+          AttributeUpdates: {b: {Action: 'DELETE', Value: {NS: ['1']}}},
+        }, 'Type mismatch for attribute to update', done)
+      })
+    })
+
+    it('should return ValidationException if trying to delete NS from N', function(done) {
+      var key = {a: {S: helpers.randomString()}}
+      var updates = {b: {Value: {N: '1'}}}
+      request(opts({TableName: helpers.testHashTable, Key: key, AttributeUpdates: updates}), function(err) {
+        if (err) return done(err)
+        assertValidation({
+          TableName: helpers.testHashTable,
+          Key: key,
+          AttributeUpdates: {b: {Action: 'DELETE', Value: {NS: ['1']}}},
+        }, 'Type mismatch for attribute to update', done)
+      })
+    })
+
+    it('should return ValidationException if trying to add NS to SS', function(done) {
+      var key = {a: {S: helpers.randomString()}}
+      var updates = {b: {Value: {SS: ['1']}}}
+      request(opts({TableName: helpers.testHashTable, Key: key, AttributeUpdates: updates}), function(err) {
+        if (err) return done(err)
+        assertValidation({
+          TableName: helpers.testHashTable,
+          Key: key,
+          AttributeUpdates: {b: {Action: 'ADD', Value: {NS: ['2']}}},
+        }, 'Type mismatch for attribute to update', done)
+      })
+    })
+
+    it('should return ValidationException if trying to add N to NS', function(done) {
+      var key = {a: {S: helpers.randomString()}}
+      var updates = {b: {Value: {NS: ['1']}}}
+      request(opts({TableName: helpers.testHashTable, Key: key, AttributeUpdates: updates}), function(err) {
+        if (err) return done(err)
+        assertValidation({
+          TableName: helpers.testHashTable,
+          Key: key,
+          AttributeUpdates: {b: {Action: 'ADD', Value: {N: '2'}}},
+        }, 'Type mismatch for attribute to update', done)
+      })
     })
 
   })
@@ -456,10 +526,10 @@ describe('updateItem', function() {
     })
 
     it('should return all old values when they exist', function(done) {
-      var key = {a: {S: helpers.randomString()}}
-      var updates = {b: {Value: {S: 'a'}}}
-      request(opts({TableName: helpers.testHashTable, Key: key, AttributeUpdates: updates}), function(err) {
+      var key = {a: {S: helpers.randomString()}}, updates = {b: {Value: {S: 'a'}}}
+      request(opts({TableName: helpers.testHashTable, Key: key, AttributeUpdates: updates}), function(err, res) {
         if (err) return done(err)
+        res.statusCode.should.equal(200)
         updates.b.Value.S = 'b'
         request(opts({TableName: helpers.testHashTable, Key: key, AttributeUpdates: updates, ReturnValues: 'ALL_OLD'}), function(err, res) {
           res.statusCode.should.equal(200)
@@ -470,10 +540,10 @@ describe('updateItem', function() {
     })
 
     it('should return updated old values when they exist', function(done) {
-      var key = {a: {S: helpers.randomString()}}
-      var updates = {b: {Value: {S: 'a'}}, c: {Value: {S: 'a'}}}
-      request(opts({TableName: helpers.testHashTable, Key: key, AttributeUpdates: updates}), function(err) {
+      var key = {a: {S: helpers.randomString()}}, updates = {b: {Value: {S: 'a'}}, c: {Value: {S: 'a'}}}
+      request(opts({TableName: helpers.testHashTable, Key: key, AttributeUpdates: updates}), function(err, res) {
         if (err) return done(err)
+        res.statusCode.should.equal(200)
         updates.b.Value.S = 'b'
         request(opts({TableName: helpers.testHashTable, Key: key, AttributeUpdates: updates, ReturnValues: 'UPDATED_OLD'}), function(err, res) {
           res.statusCode.should.equal(200)
@@ -484,10 +554,10 @@ describe('updateItem', function() {
     })
 
     it('should return all new values when they exist', function(done) {
-      var key = {a: {S: helpers.randomString()}}
-      var updates = {b: {Value: {S: 'a'}}}
-      request(opts({TableName: helpers.testHashTable, Key: key, AttributeUpdates: updates}), function(err) {
+      var key = {a: {S: helpers.randomString()}}, updates = {b: {Value: {S: 'a'}}}
+      request(opts({TableName: helpers.testHashTable, Key: key, AttributeUpdates: updates}), function(err, res) {
         if (err) return done(err)
+        res.statusCode.should.equal(200)
         updates.b.Value.S = 'b'
         request(opts({TableName: helpers.testHashTable, Key: key, AttributeUpdates: updates, ReturnValues: 'ALL_NEW'}), function(err, res) {
           res.statusCode.should.equal(200)
@@ -498,15 +568,110 @@ describe('updateItem', function() {
     })
 
     it('should return updated new values when they exist', function(done) {
-      var key = {a: {S: helpers.randomString()}}
-      var updates = {b: {Value: {S: 'a'}}, c: {Value: {S: 'a'}}}
-      request(opts({TableName: helpers.testHashTable, Key: key, AttributeUpdates: updates}), function(err) {
+      var key = {a: {S: helpers.randomString()}}, updates = {b: {Value: {S: 'a'}}, c: {Value: {S: 'a'}}}
+      request(opts({TableName: helpers.testHashTable, Key: key, AttributeUpdates: updates}), function(err, res) {
         if (err) return done(err)
+        res.statusCode.should.equal(200)
         updates.b.Value.S = 'b'
         request(opts({TableName: helpers.testHashTable, Key: key, AttributeUpdates: updates, ReturnValues: 'UPDATED_NEW'}), function(err, res) {
           res.statusCode.should.equal(200)
           res.body.should.eql({Attributes: {b: {S: 'b'}, c: {S: 'a'}}})
           done()
+        })
+      })
+    })
+
+    it('should just add valid ADD actions if nothing exists', function(done) {
+      var key = {a: {S: helpers.randomString()}}, updates = {
+        b: {Action: 'DELETE'},
+        c: {Action: 'DELETE', Value: {SS: ['a', 'b']}},
+        d: {Action: 'ADD', Value: {N: '5'}},
+        e: {Action: 'ADD', Value: {SS: ['a', 'b']}},
+      }
+      request(opts({TableName: helpers.testHashTable, Key: key, AttributeUpdates: updates, ReturnValues: 'UPDATED_NEW'}), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        res.body.should.eql({Attributes: {d: {N: '5'}, e: {SS: ['a', 'b']}}})
+        request(helpers.opts('GetItem', {TableName: helpers.testHashTable, Key: key, ConsistentRead: true}), function(err, res) {
+          res.statusCode.should.equal(200)
+          res.body.should.eql({Item: {a: key.a, d: {N: '5'}, e: {SS: ['a', 'b']}}})
+          done()
+        })
+      })
+    })
+
+    it('should delete normal values and return updated new', function(done) {
+      var key = {a: {S: helpers.randomString()}}, updates = {b: {Value: {S: 'a'}}, c: {Value: {S: 'a'}}}
+      request(opts({TableName: helpers.testHashTable, Key: key, AttributeUpdates: updates}), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        updates.b = {Action: 'DELETE'}
+        request(opts({TableName: helpers.testHashTable, Key: key, AttributeUpdates: updates, ReturnValues: 'UPDATED_NEW'}), function(err, res) {
+          res.statusCode.should.equal(200)
+          res.body.should.eql({Attributes: {c: {S: 'a'}}})
+          request(helpers.opts('GetItem', {TableName: helpers.testHashTable, Key: key, ConsistentRead: true}), function(err, res) {
+            res.statusCode.should.equal(200)
+            res.body.should.eql({Item: {a: key.a, c: {S: 'a'}}})
+            done()
+          })
+        })
+      })
+    })
+
+    it('should delete set values and return updated new', function(done) {
+      var key = {a: {S: helpers.randomString()}}, updates = {b: {Value: {NS: ['1', '2', '3']}}, c: {Value: {S: 'a'}}}
+      request(opts({TableName: helpers.testHashTable, Key: key, AttributeUpdates: updates}), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        updates.b = {Action: 'DELETE', Value: {NS: ['1', '4']}}
+        request(opts({TableName: helpers.testHashTable, Key: key, AttributeUpdates: updates, ReturnValues: 'UPDATED_NEW'}), function(err, res) {
+          res.statusCode.should.equal(200)
+          res.body.Attributes.b.NS.should.includeEql('2')
+          res.body.Attributes.b.NS.should.includeEql('3')
+          res.body.Attributes.c.should.eql({S: 'a'})
+          request(helpers.opts('GetItem', {TableName: helpers.testHashTable, Key: key, ConsistentRead: true}), function(err, res) {
+            res.statusCode.should.equal(200)
+            res.body.Item.b.NS.should.includeEql('2')
+            res.body.Item.b.NS.should.includeEql('3')
+            res.body.Item.c.should.eql({S: 'a'})
+            done()
+          })
+        })
+      })
+    })
+
+    it('should add numerical value and return updated new', function(done) {
+      var key = {a: {S: helpers.randomString()}}, updates = {b: {Value: {N: '1'}}}
+      request(opts({TableName: helpers.testHashTable, Key: key, AttributeUpdates: updates}), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        updates.b = {Action: 'ADD', Value: {N: '3'}}
+        request(opts({TableName: helpers.testHashTable, Key: key, AttributeUpdates: updates, ReturnValues: 'UPDATED_NEW'}), function(err, res) {
+          res.statusCode.should.equal(200)
+          res.body.should.eql({Attributes: {b: {N: '4'}}})
+          request(helpers.opts('GetItem', {TableName: helpers.testHashTable, Key: key, ConsistentRead: true}), function(err, res) {
+            res.statusCode.should.equal(200)
+            res.body.should.eql({Item: {a: key.a, b: {N: '4'}}})
+            done()
+          })
+        })
+      })
+    })
+
+    it('should add set value and return updated new', function(done) {
+      var key = {a: {S: helpers.randomString()}}, updates = {b: {Value: {SS: ['a', 'b']}}}
+      request(opts({TableName: helpers.testHashTable, Key: key, AttributeUpdates: updates}), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        updates.b = {Action: 'ADD', Value: {SS: ['c', 'd']}}
+        request(opts({TableName: helpers.testHashTable, Key: key, AttributeUpdates: updates, ReturnValues: 'UPDATED_NEW'}), function(err, res) {
+          res.statusCode.should.equal(200)
+          res.body.should.eql({Attributes: {b: {SS: ['a', 'b', 'c', 'd']}}})
+          request(helpers.opts('GetItem', {TableName: helpers.testHashTable, Key: key, ConsistentRead: true}), function(err, res) {
+            res.statusCode.should.equal(200)
+            res.body.should.eql({Item: {a: key.a, b: {SS: ['a', 'b', 'c', 'd']}}})
+            done()
+          })
         })
       })
     })

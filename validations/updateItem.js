@@ -143,6 +143,12 @@ exports.custom = function(data) {
           return 'One or more parameter values were invalid: ' +
             'Action DELETE is not supported for the type ' + type
       }
+      if (data.AttributeUpdates[key].Value != null && data.AttributeUpdates[key].Action == 'ADD') {
+        var type = Object.keys(data.AttributeUpdates[key].Value)[0]
+        if (type != 'SS' && type != 'NS' && type != 'BS' && type != 'N')
+          return 'One or more parameter values were invalid: ' +
+            'Action ADD is not supported for the type ' + type
+      }
     }
   }
 }
