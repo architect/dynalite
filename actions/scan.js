@@ -1,4 +1,5 @@
 var once = require('once'),
+    lazy = require('lazy'),
     db = require('../db'),
     itemDb = db.itemDb
 
@@ -13,7 +14,7 @@ module.exports = function scan(data, cb) {
     if (data.ExclusiveStartKey)
       opts = {start: data.ExclusiveStartKey + '\x00'}
 
-    vals = db.lazy(itemDb.createValueStream(opts), cb)
+    vals = data.Segment > 0 ? lazy.range(0) : db.lazy(itemDb.createValueStream(opts), cb)
 
     if (data.Limit) vals = vals.take(data.Limit)
 

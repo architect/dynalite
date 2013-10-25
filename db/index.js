@@ -21,6 +21,7 @@ exports.validationError = validationError
 exports.checkConditional = checkConditional
 
 tableDb.lock = new Lock()
+itemDb.lock = new Lock()
 
 function getTable(name, checkStatus, cb) {
   if (typeof checkStatus == 'function') cb = checkStatus

@@ -12,19 +12,23 @@ module.exports = function putItem(data, cb) {
     var fetchExisting = (data.ReturnValues == 'ALL_OLD' || data.Expected) ?
       itemDb.get.bind(itemDb, key) : function(cb) { cb() }
 
-    fetchExisting(function(err, existingItem) {
-      if (err && err.name != 'NotFoundError') return cb(err)
+    itemDb.lock(key, function(release) {
+      cb = release(cb)
 
-      if ((err = db.checkConditional(data.Expected, existingItem)) != null) return cb(err)
+      fetchExisting(function(err, existingItem) {
+        if (err && err.name != 'NotFoundError') return cb(err)
 
-      var returnObj = {}
+        if ((err = db.checkConditional(data.Expected, existingItem)) != null) return cb(err)
 
-      if (existingItem && data.ReturnValues == 'ALL_OLD')
-        returnObj.Attributes = existingItem
+        var returnObj = {}
 
-      itemDb.put(key, data.Item, function(err) {
-        if (err) return cb(err)
-        cb(null, returnObj)
+        if (existingItem && data.ReturnValues == 'ALL_OLD')
+          returnObj.Attributes = existingItem
+
+        itemDb.put(key, data.Item, function(err) {
+          if (err) return cb(err)
+          cb(null, returnObj)
+        })
       })
     })
   })
