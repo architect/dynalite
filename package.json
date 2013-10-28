@@ -1,7 +1,7 @@
 {
   "name": "dynalite",
   "version": "0.0.16",
-  "description": "A mock implementation of Amazon's DynamoDB",
+  "description": "A mock implementation of Amazon's DynamoDB built on LevelDB",
   "main": "index.js",
   "scripts": {
     "test": "mocha --require should --require longjohn --reporter spec -t $([ $REMOTE ] && echo 30s || echo 4s) -b",
@@ -17,7 +17,8 @@
     "fake",
     "test",
     "aws",
-    "dynamo"
+    "dynamo",
+    "leveldb"
   ],
   "author": "Michael Hart <michael.hart.au@gmail.com>",
   "license": "MIT",
