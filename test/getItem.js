@@ -178,7 +178,37 @@ describe('getItem', function() {
         'The parameter cannot be converted to a numeric value: b', done)
     })
 
-    it('should return ValidationException if key has incorrect numeric type in set', function(done) {
+    it('should return ValidationException if key has large numeric type', function(done) {
+      assertValidation({TableName: 'abc', Key: {a: {N: '123456789012345678901234567890123456789'}}},
+        'Attempting to store more than 38 significant digits in a Number', done)
+    })
+
+    it('should return ValidationException if key has long digited number', function(done) {
+      assertValidation({TableName: 'aaa', Key: {a: {N: '-1.23456789012345678901234567890123456789'}}},
+        'Attempting to store more than 38 significant digits in a Number', done)
+    })
+
+    it('should return ValidationException if key has huge positive number', function(done) {
+      assertValidation({TableName: 'aaa', Key: {a: {N: '1e126'}}},
+        'Number overflow. Attempting to store a number with magnitude larger than supported range', done)
+    })
+
+    it('should return ValidationException if key has huge negative number', function(done) {
+      assertValidation({TableName: 'aaa', Key: {a: {N: '-1e126'}}},
+        'Number overflow. Attempting to store a number with magnitude larger than supported range', done)
+    })
+
+    it('should return ValidationException if key has tiny positive number', function(done) {
+      assertValidation({TableName: 'aaa', Key: {a: {N: '1e-131'}}},
+        'Number underflow. Attempting to store a number with magnitude smaller than supported range', done)
+    })
+
+    it('should return ValidationException if key has tiny negative number', function(done) {
+      assertValidation({TableName: 'aaa', Key: {a: {N: '-1e-131'}}},
+        'Number underflow. Attempting to store a number with magnitude smaller than supported range', done)
+    })
+
+     it('should return ValidationException if key has incorrect numeric type in set', function(done) {
       assertValidation({TableName: 'abc', Key: {a: {NS: ['1', 'b', 'a']}}},
         'The parameter cannot be converted to a numeric value: b', done)
     })

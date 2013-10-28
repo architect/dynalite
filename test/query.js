@@ -956,6 +956,107 @@ describe('query', function() {
       })
     })
 
+    it('should return items in order for strings', function(done) {
+      var item = {a: {S: helpers.randomString()}, b: {S: '1'}},
+          item2 = {a: item.a, b: {S: '2'}},
+          item3 = {a: item.a, b: {S: '10'}},
+          item4 = {a: item.a, b: {S: 'a'}},
+          item5 = {a: item.a, b: {S: 'b'}},
+          item6 = {a: item.a, b: {S: 'aa'}},
+          item7 = {a: item.a, b: {S: 'ab'}},
+          item8 = {a: item.a, b: {S: 'A'}},
+          item9 = {a: item.a, b: {S: 'B'}},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testRangeTable] = [
+        {PutRequest: {Item: item}},
+        {PutRequest: {Item: item2}},
+        {PutRequest: {Item: item3}},
+        {PutRequest: {Item: item4}},
+        {PutRequest: {Item: item5}},
+        {PutRequest: {Item: item6}},
+        {PutRequest: {Item: item7}},
+        {PutRequest: {Item: item8}},
+        {PutRequest: {Item: item9}},
+      ]
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        request(opts({TableName: helpers.testRangeTable, KeyConditions: {
+          a: {ComparisonOperator: 'EQ', AttributeValueList: [item.a]},
+        }}), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.should.eql({Count: 9, Items: [item, item3, item2, item8, item9, item4, item6, item7, item5]})
+          done()
+        })
+      })
+    })
+
+    it('should return items in order for numbers', function(done) {
+      var item = {a: {S: helpers.randomString()}, b: {N: '0'}},
+          item2 = {a: item.a, b: {N: '99.1'}},
+          item3 = {a: item.a, b: {N: '10.9'}},
+          item4 = {a: item.a, b: {N: '10.1'}},
+          item5 = {a: item.a, b: {N: '9.1'}},
+          item6 = {a: item.a, b: {N: '9'}},
+          item7 = {a: item.a, b: {N: '1.9'}},
+          item8 = {a: item.a, b: {N: '1.1'}},
+          item9 = {a: item.a, b: {N: '1'}},
+          item10 = {a: item.a, b: {N: '0.9'}},
+          item11 = {a: item.a, b: {N: '0.1'}},
+          item12 = {a: item.a, b: {N: '0.09'}},
+          item13 = {a: item.a, b: {N: '0.01'}},
+          item14 = {a: item.a, b: {N: '-0.01'}},
+          item15 = {a: item.a, b: {N: '-0.09'}},
+          item16 = {a: item.a, b: {N: '-0.1'}},
+          item17 = {a: item.a, b: {N: '-0.9'}},
+          item18 = {a: item.a, b: {N: '-1'}},
+          item19 = {a: item.a, b: {N: '-1.01'}},
+          item20 = {a: item.a, b: {N: '-9'}},
+          item21 = {a: item.a, b: {N: '-9.9'}},
+          item22 = {a: item.a, b: {N: '-10.1'}},
+          item23 = {a: item.a, b: {N: '-99.1'}},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testRangeNTable] = [
+        {PutRequest: {Item: item}},
+        {PutRequest: {Item: item2}},
+        {PutRequest: {Item: item3}},
+        {PutRequest: {Item: item4}},
+        {PutRequest: {Item: item5}},
+        {PutRequest: {Item: item6}},
+        {PutRequest: {Item: item7}},
+        {PutRequest: {Item: item8}},
+        {PutRequest: {Item: item9}},
+        {PutRequest: {Item: item10}},
+        {PutRequest: {Item: item11}},
+        {PutRequest: {Item: item12}},
+        {PutRequest: {Item: item13}},
+        {PutRequest: {Item: item14}},
+        {PutRequest: {Item: item15}},
+        {PutRequest: {Item: item16}},
+        {PutRequest: {Item: item17}},
+        {PutRequest: {Item: item18}},
+        {PutRequest: {Item: item19}},
+        {PutRequest: {Item: item20}},
+        {PutRequest: {Item: item21}},
+        {PutRequest: {Item: item22}},
+        {PutRequest: {Item: item23}},
+      ]
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        request(opts({TableName: helpers.testRangeNTable, KeyConditions: {
+          a: {ComparisonOperator: 'EQ', AttributeValueList: [item.a]},
+        }}), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.should.eql({Count: 23, Items: [item23, item22, item21, item20, item19, item18, item17, item16, item15,
+            item14, item, item13, item12, item11, item10, item9, item8, item7, item6, item5, item4, item3, item2]})
+          done()
+        })
+      })
+    })
+
   })
 
 })

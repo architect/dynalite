@@ -3,7 +3,8 @@ var Readable = require('stream').Readable,
     levelup = require('levelup'),
     MemDown = require('memdown'),
     sublevel = require('level-sublevel'),
-    Lock = require('lock')
+    Lock = require('lock'),
+    Big = require('big.js')
 
 var db = sublevel(levelup('./mydb', {db: function(location) { return new MemDown(location) }})),
     tableDb = db.sublevel('table', {valueEncoding: 'json'}),
@@ -55,15 +56,15 @@ function lazyStream(stream, errHandler) {
 function validateKey(dataKey, table) {
   if (table.KeySchema.length != Object.keys(dataKey).length) return validationError()
 
-  var keyStr = '', i, j, attr
+  var keyStr = table.TableName, i, j, attr, type
   for (i = 0; i < table.KeySchema.length; i++) {
     attr = table.KeySchema[i].AttributeName
     if (dataKey[attr] == null) return validationError()
     for (j = 0; j < table.AttributeDefinitions.length; j++) {
       if (table.AttributeDefinitions[j].AttributeName != attr) continue
-      if (dataKey[attr][table.AttributeDefinitions[j].AttributeType] == null) return validationError()
-      if (keyStr) keyStr += '\xff'
-      keyStr += dataKey[attr][table.AttributeDefinitions[j].AttributeType]
+      type = table.AttributeDefinitions[j].AttributeType
+      if (dataKey[attr][type] == null) return validationError()
+      keyStr += '\xff' + toLexiStr(dataKey[attr][type], type)
       break
     }
   }
@@ -71,7 +72,7 @@ function validateKey(dataKey, table) {
 }
 
 function validateItem(dataItem, table) {
-  var keyStr = '', i, j, attr
+  var keyStr = table.TableName, i, j, attr, type
   for (i = 0; i < table.KeySchema.length; i++) {
     attr = table.KeySchema[i].AttributeName
     if (dataItem[attr] == null)
@@ -79,16 +80,39 @@ function validateItem(dataItem, table) {
         'Missing the key ' + attr + ' in the item')
     for (j = 0; j < table.AttributeDefinitions.length; j++) {
       if (table.AttributeDefinitions[j].AttributeName != attr) continue
-      if (dataItem[attr][table.AttributeDefinitions[j].AttributeType] == null)
+      type = table.AttributeDefinitions[j].AttributeType
+      if (dataItem[attr][type] == null)
         return validationError('One or more parameter values were invalid: ' +
           'Type mismatch for key ' + attr + ' expected: ' + table.AttributeDefinitions[j].AttributeType +
           ' actual: ' + Object.keys(dataItem[attr])[0])
-      if (keyStr) keyStr += '\xff'
-      keyStr += dataItem[attr][table.AttributeDefinitions[j].AttributeType]
+      keyStr += '\xff' + toLexiStr(dataItem[attr][type], type)
       break
     }
   }
   return keyStr
+}
+
+// Creates lexigraphically sortable number strings
+//  0     7c    009   = '07c009' = -99.1
+// |-|   |--| |-----|
+// sign  exp  digits
+//
+// Sign is 0 for negative, 1 for positive
+// Exp is hex for the exponent modified by adding 130 if sign is positive or subtracting from 125 if negative
+// Digits are unchanged if sign is positive, or added to 10 if negative
+// Hence, in '07c009', the sign is negative, exponent is 125 - 124 = 1, digits are 10 + -0.09 = 9.91 => -9.91e1
+//
+function toLexiStr(keyPiece, type) {
+  if (type != 'N') return keyPiece
+  var bigNum = Big(keyPiece), digits,
+      exp = !bigNum.c[0] ? 0 : bigNum.s == -1 ? 125 - bigNum.e : 130 + bigNum.e
+  if (bigNum.s == -1) {
+    bigNum.e = 0
+    digits = Big(10).plus(bigNum).toFixed().replace(/\./, '')
+  } else {
+    digits = bigNum.c.join('')
+  }
+  return (bigNum.s == -1 ? '0' : '1') + ('0' + exp.toString(16)).slice(-2) + digits
 }
 
 function checkConditional(expected, existingItem) {

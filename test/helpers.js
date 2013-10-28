@@ -27,9 +27,11 @@ exports.randomString = randomString
 exports.randomName = randomName
 exports.testHashTable = randomName()
 exports.testRangeTable = randomName()
+exports.testRangeNTable = randomName()
 // For testing:
 //exports.testHashTable = '__dynalite_test_1'
 //exports.testRangeTable = '__dynalite_test_2'
+//exports.testRangeNTable = '__dynalite_test_3'
 
 before(function(done) {
   this.timeout(200000)
@@ -101,6 +103,11 @@ function createTestTables(done) {
   }, {
     TableName: exports.testRangeTable,
     AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}, {AttributeName: 'b', AttributeType: 'S'}],
+    KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}, {KeyType: 'RANGE', AttributeName: 'b'}],
+    ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
+  }, {
+    TableName: exports.testRangeNTable,
+    AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}, {AttributeName: 'b', AttributeType: 'N'}],
     KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}, {KeyType: 'RANGE', AttributeName: 'b'}],
     ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
   }]

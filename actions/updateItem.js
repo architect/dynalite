@@ -1,4 +1,5 @@
-var db = require('../db'),
+var Big = require('big.js'),
+    db = require('../db'),
     itemDb = db.itemDb
 
 module.exports = function updateItem(data, cb) {
@@ -52,7 +53,7 @@ module.exports = function updateItem(data, cb) {
               if (item[attr] && !item[attr].N)
                 return cb(db.validationError('Type mismatch for attribute to update'))
               if (!item[attr]) item[attr] = {N: '0'}
-              item[attr].N = '' + (+item[attr].N + +data.AttributeUpdates[attr].Value.N)
+              item[attr].N = Big(item[attr].N).plus(data.AttributeUpdates[attr].Value.N).toFixed()
             } else {
               var type = Object.keys(data.AttributeUpdates[attr].Value)[0]
               if (item[attr] && !item[attr][type])

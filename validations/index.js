@@ -1,3 +1,5 @@
+var Big = require('big.js')
+
 exports.checkTypes = checkTypes
 exports.checkValidations = checkValidations
 exports.toLowerFirst = toLowerFirst
@@ -266,16 +268,35 @@ function toLowerFirst(str) {
 }
 
 function validateAttributeValue(value) {
-  var types = Object.keys(value)
+  var types = Object.keys(value), msg
   if (!types.length)
     return 'Supplied AttributeValue is empty, must contain exactly one of the supported datatypes'
 
-  for (var type in value) {
-    if (type == 'N' && !value[type])
+  function checkNum(attr, obj) {
+    if (!obj[attr])
       return 'The parameter cannot be converted to a numeric value'
 
-    if (type == 'N' && isNaN(Number(value[type])))
-      return 'The parameter cannot be converted to a numeric value: ' + value[type]
+    var bigNum
+    try {
+      bigNum = Big(obj[attr])
+    } catch (e) {
+      return 'The parameter cannot be converted to a numeric value: ' + obj[attr]
+    }
+    if (bigNum.e > 125)
+      return 'Number overflow. Attempting to store a number with magnitude larger than supported range'
+    else if (bigNum.e < -130)
+      return 'Number underflow. Attempting to store a number with magnitude smaller than supported range'
+    else if (bigNum.c.length > 38)
+      return 'Attempting to store more than 38 significant digits in a Number'
+
+    obj[attr] = bigNum.toFixed()
+  }
+
+  for (var type in value) {
+    if (type == 'N') {
+      msg = checkNum(type, value)
+      if (msg) return msg
+    }
 
     if (type == 'B' && !value[type])
       return 'One or more parameter values were invalid: An AttributeValue may not contain an empty binary type.'
@@ -296,15 +317,16 @@ function validateAttributeValue(value) {
       return 'The parameter cannot be converted to a numeric value'
 
     if (type == 'NS') {
-      var nonNum = value[type].filter(function(x) { return isNaN(x) })[0]
-      if (nonNum)
-        return 'The parameter cannot be converted to a numeric value: ' + nonNum
+      for (var i = 0; i < value[type].length; i++) {
+        msg = checkNum(i, value[type])
+        if (msg) return msg
+      }
     }
 
     if (type == 'SS' && hasDuplicates(value[type]))
       return 'One or more parameter values were invalid: Input collection ' + valueStr(value[type]) + ' contains duplicates.'
 
-    if (type == 'NS' && hasDuplicates(value[type].map(Number)))
+    if (type == 'NS' && hasDuplicates(value[type]))
       return 'Input collection contains duplicates'
 
     if (type == 'BS' && hasDuplicates(value[type]))

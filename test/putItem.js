@@ -300,6 +300,36 @@ describe('putItem', function() {
         'The parameter cannot be converted to a numeric value', done)
     })
 
+    it('should return ValidationException if trying to store large number', function(done) {
+      assertValidation({TableName: 'aaa', Item: {a: {N: '123456789012345678901234567890123456789'}}},
+        'Attempting to store more than 38 significant digits in a Number', done)
+    })
+
+    it('should return ValidationException if trying to store long digited number', function(done) {
+      assertValidation({TableName: 'aaa', Item: {a: {N: '-1.23456789012345678901234567890123456789'}}},
+        'Attempting to store more than 38 significant digits in a Number', done)
+    })
+
+    it('should return ValidationException if trying to store huge positive number', function(done) {
+      assertValidation({TableName: 'aaa', Item: {a: {N: '1e126'}}},
+        'Number overflow. Attempting to store a number with magnitude larger than supported range', done)
+    })
+
+    it('should return ValidationException if trying to store huge negative number', function(done) {
+      assertValidation({TableName: 'aaa', Item: {a: {N: '-1e126'}}},
+        'Number overflow. Attempting to store a number with magnitude larger than supported range', done)
+    })
+
+    it('should return ValidationException if trying to store tiny positive number', function(done) {
+      assertValidation({TableName: 'aaa', Item: {a: {N: '1e-131'}}},
+        'Number underflow. Attempting to store a number with magnitude smaller than supported range', done)
+    })
+
+    it('should return ValidationException if trying to store tiny negative number', function(done) {
+      assertValidation({TableName: 'aaa', Item: {a: {N: '-1e-131'}}},
+        'Number underflow. Attempting to store a number with magnitude smaller than supported range', done)
+    })
+
     it('should return ResourceNotFoundException if key is empty and table does not exist', function(done) {
       assertNotFound({TableName: helpers.randomString(), Item: {}},
         'Requested resource not found', done)
@@ -352,13 +382,16 @@ describe('putItem', function() {
         KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}],
         ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
       }
-      request(helpers.opts('CreateTable', table), function(err) {
+      request(helpers.opts('CreateTable', table), function(err, res) {
         if (err) return done(err)
+        res.statusCode.should.equal(200)
         assertNotFound({TableName: table.TableName, Item: {a: {S: 'a'}}},
           'Requested resource not found', done)
       })
     })
   })
+
+  // A number can have up to 38 digits precision and can be between 10^-128 to 10^+126
 
   describe('functionality', function() {
 
@@ -377,8 +410,16 @@ describe('putItem', function() {
       })
     })
 
-    it('should put multi attribute item', function(done) {
-      var item = {a: {S: helpers.randomString()}, b: {S: 'a'}, c: {S: 'a'}}
+    it('should put really long numbers', function(done) {
+      var item = {
+        a: {S: helpers.randomString()},
+        b: {N: '0000012345678901234567890123456789012345678'},
+        c: {N: '-00001.23456789012345678901234567890123456780000'},
+        d: {N: '0009.99999999999999999999999999999999999990000e125'},
+        e: {N: '-0009.99999999999999999999999999999999999990000e125'},
+        f: {N: '0001.000e-130'},
+        g: {N: '-0001.000e-130'},
+      }
       request(opts({TableName: helpers.testHashTable, Item: item}), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
@@ -386,6 +427,28 @@ describe('putItem', function() {
         request(helpers.opts('GetItem', {TableName: helpers.testHashTable, Key: {a: item.a}, ConsistentRead: true}), function(err, res) {
           if (err) return done(err)
           res.statusCode.should.equal(200)
+          item.b = {N: '12345678901234567890123456789012345678'}
+          item.c = {N: '-1.2345678901234567890123456789012345678'}
+          item.d = {N: Array(39).join('9') + Array(89).join('0')}
+          item.e = {N: '-' + Array(39).join('9') + Array(89).join('0')}
+          item.f = {N: '0.' + Array(130).join('0') + '1'}
+          item.g = {N: '-0.' + Array(130).join('0') + '1'}
+          res.body.should.eql({Item: item})
+          done()
+        })
+      })
+    })
+
+    it('should put multi attribute item', function(done) {
+      var item = {a: {S: helpers.randomString()}, b: {N: '-000056.789'}, c: {B: 'Yg=='}}
+      request(opts({TableName: helpers.testHashTable, Item: item}), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        res.body.should.eql({})
+        request(helpers.opts('GetItem', {TableName: helpers.testHashTable, Key: {a: item.a}, ConsistentRead: true}), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          item.b = {N: '-56.789'}
           res.body.should.eql({Item: item})
           done()
         })
@@ -403,14 +466,15 @@ describe('putItem', function() {
     })
 
     it('should return correct old values when they exist', function(done) {
-      var item = {a: {S: helpers.randomString()}, b: {S: 'a'}, c: {S: 'a'}}
-      request(opts({TableName: helpers.testHashTable, Item: item}), function(err) {
+      var item = {a: {S: helpers.randomString()}, b: {N: '-0015.789e6'}, c: {S: 'a'}}
+      request(opts({TableName: helpers.testHashTable, Item: item}), function(err, res) {
         if (err) return done(err)
-        item.b.S = 'b'
+        res.statusCode.should.equal(200)
+        item.b = {S: 'b'}
         request(opts({TableName: helpers.testHashTable, Item: item, ReturnValues: 'ALL_OLD'}), function(err, res) {
           if (err) return done(err)
           res.statusCode.should.equal(200)
-          item.b.S = 'a'
+          item.b = {N: '-15789000'}
           res.body.should.eql({Attributes: item})
           done()
         })
@@ -446,8 +510,9 @@ describe('putItem', function() {
 
     it('should return ConditionalCheckFailedException if expecting existing key to not exist', function(done) {
       var item = {a: {S: helpers.randomString()}}
-      request(opts({TableName: helpers.testHashTable, Item: item}), function(err) {
+      request(opts({TableName: helpers.testHashTable, Item: item}), function(err, res) {
         if (err) return done(err)
+        res.statusCode.should.equal(200)
         assertConditional({
           TableName: helpers.testHashTable,
           Item: item,
@@ -458,8 +523,9 @@ describe('putItem', function() {
 
     it('should succeed if conditional key is different and exists is false', function(done) {
       var item = {a: {S: helpers.randomString()}}
-      request(opts({TableName: helpers.testHashTable, Item: item}), function(err) {
+      request(opts({TableName: helpers.testHashTable, Item: item}), function(err, res) {
         if (err) return done(err)
+        res.statusCode.should.equal(200)
         request(opts({
           TableName: helpers.testHashTable,
           Item: {a: {S: helpers.randomString()}},
@@ -475,8 +541,9 @@ describe('putItem', function() {
 
     it('should succeed if conditional key is same and exists is true', function(done) {
       var item = {a: {S: helpers.randomString()}}
-      request(opts({TableName: helpers.testHashTable, Item: item}), function(err) {
+      request(opts({TableName: helpers.testHashTable, Item: item}), function(err, res) {
         if (err) return done(err)
+        res.statusCode.should.equal(200)
         request(opts({
           TableName: helpers.testHashTable,
           Item: item,
@@ -492,8 +559,9 @@ describe('putItem', function() {
 
     it('should succeed if expecting non-existant value to not exist', function(done) {
       var item = {a: {S: helpers.randomString()}}
-      request(opts({TableName: helpers.testHashTable, Item: item}), function(err) {
+      request(opts({TableName: helpers.testHashTable, Item: item}), function(err, res) {
         if (err) return done(err)
+        res.statusCode.should.equal(200)
         request(opts({
           TableName: helpers.testHashTable,
           Item: item,
@@ -509,8 +577,9 @@ describe('putItem', function() {
 
     it('should return ConditionalCheckFailedException if expecting existing value to not exist if different value specified', function(done) {
       var item = {a: {S: helpers.randomString()}, b: {S: helpers.randomString()}}
-      request(opts({TableName: helpers.testHashTable, Item: item}), function(err) {
+      request(opts({TableName: helpers.testHashTable, Item: item}), function(err, res) {
         if (err) return done(err)
+        res.statusCode.should.equal(200)
         assertConditional({
           TableName: helpers.testHashTable,
           Item: {a: item.a, b: {S: helpers.randomString()}},
@@ -521,8 +590,9 @@ describe('putItem', function() {
 
     it('should return ConditionalCheckFailedException if expecting existing value to not exist if value not specified', function(done) {
       var item = {a: {S: helpers.randomString()}, b: {S: helpers.randomString()}}
-      request(opts({TableName: helpers.testHashTable, Item: item}), function(err) {
+      request(opts({TableName: helpers.testHashTable, Item: item}), function(err, res) {
         if (err) return done(err)
+        res.statusCode.should.equal(200)
         assertConditional({
           TableName: helpers.testHashTable,
           Item: {a: item.a},
@@ -533,8 +603,9 @@ describe('putItem', function() {
 
     it('should return ConditionalCheckFailedException if expecting existing value to not exist if same value specified', function(done) {
       var item = {a: {S: helpers.randomString()}, b: {S: helpers.randomString()}}
-      request(opts({TableName: helpers.testHashTable, Item: item}), function(err) {
+      request(opts({TableName: helpers.testHashTable, Item: item}), function(err, res) {
         if (err) return done(err)
+        res.statusCode.should.equal(200)
         assertConditional({
           TableName: helpers.testHashTable,
           Item: item,
@@ -545,8 +616,9 @@ describe('putItem', function() {
 
     it('should succeed for multiple conditional checks if all are valid', function(done) {
       var item = {a: {S: helpers.randomString()}, c: {S: helpers.randomString()}}
-      request(opts({TableName: helpers.testHashTable, Item: item}), function(err) {
+      request(opts({TableName: helpers.testHashTable, Item: item}), function(err, res) {
         if (err) return done(err)
+        res.statusCode.should.equal(200)
         request(opts({
           TableName: helpers.testHashTable,
           Item: item,
@@ -562,8 +634,9 @@ describe('putItem', function() {
 
     it('should return ConditionalCheckFailedException for multiple conditional checks if one is invalid', function(done) {
       var item = {a: {S: helpers.randomString()}, c: {S: helpers.randomString()}}
-      request(opts({TableName: helpers.testHashTable, Item: item}), function(err) {
+      request(opts({TableName: helpers.testHashTable, Item: item}), function(err, res) {
         if (err) return done(err)
+        res.statusCode.should.equal(200)
         assertConditional({
           TableName: helpers.testHashTable,
           Item: item,

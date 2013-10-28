@@ -1,5 +1,6 @@
 var once = require('once'),
     lazy = require('lazy'),
+    Big = require('big.js'),
     db = require('../db'),
     itemDb = db.itemDb
 
@@ -29,10 +30,6 @@ module.exports = function scan(data, cb) {
             compVal = compVals ? compVals[0][compType] : null,
             attrType = val[attr] ? Object.keys(val[attr])[0] : null,
             attrVal = val[attr] ? val[attr][attrType] : null
-        if (attrType == 'N' && attrType == compType) {
-          attrVal = +attrVal
-          compVal = +compVal
-        }
         switch (comp) {
           case 'EQ':
             if (compType != attrType || attrVal != compVal) return false
@@ -41,16 +38,24 @@ module.exports = function scan(data, cb) {
             if (compType == attrType && attrVal == compVal) return false
             break
           case 'LE':
-            if (compType != attrType || attrVal > compVal) return false
+            if (compType != attrType ||
+              (attrType == 'N' && !Big(attrVal).lte(compVal)) ||
+              (attrType != 'N' && attrVal > compVal)) return false
             break
           case 'LT':
-            if (compType != attrType || attrVal >= compVal) return false
+            if (compType != attrType ||
+              (attrType == 'N' && !Big(attrVal).lt(compVal)) ||
+              (attrType != 'N' && attrVal >= compVal)) return false
             break
           case 'GE':
-            if (compType != attrType || attrVal < compVal) return false
+            if (compType != attrType ||
+              (attrType == 'N' && !Big(attrVal).gte(compVal)) ||
+              (attrType != 'N' && attrVal < compVal)) return false
             break
           case 'GT':
-            if (compType != attrType || attrVal <= compVal) return false
+            if (compType != attrType ||
+              (attrType == 'N' && !Big(attrVal).gt(compVal)) ||
+              (attrType != 'N' && attrVal <= compVal)) return false
             break
           case 'NOT_NULL':
             if (!attrVal) return false
@@ -107,8 +112,9 @@ module.exports = function scan(data, cb) {
             })) return false
             break
           case 'BETWEEN':
-            if (!attrVal || compType != attrType) return false
-            if (attrVal < compVal || attrVal > compVals[1][compType]) return false
+            if (!attrVal || compType != attrType ||
+              (attrType == 'N' && (!Big(attrVal).gte(compVal) || !Big(attrVal).lte(compVals[1].N))) ||
+              (attrType != 'N' && (attrVal < compVal || attrVal > compVals[1][compType]))) return false
         }
       }
       return true

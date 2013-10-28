@@ -31,7 +31,8 @@
     "lock": "~0.0.4",
     "lazy": "~1.0.11",
     "once": "~1.2.0",
-    "async": "~0.2.9"
+    "async": "~0.2.9",
+    "big.js": "~2.4.1"
   },
   "devDependencies": {
     "mocha": "~1.13.0",
