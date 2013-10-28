@@ -4,7 +4,8 @@
   "description": "A mock implementation of Amazon's DynamoDB",
   "main": "index.js",
   "scripts": {
-    "test": "mocha --require should --require longjohn --reporter spec -t $([ $REMOTE ] && echo 30s || echo 4s) -b"
+    "test": "mocha --require should --require longjohn --reporter spec -t $([ $REMOTE ] && echo 30s || echo 4s) -b",
+    "coverage": "istanbul cover ./node_modules/.bin/_mocha -- --require should -t 10s"
   },
   "repository": {
     "type": "git",
@@ -38,6 +39,7 @@
     "mocha": "~1.13.0",
     "should": "~2.0.2",
     "aws4": "~0.2.0",
-    "longjohn": "~0.2.1"
+    "longjohn": "~0.2.1",
+    "istanbul": "~0.1.44"
   }
 }
