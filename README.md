@@ -6,12 +6,31 @@ dynalite
 A mock implementation of Amazon's DynamoDB, focussed on correctness and performance, and built on LevelDB
 (well, [@rvagg](https://github.com/rvagg)'s awesome [LevelUP](https://github.com/rvagg/node-levelup) to be precise).
 
+All basic actions and validations have now been implemented, but there are still a number of issues (see below)
+before this module should be considered for general use.
+
 Example
 -------
 
-All basic actions have now been implemented.
+```js
+// Returns a standard Node.js HTTP server
+var dynalite = require('dynalite')
 
-Need to add config settings and allow for different persistence types (LevelDOWN-Hyper, etc).
+// Listen on port 4567
+dynalite.listen(4567, function(err) {
+  if (err) throw err
+  console.log('Dynalite started on port 4567')
+})
+```
 
-Will create a TODO list soon for the remaining issues.
+TODO
+----
+
+* Add executable script
+* Add config settings, especially for the table delays and strict checking
+* Allow for different persistence types (LevelDOWN-Hyper, etc)
+* Use efficient range scans for Query calls
+* Implement `ReturnConsumedCapacity`/`ConsumedCapacity`/`ReturnItemCollectionMetrics` on all relevant endpoints
+* Check for any missing `ExclusiveStartKey`/`LastEvaluatedKey` functionality (most should be fine)
+* Implement any outstanding secondary index behaviour
 
