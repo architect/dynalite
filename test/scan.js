@@ -1932,6 +1932,94 @@ describe('scan', function() {
       })
     })
 
+    // TODO: Sort out hash key buckets
+
+    // { S: '2' }   668 of 4096
+    // { S: '8' }  1017 of 4096
+    // { S: '9' }  1103 of 4096
+    // { S: '1' }  1166 of 4096
+    // { S: '6' }  1380 of 4096
+    // { S: '0' }  2347 of 4096
+    // { S: '5' }  2385 of 4096
+    // { S: '4' }  2445 of 4096
+    // { S: '7' }  3287 of 4096
+    // { S: '3' }  3332 of 4096
+
+    // 0/4096: [ { a: { S: '3635' } }, { a: { S: '228' } } ]
+    // 1/4096: [ { a: { S: '1668' } } ]
+    // 2/4096: []
+    // 3/4096: []
+    // 4/4096: [ { a: { S: '3435' } } ]
+
+    // For N keys:
+
+    // 0/4096: []
+    // 1/4096: [ { a: { N: '251' } } ]
+    // 4095/4096: [ { a: { N: '2388' } } ]
+
+    // Bucket Algo: Math.ceil(4096 * Segment / TotalSegments) <= x <= Math.ceil(4096 * (Segment + 1) / TotalSegments) - 1
+
+    // TODO: Need high capacity to run this
+    it.skip('should return items in same segment order', function(done) {
+      this.timeout(100000)
+
+      var i, items = [{a: {S: '422'}}, {a: {S: '13706'}}], firstHalf, secondHalf
+      for (i = 0; i < 10; i++)
+        items.push({a: {S: String(i)}})
+
+      helpers.replaceTable(helpers.testHashTable, ['a'], items, function(err) {
+        if (err) return done(err)
+
+        request(opts({TableName: helpers.testHashTable, Segment: 0, TotalSegments: 2}), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.Count.should.be.above(0)
+
+          firstHalf = res.body.Items
+
+          request(opts({TableName: helpers.testHashTable, Segment: 1, TotalSegments: 2}), function(err, res) {
+            if (err) return done(err)
+            res.statusCode.should.equal(200)
+            res.body.Count.should.be.above(0)
+
+            secondHalf = res.body.Items
+
+            secondHalf.should.have.length(items.length - firstHalf.length)
+
+            request(opts({TableName: helpers.testHashTable, Segment: 0, TotalSegments: 4}), function(err, res) {
+              if (err) return done(err)
+              res.statusCode.should.equal(200)
+
+              res.body.Items.forEach(function(item) { firstHalf.should.includeEql(item) })
+
+              request(opts({TableName: helpers.testHashTable, Segment: 1, TotalSegments: 4}), function(err, res) {
+                if (err) return done(err)
+                res.statusCode.should.equal(200)
+
+                res.body.Items.forEach(function(item) { firstHalf.should.includeEql(item) })
+
+                request(opts({TableName: helpers.testHashTable, Segment: 2, TotalSegments: 4}), function(err, res) {
+                  if (err) return done(err)
+                  res.statusCode.should.equal(200)
+
+                  res.body.Items.forEach(function(item) { secondHalf.should.includeEql(item) })
+
+                  request(opts({TableName: helpers.testHashTable, Segment: 3, TotalSegments: 4}), function(err, res) {
+                    if (err) return done(err)
+                    res.statusCode.should.equal(200)
+
+                    res.body.Items.forEach(function(item) { secondHalf.should.includeEql(item) })
+
+                    done()
+                  })
+                })
+              })
+            })
+          })
+        })
+      })
+    })
+
     // TODO: Need high capacity to run this
     it.skip('should return all if just under limit', function(done) {
       this.timeout(100000)

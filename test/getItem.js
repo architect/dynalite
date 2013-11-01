@@ -263,6 +263,20 @@ describe('getItem', function() {
         'The provided key element does not match the schema', done)
     })
 
+    it('should return ValidationException if hash key is too big', function(done) {
+      var keyStr = (helpers.randomString() + new Array(2048).join('a')).slice(0, 2049)
+      assertValidation({TableName: helpers.testHashTable, Key: {a: {S: keyStr}}},
+        'One or more parameter values were invalid: ' +
+        'Size of hashkey has exceeded the maximum size limit of2048 bytes', done)
+    })
+
+    it('should return ValidationException if range key is too big', function(done) {
+      var keyStr = (helpers.randomString() + new Array(1024).join('a')).slice(0, 1025)
+      assertValidation({TableName: helpers.testRangeTable, Key: {a: {S: 'a'}, b: {S: keyStr}}},
+        'One or more parameter values were invalid: ' +
+        'Aggregated size of all range keys has exceeded the size limit of 1024 bytes', done)
+    })
+
     it('should return ResourceNotFoundException if table is being created', function(done) {
       var table = {
         TableName: randomName(),

@@ -1,12 +1,11 @@
-var db = require('../db'),
-    itemDb = db.itemDb
+var db = require('../db')
 
 module.exports = function deleteItem(data, cb) {
 
   db.getTable(data.TableName, function(err, table) {
     if (err) return cb(err)
 
-    var key = db.validateKey(data.Key, table)
+    var key = db.validateKey(data.Key, table), itemDb = db.getItemDb(data.TableName)
     if (key instanceof Error) return cb(key)
 
     var fetchExisting = (data.ReturnValues == 'ALL_OLD' || data.Expected) ?

@@ -1,13 +1,12 @@
 var Big = require('big.js'),
-    db = require('../db'),
-    itemDb = db.itemDb
+    db = require('../db')
 
 module.exports = function updateItem(data, cb) {
 
   db.getTable(data.TableName, function(err, table) {
     if (err) return cb(err)
 
-    var key = db.validateKey(data.Key, table)
+    var key = db.validateKey(data.Key, table), itemDb = db.getItemDb(data.TableName)
     if (key instanceof Error) return cb(key)
 
     if (data.AttributeUpdates) {

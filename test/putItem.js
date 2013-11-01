@@ -330,6 +330,98 @@ describe('putItem', function() {
         'Number underflow. Attempting to store a number with magnitude smaller than supported range', done)
     })
 
+    it('should return ValidationException if item is too big with small attribute', function(done) {
+      var keyStr = helpers.randomString(), b = new Array(65536 + 1 - keyStr.length - 1).join('a')
+      assertValidation({TableName: 'aaa', Item: {a: {S: keyStr}, b: {S: b}}},
+        'Item size has exceeded the maximum allowed size', done)
+    })
+
+    it('should return ResourceNotFoundException if item is just small enough with small attribute', function(done) {
+      var keyStr = helpers.randomString(), b = new Array(65536 + 1 - keyStr.length - 2).join('a')
+      assertNotFound({TableName: 'aaa', Item: {a: {S: keyStr}, b: {S: b}}},
+        'Requested resource not found', done)
+    })
+
+    it('should return ValidationException if item is too big with larger attribute', function(done) {
+      var keyStr = helpers.randomString(), b = new Array(65536 + 1 - keyStr.length - 27).join('a')
+      assertValidation({TableName: 'aaa', Item: {a: {S: keyStr}, bbbbbbbbbbbbbbbbbbbbbbbbbbb: {S: b}}},
+        'Item size has exceeded the maximum allowed size', done)
+    })
+
+    it('should return ResourceNotFoundException if item is just small enough with larger attribute', function(done) {
+      var keyStr = helpers.randomString(), b = new Array(65536 + 1 - keyStr.length - 28).join('a')
+      assertNotFound({TableName: 'aaa', Item: {a: {S: keyStr}, bbbbbbbbbbbbbbbbbbbbbbbbbbb: {S: b}}},
+        'Requested resource not found', done)
+    })
+
+    it('should return ValidationException if item is too big with multi attributes', function(done) {
+      var keyStr = helpers.randomString(), b = new Array(65536 + 1 - keyStr.length - 7).join('a')
+      assertValidation({TableName: 'aaa', Item: {a: {S: keyStr}, bb: {S: b}, ccc: {S: 'cc'}}},
+        'Item size has exceeded the maximum allowed size', done)
+    })
+
+    it('should return ResourceNotFoundException if item is just small enough with multi attributes', function(done) {
+      var keyStr = helpers.randomString(), b = new Array(65536 + 1 - keyStr.length - 8).join('a')
+      assertNotFound({TableName: 'aaa', Item: {a: {S: keyStr}, bb: {S: b}, ccc: {S: 'cc'}}},
+        'Requested resource not found', done)
+    })
+
+    it('should return ValidationException if item is too big with big number attribute', function(done) {
+      var keyStr = helpers.randomString(), b = new Array(65536 + 1 - keyStr.length - 1 - 1 - 20).join('a'),
+        c = new Array(38 + 1).join('1') + new Array(89).join('0')
+      assertValidation({TableName: 'aaa', Item: {a: {S: keyStr}, b: {S: b}, c: {N: c}}},
+        'Item size has exceeded the maximum allowed size', done)
+    })
+
+    it('should return ValidationException if item is too big with smallest number attribute', function(done) {
+      var keyStr = helpers.randomString(), b = new Array(65536 + 1 - keyStr.length - 1 - 1 - 2).join('a'),
+        c = '1' + new Array(126).join('0')
+      assertValidation({TableName: 'aaa', Item: {a: {S: keyStr}, b: {S: b}, c: {N: c}}},
+        'Item size has exceeded the maximum allowed size', done)
+    })
+
+    it('should return ValidationException if item is too big with smaller number attribute', function(done) {
+      var keyStr = helpers.randomString(), b = new Array(65536 + 1 - keyStr.length - 1 - 1 - 2).join('a'),
+        c = '11' + new Array(125).join('0')
+      assertValidation({TableName: 'aaa', Item: {a: {S: keyStr}, b: {S: b}, c: {N: c}}},
+        'Item size has exceeded the maximum allowed size', done)
+    })
+
+    it('should return ValidationException if item is too big with medium number attribute', function(done) {
+      var keyStr = helpers.randomString(), b = new Array(65536 + 1 - keyStr.length - 1 - 1 - 4).join('a'),
+        c = '11111' + new Array(122).join('0')
+      assertValidation({TableName: 'aaa', Item: {a: {S: keyStr}, b: {S: b}, c: {N: c}}},
+        'Item size has exceeded the maximum allowed size', done)
+    })
+
+    it('should return ValidationException if item is too big with medium number attribute', function(done) {
+      var keyStr = helpers.randomString(), b = new Array(65536 + 1 - keyStr.length - 1 - 1 - 4).join('a'),
+        c = '111111' + new Array(121).join('0')
+      assertValidation({TableName: 'aaa', Item: {a: {S: keyStr}, b: {S: b}, c: {N: c}}},
+        'Item size has exceeded the maximum allowed size', done)
+    })
+
+    it('should return ValidationException if item is too big with medium number attribute', function(done) {
+      var keyStr = helpers.randomString(), b = new Array(65536 + 1 - keyStr.length - 1 - 1 - 5).join('a'),
+        c = '1111111' + new Array(120).join('0')
+      assertValidation({TableName: 'aaa', Item: {a: {S: keyStr}, b: {S: b}, c: {N: c}}},
+        'Item size has exceeded the maximum allowed size', done)
+    })
+
+    it('should return ValidationException if item is too big with multi number attribute', function(done) {
+      var keyStr = helpers.randomString(), b = new Array(65536 + 1 - keyStr.length - 1 - 1 - 5 - 1 - 5).join('a'),
+        c = '1111111' + new Array(120).join('0'), d = '1111111' + new Array(120).join('0')
+      assertValidation({TableName: 'aaa', Item: {a: {S: keyStr}, b: {S: b}, c: {N: c}, d: {N: d}}},
+        'Item size has exceeded the maximum allowed size', done)
+    })
+
+    it('should return ResourceNotFoundException if item is just small enough with multi number attribute', function(done) {
+      var keyStr = helpers.randomString(), b = new Array(65536 + 1 - keyStr.length - 1 - 1 - 5 - 1 - 6).join('a'),
+        c = '1111111' + new Array(120).join('0'), d = '1111111' + new Array(120).join('0')
+      assertNotFound({TableName: 'aaa', Item: {a: {S: keyStr}, b: {S: b}, c: {N: c}, d: {N: d}}},
+        'Requested resource not found', done)
+    })
+
     it('should return ResourceNotFoundException if key is empty and table does not exist', function(done) {
       assertNotFound({TableName: helpers.randomString(), Item: {}},
         'Requested resource not found', done)
@@ -373,6 +465,20 @@ describe('putItem', function() {
     it('should return ValidationException if missing range key', function(done) {
       assertValidation({TableName: helpers.testRangeTable, Item: {a: {S: 'a'}}},
         'One or more parameter values were invalid: Missing the key b in the item', done)
+    })
+
+    it('should return ValidationException if hash key is too big', function(done) {
+      var keyStr = (helpers.randomString() + new Array(2048).join('a')).slice(0, 2049)
+      assertValidation({TableName: helpers.testHashTable, Item: {a: {S: keyStr}}},
+        'One or more parameter values were invalid: ' +
+        'Size of hashkey has exceeded the maximum size limit of2048 bytes', done)
+    })
+
+    it('should return ValidationException if range key is too big', function(done) {
+      var keyStr = (helpers.randomString() + new Array(1024).join('a')).slice(0, 1025)
+      assertValidation({TableName: helpers.testRangeTable, Item: {a: {S: 'a'}, b: {S: keyStr}}},
+        'One or more parameter values were invalid: ' +
+        'Aggregated size of all range keys has exceeded the size limit of 1024 bytes', done)
     })
 
     it('should return ResourceNotFoundException if table is being created', function(done) {
@@ -642,6 +748,28 @@ describe('putItem', function() {
           Item: item,
           Expected: {a: {Value: item.a}, b: {Exists: false}, c: {Value: {S: helpers.randomString()}}},
         }, done)
+      })
+    })
+
+    it('should return ConsumedCapacity for small item', function(done) {
+      var a = helpers.randomString(), b = new Array(1024 + 1 - a.length - 1 - 1).join('b'), item = {a: {S: a}, b: {S: b}}
+      request(opts({TableName: helpers.testHashTable, Item: item,
+          ReturnConsumedCapacity: 'TOTAL', ReturnItemCollectionMetrics: 'SIZE'}), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        res.body.should.eql({ConsumedCapacity: {CapacityUnits: 1, TableName: helpers.testHashTable}})
+        done()
+      })
+    })
+
+    it('should return ConsumedCapacity for larger item', function(done) {
+      var a = helpers.randomString(), b = new Array(1025 + 1 - a.length - 1 - 1).join('b'), item = {a: {S: a}, b: {S: b}}
+      request(opts({TableName: helpers.testHashTable, Item: item,
+          ReturnConsumedCapacity: 'TOTAL', ReturnItemCollectionMetrics: 'SIZE'}), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        res.body.should.eql({ConsumedCapacity: {CapacityUnits: 2, TableName: helpers.testHashTable}})
+        done()
       })
     })
 

@@ -26,12 +26,14 @@ exports.strDecrement = strDecrement
 exports.randomString = randomString
 exports.randomName = randomName
 exports.testHashTable = randomName()
+exports.testHashNTable = randomName()
 exports.testRangeTable = randomName()
 exports.testRangeNTable = randomName()
 // For testing:
 //exports.testHashTable = '__dynalite_test_1'
-//exports.testRangeTable = '__dynalite_test_2'
-//exports.testRangeNTable = '__dynalite_test_3'
+//exports.testHashNTable = '__dynalite_test_2'
+//exports.testRangeTable = '__dynalite_test_3'
+//exports.testRangeNTable = '__dynalite_test_4'
 
 before(function(done) {
   this.timeout(200000)
@@ -98,6 +100,11 @@ function createTestTables(done) {
   var tables = [{
     TableName: exports.testHashTable,
     AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}],
+    KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}],
+    ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
+  }, {
+    TableName: exports.testHashNTable,
+    AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'N'}],
     KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}],
     ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
   }, {
@@ -199,9 +206,13 @@ function clearTable(name, keyNames, segments, done) {
 function replaceTable(name, keyNames, items, segments, done) {
   if (!done) { done = segments; segments = 2 }
 
+  var itemChunks = [], i
+  for (i = 0; i < items.length; i += 25)
+    itemChunks.push(items.slice(i, i + 25))
+
   clearTable(name, keyNames, segments, function(err) {
     if (err) return done(err)
-    batchWriteUntilDone(name, {puts: items}, done)
+    async.eachLimit(itemChunks, segments, function(items, cb) { batchWriteUntilDone(name, {puts: items}, cb) }, done)
   })
 }
 

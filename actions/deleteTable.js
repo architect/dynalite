@@ -24,15 +24,19 @@ module.exports = function deleteTable(data, cb) {
     tableDb.put(key, table, function(err) {
       if (err) return cb(err)
 
-      setTimeout(function() {
-        // TODO: Delete items too
-        tableDb.del(key, function(err) {
-          // TODO: Need to check this
-          if (err) console.error(err)
-        })
-      }, db.deleteTableMs)
+      db.deleteItemDb(key, function(err) {
+        if (err) return cb(err)
 
-      cb(null, {TableDescription: table})
+        setTimeout(function() {
+          // TODO: Delete items too
+          tableDb.del(key, function(err) {
+            // TODO: Need to check this
+            if (err) console.error(err)
+          })
+        }, db.deleteTableMs)
+
+        cb(null, {TableDescription: table})
+      })
     })
   })
 

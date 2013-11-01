@@ -1,8 +1,7 @@
 var once = require('once'),
     lazy = require('lazy'),
     Big = require('big.js'),
-    db = require('../db'),
-    itemDb = db.itemDb
+    db = require('../db')
 
 module.exports = function scan(data, cb) {
   cb = once(cb)
@@ -10,12 +9,19 @@ module.exports = function scan(data, cb) {
   db.getTable(data.TableName, function(err, table) {
     if (err) return cb(err)
 
-    var opts, vals, scannedCount = 0
+    var opts = {}, vals, scannedCount = 0, itemDb = db.getItemDb(data.TableName)
 
-    if (data.ExclusiveStartKey)
-      opts = {start: data.ExclusiveStartKey + '\x00'}
+    if (data.TotalSegments > 1) {
+      if (data.Segment > 0)
+        opts.start = ('00' + Math.ceil(4096 * data.Segment / data.TotalSegments).toString(16)).slice(-3)
+      opts.end = ('00' + (Math.ceil(4096 * (data.Segment + 1) / data.TotalSegments) - 1).toString(16)).slice(-3) + '\xff\xff'
+    }
 
-    vals = data.Segment > 0 ? lazy.range(0) : db.lazy(itemDb.createValueStream(opts), cb)
+    // TODO: Fix this
+    //if (data.ExclusiveStartKey)
+      //opts = {start: data.ExclusiveStartKey + '\x00'}
+
+    vals = db.lazy(itemDb.createValueStream(opts), cb)
 
     if (data.Limit) vals = vals.take(data.Limit)
 

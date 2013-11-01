@@ -1,4 +1,5 @@
-var validateAttributeValue = require('./index').validateAttributeValue
+var db = require('../db'),
+    validateAttributeValue = require('./index').validateAttributeValue
 
 exports.types = {
   ReturnConsumedCapacity: {
@@ -98,5 +99,8 @@ exports.custom = function(data) {
   }
   if (data.ReturnValues && data.ReturnValues != 'ALL_OLD' && data.ReturnValues != 'NONE')
     return 'ReturnValues can only be ALL_OLD or NONE'
+
+  if (db.itemSize(data.Item) > 65536)
+    return 'Item size has exceeded the maximum allowed size'
 }
 

@@ -1,12 +1,11 @@
-var db = require('../db'),
-    itemDb = db.itemDb
+var db = require('../db')
 
 module.exports = function putItem(data, cb) {
 
   db.getTable(data.TableName, function(err, table) {
     if (err) return cb(err)
 
-    var key = db.validateItem(data.Item, table)
+    var key = db.validateItem(data.Item, table), itemDb = db.getItemDb(data.TableName)
     if (key instanceof Error) return cb(key)
 
     var fetchExisting = (data.ReturnValues == 'ALL_OLD' || data.Expected) ?
@@ -24,6 +23,9 @@ module.exports = function putItem(data, cb) {
 
         if (existingItem && data.ReturnValues == 'ALL_OLD')
           returnObj.Attributes = existingItem
+
+        if (data.ReturnConsumedCapacity == 'TOTAL')
+          returnObj.ConsumedCapacity = {CapacityUnits: db.capacityUnits(data.Item, true), TableName: data.TableName}
 
         itemDb.put(key, data.Item, function(err) {
           if (err) return cb(err)

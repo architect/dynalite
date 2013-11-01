@@ -1,12 +1,11 @@
-var db = require('../db'),
-    itemDb = db.itemDb
+var db = require('../db')
 
 module.exports = function getItem(data, cb) {
 
   db.getTable(data.TableName, function(err, table) {
     if (err) return cb(err)
 
-    var key = db.validateKey(data.Key, table)
+    var key = db.validateKey(data.Key, table), itemDb = db.getItemDb(data.TableName)
     if (key instanceof Error) return cb(key)
 
     itemDb.get(key, function(err, item) {
@@ -25,10 +24,8 @@ module.exports = function getItem(data, cb) {
         }
       }
 
-      if (data.ReturnConsumedCapacity == 'TOTAL') {
-        var units = data.ConsistentRead ? 1 : 0.5
-        returnObj.ConsumedCapacity = {CapacityUnits: units, TableName: data.TableName}
-      }
+      if (data.ReturnConsumedCapacity == 'TOTAL')
+        returnObj.ConsumedCapacity = {CapacityUnits: db.capacityUnits(item, data.ConsistentRead), TableName: data.TableName}
 
       cb(null, returnObj)
     })

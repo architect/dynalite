@@ -3,26 +3,44 @@ var Readable = require('stream').Readable,
     levelup = require('levelup'),
     MemDown = require('memdown'),
     sublevel = require('level-sublevel'),
+    deleteStream = require('level-delete-stream'),
     Lock = require('lock'),
-    Big = require('big.js')
+    Big = require('big.js'),
+    murmur = require('murmurhash-js')
 
 var db = sublevel(levelup('./mydb', {db: function(location) { return new MemDown(location) }})),
     tableDb = db.sublevel('table', {valueEncoding: 'json'}),
-    itemDb = db.sublevel('item', {valueEncoding: 'json'})
+    itemDbs = []
 
 exports.createTableMs = 500
 exports.deleteTableMs = 500
 exports.lazy = lazyStream
 exports.tableDb = tableDb
-exports.itemDb = itemDb
+exports.getItemDb = getItemDb
+exports.deleteItemDb = deleteItemDb
 exports.getTable = getTable
 exports.validateKey = validateKey
 exports.validateItem = validateItem
 exports.validationError = validationError
 exports.checkConditional = checkConditional
+exports.itemSize = itemSize
+exports.capacityUnits = capacityUnits
 
 tableDb.lock = new Lock()
-itemDb.lock = new Lock()
+
+function getItemDb(name) {
+  if (!itemDbs[name]) {
+    itemDbs[name] = db.sublevel('item-' + name, {valueEncoding: 'json'})
+    itemDbs[name].lock = new Lock()
+  }
+  return itemDbs[name]
+}
+
+function deleteItemDb(name, cb) {
+  var itemDb = itemDbs[name] || db.sublevel('item-' + name, {valueEncoding: 'json'})
+  delete itemDbs[name]
+  itemDb.createKeyStream().pipe(deleteStream(db, cb))
+}
 
 function getTable(name, checkStatus, cb) {
   if (typeof checkStatus == 'function') cb = checkStatus
@@ -56,7 +74,7 @@ function lazyStream(stream, errHandler) {
 function validateKey(dataKey, table) {
   if (table.KeySchema.length != Object.keys(dataKey).length) return validationError()
 
-  var keyStr = table.TableName, i, j, attr, type
+  var keyStr, i, j, attr, type, sizeError
   for (i = 0; i < table.KeySchema.length; i++) {
     attr = table.KeySchema[i].AttributeName
     if (dataKey[attr] == null) return validationError()
@@ -64,6 +82,9 @@ function validateKey(dataKey, table) {
       if (table.AttributeDefinitions[j].AttributeName != attr) continue
       type = table.AttributeDefinitions[j].AttributeType
       if (dataKey[attr][type] == null) return validationError()
+      sizeError = checkKeySize(dataKey[attr][type], type, !i)
+      if (sizeError) return sizeError
+      if (!keyStr) keyStr = hashPrefix(dataKey[attr][type])
       keyStr += '\xff' + toLexiStr(dataKey[attr][type], type)
       break
     }
@@ -72,7 +93,7 @@ function validateKey(dataKey, table) {
 }
 
 function validateItem(dataItem, table) {
-  var keyStr = table.TableName, i, j, attr, type
+  var keyStr, i, j, attr, type, sizeError
   for (i = 0; i < table.KeySchema.length; i++) {
     attr = table.KeySchema[i].AttributeName
     if (dataItem[attr] == null)
@@ -85,11 +106,26 @@ function validateItem(dataItem, table) {
         return validationError('One or more parameter values were invalid: ' +
           'Type mismatch for key ' + attr + ' expected: ' + table.AttributeDefinitions[j].AttributeType +
           ' actual: ' + Object.keys(dataItem[attr])[0])
+      sizeError = checkKeySize(dataItem[attr][type], type, !i)
+      if (sizeError) return sizeError
+      if (!keyStr) keyStr = hashPrefix(dataItem[attr][type])
       keyStr += '\xff' + toLexiStr(dataItem[attr][type], type)
       break
     }
   }
   return keyStr
+}
+
+function checkKeySize(keyPiece, type, isHash) {
+  // Numbers are always fine
+  if (type == 'N') return
+  if (type == 'B') keyPiece = new Buffer(keyPiece, 'base64')
+  if (isHash && keyPiece.length > 2048)
+    return validationError('One or more parameter values were invalid: ' +
+      'Size of hashkey has exceeded the maximum size limit of2048 bytes')
+  else if (!isHash && keyPiece.length > 1024)
+    return validationError('One or more parameter values were invalid: ' +
+      'Aggregated size of all range keys has exceeded the size limit of 1024 bytes')
 }
 
 // Creates lexigraphically sortable number strings
@@ -113,6 +149,11 @@ function toLexiStr(keyPiece, type) {
     digits = bigNum.c.join('')
   }
   return (bigNum.s == -1 ? '0' : '1') + ('0' + exp.toString(16)).slice(-2) + digits
+}
+
+// TODO: Not sure what sort of hashing algorithm is used
+function hashPrefix(hashKey) {
+  return ('00' + (murmur(hashKey) % 4096).toString(16)).slice(-3)
 }
 
 function checkConditional(expected, existingItem) {
@@ -148,6 +189,44 @@ function conditionalError(msg) {
     message: msg,
   }
   return err
+}
+
+function itemSize(item) {
+  var size = 0, attr, type, val
+  for (attr in item) {
+    type = Object.keys(item[attr])[0]
+    val = item[attr][type]
+    size += attr.length
+    switch (type) {
+      case 'S':
+        size += val.length
+        break
+      case 'B':
+        size += new Buffer(val, 'base64').length
+        break
+      case 'N':
+        size += Math.ceil(Big(val).c.length / 2) + 1
+        break
+      case 'SS':
+        // TODO: Check this
+        size += val.reduce(function(sum, x) { return sum + x.length }, 0)
+        break
+      case 'BS':
+        // TODO: Check this
+        size += val.reduce(function(sum, x) { return sum + new Buffer(x, 'base64').length }, 0)
+        break
+      case 'NS':
+        // TODO: Check this
+        size += val.reduce(function(sum, x) { return sum + Math.ceil(Big(x).c.length / 2) + 1 }, 0)
+        break
+    }
+  }
+  return size
+}
+
+function capacityUnits(item, isDouble) {
+  var size = item ? Math.ceil(itemSize(item) / 1024) : 1
+  return size * (isDouble ? 1 : 0.5)
 }
 
 // TODO: Ensure that sets match
