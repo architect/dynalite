@@ -626,7 +626,7 @@ describe('query', function() {
       }, 'Query key condition not supported', done)
     })
 
-    it.skip('should return ValidationException if querying hash table with extra param', function(done) {
+    it('should return ValidationException if querying hash table with extra param', function(done) {
       assertValidation({
         TableName: helpers.testHashTable,
         KeyConditions: {
@@ -976,7 +976,7 @@ describe('query', function() {
       })
     })
 
-    it.skip('should only return projected attributes by default for secondary indexes', function(done) {
+    it('should only return projected attributes by default for secondary indexes', function(done) {
       var item = {a: {S: helpers.randomString()}, b: {S: 'b1'}, c: {S: 'c1'}, d: {S: 'd1'}},
           item2 = {a: item.a, b: {S: 'b2'}},
           item3 = {a: item.a, b: {S: 'b3'}, d: {S: 'd3'}, e: {S: 'e3'}, f: {S: 'f3'}},
@@ -1005,7 +1005,7 @@ describe('query', function() {
       })
     })
 
-    it.skip('should return all attributes when specified for secondary indexes', function(done) {
+    it('should return all attributes when specified for secondary indexes', function(done) {
       var item = {a: {S: helpers.randomString()}, b: {S: 'b1'}, c: {S: 'c1'}, d: {S: 'd1'}},
           item2 = {a: item.a, b: {S: 'b2'}},
           item3 = {a: item.a, b: {S: 'b3'}, d: {S: 'd3'}, e: {S: 'e3'}, f: {S: 'f3'}},
@@ -1126,7 +1126,7 @@ describe('query', function() {
       })
     })
 
-    it.skip('should return items in order for secondary index strings', function(done) {
+    it('should return items in order for secondary index strings', function(done) {
       var item = {a: {S: helpers.randomString()}, b: {S: '1'}, c: {S: '1'}, d: {S: '1'}},
           item2 = {a: item.a, b: {S: '2'}, c: {S: '2'}},
           item3 = {a: item.a, b: {S: '3'}, c: {S: '10'}},

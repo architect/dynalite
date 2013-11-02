@@ -4,7 +4,8 @@ var target = 'BatchGetItem',
     request = helpers.request,
     opts = helpers.opts.bind(null, target),
     assertType = helpers.assertType.bind(null, target),
-    assertValidation = helpers.assertValidation.bind(null, target)
+    assertValidation = helpers.assertValidation.bind(null, target),
+    assertNotFound = helpers.assertNotFound.bind(null, target)
 
 describe('batchGetItem', function() {
 
@@ -121,7 +122,7 @@ describe('batchGetItem', function() {
       assertValidation(batchReq, 'Provided list of item keys contains duplicates', done)
     })
 
-    it.skip('should return ResourceNotFoundException for short table name with keys', function(done) {
+    it('should return ResourceNotFoundException for short table name with keys', function(done) {
       assertNotFound({RequestItems: {a: {Keys: [{a: {S: 'a'}}]}}}, 'Requested resource not found', done)
     })
 

@@ -571,17 +571,6 @@ describe('scan', function() {
         'The attempted filter operation is not supported for the provided filter argument count', done)
     })
 
-    // TODO: Will have to come back to this one - not sure what the upper bound is
-    // It seems to be at least greater than 1000000!!!
-    it.skip('should return ValidationException for 1000000 args to IN', function(done) {
-      var attrValList = [], i
-      for (i = 0; i < 1000000; i++) attrValList.push({S: 'a'})
-      assertValidation({
-        TableName: 'abc',
-        ScanFilter: {a: {ComparisonOperator: 'IN', AttributeValueList: attrValList}}},
-        'The attempted filter operation is not supported for the provided filter argument count', done)
-    })
-
     it('should return ValidationException for IN on type SS', function(done) {
       assertValidation({
         TableName: 'abc',
@@ -636,17 +625,6 @@ describe('scan', function() {
         TableName: 'abc',
         ScanFilter: {a: {ComparisonOperator: 'BETWEEN', AttributeValueList: [{S: 'a'}, {BS: ['abcd']}]}}},
         'The attempted filter operation is not supported for the provided type', done)
-    })
-
-    // Weird - only checks this *after* it finds the table
-    it.skip('should return ValidationException for unsupported comparison', function(done) {
-      assertValidation({
-        TableName: 'abc',
-        ScanFilter: {
-          a: {ComparisonOperator: 'CONTAINS', AttributeValueList: [{S: 'a'}]},
-          b: {ComparisonOperator: 'NULL'},
-        }},
-        'Query key condition not supported', done)
     })
 
     it('should return ValidationException for empty object ExclusiveStartKey', function(done) {
@@ -757,7 +735,6 @@ describe('scan', function() {
         'The provided starting key is invalid: ' +
         'The parameter cannot be converted to a numeric value: b', done)
     })
-
   })
 
   describe('functionality', function() {
@@ -811,6 +788,20 @@ describe('scan', function() {
           res.body.ScannedCount.should.be.above(0)
           done()
         })
+      })
+    })
+
+    // Upper bound seems to be at least greater than 1000000!!!
+    it('should allow scans at least for 100000 args to IN', function(done) {
+      this.timeout(100000)
+      var attrValList = [], i
+      for (i = 0; i < 100000; i++) attrValList.push({S: 'a'})
+      request(opts({TableName: helpers.testHashTable, ScanFilter: {
+        a: {ComparisonOperator: 'IN', AttributeValueList: attrValList}
+      }}), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        done()
       })
     })
 

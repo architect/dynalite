@@ -21,6 +21,7 @@ exports.deleteItemDb = deleteItemDb
 exports.getTable = getTable
 exports.validateKey = validateKey
 exports.validateItem = validateItem
+exports.toLexiStr = toLexiStr
 exports.validationError = validationError
 exports.checkConditional = checkConditional
 exports.itemSize = itemSize

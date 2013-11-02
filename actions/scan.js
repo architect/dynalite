@@ -139,6 +139,7 @@ module.exports = function scan(data, cb) {
       var result = {Count: items.length, ScannedCount: scannedCount}
       if (data.Select != 'COUNT') result.Items = items
       if (data.Limit) result.LastEvaluatedKey = items[items.length - 1]
+      if (data.ReturnConsumedCapacity == 'TOTAL') result.ConsumedCapacity = {CapacityUnits: 0.5, TableName: data.TableName}
       cb(null, result)
     })
   })
