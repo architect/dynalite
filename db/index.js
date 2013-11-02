@@ -113,6 +113,19 @@ function validateItem(dataItem, table) {
       break
     }
   }
+  if (table.LocalSecondaryIndexes) {
+    for (i = 0; i < table.LocalSecondaryIndexes.length; i++) {
+      attr = table.LocalSecondaryIndexes[i].KeySchema[1].AttributeName
+      for (j = 0; j < table.AttributeDefinitions.length; j++) {
+        if (table.AttributeDefinitions[j].AttributeName != attr) continue
+        type = table.AttributeDefinitions[j].AttributeType
+        if (dataItem[attr] && !dataItem[attr][type])
+          return validationError('One or more parameter values were invalid: ' +
+            'Type mismatch for Index Key ' + attr + ' Expected: ' + type + ' Actual: ' +
+            Object.keys(dataItem[attr])[0] + ' IndexName: ' + table.LocalSecondaryIndexes[i].IndexName)
+      }
+    }
+  }
   return keyStr
 }
 

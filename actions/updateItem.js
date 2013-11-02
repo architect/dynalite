@@ -69,6 +69,7 @@ module.exports = function updateItem(data, cb) {
                 item[attr][type] = item[attr][type].filter(function(val) {
                   return !~data.AttributeUpdates[attr].Value[type].indexOf(val)
                 })
+                if (!item[attr][type].length) delete item[attr]
               }
             } else {
               delete item[attr]

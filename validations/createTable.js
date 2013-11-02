@@ -90,6 +90,7 @@ exports.types = {
           type: 'List',
           notNull: true,
           lengthGreaterThanOrEqual: 1,
+          lengthLessThanOrEqual: 2,
           children: {
             type: 'Structure',
             children: {

@@ -467,6 +467,12 @@ describe('putItem', function() {
         'One or more parameter values were invalid: Missing the key b in the item', done)
     })
 
+    it('should return ValidationException if secondary index key is incorrect type', function(done) {
+      assertValidation({TableName: helpers.testRangeTable, Item: {a: {S: 'a'}, b: {S: 'a'}, c: {N: '1'}}},
+        'One or more parameter values were invalid: ' +
+        'Type mismatch for Index Key c Expected: S Actual: N IndexName: index1', done)
+    })
+
     it('should return ValidationException if hash key is too big', function(done) {
       var keyStr = (helpers.randomString() + new Array(2048).join('a')).slice(0, 2049)
       assertValidation({TableName: helpers.testHashTable, Item: {a: {S: keyStr}}},

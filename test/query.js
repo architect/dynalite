@@ -428,17 +428,6 @@ describe('query', function() {
         'The attempted filter operation is not supported for the provided filter argument count', done)
     })
 
-    // Weird - only checks this *after* it finds the table
-    it.skip('should return ValidationException for unsupported comparison', function(done) {
-      assertValidation({
-        TableName: 'abc',
-        KeyConditions: {
-          a: {ComparisonOperator: 'CONTAINS', AttributeValueList: [{S: 'a'}]},
-          b: {ComparisonOperator: 'NULL'},
-        }},
-        'Query key condition not supported', done)
-    })
-
     it('should return ValidationException for too many conditions', function(done) {
       assertValidation({
         TableName: 'abc',
@@ -449,15 +438,6 @@ describe('query', function() {
           c: {ComparisonOperator: 'NULL'},
         }},
         'Conditions can be of length 1 or 2 only', done)
-    })
-
-    // TODO: It only reports this if the table exists, otherwise a ResourceNotFoundException
-    it.skip('should return ValidationException for empty ExclusiveStartKey', function(done) {
-      assertValidation({
-        TableName: 'abc',
-        ExclusiveStartKey: {},
-        KeyConditions: {a: {ComparisonOperator: 'NULL'}}},
-        'The provided starting key is invalid', done)
     })
 
     it('should return ValidationException for empty object ExclusiveStartKey', function(done) {
@@ -654,6 +634,76 @@ describe('query', function() {
           b: {ComparisonOperator: 'EQ', AttributeValueList: [{S: helpers.randomString()}]},
         },
       }, 'Query key condition not supported', done)
+    })
+
+    // Weird - only checks this *after* it finds the table
+    it('should return ValidationException for unsupported comparison', function(done) {
+      assertValidation({
+        TableName: helpers.testRangeTable,
+        KeyConditions: {
+          a: {ComparisonOperator: 'CONTAINS', AttributeValueList: [{S: 'a'}]},
+          b: {ComparisonOperator: 'NULL'},
+        }},
+        'Attempted conditional constraint is not an indexable operation', done)
+    })
+
+    // TODO: It only reports this if the table exists, otherwise a ResourceNotFoundException
+    it('should return ValidationException for empty ExclusiveStartKey', function(done) {
+      assertValidation({
+        TableName: helpers.testRangeTable,
+        ExclusiveStartKey: {},
+        KeyConditions: {a: {ComparisonOperator: 'NULL'}}},
+        'The provided starting key is invalid', done)
+    })
+
+    it('should return ValidationException for no hash key', function(done) {
+      assertValidation({
+        TableName: helpers.testRangeTable,
+        KeyConditions: {c: {ComparisonOperator: 'NULL'}}},
+        'Query condition missed key schema element a', done)
+    })
+
+    it('should return ValidationException for missing index name', function(done) {
+      assertValidation({
+        TableName: helpers.testRangeTable,
+        KeyConditions: {
+          a: {ComparisonOperator: 'EQ', AttributeValueList: [{S: 'a'}]},
+          c: {ComparisonOperator: 'NULL'},
+        }},
+        'Query condition missed key schema element b', done)
+    })
+
+    it('should return ValidationException for non-existent index name', function(done) {
+      assertValidation({
+        TableName: helpers.testRangeTable,
+        IndexName: 'whatever',
+        KeyConditions: {
+          a: {ComparisonOperator: 'EQ', AttributeValueList: [{S: 'a'}]},
+          c: {ComparisonOperator: 'NULL'},
+        }},
+        'The table does not have the specified index', done)
+    })
+
+    it('should return ValidationException for incorrect index', function(done) {
+      assertValidation({
+        TableName: helpers.testRangeTable,
+        IndexName: 'index2',
+        KeyConditions: {
+          a: {ComparisonOperator: 'EQ', AttributeValueList: [{S: 'a'}]},
+          c: {ComparisonOperator: 'NULL'},
+        }},
+        'Query condition missed key schema element d', done)
+    })
+
+    it('should return ValidationException for incorrect comparison operator on index', function(done) {
+      assertValidation({
+        TableName: helpers.testRangeTable,
+        IndexName: 'index1',
+        KeyConditions: {
+          a: {ComparisonOperator: 'EQ', AttributeValueList: [{S: 'a'}]},
+          c: {ComparisonOperator: 'NULL'},
+        }},
+        'Attempted conditional constraint is not an indexable operation', done)
     })
 
   })
@@ -926,6 +976,61 @@ describe('query', function() {
       })
     })
 
+    it.skip('should only return projected attributes by default for secondary indexes', function(done) {
+      var item = {a: {S: helpers.randomString()}, b: {S: 'b1'}, c: {S: 'c1'}, d: {S: 'd1'}},
+          item2 = {a: item.a, b: {S: 'b2'}},
+          item3 = {a: item.a, b: {S: 'b3'}, d: {S: 'd3'}, e: {S: 'e3'}, f: {S: 'f3'}},
+          item4 = {a: item.a, b: {S: 'b4'}, c: {S: 'c4'}, d: {S: 'd4'}, e: {S: 'e4'}},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testRangeTable] = [
+        {PutRequest: {Item: item}},
+        {PutRequest: {Item: item2}},
+        {PutRequest: {Item: item3}},
+        {PutRequest: {Item: item4}},
+      ]
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        request(opts({TableName: helpers.testRangeTable, IndexName: 'index2', KeyConditions: {
+          a: {ComparisonOperator: 'EQ', AttributeValueList: [item.a]},
+        }, ReturnConsumedCapacity: 'TOTAL'}), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          delete item3.e
+          delete item3.f
+          delete item4.e
+          res.body.should.eql({Count: 3, Items: [item, item3, item4], ConsumedCapacity: {CapacityUnits: 0.5, TableName: helpers.testRangeTable}})
+          done()
+        })
+      })
+    })
+
+    it.skip('should return all attributes when specified for secondary indexes', function(done) {
+      var item = {a: {S: helpers.randomString()}, b: {S: 'b1'}, c: {S: 'c1'}, d: {S: 'd1'}},
+          item2 = {a: item.a, b: {S: 'b2'}},
+          item3 = {a: item.a, b: {S: 'b3'}, d: {S: 'd3'}, e: {S: 'e3'}, f: {S: 'f3'}},
+          item4 = {a: item.a, b: {S: 'b4'}, c: {S: 'c4'}, d: {S: 'd4'}, e: {S: 'e4'}},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testRangeTable] = [
+        {PutRequest: {Item: item}},
+        {PutRequest: {Item: item2}},
+        {PutRequest: {Item: item3}},
+        {PutRequest: {Item: item4}},
+      ]
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        request(opts({TableName: helpers.testRangeTable, IndexName: 'index2', KeyConditions: {
+          a: {ComparisonOperator: 'EQ', AttributeValueList: [item.a]},
+        }, Select: 'ALL_ATTRIBUTES', ReturnConsumedCapacity: 'TOTAL'}), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.should.eql({Count: 3, Items: [item, item3, item4], ConsumedCapacity: {CapacityUnits: 2, TableName: helpers.testRangeTable}})
+          done()
+        })
+      })
+    })
+
     it('should return COUNT if requested', function(done) {
       var item = {a: {S: helpers.randomString()}, b: {S: '2'}},
           item2 = {a: item.a, b: {S: '1'}},
@@ -1011,6 +1116,42 @@ describe('query', function() {
         if (err) return done(err)
         res.statusCode.should.equal(200)
         request(opts({TableName: helpers.testRangeTable, KeyConditions: {
+          a: {ComparisonOperator: 'EQ', AttributeValueList: [item.a]},
+        }}), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.should.eql({Count: 9, Items: [item, item3, item2, item8, item9, item4, item6, item7, item5]})
+          done()
+        })
+      })
+    })
+
+    it.skip('should return items in order for secondary index strings', function(done) {
+      var item = {a: {S: helpers.randomString()}, b: {S: '1'}, c: {S: '1'}, d: {S: '1'}},
+          item2 = {a: item.a, b: {S: '2'}, c: {S: '2'}},
+          item3 = {a: item.a, b: {S: '3'}, c: {S: '10'}},
+          item4 = {a: item.a, b: {S: '4'}, c: {S: 'a'}},
+          item5 = {a: item.a, b: {S: '5'}, c: {S: 'b'}},
+          item6 = {a: item.a, b: {S: '6'}, c: {S: 'aa'}, e: {S: '6'}},
+          item7 = {a: item.a, b: {S: '7'}, c: {S: 'ab'}},
+          item8 = {a: item.a, b: {S: '8'}, c: {S: 'A'}},
+          item9 = {a: item.a, b: {S: '9'}, c: {S: 'B'}},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testRangeTable] = [
+        {PutRequest: {Item: item}},
+        {PutRequest: {Item: item2}},
+        {PutRequest: {Item: item3}},
+        {PutRequest: {Item: item4}},
+        {PutRequest: {Item: item5}},
+        {PutRequest: {Item: item6}},
+        {PutRequest: {Item: item7}},
+        {PutRequest: {Item: item8}},
+        {PutRequest: {Item: item9}},
+      ]
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        request(opts({TableName: helpers.testRangeTable, IndexName: 'index1', KeyConditions: {
           a: {ComparisonOperator: 'EQ', AttributeValueList: [item.a]},
         }}), function(err, res) {
           if (err) return done(err)

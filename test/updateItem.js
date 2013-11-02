@@ -634,7 +634,16 @@ describe('updateItem', function() {
             res.body.Item.b.NS.should.includeEql('2')
             res.body.Item.b.NS.should.includeEql('3')
             res.body.Item.c.should.eql({S: 'a'})
-            done()
+            updates.b = {Action: 'DELETE', Value: {NS: ['2', '3']}}
+            request(opts({TableName: helpers.testHashTable, Key: key, AttributeUpdates: updates, ReturnValues: 'UPDATED_NEW'}), function(err, res) {
+              res.statusCode.should.equal(200)
+              res.body.Attributes.should.eql({c: {S: 'a'}})
+              request(helpers.opts('GetItem', {TableName: helpers.testHashTable, Key: key, ConsistentRead: true}), function(err, res) {
+                res.statusCode.should.equal(200)
+                res.body.Item.should.eql({a: key.a, c: {S: 'a'}})
+                done()
+              })
+            })
           })
         })
       })

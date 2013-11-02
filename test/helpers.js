@@ -109,9 +109,23 @@ function createTestTables(done) {
     ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
   }, {
     TableName: exports.testRangeTable,
-    AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}, {AttributeName: 'b', AttributeType: 'S'}],
+    AttributeDefinitions: [
+      {AttributeName: 'a', AttributeType: 'S'},
+      {AttributeName: 'b', AttributeType: 'S'},
+      {AttributeName: 'c', AttributeType: 'S'},
+      {AttributeName: 'd', AttributeType: 'S'},
+    ],
     KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}, {KeyType: 'RANGE', AttributeName: 'b'}],
     ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
+    LocalSecondaryIndexes: [{
+      IndexName: 'index1',
+      KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'c', KeyType: 'RANGE'}],
+      Projection: {ProjectionType: 'ALL'},
+    }, {
+      IndexName: 'index2',
+      KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'd', KeyType: 'RANGE'}],
+      Projection: {ProjectionType: 'INCLUDE', NonKeyAttributes: ['c']},
+    }],
   }, {
     TableName: exports.testRangeNTable,
     AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}, {AttributeName: 'b', AttributeType: 'N'}],

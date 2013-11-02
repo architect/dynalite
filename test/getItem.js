@@ -295,8 +295,8 @@ describe('getItem', function() {
 
   describe('functionality', function() {
 
-    var hashItem = {a: {S: helpers.randomString()}, b: {S: 'a'}, c: {N: '23'}},
-        rangeItem = {a: {S: helpers.randomString()}, b: {S: helpers.randomString()}, c: {N: '23'}}
+    var hashItem = {a: {S: helpers.randomString()}, b: {S: 'a'}, g: {N: '23'}},
+        rangeItem = {a: {S: helpers.randomString()}, b: {S: helpers.randomString()}, g: {N: '23'}}
 
     before(function(done) {
       var putItems = [
@@ -370,10 +370,10 @@ describe('getItem', function() {
     })
 
     it('should only return requested attributes', function(done) {
-      request(opts({TableName: helpers.testHashTable, Key: {a: hashItem.a}, AttributesToGet: ['b', 'c'], ConsistentRead: true}), function(err, res) {
+      request(opts({TableName: helpers.testHashTable, Key: {a: hashItem.a}, AttributesToGet: ['b', 'g'], ConsistentRead: true}), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        res.body.should.eql({Item: {b: hashItem.b, c: hashItem.c}})
+        res.body.should.eql({Item: {b: hashItem.b, g: hashItem.g}})
         done()
       })
     })
