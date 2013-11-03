@@ -205,12 +205,12 @@ function conditionalError(msg) {
   return err
 }
 
-function itemSize(item) {
+function itemSize(item, skipAttr) {
   var size = 0, attr, type, val
   for (attr in item) {
     type = Object.keys(item[attr])[0]
     val = item[attr][type]
-    size += attr.length
+    size += skipAttr ? 2 : attr.length
     switch (type) {
       case 'S':
         size += val.length
@@ -219,19 +219,20 @@ function itemSize(item) {
         size += new Buffer(val, 'base64').length
         break
       case 'N':
-        size += Math.ceil(Big(val).c.length / 2) + 1
+        val = Big(val)
+        size += Math.ceil(val.c.length / 2) + (val.e % 2 ? 1 : 2)
         break
       case 'SS':
-        // TODO: Check this
-        size += val.reduce(function(sum, x) { return sum + x.length }, 0)
+        size += val.reduce(function(sum, x) { return sum + x.length }, skipAttr ? val.length : 0)
         break
       case 'BS':
-        // TODO: Check this
-        size += val.reduce(function(sum, x) { return sum + new Buffer(x, 'base64').length }, 0)
+        size += val.reduce(function(sum, x) { return sum + new Buffer(x, 'base64').length }, skipAttr ? val.length : 0)
         break
       case 'NS':
-        // TODO: Check this
-        size += val.reduce(function(sum, x) { return sum + Math.ceil(Big(x).c.length / 2) + 1 }, 0)
+        size += val.reduce(function(sum, x) {
+          x = Big(x)
+          return sum + Math.ceil(x.c.length / 2) + (x.e % 2 ? 1 : 2)
+        }, skipAttr ? val.length : 0)
         break
     }
   }

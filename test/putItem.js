@@ -758,7 +758,8 @@ describe('putItem', function() {
     })
 
     it('should return ConsumedCapacity for small item', function(done) {
-      var a = helpers.randomString(), b = new Array(1024 + 1 - a.length - 1 - 1).join('b'), item = {a: {S: a}, b: {S: b}}
+      var a = helpers.randomString(), b = new Array(1011 - a.length).join('b'),
+        item = {a: {S: a}, b: {S: b}, c: {N: '12.3456'}, d: {B: 'AQI='}, e: {BS: ['AQI=', 'Ag==']}}
       request(opts({TableName: helpers.testHashTable, Item: item,
           ReturnConsumedCapacity: 'TOTAL', ReturnItemCollectionMetrics: 'SIZE'}), function(err, res) {
         if (err) return done(err)
@@ -769,7 +770,8 @@ describe('putItem', function() {
     })
 
     it('should return ConsumedCapacity for larger item', function(done) {
-      var a = helpers.randomString(), b = new Array(1025 + 1 - a.length - 1 - 1).join('b'), item = {a: {S: a}, b: {S: b}}
+      var a = helpers.randomString(), b = new Array(1011 - a.length).join('b'),
+        item = {a: {S: a}, b: {S: b}, c: {N: '12.3456'}, d: {B: 'AQI='}, e: {BS: ['AQI=', 'Ag==', 'AQ==']}}
       request(opts({TableName: helpers.testHashTable, Item: item,
           ReturnConsumedCapacity: 'TOTAL', ReturnItemCollectionMetrics: 'SIZE'}), function(err, res) {
         if (err) return done(err)

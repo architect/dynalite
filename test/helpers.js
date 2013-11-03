@@ -246,7 +246,7 @@ function batchWriteUntilDone(name, actions, cb) {
           console.log('ProvisionedThroughputExceededException')
           return setTimeout(cb, 2000)
         } else if (res.statusCode != 200) {
-          return cb(new Error(res.body.message))
+          return cb(new Error(res.statusCode + ': ' + res.body.message))
         }
         cb()
       })

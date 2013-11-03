@@ -9,7 +9,7 @@ module.exports = function scan(data, cb) {
   db.getTable(data.TableName, function(err, table) {
     if (err) return cb(err)
 
-    var opts = {}, vals, scannedCount = 0, itemDb = db.getItemDb(data.TableName)
+    var opts = {}, vals, scannedCount = 0, itemDb = db.getItemDb(data.TableName), size = 0, capacitySize = 0
 
     if (data.TotalSegments > 1) {
       if (data.Segment > 0)
@@ -26,7 +26,14 @@ module.exports = function scan(data, cb) {
     if (data.Limit) vals = vals.take(data.Limit)
 
     vals = vals.filter(function(val) {
+      if (size > 1042000) return false
       scannedCount++
+      size += db.itemSize(val, true)
+
+      // TODO: Combine this with above
+      if (data.ReturnConsumedCapacity == 'TOTAL')
+        capacitySize += db.itemSize(val)
+
       if (!data.ScanFilter) return true
 
       for (var attr in data.ScanFilter) {
@@ -139,7 +146,8 @@ module.exports = function scan(data, cb) {
       var result = {Count: items.length, ScannedCount: scannedCount}
       if (data.Select != 'COUNT') result.Items = items
       if (data.Limit) result.LastEvaluatedKey = items[items.length - 1]
-      if (data.ReturnConsumedCapacity == 'TOTAL') result.ConsumedCapacity = {CapacityUnits: 0.5, TableName: data.TableName}
+      if (data.ReturnConsumedCapacity == 'TOTAL')
+        result.ConsumedCapacity = {CapacityUnits: Math.ceil(capacitySize / 1024 / 4) * 0.5, TableName: data.TableName}
       cb(null, result)
     })
   })

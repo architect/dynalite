@@ -3,7 +3,7 @@ var http = require('http'),
     crc32 = require('buffer-crc32'),
     validations = require('./validations')
 
-var MAX_REQUEST_BYTES = 1024 * 1024
+var MAX_REQUEST_BYTES = 8 * 1024 * 1024
 
 var validApis = ['DynamoDB_20111205', 'DynamoDB_20120810'],
     validOperations = ['BatchGetItem', 'BatchWriteItem', 'CreateTable', 'DeleteItem', 'DeleteTable',

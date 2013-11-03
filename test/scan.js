@@ -2015,22 +2015,49 @@ describe('scan', function() {
     it.skip('should return all if just under limit', function(done) {
       this.timeout(100000)
 
-      var b = new Array(43410 + 1).join('b'), i, items = []
+      var i, items = []
       for (i = 0; i < 25; i++)
-        items.push({a: {S: ('00' + i).slice(-2)}, b: {S: b}})
+        items.push({a: {S: ('0' + i).slice(-2)}})
 
-      // console.log((items[0].a.S.length + items[0].b.S.length) * 25) // 1085300
-
-      helpers.replaceTable(helpers.testHashTable, ['a'], items, 10, function(err) {
+      helpers.replaceTable(helpers.testHashTable, ['a'], items, function(err) {
         if (err) return done(err)
 
-        request(opts({TableName: helpers.testHashTable, Select: 'COUNT', ReturnConsumedCapacity: 'TOTAL'}), function(err, res) {
+        request(opts({TableName: helpers.testHashTable}), function(err, res) {
           if (err) return done(err)
           res.statusCode.should.equal(200)
-          res.body.ScannedCount.should.equal(25)
-          res.body.Count.should.equal(25)
-          res.body.ConsumedCapacity.CapacityUnits.should.equal(132.5) // 133.5 if attr is 255 chars
-          done()
+          items = res.body.Items
+          items.should.have.length(25)
+
+          var b = new Array(43412).join('b'), bAttr = b.slice(0, 255)
+
+          for (i = 0; i < 25; i++) {
+            if (i == 23) {
+              // Second last item
+              items[i].b = {S: b.slice(0, 43366)}
+              items[i].c = {N: '12.3456'}
+              items[i].d = {B: 'AQI='}
+              items[i].e = {SS: ['a', 'bc']}
+              items[i].f = {NS: ['1.23', '12.3']}
+              items[i].g = {BS: ['AQI=', 'Ag==', 'AQ==']}
+            } else if (i == 24) {
+              items[i][bAttr] = {S: new Array(100).join('b')} // Last item doesn't matter
+            } else {
+              items[i][bAttr] = {S: b}
+            }
+          }
+
+          helpers.replaceTable(helpers.testHashTable, ['a'], items, 10, function(err) {
+            if (err) return done(err)
+
+            request(opts({TableName: helpers.testHashTable, Select: 'COUNT', ReturnConsumedCapacity: 'TOTAL'}), function(err, res) {
+              if (err) return done(err)
+              res.statusCode.should.equal(200)
+              res.body.ScannedCount.should.equal(25)
+              res.body.Count.should.equal(25)
+              res.body.ConsumedCapacity.CapacityUnits.should.equal(128)
+              done()
+            })
+          })
         })
       })
     })
@@ -2039,28 +2066,52 @@ describe('scan', function() {
     it.skip('should return one less than all if just over limit', function(done) {
       this.timeout(100000)
 
-      var b = new Array(43411 + 1).join('b'), i, items = []
+      var i, items = []
       for (i = 0; i < 25; i++)
-        items.push({a: {S: ('00' + i).slice(-2)}, b: {S: b}})
+        items.push({a: {S: ('0' + i).slice(-2)}})
 
-      // console.log((items[0].a.S.length + items[0].b.S.length) * 25) // 1085325
-
-      helpers.replaceTable(helpers.testHashTable, ['a'], items, 10, function(err) {
+      helpers.replaceTable(helpers.testHashTable, ['a'], items, function(err) {
         if (err) return done(err)
 
-        request(opts({TableName: helpers.testHashTable, Select: 'COUNT', ReturnConsumedCapacity: 'TOTAL'}), function(err, res) {
+        request(opts({TableName: helpers.testHashTable}), function(err, res) {
           if (err) return done(err)
           res.statusCode.should.equal(200)
-          res.body.ScannedCount.should.equal(24)
-          res.body.Count.should.equal(24)
-          res.body.ConsumedCapacity.CapacityUnits.should.equal(127.5)
-          done()
+          items = res.body.Items
+          items.should.have.length(25)
+
+          var b = new Array(43412).join('b')
+
+          for (i = 0; i < 25; i++) {
+            if (i == 23) {
+              // Second last item
+              items[i].b = {S: b.slice(0, 43367)}
+              items[i].c = {N: '12.3456'}
+              items[i].d = {B: 'AQI='}
+              items[i].e = {SS: ['a', 'bc']}
+              items[i].f = {NS: ['1.23', '12.3']}
+              items[i].g = {BS: ['AQI=', 'Ag==', 'AQ==']}
+            } else if (i == 24) {
+              items[i].b = {S: 'b'} // Last item doesn't matter
+            } else {
+              items[i].b = {S: b}
+            }
+          }
+
+          helpers.replaceTable(helpers.testHashTable, ['a'], items, 10, function(err) {
+            if (err) return done(err)
+
+            request(opts({TableName: helpers.testHashTable, Select: 'COUNT', ReturnConsumedCapacity: 'TOTAL'}), function(err, res) {
+              if (err) return done(err)
+              res.statusCode.should.equal(200)
+              res.body.ScannedCount.should.equal(24)
+              res.body.Count.should.equal(24)
+              res.body.ConsumedCapacity.CapacityUnits.should.equal(127.5)
+              done()
+            })
+          })
         })
-
       })
-
     })
-
   })
 
 })
