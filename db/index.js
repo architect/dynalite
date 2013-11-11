@@ -239,9 +239,9 @@ function itemSize(item, skipAttr) {
   return size
 }
 
-function capacityUnits(item, isDouble) {
-  var size = item ? Math.ceil(itemSize(item) / 1024) : 1
-  return size * (isDouble ? 1 : 0.5)
+function capacityUnits(item, isRead, isConsistent) {
+  var size = item ? Math.ceil(itemSize(item) / 1024 / (isRead ? 4 : 1)) : 1
+  return size / (!isRead || isConsistent ? 1 : 2)
 }
 
 // TODO: Ensure that sets match

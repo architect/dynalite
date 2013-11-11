@@ -7,12 +7,16 @@ var http = require('http'),
 var requestOpts = process.env.REMOTE ?  {host: 'dynamodb.ap-southeast-2.amazonaws.com', method: 'POST'} :
   {host: 'localhost', port: 4567, method: 'POST'}
 
+// Make http limits more reasonable
+http.globalAgent.maxSockets = 1000
+
 exports.version = 'DynamoDB_20120810'
 exports.prefix = '__dynalite_test_'
 exports.request = request
 exports.opts = opts
 exports.waitUntilActive = waitUntilActive
 exports.waitUntilDeleted = waitUntilDeleted
+exports.createAndWait = createAndWait
 exports.clearTable = clearTable
 exports.replaceTable = replaceTable
 exports.batchWriteUntilDone = batchWriteUntilDone

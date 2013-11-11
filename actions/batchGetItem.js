@@ -10,7 +10,19 @@ module.exports = function batchGetItem(data, cb) {
     async.parallel.bind(async, requests),
   ], function(err, responses) {
     if (err) return cb(err)
-    cb(null, {Responses: responses[1], UnprocessedKeys: {}})
+    var res = {Responses: {}, UnprocessedKeys: {}}, table, tables = responses[1]
+
+    for (table in tables)
+      res.Responses[table] = tables[table].map(function(res) { return res.Item }).filter(function(x) { return x })
+
+    if (data.ReturnConsumedCapacity == 'TOTAL')
+      res.ConsumedCapacity = Object.keys(tables).map(function(table) {
+        return {CapacityUnits: tables[table].reduce(function(total, res) {
+          return total + res.ConsumedCapacity.CapacityUnits
+        }, 0), TableName: table}
+      })
+
+    cb(null, res)
   })
 
   function addTableRequests(tableName, cb) {
@@ -24,6 +36,8 @@ module.exports = function batchGetItem(data, cb) {
 
         options = {TableName: tableName, Key: key}
         if (req.AttributesToGet) options.AttributesToGet = req.AttributesToGet
+        if (req.ConsistentRead) options.ConsistentRead = req.ConsistentRead
+        if (data.ReturnConsumedCapacity) options.ReturnConsumedCapacity = data.ReturnConsumedCapacity
         gets.push(options)
 
         key = db.validateKey(key, table)
@@ -33,12 +47,7 @@ module.exports = function batchGetItem(data, cb) {
         seenKeys[key] = true
       }
 
-      requests[tableName] = function(cb) {
-        async.map(gets, getItem, function(err, resps) {
-          if (err) return cb(err)
-          cb(null, resps.map(function(res) { return res.Item }).filter(function(x) { return x }))
-        })
-      }
+      requests[tableName] = async.map.bind(async, gets, getItem)
 
       cb()
     })

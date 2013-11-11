@@ -758,10 +758,9 @@ describe('putItem', function() {
     })
 
     it('should return ConsumedCapacity for small item', function(done) {
-      var a = helpers.randomString(), b = new Array(1011 - a.length).join('b'),
-        item = {a: {S: a}, b: {S: b}, c: {N: '12.3456'}, d: {B: 'AQI='}, e: {BS: ['AQI=', 'Ag==']}}
-      request(opts({TableName: helpers.testHashTable, Item: item,
-          ReturnConsumedCapacity: 'TOTAL', ReturnItemCollectionMetrics: 'SIZE'}), function(err, res) {
+      var a = helpers.randomString(), b = new Array(1010 - a.length).join('b'),
+        item = {a: {S: a}, b: {S: b}, c: {N: '12.3456'}, d: {B: 'AQI='}, e: {BS: ['AQI=', 'Ag==', 'AQ==']}}
+      request(opts({TableName: helpers.testHashTable, Item: item, ReturnConsumedCapacity: 'TOTAL'}), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
         res.body.should.eql({ConsumedCapacity: {CapacityUnits: 1, TableName: helpers.testHashTable}})
@@ -770,14 +769,23 @@ describe('putItem', function() {
     })
 
     it('should return ConsumedCapacity for larger item', function(done) {
-      var a = helpers.randomString(), b = new Array(1011 - a.length).join('b'),
-        item = {a: {S: a}, b: {S: b}, c: {N: '12.3456'}, d: {B: 'AQI='}, e: {BS: ['AQI=', 'Ag==', 'AQ==']}}
-      request(opts({TableName: helpers.testHashTable, Item: item,
-          ReturnConsumedCapacity: 'TOTAL', ReturnItemCollectionMetrics: 'SIZE'}), function(err, res) {
+      var a = helpers.randomString(), b = new Array(1012 - a.length).join('b'),
+        item = {a: {S: a}, b: {S: b}, c: {N: '12.3456'}, d: {B: 'AQI='}, e: {BS: ['AQI=', 'Ag==']}}
+      request(opts({TableName: helpers.testHashTable, Item: item, ReturnConsumedCapacity: 'TOTAL'}), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
         res.body.should.eql({ConsumedCapacity: {CapacityUnits: 2, TableName: helpers.testHashTable}})
-        done()
+        request(opts({TableName: helpers.testHashTable, Item: {a: item.a}, ReturnConsumedCapacity: 'TOTAL'}), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.should.eql({ConsumedCapacity: {CapacityUnits: 2, TableName: helpers.testHashTable}})
+          request(opts({TableName: helpers.testHashTable, Item: {a: item.a}, ReturnConsumedCapacity: 'TOTAL'}), function(err, res) {
+            if (err) return done(err)
+            res.statusCode.should.equal(200)
+            res.body.should.eql({ConsumedCapacity: {CapacityUnits: 1, TableName: helpers.testHashTable}})
+            done()
+          })
+        })
       })
     })
 

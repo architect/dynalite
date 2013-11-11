@@ -9,29 +9,47 @@ module.exports = function batchWriteItem(data, cb) {
   async.series([
     async.each.bind(async, Object.keys(data.RequestItems), addTableActions),
     async.parallel.bind(async, actions),
-  ], function(err) {
+  ], function(err, responses) {
     if (err) return cb(err)
-    cb(null, {UnprocessedItems: {}})
+    var res = {UnprocessedItems: {}}, tableUnits = {}
+
+    if (data.ReturnConsumedCapacity == 'TOTAL') {
+      responses[1].forEach(function(action) {
+        var table = action.ConsumedCapacity.TableName
+        if (!tableUnits[table]) tableUnits[table] = 0
+        tableUnits[table] += action.ConsumedCapacity.CapacityUnits
+      })
+      res.ConsumedCapacity = Object.keys(tableUnits).map(function(table) {
+        return {CapacityUnits: tableUnits[table], TableName: table}
+      })
+    }
+
+    cb(null, res)
   })
 
   function addTableActions(tableName, cb) {
     db.getTable(tableName, function(err, table) {
       if (err) return cb(err)
 
-      var reqs = data.RequestItems[tableName], i, req, key, seenKeys = {}
+      var reqs = data.RequestItems[tableName], i, req, key, seenKeys = {}, options
 
       for (i = 0; i < reqs.length; i++) {
         req = reqs[i]
 
+        options = {TableName: tableName}
+        if (data.ReturnConsumedCapacity) options.ReturnConsumedCapacity = data.ReturnConsumedCapacity
+
         if (req.PutRequest) {
 
-          actions.push(putItem.bind(null, {TableName: tableName, Item: req.PutRequest.Item}))
+          options.Item = req.PutRequest.Item
+          actions.push(putItem.bind(null, options))
 
           key = db.validateItem(req.PutRequest.Item, table)
 
         } else if (req.DeleteRequest) {
 
-          actions.push(deleteItem.bind(null, {TableName: tableName, Key: req.DeleteRequest.Key}))
+          options.Key = req.DeleteRequest.Key
+          actions.push(deleteItem.bind(null, options))
 
           key = db.validateKey(req.DeleteRequest.Key, table)
         }

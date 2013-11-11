@@ -86,6 +86,12 @@ module.exports = function updateItem(data, cb) {
           }
         }
 
+        if (data.ReturnConsumedCapacity == 'TOTAL')
+          returnObj.ConsumedCapacity = {
+            CapacityUnits: Math.max(db.capacityUnits(oldItem), db.capacityUnits(item)),
+            TableName: data.TableName,
+          }
+
         itemDb.put(key, item, function(err) {
           if (err) return cb(err)
           cb(null, returnObj)

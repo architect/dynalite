@@ -378,6 +378,66 @@ describe('getItem', function() {
       })
     })
 
+    it('should return ConsumedCapacity for small item with no ConsistentRead', function(done) {
+      var a = helpers.randomString(), b = new Array(4082 - a.length).join('b'),
+        item = {a: {S: a}, b: {S: b}, c: {N: '12.3456'}, d: {B: 'AQI='}, e: {BS: ['AQI=', 'Ag==', 'AQ==']}}
+      request(helpers.opts('PutItem', {TableName: helpers.testHashTable, Item: item}), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        request(opts({TableName: helpers.testHashTable, Key: {a: item.a}, ReturnConsumedCapacity: 'TOTAL'}), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.ConsumedCapacity.should.eql({CapacityUnits: 0.5, TableName: helpers.testHashTable})
+          done()
+        })
+      })
+    })
+
+    it('should return ConsumedCapacity for larger item with no ConsistentRead', function(done) {
+      var a = helpers.randomString(), b = new Array(4084 - a.length).join('b'),
+        item = {a: {S: a}, b: {S: b}, c: {N: '12.3456'}, d: {B: 'AQI='}, e: {BS: ['AQI=', 'Ag==']}}
+      request(helpers.opts('PutItem', {TableName: helpers.testHashTable, Item: item}), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        request(opts({TableName: helpers.testHashTable, Key: {a: item.a}, ReturnConsumedCapacity: 'TOTAL'}), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.ConsumedCapacity.should.eql({CapacityUnits: 1, TableName: helpers.testHashTable})
+          done()
+        })
+      })
+    })
+
+    it('should return ConsumedCapacity for small item with ConsistentRead', function(done) {
+      var a = helpers.randomString(), b = new Array(4082 - a.length).join('b'),
+        item = {a: {S: a}, b: {S: b}, c: {N: '12.3456'}, d: {B: 'AQI='}, e: {BS: ['AQI=', 'Ag==', 'AQ==']}}
+      request(helpers.opts('PutItem', {TableName: helpers.testHashTable, Item: item}), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        request(opts({TableName: helpers.testHashTable, Key: {a: item.a}, ReturnConsumedCapacity: 'TOTAL', ConsistentRead: true}), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.ConsumedCapacity.should.eql({CapacityUnits: 1, TableName: helpers.testHashTable})
+          done()
+        })
+      })
+    })
+
+    it('should return ConsumedCapacity for larger item with ConsistentRead', function(done) {
+      var a = helpers.randomString(), b = new Array(4084 - a.length).join('b'),
+        item = {a: {S: a}, b: {S: b}, c: {N: '12.3456'}, d: {B: 'AQI='}, e: {BS: ['AQI=', 'Ag==']}}
+      request(helpers.opts('PutItem', {TableName: helpers.testHashTable, Item: item}), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        request(opts({TableName: helpers.testHashTable, Key: {a: item.a}, ReturnConsumedCapacity: 'TOTAL', ConsistentRead: true}), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.ConsumedCapacity.should.eql({CapacityUnits: 2, TableName: helpers.testHashTable})
+          done()
+        })
+      })
+    })
+
   })
 
 })

@@ -212,6 +212,163 @@ describe('batchGetItem', function() {
       })
     })
 
+    it('should return ConsumedCapacity from each specified table with no consistent read and small item', function(done) {
+      var a = helpers.randomString(), b = new Array(4082 - a.length).join('b'),
+          item = {a: {S: a}, b: {S: b}, c: {N: '12.3456'}, d: {B: 'AQI='}, e: {BS: ['AQI=', 'Ag==', 'AQ==']}},
+          item2 = {a: {S: helpers.randomString()}},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testHashTable] = [{PutRequest: {Item: item}}, {PutRequest: {Item: item2}}]
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        batchReq = {RequestItems: {}, ReturnConsumedCapacity: 'TOTAL'}
+        batchReq.RequestItems[helpers.testHashTable] = {Keys: [{a: item.a}, {a: item2.a}, {a: {S: helpers.randomString()}}]}
+        batchReq.RequestItems[helpers.testHashNTable] = {Keys: [{a: {N: helpers.randomString()}}]}
+        request(opts(batchReq), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.ConsumedCapacity.should.includeEql({CapacityUnits: 1.5, TableName: helpers.testHashTable})
+          res.body.ConsumedCapacity.should.includeEql({CapacityUnits: 0.5, TableName: helpers.testHashNTable})
+          res.body.Responses[helpers.testHashTable].should.have.length(2)
+          res.body.Responses[helpers.testHashNTable].should.have.length(0)
+          done()
+        })
+      })
+    })
+
+    it('should return ConsumedCapacity from each specified table with no consistent read and larger item', function(done) {
+      var a = helpers.randomString(), b = new Array(4084 - a.length).join('b'),
+          item = {a: {S: a}, b: {S: b}, c: {N: '12.3456'}, d: {B: 'AQI='}, e: {BS: ['AQI=', 'Ag==']}},
+          item2 = {a: {S: helpers.randomString()}},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testHashTable] = [{PutRequest: {Item: item}}, {PutRequest: {Item: item2}}]
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        batchReq = {RequestItems: {}, ReturnConsumedCapacity: 'TOTAL'}
+        batchReq.RequestItems[helpers.testHashTable] = {Keys: [{a: item.a}, {a: item2.a}, {a: {S: helpers.randomString()}}]}
+        batchReq.RequestItems[helpers.testHashNTable] = {Keys: [{a: {N: helpers.randomString()}}]}
+        request(opts(batchReq), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.ConsumedCapacity.should.includeEql({CapacityUnits: 2, TableName: helpers.testHashTable})
+          res.body.ConsumedCapacity.should.includeEql({CapacityUnits: 0.5, TableName: helpers.testHashNTable})
+          res.body.Responses[helpers.testHashTable].should.have.length(2)
+          res.body.Responses[helpers.testHashNTable].should.have.length(0)
+          done()
+        })
+      })
+    })
+
+    it('should return ConsumedCapacity from each specified table with consistent read and small item', function(done) {
+      var a = helpers.randomString(), b = new Array(4082 - a.length).join('b'),
+          item = {a: {S: a}, b: {S: b}, c: {N: '12.3456'}, d: {B: 'AQI='}, e: {BS: ['AQI=', 'Ag==', 'AQ==']}},
+          item2 = {a: {S: helpers.randomString()}},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testHashTable] = [{PutRequest: {Item: item}}, {PutRequest: {Item: item2}}]
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        batchReq = {RequestItems: {}, ReturnConsumedCapacity: 'TOTAL'}
+        batchReq.RequestItems[helpers.testHashTable] = {Keys: [{a: item.a}, {a: item2.a}, {a: {S: helpers.randomString()}}], ConsistentRead: true}
+        batchReq.RequestItems[helpers.testHashNTable] = {Keys: [{a: {N: helpers.randomString()}}], ConsistentRead: true}
+        request(opts(batchReq), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.ConsumedCapacity.should.includeEql({CapacityUnits: 3, TableName: helpers.testHashTable})
+          res.body.ConsumedCapacity.should.includeEql({CapacityUnits: 1, TableName: helpers.testHashNTable})
+          res.body.Responses[helpers.testHashTable].should.have.length(2)
+          res.body.Responses[helpers.testHashNTable].should.have.length(0)
+          done()
+        })
+      })
+    })
+
+    it('should return ConsumedCapacity from each specified table with consistent read and larger item', function(done) {
+      var a = helpers.randomString(), b = new Array(4084 - a.length).join('b'),
+          item = {a: {S: a}, b: {S: b}, c: {N: '12.3456'}, d: {B: 'AQI='}, e: {BS: ['AQI=', 'Ag==']}},
+          item2 = {a: {S: helpers.randomString()}},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testHashTable] = [{PutRequest: {Item: item}}, {PutRequest: {Item: item2}}]
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        batchReq = {RequestItems: {}, ReturnConsumedCapacity: 'TOTAL'}
+        batchReq.RequestItems[helpers.testHashTable] = {Keys: [{a: item.a}, {a: item2.a}, {a: {S: helpers.randomString()}}], ConsistentRead: true}
+        batchReq.RequestItems[helpers.testHashNTable] = {Keys: [{a: {N: helpers.randomString()}}], ConsistentRead: true}
+        request(opts(batchReq), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.ConsumedCapacity.should.includeEql({CapacityUnits: 4, TableName: helpers.testHashTable})
+          res.body.ConsumedCapacity.should.includeEql({CapacityUnits: 1, TableName: helpers.testHashNTable})
+          res.body.Responses[helpers.testHashTable].should.have.length(2)
+          res.body.Responses[helpers.testHashNTable].should.have.length(0)
+          done()
+        })
+      })
+    })
+
+    // TODO: Need high capacity to run this
+    it.skip('should return all items if just under limit', function(done) {
+      this.timeout(100000)
+
+      var i, item, items = [], b = new Array(65530).join('b'),
+          batchReq = {RequestItems: {}, ReturnConsumedCapacity: 'TOTAL'}
+      for (i = 0; i < 17; i++) {
+        if (i < 16) {
+          item = {a: {S: ('0' + i).slice(-2)}, b: {S: b}}
+        } else {
+          item = {a: {S: ('0' + i).slice(-2)}, b: {S: b.slice(0, 17)}, c: {N: '12.3456'}, d: {B: 'AQI='},
+            e: {SS: ['a', 'bc']}, f: {NS: ['1.23', '12.3']}, g: {BS: ['AQI=', 'Ag==', 'AQ==']}}
+        }
+        items.push(item)
+      }
+      helpers.batchWriteUntilDone(helpers.testHashTable, {puts: items}, function(err) {
+        if (err) return done(err)
+        batchReq.RequestItems[helpers.testHashTable] = {Keys: items.map(function(item) { return {a: item.a} }), ConsistentRead: true}
+        request(opts(batchReq), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.UnprocessedKeys.should.eql({})
+          res.body.Responses[helpers.testHashTable].should.have.length(17)
+          res.body.ConsumedCapacity.should.eql([{CapacityUnits: 257, TableName: helpers.testHashTable}])
+          done()
+        })
+      })
+    })
+
+    // TODO: Need high capacity to run this
+    it.skip('should return an unprocessed item if just over limit', function(done) {
+      this.timeout(100000)
+
+      var i, item, items = [], b = new Array(65530).join('b'),
+          batchReq = {RequestItems: {}, ReturnConsumedCapacity: 'TOTAL'}
+      for (i = 0; i < 17; i++) {
+        if (i < 16) {
+          item = {a: {S: ('0' + i).slice(-2)}, b: {S: b}}
+        } else {
+          item = {a: {S: ('0' + i).slice(-2)}, b: {S: b.slice(0, 18)}, c: {N: '12.3456'}, d: {B: 'AQI='},
+            e: {SS: ['a', 'bc']}, f: {NS: ['1.23', '12.3']}, g: {BS: ['AQI=', 'Ag==', 'AQ==']}}
+        }
+        items.push(item)
+      }
+      helpers.batchWriteUntilDone(helpers.testHashTable, {puts: items}, function(err) {
+        if (err) return done(err)
+        batchReq.RequestItems[helpers.testHashTable] = {Keys: items.map(function(item) { return {a: item.a} }), ConsistentRead: true}
+        request(opts(batchReq), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.UnprocessedKeys[helpers.testHashTable].Keys.should.have.length(1)
+          Object.keys(res.body.UnprocessedKeys[helpers.testHashTable].Keys[0]).should.have.length(1)
+          res.body.UnprocessedKeys[helpers.testHashTable].Keys[0].a.S.should.be.above(-1) // Seems to be a random ID
+          res.body.UnprocessedKeys[helpers.testHashTable].Keys[0].a.S.should.be.below(17)
+          res.body.Responses[helpers.testHashTable].should.have.length(16)
+          res.body.ConsumedCapacity.should.eql([{CapacityUnits: 241, TableName: helpers.testHashTable}])
+          done()
+        })
+      })
+    })
+
   })
 
 })

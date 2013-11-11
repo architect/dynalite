@@ -25,7 +25,7 @@ module.exports = function getItem(data, cb) {
       }
 
       if (data.ReturnConsumedCapacity == 'TOTAL')
-        returnObj.ConsumedCapacity = {CapacityUnits: db.capacityUnits(item, data.ConsistentRead), TableName: data.TableName}
+        returnObj.ConsumedCapacity = {CapacityUnits: db.capacityUnits(item, true, data.ConsistentRead), TableName: data.TableName}
 
       cb(null, returnObj)
     })
