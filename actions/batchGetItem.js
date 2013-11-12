@@ -10,17 +10,43 @@ module.exports = function batchGetItem(data, cb) {
     async.parallel.bind(async, requests),
   ], function(err, responses) {
     if (err) return cb(err)
-    var res = {Responses: {}, UnprocessedKeys: {}}, table, tables = responses[1]
+    var res = {Responses: {}, UnprocessedKeys: {}}, table, tableResponses = responses[1], totalSize = 0, capacities = {}
 
-    for (table in tables)
-      res.Responses[table] = tables[table].map(function(res) { return res.Item }).filter(function(x) { return x })
+    for (table in tableResponses) {
+      // Order is pretty random
+      // Assign keys before we shuffle
+      tableResponses[table].forEach(function(tableRes, ix) { tableRes._key = data.RequestItems[table].Keys[ix] })
+      shuffle(tableResponses[table])
+      res.Responses[table] = tableResponses[table].map(function(tableRes) {
+        if (tableRes.Item) {
+          // TODO: This is totally inefficient - should fix this
+          var newSize = totalSize + db.itemSize(tableRes.Item)
+          if (newSize > 1048574) {
+            if (!res.UnprocessedKeys[table]) {
+              res.UnprocessedKeys[table] = {Keys: []}
+              if (data.RequestItems[table].AttributesToGet)
+                res.UnprocessedKeys[table].AttributesToGet = data.RequestItems[table].AttributesToGet
+              if (data.RequestItems[table].ConsistentRead)
+                res.UnprocessedKeys[table].ConsistentRead = data.RequestItems[table].ConsistentRead
+            }
+            res.UnprocessedKeys[table].Keys.push(tableRes._key)
+            return
+          }
+          totalSize = newSize
+        }
+        if (tableRes.ConsumedCapacity) {
+          if (!capacities[table]) capacities[table] = 0
+          capacities[table] += tableRes.ConsumedCapacity.CapacityUnits
+        }
+        return tableRes.Item
+      }).filter(function(x) { return x })
+    }
 
-    if (data.ReturnConsumedCapacity == 'TOTAL')
-      res.ConsumedCapacity = Object.keys(tables).map(function(table) {
-        return {CapacityUnits: tables[table].reduce(function(total, res) {
-          return total + res.ConsumedCapacity.CapacityUnits
-        }, 0), TableName: table}
+    if (data.ReturnConsumedCapacity == 'TOTAL') {
+      res.ConsumedCapacity = Object.keys(tableResponses).map(function(table) {
+        return {CapacityUnits: capacities[table], TableName: table}
       })
+    }
 
     cb(null, res)
   })
@@ -54,3 +80,12 @@ module.exports = function batchGetItem(data, cb) {
   }
 }
 
+function shuffle(arr) {
+  var i, j, temp
+  for (i = arr.length - 1; i >= 1; i--) {
+    j = Math.floor(Math.random() * (i + 1))
+    temp = arr[i]
+    arr[i] = arr[j]
+    arr[j] = temp
+  }
+}

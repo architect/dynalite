@@ -15,10 +15,10 @@ module.exports = function getItem(data, cb) {
 
       if (item) {
         if (data.AttributesToGet) {
-          returnObj.Item = {}
-          data.AttributesToGet.forEach(function(attr) {
-            returnObj.Item[attr] = item[attr]
-          })
+          returnObj.Item = data.AttributesToGet.reduce(function(returnItem, attr) {
+            if (item[attr] != null) returnItem[attr] = item[attr]
+            return returnItem
+          }, {})
         } else {
           returnObj.Item = item
         }

@@ -358,12 +358,17 @@ describe('batchGetItem', function() {
         request(opts(batchReq), function(err, res) {
           if (err) return done(err)
           res.statusCode.should.equal(200)
+          res.body.UnprocessedKeys[helpers.testHashTable].ConsistentRead.should.equal(true)
           res.body.UnprocessedKeys[helpers.testHashTable].Keys.should.have.length(1)
           Object.keys(res.body.UnprocessedKeys[helpers.testHashTable].Keys[0]).should.have.length(1)
-          res.body.UnprocessedKeys[helpers.testHashTable].Keys[0].a.S.should.be.above(-1) // Seems to be a random ID
-          res.body.UnprocessedKeys[helpers.testHashTable].Keys[0].a.S.should.be.below(17)
+          if (res.body.UnprocessedKeys[helpers.testHashTable].Keys[0].a.S == '16') {
+            res.body.ConsumedCapacity.should.eql([{CapacityUnits: 256, TableName: helpers.testHashTable}])
+          } else {
+            res.body.UnprocessedKeys[helpers.testHashTable].Keys[0].a.S.should.be.above(-1)
+            res.body.UnprocessedKeys[helpers.testHashTable].Keys[0].a.S.should.be.below(17)
+            res.body.ConsumedCapacity.should.eql([{CapacityUnits: 241, TableName: helpers.testHashTable}])
+          }
           res.body.Responses[helpers.testHashTable].should.have.length(16)
-          res.body.ConsumedCapacity.should.eql([{CapacityUnits: 241, TableName: helpers.testHashTable}])
           done()
         })
       })

@@ -30,6 +30,6 @@ TODO
 * Add config settings, especially for the table delays and strict checking
 * Allow for different persistence types (LevelDOWN-Hyper, etc)
 * Use efficient range scans for Query calls
-* Implement `ConsumedCapacity`/`ReturnItemCollectionMetrics` on all remaining endpoints
+* Implement `ReturnItemCollectionMetrics` on all remaining endpoints
 * Check for any missing `ExclusiveStartKey`/`LastEvaluatedKey` functionality
 
