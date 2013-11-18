@@ -272,26 +272,6 @@ function validateAttributeValue(value) {
   if (!types.length)
     return 'Supplied AttributeValue is empty, must contain exactly one of the supported datatypes'
 
-  function checkNum(attr, obj) {
-    if (!obj[attr])
-      return 'The parameter cannot be converted to a numeric value'
-
-    var bigNum
-    try {
-      bigNum = Big(obj[attr])
-    } catch (e) {
-      return 'The parameter cannot be converted to a numeric value: ' + obj[attr]
-    }
-    if (bigNum.e > 125)
-      return 'Number overflow. Attempting to store a number with magnitude larger than supported range'
-    else if (bigNum.e < -130)
-      return 'Number underflow. Attempting to store a number with magnitude smaller than supported range'
-    else if (bigNum.c.length > 38)
-      return 'Attempting to store more than 38 significant digits in a Number'
-
-    obj[attr] = bigNum.toFixed()
-  }
-
   for (var type in value) {
     if (type == 'N') {
       msg = checkNum(type, value)
@@ -335,6 +315,26 @@ function validateAttributeValue(value) {
 
   if (types.length > 1)
     return 'Supplied AttributeValue has more than one datatypes set, must contain exactly one of the supported datatypes'
+}
+
+function checkNum(attr, obj) {
+  if (!obj[attr])
+    return 'The parameter cannot be converted to a numeric value'
+
+  var bigNum
+  try {
+    bigNum = Big(obj[attr])
+  } catch (e) {
+    return 'The parameter cannot be converted to a numeric value: ' + obj[attr]
+  }
+  if (bigNum.e > 125)
+    return 'Number overflow. Attempting to store a number with magnitude larger than supported range'
+  else if (bigNum.e < -130)
+    return 'Number underflow. Attempting to store a number with magnitude smaller than supported range'
+  else if (bigNum.c.length > 38)
+    return 'Attempting to store more than 38 significant digits in a Number'
+
+  obj[attr] = bigNum.toFixed()
 }
 
 function valueStr(data) {

@@ -1,3 +1,5 @@
+var validateAttributeValue = require('./index').validateAttributeValue
+
 exports.types = {
   ReturnConsumedCapacity: {
     type: 'String',
@@ -22,6 +24,18 @@ exports.types = {
                 S: 'String',
                 B: 'Blob',
                 N: 'String',
+                BS: {
+                  type: 'List',
+                  children: 'Blob',
+                },
+                NS: {
+                  type: 'List',
+                  children: 'String',
+                },
+                SS: {
+                  type: 'List',
+                  children: 'String',
+                }
               }
             }
           }
@@ -39,5 +53,13 @@ exports.types = {
 }
 
 exports.custom = function(data) {
+  for (var table in data.RequestItems) {
+    for (var i = 0; i < data.RequestItems[table].Keys.length; i++) {
+      for (var key in data.RequestItems[table].Keys[i]) {
+        var msg = validateAttributeValue(data.RequestItems[table].Keys[i][key])
+        if (msg) return msg
+      }
+    }
+  }
 }
 

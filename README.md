@@ -23,6 +23,12 @@ dynalite.listen(4567, function(err) {
 })
 ```
 
+Can also just run on the command line (will listen on port 4567) - a better command line runner is in the works.
+
+```sh
+$ node index.js
+```
+
 TODO
 ----
 

@@ -1,5 +1,4 @@
 var once = require('once'),
-    lazy = require('lazy'),
     Big = require('big.js'),
     db = require('../db')
 
@@ -14,7 +13,7 @@ module.exports = function scan(data, cb) {
     if (data.TotalSegments > 1) {
       if (data.Segment > 0)
         opts.start = ('00' + Math.ceil(4096 * data.Segment / data.TotalSegments).toString(16)).slice(-3)
-      opts.end = ('00' + (Math.ceil(4096 * (data.Segment + 1) / data.TotalSegments) - 1).toString(16)).slice(-3) + '\xff\xff'
+      opts.end = ('00' + (Math.ceil(4096 * (data.Segment + 1) / data.TotalSegments) - 1).toString(16)).slice(-3) + '\xff'
     }
 
     // TODO: Fix this

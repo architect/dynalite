@@ -1,9 +1,7 @@
-var Readable = require('stream').Readable,
-    lazy = require('lazy'),
+var lazy = require('lazy'),
     levelup = require('levelup'),
     MemDown = require('memdown'),
     sublevel = require('level-sublevel'),
-    deleteStream = require('level-delete-stream'),
     Lock = require('lock'),
     Big = require('big.js'),
     murmur = require('murmurhash-js')
@@ -40,7 +38,9 @@ function getItemDb(name) {
 function deleteItemDb(name, cb) {
   var itemDb = itemDbs[name] || db.sublevel('item-' + name, {valueEncoding: 'json'})
   delete itemDbs[name]
-  itemDb.createKeyStream().pipe(deleteStream(db, cb))
+  lazyStream(itemDb.createKeyStream(), cb).join(function(keys) {
+    itemDb.batch(keys.map(function(key) { return {type: 'del', key: key} }), cb)
+  })
 }
 
 function getTable(name, checkStatus, cb) {
@@ -86,7 +86,7 @@ function validateKey(dataKey, table) {
       sizeError = checkKeySize(dataKey[attr][type], type, !i)
       if (sizeError) return sizeError
       if (!keyStr) keyStr = hashPrefix(dataKey[attr][type])
-      keyStr += '\xff' + toLexiStr(dataKey[attr][type], type)
+      keyStr += '~' + toLexiStr(dataKey[attr][type], type)
       break
     }
   }
@@ -110,7 +110,7 @@ function validateItem(dataItem, table) {
       sizeError = checkKeySize(dataItem[attr][type], type, !i)
       if (sizeError) return sizeError
       if (!keyStr) keyStr = hashPrefix(dataItem[attr][type])
-      keyStr += '\xff' + toLexiStr(dataItem[attr][type], type)
+      keyStr += '~' + toLexiStr(dataItem[attr][type], type)
       break
     }
   }

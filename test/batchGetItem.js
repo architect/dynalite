@@ -2,6 +2,7 @@ var helpers = require('./helpers')
 
 var target = 'BatchGetItem',
     request = helpers.request,
+    randomName = helpers.randomName,
     opts = helpers.opts.bind(null, target),
     assertType = helpers.assertType.bind(null, target),
     assertValidation = helpers.assertValidation.bind(null, target),
@@ -124,6 +125,214 @@ describe('batchGetItem', function() {
 
     it('should return ResourceNotFoundException for short table name with keys', function(done) {
       assertNotFound({RequestItems: {a: {Keys: [{a: {S: 'a'}}]}}}, 'Requested resource not found', done)
+    })
+
+    it('should return ValidationException for empty key type', function(done) {
+      assertValidation({RequestItems: {abc: {Keys: [{a: {}}]}}},
+        'Supplied AttributeValue is empty, must contain exactly one of the supported datatypes', done)
+    })
+
+    it('should return ValidationException for bad key type', function(done) {
+      assertValidation({RequestItems: {abc: {Keys: [{a: {a: ''}}]}}},
+        'Supplied AttributeValue is empty, must contain exactly one of the supported datatypes', done)
+    })
+
+    it('should return ValidationException for empty string', function(done) {
+      assertValidation({RequestItems: {abc: {Keys: [{a: {S: ''}}]}}},
+        'One or more parameter values were invalid: An AttributeValue may not contain an empty string.', done)
+    })
+
+    it('should return ValidationException for empty binary', function(done) {
+      assertValidation({RequestItems: {abc: {Keys: [{a: {B: ''}}]}}},
+        'One or more parameter values were invalid: An AttributeValue may not contain an empty binary type.', done)
+    })
+
+    // Somehow allows set types for keys
+    it('should return ValidationException for empty set key', function(done) {
+      assertValidation({RequestItems: {abc: {Keys: [{a: {SS: []}}]}}},
+        'One or more parameter values were invalid: An AttributeValue may not contain an empty set.', done)
+    })
+
+    it('should return ValidationException for empty string in set', function(done) {
+      assertValidation({RequestItems: {abc: {Keys: [{a: {SS: ['a', '']}}]}}},
+        'One or more parameter values were invalid: An AttributeValue may not contain an empty string.', done)
+    })
+
+    it('should return ValidationException for empty binary in set', function(done) {
+      assertValidation({RequestItems: {abc: {Keys: [{a: {BS: ['aaaa', '']}}]}}},
+        'One or more parameter values were invalid: Binary sets may not contain null or empty values', done)
+    })
+
+    it('should return ValidationException if key has empty numeric in set', function(done) {
+      assertValidation({RequestItems: {abc: {Keys: [{a: {NS: ['1', '']}}]}}},
+        'The parameter cannot be converted to a numeric value', done)
+    })
+
+    it('should return ValidationException for duplicate string in set', function(done) {
+      assertValidation({RequestItems: {abc: {Keys: [{a: {SS: ['a', 'a']}}]}}},
+        'One or more parameter values were invalid: Input collection [a, a] contains duplicates.', done)
+    })
+
+    it('should return ValidationException for duplicate number in set', function(done) {
+      assertValidation({RequestItems: {abc: {Keys: [{a: {NS: ['1', '1']}}]}}},
+        'Input collection contains duplicates', done)
+    })
+
+    it('should return ValidationException for duplicate binary in set', function(done) {
+      assertValidation({RequestItems: {abc: {Keys: [{a: {BS: ['Yg==', 'Yg==']}}]}}},
+        'One or more parameter values were invalid: Input collection [Yg==, Yg==]of type BS contains duplicates.', done)
+    })
+
+    it('should return ValidationException for multiple types', function(done) {
+      assertValidation({RequestItems: {abc: {Keys: [{a: {S: 'a', N: '1'}}]}}},
+        'Supplied AttributeValue has more than one datatypes set, must contain exactly one of the supported datatypes', done)
+    })
+
+    it('should return ValidationException if key has empty numeric type', function(done) {
+      assertValidation({RequestItems: {abc: {Keys: [{a: {N: ''}}]}}},
+        'The parameter cannot be converted to a numeric value', done)
+    })
+
+    it('should return ValidationException if key has incorrect numeric type', function(done) {
+      assertValidation({RequestItems: {abc: {Keys: [{a: {N: 'b'}}]}}},
+        'The parameter cannot be converted to a numeric value: b', done)
+    })
+
+    it('should return ValidationException if key has large numeric type', function(done) {
+      assertValidation({RequestItems: {abc: {Keys: [{a: {N: '123456789012345678901234567890123456789'}}]}}},
+        'Attempting to store more than 38 significant digits in a Number', done)
+    })
+
+    it('should return ValidationException if key has long digited number', function(done) {
+      assertValidation({RequestItems: {abc: {Keys: [{a: {N: '-1.23456789012345678901234567890123456789'}}]}}},
+        'Attempting to store more than 38 significant digits in a Number', done)
+    })
+
+    it('should return ValidationException if key has huge positive number', function(done) {
+      assertValidation({RequestItems: {abc: {Keys: [{a: {N: '1e126'}}]}}},
+        'Number overflow. Attempting to store a number with magnitude larger than supported range', done)
+    })
+
+    it('should return ValidationException if key has huge negative number', function(done) {
+      assertValidation({RequestItems: {abc: {Keys: [{a: {N: '-1e126'}}]}}},
+        'Number overflow. Attempting to store a number with magnitude larger than supported range', done)
+    })
+
+    it('should return ValidationException if key has tiny positive number', function(done) {
+      assertValidation({RequestItems: {abc: {Keys: [{a: {N: '1e-131'}}]}}},
+        'Number underflow. Attempting to store a number with magnitude smaller than supported range', done)
+    })
+
+    it('should return ValidationException if key has tiny negative number', function(done) {
+      assertValidation({RequestItems: {abc: {Keys: [{a: {N: '-1e-131'}}]}}},
+        'Number underflow. Attempting to store a number with magnitude smaller than supported range', done)
+    })
+
+     it('should return ValidationException if key has incorrect numeric type in set', function(done) {
+      assertValidation({RequestItems: {abc: {Keys: [{a: {NS: ['1', 'b', 'a']}}]}}},
+        'The parameter cannot be converted to a numeric value: b', done)
+    })
+
+    it('should return ResourceNotFoundException if key is empty and table does not exist', function(done) {
+      var batchReq = {RequestItems: {}}
+      batchReq.RequestItems[randomName()] = {Keys: [{}]}
+      assertNotFound(batchReq,
+        'Requested resource not found', done)
+    })
+
+    it('should return ValidationException if key is empty and table does exist', function(done) {
+      var batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testHashTable] = {Keys: [{}]}
+      assertValidation(batchReq,
+        'The provided key element does not match the schema', done)
+    })
+
+    it('should return ValidationException if key has incorrect attributes', function(done) {
+      var batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testHashTable] = {Keys: [{b: {S: 'a'}}]}
+      assertValidation(batchReq,
+        'The provided key element does not match the schema', done)
+    })
+
+    it('should return ValidationException if key has extra attributes', function(done) {
+      var batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testHashTable] = {Keys: [{a: {S: 'a'}, b: {S: 'a'}}]}
+      assertValidation(batchReq,
+        'The provided key element does not match the schema', done)
+    })
+
+    it('should return ValidationException if key is incorrect binary type', function(done) {
+      var batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testHashTable] = {Keys: [{a: {B: 'abcd'}}]}
+      assertValidation(batchReq,
+        'The provided key element does not match the schema', done)
+    })
+
+    it('should return ValidationException if key is incorrect numeric type', function(done) {
+      var batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testHashTable] = {Keys: [{a: {N: '1'}}]}
+      assertValidation(batchReq,
+        'The provided key element does not match the schema', done)
+    })
+
+    it('should return ValidationException if key is incorrect string set type', function(done) {
+      var batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testHashTable] = {Keys: [{a: {SS: ['a']}}]}
+      assertValidation(batchReq,
+        'The provided key element does not match the schema', done)
+    })
+
+    it('should return ValidationException if key is incorrect numeric set type', function(done) {
+      var batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testHashTable] = {Keys: [{a: {NS: ['1']}}]}
+      assertValidation(batchReq,
+        'The provided key element does not match the schema', done)
+    })
+
+    it('should return ValidationException if key is incorrect binary set type', function(done) {
+      var batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testHashTable] = {Keys: [{a: {BS: ['aaaa']}}]}
+      assertValidation(batchReq,
+        'The provided key element does not match the schema', done)
+    })
+
+    it('should return ValidationException if missing range key', function(done) {
+      var batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testRangeTable] = {Keys: [{a: {S: 'a'}}]}
+      assertValidation(batchReq,
+        'The provided key element does not match the schema', done)
+    })
+
+    it('should return ValidationException if hash key is too big', function(done) {
+      var batchReq = {RequestItems: {}}, keyStr = (helpers.randomString() + new Array(2048).join('a')).slice(0, 2049)
+      batchReq.RequestItems[helpers.testHashTable] = {Keys: [{a: {S: keyStr}}]}
+      assertValidation(batchReq,
+        'One or more parameter values were invalid: ' +
+        'Size of hashkey has exceeded the maximum size limit of2048 bytes', done)
+    })
+
+    it('should return ValidationException if range key is too big', function(done) {
+      var batchReq = {RequestItems: {}}, keyStr = (helpers.randomString() + new Array(1024).join('a')).slice(0, 1025)
+      batchReq.RequestItems[helpers.testRangeTable] = {Keys: [{a: {S: 'a'}, b: {S: keyStr}}]}
+      assertValidation(batchReq,
+        'One or more parameter values were invalid: ' +
+        'Aggregated size of all range keys has exceeded the size limit of 1024 bytes', done)
+    })
+
+    it('should return ResourceNotFoundException if table is being created', function(done) {
+      var table = {
+        TableName: randomName(),
+        AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}],
+        KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}],
+        ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
+      }
+      request(helpers.opts('CreateTable', table), function(err) {
+        if (err) return done(err)
+        var batchReq = {RequestItems: {}}
+        batchReq.RequestItems[table.TableName] = {Keys: [{a: {S: 'a'}}]}
+        assertNotFound(batchReq,
+          'Requested resource not found', done)
+      })
     })
 
   })

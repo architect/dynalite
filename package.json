@@ -35,7 +35,6 @@
     "once": "~1.2.0",
     "async": "~0.2.9",
     "big.js": "~2.4.1",
-    "level-delete-stream": "0.0.1",
     "murmurhash-js": "0.0.1"
   },
   "devDependencies": {

@@ -10,7 +10,12 @@ module.exports = function batchWriteItem(data, cb) {
     async.each.bind(async, Object.keys(data.RequestItems), addTableActions),
     async.parallel.bind(async, actions),
   ], function(err, responses) {
-    if (err) return cb(err)
+    if (err) {
+      // TODO: This is a hack... fix this!
+      if (err.body && (/Missing the key/.test(err.body.message) || /Type mismatch for key/.test(err.body.message)))
+        err.body.message = 'The provided key element does not match the schema'
+      return cb(err)
+    }
     var res = {UnprocessedItems: {}}, tableUnits = {}
 
     if (data.ReturnConsumedCapacity == 'TOTAL') {

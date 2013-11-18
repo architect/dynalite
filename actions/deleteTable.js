@@ -28,7 +28,6 @@ module.exports = function deleteTable(data, cb) {
         if (err) return cb(err)
 
         setTimeout(function() {
-          // TODO: Delete items too
           tableDb.del(key, function(err) {
             // TODO: Need to check this
             if (err) console.error(err)
