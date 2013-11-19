@@ -7,7 +7,15 @@ var MAX_REQUEST_BYTES = 8 * 1024 * 1024
 
 var validApis = ['DynamoDB_20111205', 'DynamoDB_20120810'],
     validOperations = ['BatchGetItem', 'BatchWriteItem', 'CreateTable', 'DeleteItem', 'DeleteTable',
-      'DescribeTable', 'GetItem', 'ListTables', 'PutItem', 'Query', 'Scan', 'UpdateItem', 'UpdateTable']
+      'DescribeTable', 'GetItem', 'ListTables', 'PutItem', 'Query', 'Scan', 'UpdateItem', 'UpdateTable'],
+    actions = {},
+    actionValidations = {}
+
+validOperations.forEach(function(action) {
+  action = validations.toLowerFirst(action)
+  actions[action] = require('./actions/' + action)
+  actionValidations[action] = require('./validations/' + action)
+})
 
 function rand52CharId(cb) {
   // 39 bytes turns into 52 base64 characters
@@ -167,17 +175,16 @@ var dynalite = module.exports = http.createServer(function(req, res) {
       if (!body)
         return sendData(req, res, {__type: 'com.amazon.coral.service#SerializationException'}, 400)
 
-      var actionValidations = require('./validations/' + action)
+      var actionValidation = actionValidations[action]
       try {
-        data = validations.checkTypes(data, actionValidations.types)
-        validations.checkValidations(data, actionValidations.types, actionValidations.custom, target[1])
+        data = validations.checkTypes(data, actionValidation.types)
+        validations.checkValidations(data, actionValidation.types, actionValidation.custom, target[1])
       } catch (e) {
         if (e.statusCode) return sendData(req, res, e.body, e.statusCode)
         throw e
       }
 
-      var action = require('./actions/' + action)
-      action(data, function(err, data) {
+      actions[action](data, function(err, data) {
         if (err && err.statusCode) return sendData(req, res, err.body, err.statusCode)
         if (err) throw err
         sendData(req, res, data)
