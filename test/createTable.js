@@ -724,7 +724,6 @@ describe('createTable', function() {
     // TODO: Implement this error:
     //{ __type: 'com.amazonaws.dynamodb.v20120810#LimitExceededException',
     //message: 'Subscriber limit exceeded: Only 1 table with local secondary index can be created simultaneously' }
-    //
     it.skip('should succeed for multiple indexes', function(done) {
       var table = {
         TableName: randomName(),

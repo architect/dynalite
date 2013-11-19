@@ -1,9 +1,8 @@
-var db = require('../db'),
-    tableDb = db.tableDb
+var db = require('../db')
 
-module.exports = function updateTable(data, cb) {
+module.exports = function updateTable(store, data, cb) {
 
-  var key = data.TableName
+  var key = data.TableName, tableDb = store.tableDb
 
   tableDb.lock(key, function(release) {
     cb = release(cb)

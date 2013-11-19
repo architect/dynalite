@@ -2,7 +2,7 @@ var async = require('async'),
     getItem = require('./getItem'),
     db = require('../db')
 
-module.exports = function batchGetItem(data, cb) {
+module.exports = function batchGetItem(store, data, cb) {
   var requests = {}
 
   async.series([
@@ -52,7 +52,7 @@ module.exports = function batchGetItem(data, cb) {
   })
 
   function addTableRequests(tableName, cb) {
-    db.getTable(tableName, function(err, table) {
+    store.getTable(tableName, function(err, table) {
       if (err) return cb(err)
 
       var req = data.RequestItems[tableName], i, key, options, gets = [], seenKeys = {}
@@ -73,7 +73,7 @@ module.exports = function batchGetItem(data, cb) {
         seenKeys[key] = true
       }
 
-      requests[tableName] = async.map.bind(async, gets, getItem)
+      requests[tableName] = async.map.bind(async, gets, function(data, cb) { return getItem(store, data, cb) })
 
       cb()
     })

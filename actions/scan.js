@@ -2,13 +2,13 @@ var once = require('once'),
     Big = require('big.js'),
     db = require('../db')
 
-module.exports = function scan(data, cb) {
+module.exports = function scan(store, data, cb) {
   cb = once(cb)
 
-  db.getTable(data.TableName, function(err, table) {
+  store.getTable(data.TableName, function(err, table) {
     if (err) return cb(err)
 
-    var opts = {}, vals, scannedCount = 0, itemDb = db.getItemDb(data.TableName), size = 0, capacitySize = 0
+    var opts = {}, vals, scannedCount = 0, itemDb = store.getItemDb(data.TableName), size = 0, capacitySize = 0
 
     if (data.TotalSegments > 1) {
       if (data.Segment > 0)

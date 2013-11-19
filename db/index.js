@@ -6,17 +6,8 @@ var lazy = require('lazy'),
     Big = require('big.js'),
     murmur = require('murmurhash-js')
 
-var db = sublevel(levelup('./mydb', {db: function(location) { return new MemDown(location) }})),
-    tableDb = db.sublevel('table', {valueEncoding: 'json'}),
-    itemDbs = []
-
-exports.createTableMs = 500
-exports.deleteTableMs = 500
+exports.create = create
 exports.lazy = lazyStream
-exports.tableDb = tableDb
-exports.getItemDb = getItemDb
-exports.deleteItemDb = deleteItemDb
-exports.getTable = getTable
 exports.validateKey = validateKey
 exports.validateItem = validateItem
 exports.toLexiStr = toLexiStr
@@ -25,46 +16,63 @@ exports.checkConditional = checkConditional
 exports.itemSize = itemSize
 exports.capacityUnits = capacityUnits
 
-tableDb.lock = new Lock()
+function create(options) {
+  options = options || {}
 
-function getItemDb(name) {
-  if (!itemDbs[name]) {
-    itemDbs[name] = db.sublevel('item-' + name, {valueEncoding: 'json'})
-    itemDbs[name].lock = new Lock()
+  var db = sublevel(levelup('./mydb', {db: function(location) { return new MemDown(location) }})),
+      tableDb = db.sublevel('table', {valueEncoding: 'json'}),
+      itemDbs = []
+
+  tableDb.lock = new Lock()
+
+  function getItemDb(name) {
+    if (!itemDbs[name]) {
+      itemDbs[name] = db.sublevel('item-' + name, {valueEncoding: 'json'})
+      itemDbs[name].lock = new Lock()
+    }
+    return itemDbs[name]
   }
-  return itemDbs[name]
-}
 
-function deleteItemDb(name, cb) {
-  var itemDb = itemDbs[name] || db.sublevel('item-' + name, {valueEncoding: 'json'})
-  delete itemDbs[name]
-  lazyStream(itemDb.createKeyStream(), cb).join(function(keys) {
-    itemDb.batch(keys.map(function(key) { return {type: 'del', key: key} }), cb)
-  })
-}
+  function deleteItemDb(name, cb) {
+    var itemDb = getItemDb(name)
+    delete itemDbs[name]
+    lazyStream(itemDb.createKeyStream(), cb).join(function(keys) {
+      itemDb.batch(keys.map(function(key) { return {type: 'del', key: key} }), cb)
+    })
+  }
 
-function getTable(name, checkStatus, cb) {
-  if (typeof checkStatus == 'function') cb = checkStatus
+  function getTable(name, checkStatus, cb) {
+    if (typeof checkStatus == 'function') cb = checkStatus
 
-  tableDb.get(name, function(err, table) {
-    if (!err && checkStatus && (table.TableStatus == 'CREATING' || table.TableStatus == 'DELETING')) {
-      err = new Error('NotFoundError')
-      err.name = 'NotFoundError'
-    }
-    if (err) {
-      if (err.name == 'NotFoundError') {
-        err.statusCode = 400
-        err.body = {
-          __type: 'com.amazonaws.dynamodb.v20120810#ResourceNotFoundException',
-          message: 'Requested resource not found',
-        }
-        if (!checkStatus) err.body.message += ': Table: ' + name + ' not found'
+    tableDb.get(name, function(err, table) {
+      if (!err && checkStatus && (table.TableStatus == 'CREATING' || table.TableStatus == 'DELETING')) {
+        err = new Error('NotFoundError')
+        err.name = 'NotFoundError'
       }
-      return cb(err)
-    }
+      if (err) {
+        if (err.name == 'NotFoundError') {
+          err.statusCode = 400
+          err.body = {
+            __type: 'com.amazonaws.dynamodb.v20120810#ResourceNotFoundException',
+            message: 'Requested resource not found',
+          }
+          if (!checkStatus) err.body.message += ': Table: ' + name + ' not found'
+        }
+        return cb(err)
+      }
 
-    cb(null, table)
-  })
+      cb(null, table)
+    })
+  }
+
+  return {
+    createTableMs: options.createTableMs || 500,
+    deleteTableMs: options.deleteTableMs || 500,
+    tableDb: tableDb,
+    getItemDb: getItemDb,
+    deleteItemDb: deleteItemDb,
+    getTable: getTable,
+  }
 }
 
 function lazyStream(stream, errHandler) {

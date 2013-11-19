@@ -12,27 +12,36 @@ before this module should be considered for general use.
 Example
 -------
 
+```sh
+$ PORT=8000 dynalite  # defaults to port 4567
+```
+
+Or programmatically:
+
 ```js
 // Returns a standard Node.js HTTP server
-var dynalite = require('dynalite')
+var dynalite = require('dynalite'),
+    dynaliteServer = dynalite({createTableMs: 50})
 
 // Listen on port 4567
-dynalite.listen(4567, function(err) {
+dynaliteServer.listen(4567, function(err) {
   if (err) throw err
   console.log('Dynalite started on port 4567')
 })
 ```
 
-Can also just run on the command line (will listen on port 4567) - a better command line runner is in the works.
+Installation
+------------
+
+With [npm](http://npmjs.org/) do:
 
 ```sh
-$ node index.js
+$ npm install dynalite
 ```
 
 TODO
 ----
 
-* Add executable script
 * Add config settings, especially for the table delays and strict checking
 * Allow for different persistence types (LevelDOWN-Hyper, etc)
 * Use efficient range scans for Query calls

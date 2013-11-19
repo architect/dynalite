@@ -1,11 +1,10 @@
-var db = require('../db'),
-    tableDb = db.tableDb
+var db = require('../db')
 
-module.exports = function deleteTable(data, cb) {
+module.exports = function deleteTable(store, data, cb) {
 
-  var key = data.TableName
+  var key = data.TableName, tableDb = store.tableDb
 
-  db.getTable(key, false, function(err, table) {
+  store.getTable(key, false, function(err, table) {
     if (err) return cb(err)
 
     // Check if table is ACTIVE or not?
@@ -24,7 +23,7 @@ module.exports = function deleteTable(data, cb) {
     tableDb.put(key, table, function(err) {
       if (err) return cb(err)
 
-      db.deleteItemDb(key, function(err) {
+      store.deleteItemDb(key, function(err) {
         if (err) return cb(err)
 
         setTimeout(function() {
@@ -32,7 +31,7 @@ module.exports = function deleteTable(data, cb) {
             // TODO: Need to check this
             if (err) console.error(err)
           })
-        }, db.deleteTableMs)
+        }, store.deleteTableMs)
 
         cb(null, {TableDescription: table})
       })

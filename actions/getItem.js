@@ -1,11 +1,11 @@
 var db = require('../db')
 
-module.exports = function getItem(data, cb) {
+module.exports = function getItem(store, data, cb) {
 
-  db.getTable(data.TableName, function(err, table) {
+  store.getTable(data.TableName, function(err, table) {
     if (err) return cb(err)
 
-    var key = db.validateKey(data.Key, table), itemDb = db.getItemDb(data.TableName)
+    var key = db.validateKey(data.Key, table), itemDb = store.getItemDb(data.TableName)
     if (key instanceof Error) return cb(key)
 
     itemDb.get(key, function(err, item) {

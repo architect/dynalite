@@ -1,15 +1,14 @@
 var once = require('once'),
-    db = require('../db'),
-    tableDb = db.tableDb
+    db = require('../db')
 
-module.exports = function listTables(data, cb) {
+module.exports = function listTables(store, data, cb) {
   cb = once(cb)
   var opts, keys
 
   if (data.ExclusiveStartTableName)
     opts = {start: data.ExclusiveStartTableName + '\x00'}
 
-  keys = db.lazy(tableDb.createKeyStream(opts), cb)
+  keys = db.lazy(store.tableDb.createKeyStream(opts), cb)
 
   if (data.Limit) keys = keys.take(data.Limit)
 

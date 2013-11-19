@@ -1,7 +1,8 @@
 var http = require('http'),
     crypto = require('crypto'),
     crc32 = require('buffer-crc32'),
-    validations = require('./validations')
+    validations = require('./validations'),
+    db = require('./db')
 
 var MAX_REQUEST_BYTES = 8 * 1024 * 1024
 
@@ -10,6 +11,10 @@ var validApis = ['DynamoDB_20111205', 'DynamoDB_20120810'],
       'DescribeTable', 'GetItem', 'ListTables', 'PutItem', 'Query', 'Scan', 'UpdateItem', 'UpdateTable'],
     actions = {},
     actionValidations = {}
+
+module.exports = function dynalite(options) {
+  return http.createServer(httpHandler.bind(null, db.create(options)))
+}
 
 validOperations.forEach(function(action) {
   action = validations.toLowerFirst(action)
@@ -39,7 +44,7 @@ function sendData(req, res, data, statusCode) {
   res.end(body)
 }
 
-var dynalite = module.exports = http.createServer(function(req, res) {
+function httpHandler(store, req, res) {
   var body
   req.on('error', function(err) { throw err })
   req.on('data', function(data) {
@@ -184,14 +189,14 @@ var dynalite = module.exports = http.createServer(function(req, res) {
         throw e
       }
 
-      actions[action](data, function(err, data) {
+      actions[action](store, data, function(err, data) {
         if (err && err.statusCode) return sendData(req, res, err.body, err.statusCode)
         if (err) throw err
         sendData(req, res, data)
       })
     })
   })
-})
+}
 
-if (require.main === module) dynalite.listen(4567)
+if (require.main === module) dynalite().listen(4567)
 

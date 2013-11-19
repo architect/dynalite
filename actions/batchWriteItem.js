@@ -3,7 +3,7 @@ var async = require('async'),
     deleteItem = require('./deleteItem'),
     db = require('../db')
 
-module.exports = function batchWriteItem(data, cb) {
+module.exports = function batchWriteItem(store, data, cb) {
   var actions = []
 
   async.series([
@@ -33,7 +33,7 @@ module.exports = function batchWriteItem(data, cb) {
   })
 
   function addTableActions(tableName, cb) {
-    db.getTable(tableName, function(err, table) {
+    store.getTable(tableName, function(err, table) {
       if (err) return cb(err)
 
       var reqs = data.RequestItems[tableName], i, req, key, seenKeys = {}, options
@@ -47,14 +47,14 @@ module.exports = function batchWriteItem(data, cb) {
         if (req.PutRequest) {
 
           options.Item = req.PutRequest.Item
-          actions.push(putItem.bind(null, options))
+          actions.push(putItem.bind(null, store, options))
 
           key = db.validateItem(req.PutRequest.Item, table)
 
         } else if (req.DeleteRequest) {
 
           options.Key = req.DeleteRequest.Key
-          actions.push(deleteItem.bind(null, options))
+          actions.push(deleteItem.bind(null, store, options))
 
           key = db.validateKey(req.DeleteRequest.Key, table)
         }

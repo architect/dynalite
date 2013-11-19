@@ -39,9 +39,11 @@ exports.testRangeNTable = randomName()
 //exports.testRangeTable = '__dynalite_test_3'
 //exports.testRangeNTable = '__dynalite_test_4'
 
+var dynaliteServer = dynalite()
+
 before(function(done) {
   this.timeout(200000)
-  dynalite.listen(4567, function(err) {
+  dynaliteServer.listen(4567, function(err) {
     if (err) return done(err)
     createTestTables(done)
   })
@@ -51,7 +53,7 @@ after(function(done) {
   this.timeout(200000)
   deleteTestTables(function(err) {
     if (err) return done(err)
-    dynalite.close(done)
+    dynaliteServer.close(done)
   })
 })
 

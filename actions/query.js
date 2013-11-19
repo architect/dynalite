@@ -2,10 +2,10 @@ var once = require('once'),
     db = require('../db'),
     scan = require('./scan')
 
-module.exports = function query(data, cb) {
+module.exports = function query(store, data, cb) {
   cb = once(cb)
 
-  db.getTable(data.TableName, function(err, table) {
+  store.getTable(data.TableName, function(err, table) {
     if (err) return cb(err)
 
     var i, keySchema, key, comparisonOperator, limit, firstKey, indexAttrs
@@ -65,7 +65,7 @@ module.exports = function query(data, cb) {
       delete data.Limit
     }
 
-    scan(data, function(err, result) {
+    scan(store, data, function(err, result) {
       if (err) return cb(err)
       delete result.ScannedCount
       if (result.Items) {
