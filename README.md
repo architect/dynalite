@@ -46,5 +46,5 @@ TODO
 * Allow for different persistence types (LevelDOWN-Hyper, etc)
 * Use efficient range scans for Query calls
 * Implement `ReturnItemCollectionMetrics` on all remaining endpoints
-* Check for any missing `ExclusiveStartKey`/`LastEvaluatedKey` functionality
-
+* At what point does BatchGetItem#UnprocessedKeys get triggered?
+* Is the ListTables limit of names returned 100 if no Limit supplied?

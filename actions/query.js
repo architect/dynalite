@@ -79,10 +79,15 @@ module.exports = function query(store, data, cb) {
           })
         }
         if (data.ScanIndexForward === false) result.Items.reverse()
-        if (limit) {
+        if (limit && result.Items.length > limit) {
           result.Items.splice(limit)
           result.Count = result.Items.length
-          if (result.Count) result.LastEvaluatedKey = result.Items[result.Items.length - 1]
+          if (result.Count) {
+            result.LastEvaluatedKey = table.KeySchema.reduce(function(key, schemaPiece) {
+              key[schemaPiece.AttributeName] = result.Items[result.Items.length - 1][schemaPiece.AttributeName]
+              return key
+            }, {})
+          }
         }
       } else if (limit && result.Count > limit) {
         result.Count = limit

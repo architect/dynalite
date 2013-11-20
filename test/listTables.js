@@ -1,4 +1,5 @@
-var async = require('async'),
+var should = require('should'),
+    async = require('async'),
     helpers = require('./helpers')
 
 var target = 'ListTables',
@@ -80,6 +81,17 @@ describe('listTables', function() {
         'Value \'0\' at \'limit\' failed to satisfy constraint: ' +
         'Member must have value greater than or equal to 1', done)
     })
+
+    it('should return ValidationException for high Limit', function(done) {
+      assertValidation({Limit: 101},
+        '1 validation error detected: ' +
+        'Value \'101\' at \'limit\' failed to satisfy constraint: ' +
+        'Member must have value less than or equal to 100', done)
+    })
+
+  })
+
+  describe('functionality', function() {
 
     it('should return 200 if no params and application/json', function(done) {
       var requestOpts = opts({})
@@ -215,6 +227,16 @@ describe('listTables', function() {
           },
         ], done)
 
+      })
+    })
+
+    it('should have no LastEvaluatedTableName if the limit is large enough', function(done) {
+      request(opts({Limit: 100}), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        res.body.TableNames.length.should.be.above(0)
+        should.not.exist(res.body.LastEvaluatedTableName)
+        done()
       })
     })
 

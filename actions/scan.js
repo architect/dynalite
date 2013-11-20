@@ -8,7 +8,8 @@ module.exports = function scan(store, data, cb) {
   store.getTable(data.TableName, function(err, table) {
     if (err) return cb(err)
 
-    var opts = {}, vals, scannedCount = 0, itemDb = store.getItemDb(data.TableName), size = 0, capacitySize = 0
+    var opts = {}, vals, scannedCount = 0, itemDb = store.getItemDb(data.TableName),
+        size = 0, capacitySize = 0, exclusiveLexiKey, lastItem
 
     if (data.TotalSegments > 1) {
       if (data.Segment > 0)
@@ -16,9 +17,15 @@ module.exports = function scan(store, data, cb) {
       opts.end = ('00' + (Math.ceil(4096 * (data.Segment + 1) / data.TotalSegments) - 1).toString(16)).slice(-3) + '\xff'
     }
 
-    // TODO: Fix this
-    //if (data.ExclusiveStartKey)
-      //opts = {start: data.ExclusiveStartKey + '\x00'}
+    if (data.ExclusiveStartKey) {
+      exclusiveLexiKey = db.validateKey(data.ExclusiveStartKey, table)
+      if (data.TotalSegments > 1 && (exclusiveLexiKey < opts.start || exclusiveLexiKey > opts.end)) {
+        return cb(db.validationError('The provided starting key is invalid: Invalid ExclusiveStartKey. ' +
+          'Please use ExclusiveStartKey with correct Segment. ' +
+          'TotalSegments: ' + data.TotalSegments + ' Segment: ' + data.Segment))
+      }
+      opts.start = exclusiveLexiKey + '\x00'
+    }
 
     vals = db.lazy(itemDb.createValueStream(opts), cb)
 
@@ -32,6 +39,8 @@ module.exports = function scan(store, data, cb) {
       // TODO: Combine this with above
       if (data.ReturnConsumedCapacity == 'TOTAL')
         capacitySize += db.itemSize(val)
+
+      lastItem = val
 
       if (!data.ScanFilter) return true
 
@@ -144,7 +153,12 @@ module.exports = function scan(store, data, cb) {
     vals.join(function(items) {
       var result = {Count: items.length, ScannedCount: scannedCount}
       if (data.Select != 'COUNT') result.Items = items
-      if (data.Limit) result.LastEvaluatedKey = items[items.length - 1]
+      if ((data.Limit && data.Limit <= scannedCount) || size > 1042000) {
+        result.LastEvaluatedKey = table.KeySchema.reduce(function(key, schemaPiece) {
+          key[schemaPiece.AttributeName] = lastItem[schemaPiece.AttributeName]
+          return key
+        }, {})
+      }
       if (data.ReturnConsumedCapacity == 'TOTAL')
         result.ConsumedCapacity = {CapacityUnits: Math.ceil(capacitySize / 1024 / 4) * 0.5, TableName: data.TableName}
       cb(null, result)

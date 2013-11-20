@@ -735,6 +735,35 @@ describe('scan', function() {
         'The provided starting key is invalid: ' +
         'The parameter cannot be converted to a numeric value: b', done)
     })
+
+    it('should return ValidationException if ExclusiveStartKey is from different segment', function(done) {
+      var i, items = [], batchReq = {RequestItems: {}}
+
+      for (i = 0; i < 10; i++)
+        items.push({a: {S: String(i)}})
+
+      batchReq.RequestItems[helpers.testHashTable] = items.map(function(item) { return {PutRequest: {Item: item}} })
+
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+
+        request(opts({TableName: helpers.testHashTable, Segment: 1, TotalSegments: 2}), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.Count.should.be.above(0)
+
+          assertValidation({TableName: helpers.testHashTable,
+            Segment: 0,
+            TotalSegments: 2,
+            ExclusiveStartKey: {a: res.body.Items[0].a}},
+            'The provided starting key is invalid: ' +
+            'Invalid ExclusiveStartKey. Please use ExclusiveStartKey with correct Segment. ' +
+            'TotalSegments: 2 Segment: 0', done)
+        })
+      })
+    })
+
   })
 
   describe('functionality', function() {
@@ -1923,6 +1952,81 @@ describe('scan', function() {
       })
     })
 
+    it('should return after but not including ExclusiveStartKey', function(done) {
+      var i, b = {S: helpers.randomString()}, items = [], batchReq = {RequestItems: {}},
+          scanFilter = {b: {ComparisonOperator: 'EQ', AttributeValueList: [b]}}
+
+      for (i = 0; i < 10; i++)
+        items.push({a: {S: String(i)}, b: b})
+
+      batchReq.RequestItems[helpers.testHashTable] = items.map(function(item) { return {PutRequest: {Item: item}} })
+
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+
+        request(opts({TableName: helpers.testHashTable, ScanFilter: scanFilter}), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.Count.should.equal(10)
+
+          request(opts({TableName: helpers.testHashTable, ScanFilter: scanFilter, ExclusiveStartKey: {a: res.body.Items[0].a}}), function(err, res) {
+            if (err) return done(err)
+            res.statusCode.should.equal(200)
+            res.body.Count.should.equal(9)
+            done()
+          })
+        })
+      })
+    })
+
+    it('should return LastEvaluatedKey if Limit not reached', function(done) {
+      var i, b = {S: helpers.randomString()}, items = [], batchReq = {RequestItems: {}},
+          scanFilter = {b: {ComparisonOperator: 'EQ', AttributeValueList: [b]}}
+
+      for (i = 0; i < 5; i++)
+        items.push({a: {S: String(i)}, b: b})
+
+      batchReq.RequestItems[helpers.testHashTable] = items.map(function(item) { return {PutRequest: {Item: item}} })
+
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+
+        request(opts({TableName: helpers.testHashTable, Limit: 3}), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.ScannedCount.should.equal(3)
+          res.body.LastEvaluatedKey.a.S.should.not.be.empty
+          Object.keys(res.body.LastEvaluatedKey).should.have.length(1)
+          done()
+        })
+      })
+    })
+
+    it('should not return LastEvaluatedKey if Limit is large', function(done) {
+      var i, b = {S: helpers.randomString()}, items = [], batchReq = {RequestItems: {}},
+          scanFilter = {b: {ComparisonOperator: 'EQ', AttributeValueList: [b]}}
+
+      for (i = 0; i < 5; i++)
+        items.push({a: {S: String(i)}, b: b})
+
+      batchReq.RequestItems[helpers.testHashTable] = items.map(function(item) { return {PutRequest: {Item: item}} })
+
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+
+        request(opts({TableName: helpers.testHashTable, ScanFilter: scanFilter, Limit: 100000}), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.Count.should.equal(5)
+          should.not.exist(res.body.LastEvaluatedKey)
+          done()
+        })
+      })
+    })
+
     // TODO: Sort out hash key buckets
 
     // { S: '2' }   668 of 4096
@@ -1950,25 +2054,52 @@ describe('scan', function() {
 
     // Bucket Algo: Math.ceil(4096 * Segment / TotalSegments) <= x <= Math.ceil(4096 * (Segment + 1) / TotalSegments) - 1
 
-    // TODO: Need high capacity to run this
-    it.skip('should return items in same segment order', function(done) {
-      this.timeout(100000)
+    // Results of below on production (4 segments):
+    /*
+    [ { b: { S: '2999178721' }, a: { S: '18' } },
+      { b: { S: '2999178721' }, a: { S: '16' } },
+      { b: { S: '2999178721' }, a: { S: '2' } },
+      { b: { S: '2999178721' }, a: { S: '13' } },
+      { b: { S: '2999178721' }, a: { S: '8' } } ]
+    [ { b: { S: '2999178721' }, a: { S: '9' } },
+      { b: { S: '2999178721' }, a: { S: '1' } },
+      { b: { S: '2999178721' }, a: { S: '6' } } ]
+    [ { b: { S: '2999178721' }, a: { S: '0' } },
+      { b: { S: '2999178721' }, a: { S: '5' } },
+      { b: { S: '2999178721' }, a: { S: '4' } } ]
+    [ { b: { S: '2999178721' }, a: { S: '19' } },
+      { b: { S: '2999178721' }, a: { S: '7' } },
+      { b: { S: '2999178721' }, a: { S: '11' } },
+      { b: { S: '2999178721' }, a: { S: '3' } },
+      { b: { S: '2999178721' }, a: { S: '12' } },
+      { b: { S: '2999178721' }, a: { S: '17' } },
+      { b: { S: '2999178721' }, a: { S: '10' } },
+      { b: { S: '2999178721' }, a: { S: '15' } },
+      { b: { S: '2999178721' }, a: { S: '14' } } ]
+    */
 
-      var i, items = [{a: {S: '422'}}, {a: {S: '13706'}}], firstHalf, secondHalf
-      for (i = 0; i < 10; i++)
-        items.push({a: {S: String(i)}})
+    it('should return items in same segment order', function(done) {
+      var i, b = {S: helpers.randomString()}, items = [],
+          firstHalf, secondHalf, batchReq = {RequestItems: {}},
+          scanFilter = {b: {ComparisonOperator: 'EQ', AttributeValueList: [b]}}
 
-      helpers.replaceTable(helpers.testHashTable, ['a'], items, function(err) {
+      for (i = 0; i < 20; i++)
+        items.push({a: {S: String(i)}, b: b})
+
+      batchReq.RequestItems[helpers.testHashTable] = items.map(function(item) { return {PutRequest: {Item: item}} })
+
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
         if (err) return done(err)
+        res.statusCode.should.equal(200)
 
-        request(opts({TableName: helpers.testHashTable, Segment: 0, TotalSegments: 2}), function(err, res) {
+        request(opts({TableName: helpers.testHashTable, Segment: 0, TotalSegments: 2, ScanFilter: scanFilter}), function(err, res) {
           if (err) return done(err)
           res.statusCode.should.equal(200)
           res.body.Count.should.be.above(0)
 
           firstHalf = res.body.Items
 
-          request(opts({TableName: helpers.testHashTable, Segment: 1, TotalSegments: 2}), function(err, res) {
+          request(opts({TableName: helpers.testHashTable, Segment: 1, TotalSegments: 2, ScanFilter: scanFilter}), function(err, res) {
             if (err) return done(err)
             res.statusCode.should.equal(200)
             res.body.Count.should.be.above(0)
@@ -1977,25 +2108,25 @@ describe('scan', function() {
 
             secondHalf.should.have.length(items.length - firstHalf.length)
 
-            request(opts({TableName: helpers.testHashTable, Segment: 0, TotalSegments: 4}), function(err, res) {
+            request(opts({TableName: helpers.testHashTable, Segment: 0, TotalSegments: 4, ScanFilter: scanFilter}), function(err, res) {
               if (err) return done(err)
               res.statusCode.should.equal(200)
 
               res.body.Items.forEach(function(item) { firstHalf.should.includeEql(item) })
 
-              request(opts({TableName: helpers.testHashTable, Segment: 1, TotalSegments: 4}), function(err, res) {
+              request(opts({TableName: helpers.testHashTable, Segment: 1, TotalSegments: 4, ScanFilter: scanFilter}), function(err, res) {
                 if (err) return done(err)
                 res.statusCode.should.equal(200)
 
                 res.body.Items.forEach(function(item) { firstHalf.should.includeEql(item) })
 
-                request(opts({TableName: helpers.testHashTable, Segment: 2, TotalSegments: 4}), function(err, res) {
+                request(opts({TableName: helpers.testHashTable, Segment: 2, TotalSegments: 4, ScanFilter: scanFilter}), function(err, res) {
                   if (err) return done(err)
                   res.statusCode.should.equal(200)
 
                   res.body.Items.forEach(function(item) { secondHalf.should.includeEql(item) })
 
-                  request(opts({TableName: helpers.testHashTable, Segment: 3, TotalSegments: 4}), function(err, res) {
+                  request(opts({TableName: helpers.testHashTable, Segment: 3, TotalSegments: 4, ScanFilter: scanFilter}), function(err, res) {
                     if (err) return done(err)
                     res.statusCode.should.equal(200)
 

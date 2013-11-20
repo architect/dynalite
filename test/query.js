@@ -1062,11 +1062,11 @@ describe('query', function() {
     })
 
     it('should only return Limit items if requested', function(done) {
-      var item = {a: {S: helpers.randomString()}, b: {S: '2'}},
-          item2 = {a: item.a, b: {S: '1'}},
-          item3 = {a: item.a, b: {S: '3'}},
-          item4 = {a: item.a, b: {S: '4'}},
-          item5 = {a: item.a, b: {S: '5'}},
+      var item = {a: {S: helpers.randomString()}, b: {S: '2'}, c: {S: 'c'}},
+          item2 = {a: item.a, b: {S: '1'}, c: {S: 'c'}},
+          item3 = {a: item.a, b: {S: '3'}, c: {S: 'c'}},
+          item4 = {a: item.a, b: {S: '4'}, c: {S: 'c'}},
+          item5 = {a: item.a, b: {S: '5'}, c: {S: 'c'}},
           batchReq = {RequestItems: {}}
       batchReq.RequestItems[helpers.testRangeTable] = [
         {PutRequest: {Item: item}},
@@ -1084,7 +1084,36 @@ describe('query', function() {
         }, Limit: 2}), function(err, res) {
           if (err) return done(err)
           res.statusCode.should.equal(200)
-          res.body.should.eql({Count: 2, Items: [item, item3], LastEvaluatedKey: item3})
+          res.body.should.eql({Count: 2, Items: [item, item3], LastEvaluatedKey: {a: item3.a, b: item3.b}})
+          done()
+        })
+      })
+    })
+
+    it('should not return LastEvaluatedKey if Limit is larger than response', function(done) {
+      var item = {a: {S: helpers.randomString()}, b: {S: '2'}, c: {S: 'c'}},
+          item2 = {a: item.a, b: {S: '1'}, c: {S: 'c'}},
+          item3 = {a: item.a, b: {S: '3'}, c: {S: 'c'}},
+          item4 = {a: item.a, b: {S: '4'}, c: {S: 'c'}},
+          item5 = {a: item.a, b: {S: '5'}, c: {S: 'c'}},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testRangeTable] = [
+        {PutRequest: {Item: item}},
+        {PutRequest: {Item: item2}},
+        {PutRequest: {Item: item3}},
+        {PutRequest: {Item: item4}},
+        {PutRequest: {Item: item5}},
+      ]
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        request(opts({TableName: helpers.testRangeTable, KeyConditions: {
+          a: {ComparisonOperator: 'EQ', AttributeValueList: [item.a]},
+          b: {ComparisonOperator: 'GE', AttributeValueList: [item.b]},
+        }, Limit: 10}), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.should.eql({Count: 4, Items: [item, item3, item4, item5]})
           done()
         })
       })
@@ -1313,10 +1342,10 @@ describe('query', function() {
 
     it('should return items in reverse order with Limit for numbers', function(done) {
       var item = {a: {S: helpers.randomString()}, b: {N: '0'}},
-          item2 = {a: item.a, b: {N: '99.1'}},
-          item3 = {a: item.a, b: {N: '10.9'}},
-          item4 = {a: item.a, b: {N: '9.1'}},
-          item5 = {a: item.a, b: {N: '0.9'}},
+          item2 = {a: item.a, b: {N: '99.1'}, c: {S: 'c'}},
+          item3 = {a: item.a, b: {N: '10.9'}, c: {S: 'c'}},
+          item4 = {a: item.a, b: {N: '9.1'}, c: {S: 'c'}},
+          item5 = {a: item.a, b: {N: '0.9'}, c: {S: 'c'}},
           batchReq = {RequestItems: {}}
       batchReq.RequestItems[helpers.testRangeNTable] = [
         {PutRequest: {Item: item}},
@@ -1333,7 +1362,7 @@ describe('query', function() {
         }, ScanIndexForward: false, Limit: 3}), function(err, res) {
           if (err) return done(err)
           res.statusCode.should.equal(200)
-          res.body.should.eql({Count: 3, Items: [item2, item3, item4], LastEvaluatedKey: item4})
+          res.body.should.eql({Count: 3, Items: [item2, item3, item4], LastEvaluatedKey: {a: item4.a, b: item4.b}})
           done()
         })
       })

@@ -12,7 +12,9 @@ var validApis = ['DynamoDB_20111205', 'DynamoDB_20120810'],
     actions = {},
     actionValidations = {}
 
-module.exports = function dynalite(options) {
+module.exports = dynalite
+
+function dynalite(options) {
   return http.createServer(httpHandler.bind(null, db.create(options)))
 }
 

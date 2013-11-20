@@ -4,7 +4,6 @@ exports.types = {
   Limit: {
     type: 'Integer',
     greaterThanOrEqual: 1,
-    lessThanOrEqual: 100,
   },
   ExclusiveStartKey: {
     type: 'Map',

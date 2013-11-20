@@ -10,11 +10,15 @@ module.exports = function listTables(store, data, cb) {
 
   keys = db.lazy(store.tableDb.createKeyStream(opts), cb)
 
-  if (data.Limit) keys = keys.take(data.Limit)
+  if (data.Limit) keys = keys.take(data.Limit + 1)
 
   keys.join(function(names) {
-    var result = {TableNames: names}
-    if (data.Limit) result.LastEvaluatedTableName = names[names.length - 1]
+    var result = {}
+    if (data.Limit && names.length > data.Limit) {
+      names.splice(data.Limit)
+      result.LastEvaluatedTableName = names[names.length - 1]
+    }
+    result.TableNames = names
     cb(null, result)
   })
 }
