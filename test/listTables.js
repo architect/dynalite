@@ -236,7 +236,12 @@ describe('listTables', function() {
         res.statusCode.should.equal(200)
         res.body.TableNames.length.should.be.above(0)
         should.not.exist(res.body.LastEvaluatedTableName)
-        done()
+        request(opts({Limit: res.body.TableNames.length}), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          should.not.exist(res.body.LastEvaluatedTableName)
+          done()
+        })
       })
     })
 

@@ -1090,31 +1090,51 @@ describe('query', function() {
       })
     })
 
-    it('should not return LastEvaluatedKey if Limit is larger than response', function(done) {
-      var item = {a: {S: helpers.randomString()}, b: {S: '2'}, c: {S: 'c'}},
-          item2 = {a: item.a, b: {S: '1'}, c: {S: 'c'}},
-          item3 = {a: item.a, b: {S: '3'}, c: {S: 'c'}},
-          item4 = {a: item.a, b: {S: '4'}, c: {S: 'c'}},
-          item5 = {a: item.a, b: {S: '5'}, c: {S: 'c'}},
+    it('should not return LastEvaluatedKey if Limit is at least size of response', function(done) {
+      var item = {a: {S: helpers.randomString()}, b: {S: '1'}, c: {S: 'c'}},
+          item2 = {a: item.a, b: {S: '2'}, c: {S: 'c'}},
+          item3 = {a: {S: helpers.randomString()}, b: {S: '1'}, c: {S: 'c'}},
+          item4 = {a: item3.a, b: {S: '2'}, c: {S: 'c'}},
           batchReq = {RequestItems: {}}
       batchReq.RequestItems[helpers.testRangeTable] = [
         {PutRequest: {Item: item}},
         {PutRequest: {Item: item2}},
         {PutRequest: {Item: item3}},
         {PutRequest: {Item: item4}},
-        {PutRequest: {Item: item5}},
       ]
       request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        request(opts({TableName: helpers.testRangeTable, KeyConditions: {
-          a: {ComparisonOperator: 'EQ', AttributeValueList: [item.a]},
-          b: {ComparisonOperator: 'GE', AttributeValueList: [item.b]},
-        }, Limit: 10}), function(err, res) {
+        request(helpers.opts('Scan', {TableName: helpers.testRangeTable}), function(err, res) {
           if (err) return done(err)
           res.statusCode.should.equal(200)
-          res.body.should.eql({Count: 4, Items: [item, item3, item4, item5]})
-          done()
+          var lastHashItem = res.body.Items[res.body.Items.length - 1],
+              lastHashItems = res.body.Items.filter(function(item) { return item.a.S == lastHashItem.a.S }),
+              otherHashItem = lastHashItem.a.S == item.a.S ? item3 : item,
+              otherHashItems = res.body.Items.filter(function(item) { return item.a.S == otherHashItem.a.S })
+          otherHashItems.length.should.equal(2)
+          request(opts({TableName: helpers.testRangeTable, KeyConditions: {
+            a: {ComparisonOperator: 'EQ', AttributeValueList: [lastHashItem.a]},
+          }}), function(err, res) {
+            if (err) return done(err)
+            res.statusCode.should.equal(200)
+            res.body.should.eql({Count: lastHashItems.length, Items: lastHashItems})
+            request(opts({TableName: helpers.testRangeTable, KeyConditions: {
+              a: {ComparisonOperator: 'EQ', AttributeValueList: [lastHashItem.a]},
+            }, Limit: lastHashItems.length}), function(err, res) {
+              if (err) return done(err)
+              res.statusCode.should.equal(200)
+              res.body.should.eql({Count: lastHashItems.length, Items: lastHashItems, LastEvaluatedKey: {a: lastHashItem.a, b: lastHashItem.b}})
+              request(opts({TableName: helpers.testRangeTable, KeyConditions: {
+                a: {ComparisonOperator: 'EQ', AttributeValueList: [otherHashItem.a]},
+              }, Limit: 2}), function(err, res) {
+                if (err) return done(err)
+                res.statusCode.should.equal(200)
+                res.body.should.eql({Count: 2, Items: otherHashItems})
+                done()
+              })
+            })
+          })
         })
       })
     })

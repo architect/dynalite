@@ -8,7 +8,9 @@ module.exports = function query(store, data, cb) {
   store.getTable(data.TableName, function(err, table) {
     if (err) return cb(err)
 
-    var i, keySchema, key, comparisonOperator, limit, firstKey, indexAttrs
+    var i, keySchema, key, comparisonOperator, firstKey, indexAttrs,
+        opts = {}, vals, itemDb = store.getItemDb(data.TableName),
+        size = 0, capacitySize = 0, lastItem
 
     if (data.ExclusiveStartKey && !Object.keys(data.ExclusiveStartKey).length) {
       return cb(db.validationError('The provided starting key is invalid'))
@@ -58,19 +60,44 @@ module.exports = function query(store, data, cb) {
       }
     }
 
-    data.ScanFilter = data.KeyConditions
-    delete data.KeyConditions
-    if (data.Limit) {
-      limit = data.Limit
-      delete data.Limit
+    if (data.ExclusiveStartKey) {
+      opts.start = db.validateKey(data.ExclusiveStartKey, table) + '\x00'
     }
 
-    scan(store, data, function(err, result) {
-      if (err) return cb(err)
-      delete result.ScannedCount
-      if (result.Items) {
+    vals = db.lazy(itemDb.createValueStream(opts), cb)
+
+    vals = vals.filter(function(val) {
+
+      if (!db.matchesFilter(val, data.KeyConditions)) {
+        if (lastItem) lastItem = null
+        return false
+      }
+
+      if (size > 1042000) return false
+      size += db.itemSize(val, true)
+
+      // TODO: Combine this with above
+      if (data.ReturnConsumedCapacity == 'TOTAL')
+        capacitySize += db.itemSize(val)
+
+      lastItem = val
+      return true
+    })
+
+    if (data.AttributesToGet) {
+      vals = vals.map(function(val) {
+        return data.AttributesToGet.reduce(function(item, attr) {
+          if (val[attr] != null) item[attr] = val[attr]
+          return item
+        }, {})
+      })
+    }
+
+    vals.join(function(items) {
+      var result = {Count: items.length}
+      if (data.Select != 'COUNT') {
         if (data.IndexName) {
-          result.Items.sort(function(item1, item2) {
+          items.sort(function(item1, item2) {
             var type1 = Object.keys(item1[keySchema[1].AttributeName] || {})[0],
                 val1 = type1 ? item1[keySchema[1].AttributeName][type1] : '',
                 type2 = Object.keys(item2[keySchema[1].AttributeName] || {})[0],
@@ -78,20 +105,25 @@ module.exports = function query(store, data, cb) {
             return db.toLexiStr(val1, type1).localeCompare(db.toLexiStr(val2, type2))
           })
         }
-        if (data.ScanIndexForward === false) result.Items.reverse()
-        if (limit && result.Items.length > limit) {
-          result.Items.splice(limit)
-          result.Count = result.Items.length
+        if (data.ScanIndexForward === false) items.reverse()
+        // TODO: Check size?
+        // TODO: Does this only happen when we're not doing a COUNT?
+        if (data.Limit && (items.length > data.Limit || lastItem)) {
+          items.splice(data.Limit)
+          result.Count = items.length
           if (result.Count) {
             result.LastEvaluatedKey = table.KeySchema.reduce(function(key, schemaPiece) {
-              key[schemaPiece.AttributeName] = result.Items[result.Items.length - 1][schemaPiece.AttributeName]
+              key[schemaPiece.AttributeName] = items[items.length - 1][schemaPiece.AttributeName]
               return key
             }, {})
           }
         }
-      } else if (limit && result.Count > limit) {
-        result.Count = limit
+        result.Items = items
+      } else if (data.Limit && result.Count > data.Limit) {
+        result.Count = data.Limit
       }
+      if (data.ReturnConsumedCapacity == 'TOTAL')
+        result.ConsumedCapacity = {CapacityUnits: Math.ceil(capacitySize / 1024 / 4) * 0.5, TableName: data.TableName}
       if (result.ConsumedCapacity && indexAttrs && data.Select == 'ALL_ATTRIBUTES')
         result.ConsumedCapacity.CapacityUnits *= 4
       cb(null, result)

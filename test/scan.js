@@ -2017,12 +2017,40 @@ describe('scan', function() {
         if (err) return done(err)
         res.statusCode.should.equal(200)
 
-        request(opts({TableName: helpers.testHashTable, ScanFilter: scanFilter, Limit: 100000}), function(err, res) {
+        request(opts({TableName: helpers.testHashTable, AttributesToGet: ['a'], Limit: 100000}), function(err, res) {
           if (err) return done(err)
           res.statusCode.should.equal(200)
-          res.body.Count.should.equal(5)
+          res.body.Count.should.equal(res.body.ScannedCount)
           should.not.exist(res.body.LastEvaluatedKey)
-          done()
+          for (var i = 0, lastIx = 0; i < res.body.Count; i++) {
+            if (res.body.Items[i].a.S < 5) lastIx = i
+          }
+          var totalItems = res.body.Count
+          request(opts({TableName: helpers.testHashTable, ScanFilter: scanFilter, Limit: lastIx}), function(err, res) {
+            if (err) return done(err)
+            res.statusCode.should.equal(200)
+            res.body.Count.should.equal(4)
+            res.body.LastEvaluatedKey.a.S.should.not.be.empty
+            request(opts({TableName: helpers.testHashTable, ScanFilter: scanFilter, Limit: lastIx + 1}), function(err, res) {
+              if (err) return done(err)
+              res.statusCode.should.equal(200)
+              res.body.Count.should.equal(5)
+              res.body.LastEvaluatedKey.a.S.should.not.be.empty
+              request(opts({TableName: helpers.testHashTable, ScanFilter: scanFilter, Limit: totalItems}), function(err, res) {
+                if (err) return done(err)
+                res.statusCode.should.equal(200)
+                res.body.Count.should.equal(5)
+                res.body.LastEvaluatedKey.a.S.should.not.be.empty
+                request(opts({TableName: helpers.testHashTable, ScanFilter: scanFilter, Limit: totalItems + 1}), function(err, res) {
+                  if (err) return done(err)
+                  res.statusCode.should.equal(200)
+                  res.body.Count.should.equal(5)
+                  should.not.exist(res.body.LastEvaluatedKey)
+                  done()
+                })
+              })
+            })
+          })
         })
       })
     })
