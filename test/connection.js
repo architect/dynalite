@@ -102,7 +102,7 @@ describe('dynalite connections', function() {
         res.headers['x-amzn-requestid'].length.should.equal(52)
         res.headers['x-amz-crc32'].should.equal(String(crc32))
         res.headers['content-type'].should.equal(contentType)
-        res.headers['content-length'].should.equal(String(JSON.stringify(body).length))
+        res.headers['content-length'].should.equal(String(Buffer.byteLength(JSON.stringify(res.body), 'utf8')))
         done()
       }
     }

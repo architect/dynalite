@@ -103,7 +103,7 @@ describe('listTables', function() {
         res.headers['x-amzn-requestid'].length.should.equal(52)
         res.headers['x-amz-crc32'].should.not.be.empty
         res.headers['content-type'].should.equal('application/json')
-        res.headers['content-length'].should.equal(String(JSON.stringify(res.body).length))
+        res.headers['content-length'].should.equal(String(Buffer.byteLength(JSON.stringify(res.body), 'utf8')))
         done()
       })
     })
@@ -116,7 +116,7 @@ describe('listTables', function() {
         res.headers['x-amzn-requestid'].length.should.equal(52)
         res.headers['x-amz-crc32'].should.not.be.empty
         res.headers['content-type'].should.equal('application/x-amz-json-1.0')
-        res.headers['content-length'].should.equal(String(JSON.stringify(res.body).length))
+        res.headers['content-length'].should.equal(String(Buffer.byteLength(JSON.stringify(res.body), 'utf8')))
         done()
       })
     })

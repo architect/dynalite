@@ -3,6 +3,9 @@ dynalite
 
 [![Build Status](https://secure.travis-ci.org/mhart/dynalite.png?branch=master)](http://travis-ci.org/mhart/dynalite)
 
+*NB: Not currently working on node v0.8.x due to [this issue](https://github.com/rvagg/node-levelup/issues/216) -
+works fine on latest stable version (v0.10.x) though*
+
 A mock implementation of Amazon's DynamoDB, focussed on correctness and performance, and built on LevelDB
 (well, [@rvagg](https://github.com/rvagg)'s awesome [LevelUP](https://github.com/rvagg/node-levelup) to be precise).
 
