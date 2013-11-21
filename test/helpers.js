@@ -39,7 +39,7 @@ exports.testRangeNTable = randomName()
 //exports.testRangeTable = '__dynalite_test_3'
 //exports.testRangeNTable = '__dynalite_test_4'
 
-var dynaliteServer = dynalite()
+var dynaliteServer = dynalite({path: process.env.DYNALITE_PATH})
 
 before(function(done) {
   this.timeout(200000)

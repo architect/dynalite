@@ -42,7 +42,7 @@ module.exports = function updateTable(store, data, cb) {
             if (err) console.error(err)
           })
 
-        }, db.createTableMs)
+        }, db.updateTableMs)
 
         cb(null, {TableDescription: table})
       })

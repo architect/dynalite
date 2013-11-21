@@ -1,6 +1,6 @@
 var lazy = require('lazy'),
     levelup = require('levelup'),
-    MemDown = require('memdown'),
+    memdown = require('memdown'),
     sublevel = require('level-sublevel'),
     Lock = require('lock'),
     Big = require('big.js'),
@@ -18,8 +18,12 @@ exports.capacityUnits = capacityUnits
 
 function create(options) {
   options = options || {}
+  options.path = options.path || memdown
+  if (options.createTableMs == null) options.createTableMs = 500
+  if (options.deleteTableMs == null) options.deleteTableMs = 500
+  if (options.updateTableMs == null) options.updateTableMs = 500
 
-  var db = sublevel(levelup('./mydb', {db: function(location) { return new MemDown(location) }})),
+  var db = sublevel(levelup(options.path)),
       tableDb = db.sublevel('table', {valueEncoding: 'json'}),
       itemDbs = []
 
@@ -66,8 +70,9 @@ function create(options) {
   }
 
   return {
-    createTableMs: options.createTableMs || 500,
-    deleteTableMs: options.deleteTableMs || 500,
+    createTableMs: options.createTableMs,
+    deleteTableMs: options.deleteTableMs,
+    updateTableMs: options.updateTableMs,
     tableDb: tableDb,
     getItemDb: getItemDb,
     deleteItemDb: deleteItemDb,
