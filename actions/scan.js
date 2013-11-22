@@ -17,6 +17,10 @@ module.exports = function scan(store, data, cb) {
     }
 
     if (data.ExclusiveStartKey) {
+      if (table.KeySchema.some(function(schemaPiece) { return !data.ExclusiveStartKey[schemaPiece.AttributeName] })) {
+        return cb(db.validationError('The provided starting key is invalid: ' +
+          'The provided key element does not match the schema'))
+      }
       exclusiveLexiKey = db.validateKey(data.ExclusiveStartKey, table)
       if (data.TotalSegments > 1 && (exclusiveLexiKey < opts.start || exclusiveLexiKey > opts.end)) {
         return cb(db.validationError('The provided starting key is invalid: Invalid ExclusiveStartKey. ' +

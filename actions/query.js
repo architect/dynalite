@@ -8,12 +8,33 @@ module.exports = function query(store, data, cb) {
   store.getTable(data.TableName, function(err, table) {
     if (err) return cb(err)
 
-    var i, keySchema, key, comparisonOperator, firstKey, indexAttrs,
+    var i, keySchema, key, comparisonOperator, hashKey, rangeKey, indexAttrs, type,
         opts = {}, vals, itemDb = store.getItemDb(data.TableName),
         size = 0, capacitySize = 0, lastItem
 
-    if (data.ExclusiveStartKey && !Object.keys(data.ExclusiveStartKey).length) {
-      return cb(db.validationError('The provided starting key is invalid'))
+    hashKey = table.KeySchema[0].AttributeName
+    if (table.KeySchema[1]) rangeKey = table.KeySchema[1].AttributeName
+
+    if (data.ExclusiveStartKey) {
+      if (table.KeySchema.some(function(schemaPiece) { return !data.ExclusiveStartKey[schemaPiece.AttributeName] })) {
+        return cb(db.validationError('The provided starting key is invalid'))
+      }
+      comparisonOperator = data.KeyConditions[hashKey].ComparisonOperator
+      if (comparisonOperator == 'EQ') {
+        type = Object.keys(data.ExclusiveStartKey[hashKey])[0]
+        if (data.ExclusiveStartKey[hashKey][type] != data.KeyConditions[hashKey].AttributeValueList[0][type]) {
+          return cb(db.validationError('The provided starting key is outside query boundaries based on provided conditions'))
+        }
+      }
+      if (data.KeyConditions[rangeKey]) {
+        comparisonOperator = data.KeyConditions[rangeKey].ComparisonOperator
+        type = Object.keys(data.ExclusiveStartKey[rangeKey])[0]
+        // TODO: Need more extensive checking than this
+        if (comparisonOperator == 'GT' && data.ExclusiveStartKey[rangeKey][type] <= data.KeyConditions[rangeKey].AttributeValueList[0][type]) {
+          return cb(db.validationError('The provided starting key does not match the range key predicate'))
+        }
+      }
+      opts.start = db.validateKey(data.ExclusiveStartKey, table) + '\x00'
     }
 
     if (data.IndexName) {
@@ -42,8 +63,7 @@ module.exports = function query(store, data, cb) {
         return cb(db.validationError('Attempted conditional constraint is not an indexable operation'))
     }
 
-    firstKey = Object.keys(data.KeyConditions)[0]
-    comparisonOperator = data.KeyConditions[firstKey].ComparisonOperator
+    comparisonOperator = data.KeyConditions[hashKey].ComparisonOperator
     if (~['LE', 'LT', 'GE', 'GT', 'BEGINS_WITH', 'BETWEEN'].indexOf(comparisonOperator) ||
         (keySchema.length == 1 && Object.keys(data.KeyConditions).length > 1))
       return cb(db.validationError('Query key condition not supported'))
@@ -58,10 +78,6 @@ module.exports = function query(store, data, cb) {
           .concat(keySchema.map(function(schemaPiece) { return schemaPiece.AttributeName }))
           .concat(table.KeySchema.map(function(schemaPiece) { return schemaPiece.AttributeName }))
       }
-    }
-
-    if (data.ExclusiveStartKey) {
-      opts.start = db.validateKey(data.ExclusiveStartKey, table) + '\x00'
     }
 
     vals = db.lazy(itemDb.createValueStream(opts), cb)
@@ -106,22 +122,20 @@ module.exports = function query(store, data, cb) {
           })
         }
         if (data.ScanIndexForward === false) items.reverse()
-        // TODO: Check size?
-        // TODO: Does this only happen when we're not doing a COUNT?
-        if (data.Limit && (items.length > data.Limit || lastItem)) {
-          items.splice(data.Limit)
-          result.Count = items.length
-          if (result.Count) {
-            result.LastEvaluatedKey = table.KeySchema.reduce(function(key, schemaPiece) {
-              key[schemaPiece.AttributeName] = items[items.length - 1][schemaPiece.AttributeName]
-              return key
-            }, {})
-          }
-        }
-        result.Items = items
-      } else if (data.Limit && result.Count > data.Limit) {
-        result.Count = data.Limit
       }
+      // TODO: Check size?
+      // TODO: Does this only happen when we're not doing a COUNT?
+      if (data.Limit && (items.length > data.Limit || lastItem)) {
+        items.splice(data.Limit)
+        result.Count = items.length
+        if (result.Count) {
+          result.LastEvaluatedKey = table.KeySchema.reduce(function(key, schemaPiece) {
+            key[schemaPiece.AttributeName] = items[items.length - 1][schemaPiece.AttributeName]
+            return key
+          }, {})
+        }
+      }
+      if (data.Select != 'COUNT') result.Items = items
       if (data.ReturnConsumedCapacity == 'TOTAL')
         result.ConsumedCapacity = {CapacityUnits: Math.ceil(capacitySize / 1024 / 4) * 0.5, TableName: data.TableName}
       if (result.ConsumedCapacity && indexAttrs && data.Select == 'ALL_ATTRIBUTES')

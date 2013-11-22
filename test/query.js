@@ -647,13 +647,55 @@ describe('query', function() {
         'Attempted conditional constraint is not an indexable operation', done)
     })
 
-    // TODO: It only reports this if the table exists, otherwise a ResourceNotFoundException
     it('should return ValidationException for empty ExclusiveStartKey', function(done) {
       assertValidation({
         TableName: helpers.testRangeTable,
         ExclusiveStartKey: {},
         KeyConditions: {a: {ComparisonOperator: 'NULL'}}},
         'The provided starting key is invalid', done)
+    })
+
+    it('should return ValidationException for ExclusiveStartKey outside range', function(done) {
+      assertValidation({
+        TableName: helpers.testRangeTable,
+        ExclusiveStartKey: {a: {S: 'b'}},
+        KeyConditions: {a: {ComparisonOperator: 'EQ', AttributeValueList: [{S: 'a'}]}}},
+        'The provided starting key is invalid', done)
+    })
+
+    it('should return ValidationException for ExclusiveStartKey with incorrect attribute', function(done) {
+      assertValidation({
+        TableName: helpers.testRangeTable,
+        ExclusiveStartKey: {b: {S: 'b'}},
+        KeyConditions: {a: {ComparisonOperator: 'EQ', AttributeValueList: [{S: 'a'}]}}},
+        'The provided starting key is invalid', done)
+    })
+
+    it('should return ValidationException for ExclusiveStartKey missing range key', function(done) {
+      assertValidation({
+        TableName: helpers.testRangeTable,
+        ExclusiveStartKey: {a: {S: 'a'}},
+        KeyConditions: {a: {ComparisonOperator: 'EQ', AttributeValueList: [{S: 'a'}]}}},
+        'The provided starting key is invalid', done)
+    })
+
+    it('should return ValidationException for ExclusiveStartKey with incorrect hash key', function(done) {
+      assertValidation({
+        TableName: helpers.testRangeTable,
+        ExclusiveStartKey: {a: {S: 'b'}, b: {S: 'a'}},
+        KeyConditions: {a: {ComparisonOperator: 'EQ', AttributeValueList: [{S: 'a'}]}}},
+        'The provided starting key is outside query boundaries based on provided conditions', done)
+    })
+
+    it('should return ValidationException for ExclusiveStartKey with incorrect range key', function(done) {
+      assertValidation({
+        TableName: helpers.testRangeTable,
+        ExclusiveStartKey: {a: {S: 'a'}, b: {S: 'a'}},
+        KeyConditions: {
+          a: {ComparisonOperator: 'EQ', AttributeValueList: [{S: 'a'}]},
+          b: {ComparisonOperator: 'GT', AttributeValueList: [{S: 'a'}]},
+        }},
+        'The provided starting key does not match the range key predicate', done)
     })
 
     it('should return ValidationException for no hash key', function(done) {
@@ -1085,6 +1127,35 @@ describe('query', function() {
           if (err) return done(err)
           res.statusCode.should.equal(200)
           res.body.should.eql({Count: 2, Items: [item, item3], LastEvaluatedKey: {a: item3.a, b: item3.b}})
+          done()
+        })
+      })
+    })
+
+    it('should return LastEvaluatedKey even if only Count is selected', function(done) {
+      var item = {a: {S: helpers.randomString()}, b: {S: '2'}, c: {S: 'c'}},
+          item2 = {a: item.a, b: {S: '1'}, c: {S: 'c'}},
+          item3 = {a: item.a, b: {S: '3'}, c: {S: 'c'}},
+          item4 = {a: item.a, b: {S: '4'}, c: {S: 'c'}},
+          item5 = {a: item.a, b: {S: '5'}, c: {S: 'c'}},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testRangeTable] = [
+        {PutRequest: {Item: item}},
+        {PutRequest: {Item: item2}},
+        {PutRequest: {Item: item3}},
+        {PutRequest: {Item: item4}},
+        {PutRequest: {Item: item5}},
+      ]
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        request(opts({TableName: helpers.testRangeTable, KeyConditions: {
+          a: {ComparisonOperator: 'EQ', AttributeValueList: [item.a]},
+          b: {ComparisonOperator: 'GE', AttributeValueList: [item.b]},
+        }, Limit: 2, Select: 'COUNT'}), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.should.eql({Count: 2, LastEvaluatedKey: {a: item3.a, b: item3.b}})
           done()
         })
       })
