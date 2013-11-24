@@ -1,10 +1,10 @@
-var lazy = require('lazy'),
+var crypto = require('crypto'),
+    lazy = require('lazy'),
     levelup = require('levelup'),
     memdown = require('memdown'),
     sublevel = require('level-sublevel'),
     Lock = require('lock'),
-    Big = require('big.js'),
-    murmur = require('murmurhash-js')
+    Big = require('big.js')
 
 exports.create = create
 exports.lazy = lazyStream
@@ -99,7 +99,7 @@ function validateKey(dataKey, table) {
       if (dataKey[attr][type] == null) return validationError()
       sizeError = checkKeySize(dataKey[attr][type], type, !i)
       if (sizeError) return sizeError
-      if (!keyStr) keyStr = hashPrefix(dataKey[attr][type])
+      if (!keyStr) keyStr = hashPrefix(dataKey[attr][type], type)
       keyStr += '~' + toLexiStr(dataKey[attr][type], type)
       break
     }
@@ -123,7 +123,7 @@ function validateItem(dataItem, table) {
           ' actual: ' + Object.keys(dataItem[attr])[0])
       sizeError = checkKeySize(dataItem[attr][type], type, !i)
       if (sizeError) return sizeError
-      if (!keyStr) keyStr = hashPrefix(dataItem[attr][type])
+      if (!keyStr) keyStr = hashPrefix(dataItem[attr][type], type)
       keyStr += '~' + toLexiStr(dataItem[attr][type], type)
       break
     }
@@ -179,9 +179,58 @@ function toLexiStr(keyPiece, type) {
   return (bigNum.s == -1 ? '0' : '1') + ('0' + exp.toString(16)).slice(-2) + digits
 }
 
-// TODO: Not sure what sort of hashing algorithm is used
-function hashPrefix(hashKey) {
-  return ('00' + (murmur(hashKey) % 4096).toString(16)).slice(-3)
+function hashPrefix(hashKey, type) {
+  if (type == 'S') {
+    hashKey = new Buffer(hashKey, 'utf8')
+  } else if (type == 'N') {
+    hashKey = numToBuffer(hashKey)
+  } else if (type == 'B') {
+    hashKey = new Buffer(hashKey, 'base64')
+  }
+  // TODO: Can use the whole hash if we deem it important - for now just first six chars
+  return crypto.createHash('md5').update('Outliers').update(hashKey).digest('hex').slice(0, 6)
+}
+
+function numToBuffer(num) {
+  if (+num === 0) return new Buffer([-128])
+
+  num = new Big(num)
+
+  var scale = num.s, mantissa = num.c, exponent = num.e + 1, appendZero = exponent % 2 ? 1 : 0,
+      byteArrayLengthWithoutExponent = Math.floor((mantissa.length + appendZero + 1) / 2),
+      byteArray, appendedZero = false, mantissaIndex, byteArrayIndex
+
+  if (byteArrayLengthWithoutExponent < 20 && scale == -1) {
+    byteArray = new Array(byteArrayLengthWithoutExponent + 2)
+    byteArray[byteArrayLengthWithoutExponent + 1] = 102
+  } else {
+    byteArray = new Array(byteArrayLengthWithoutExponent + 1)
+  }
+
+  byteArray[0] = Math.floor((exponent + appendZero) / 2) - 64
+  if (scale == -1)
+    byteArray[0] ^= 0xffffffff
+
+  for (mantissaIndex = 0; mantissaIndex < mantissa.length; mantissaIndex++) {
+    byteArrayIndex = Math.floor((mantissaIndex + appendZero) / 2) + 1
+    if (appendZero && !mantissaIndex && !appendedZero) {
+      byteArray[byteArrayIndex] = 0
+      appendedZero = true
+      mantissaIndex--
+    } else if ((mantissaIndex + appendZero) % 2 === 0) {
+      byteArray[byteArrayIndex] = mantissa[mantissaIndex] * 10
+    } else {
+      byteArray[byteArrayIndex] = byteArray[byteArrayIndex] + mantissa[mantissaIndex]
+    }
+    if (((mantissaIndex + appendZero) % 2) || (mantissaIndex == mantissa.length - 1)) {
+      if (scale == -1)
+        byteArray[byteArrayIndex] = 101 - byteArray[byteArrayIndex]
+      else
+        byteArray[byteArrayIndex]++
+    }
+  }
+
+  return new Buffer(byteArray)
 }
 
 function checkConditional(expected, existingItem) {

@@ -2108,57 +2108,6 @@ describe('scan', function() {
       })
     })
 
-    // TODO: Sort out hash key buckets
-
-    // { S: '2' }   668 of 4096
-    // { S: '8' }  1017 of 4096
-    // { S: '9' }  1103 of 4096
-    // { S: '1' }  1166 of 4096
-    // { S: '6' }  1380 of 4096
-    // { S: '0' }  2347 of 4096
-    // { S: '5' }  2385 of 4096
-    // { S: '4' }  2445 of 4096
-    // { S: '7' }  3287 of 4096
-    // { S: '3' }  3332 of 4096
-
-    // 0/4096: [ { a: { S: '3635' } }, { a: { S: '228' } } ]
-    // 1/4096: [ { a: { S: '1668' } } ]
-    // 2/4096: []
-    // 3/4096: []
-    // 4/4096: [ { a: { S: '3435' } } ]
-
-    // For N keys:
-
-    // 0/4096: []
-    // 1/4096: [ { a: { N: '251' } } ]
-    // 4095/4096: [ { a: { N: '2388' } } ]
-
-    // Bucket Algo: Math.ceil(4096 * Segment / TotalSegments) <= x <= Math.ceil(4096 * (Segment + 1) / TotalSegments) - 1
-
-    // Results of below on production (4 segments):
-    /*
-    [ { b: { S: '2999178721' }, a: { S: '18' } },
-      { b: { S: '2999178721' }, a: { S: '16' } },
-      { b: { S: '2999178721' }, a: { S: '2' } },
-      { b: { S: '2999178721' }, a: { S: '13' } },
-      { b: { S: '2999178721' }, a: { S: '8' } } ]
-    [ { b: { S: '2999178721' }, a: { S: '9' } },
-      { b: { S: '2999178721' }, a: { S: '1' } },
-      { b: { S: '2999178721' }, a: { S: '6' } } ]
-    [ { b: { S: '2999178721' }, a: { S: '0' } },
-      { b: { S: '2999178721' }, a: { S: '5' } },
-      { b: { S: '2999178721' }, a: { S: '4' } } ]
-    [ { b: { S: '2999178721' }, a: { S: '19' } },
-      { b: { S: '2999178721' }, a: { S: '7' } },
-      { b: { S: '2999178721' }, a: { S: '11' } },
-      { b: { S: '2999178721' }, a: { S: '3' } },
-      { b: { S: '2999178721' }, a: { S: '12' } },
-      { b: { S: '2999178721' }, a: { S: '17' } },
-      { b: { S: '2999178721' }, a: { S: '10' } },
-      { b: { S: '2999178721' }, a: { S: '15' } },
-      { b: { S: '2999178721' }, a: { S: '14' } } ]
-    */
-
     it('should return items in same segment order', function(done) {
       var i, b = {S: helpers.randomString()}, items = [],
           firstHalf, secondHalf, batchReq = {RequestItems: {}},
@@ -2218,6 +2167,128 @@ describe('scan', function() {
                 })
               })
             })
+          })
+        })
+      })
+    })
+
+    // XXX: This is very brittle, relies on knowing the hashing scheme
+    it('should return items in string hash order', function(done) {
+      var i, b = {S: helpers.randomString()}, items = [],
+          batchReq = {RequestItems: {}},
+          scanFilter = {b: {ComparisonOperator: 'EQ', AttributeValueList: [b]}}
+
+      for (i = 0; i < 10; i++)
+        items.push({a: {S: String(i)}, b: b})
+
+      items.push({a: {S: 'aardman'}, b: b})
+      items.push({a: {S: 'hello'}, b: b})
+      items.push({a: {S: 'zapf'}, b: b})
+      items.push({a: {S: 'äáöü'}, b: b})
+
+      batchReq.RequestItems[helpers.testHashTable] = items.map(function(item) { return {PutRequest: {Item: item}} })
+
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+
+        request(opts({TableName: helpers.testHashTable, ScanFilter: scanFilter}), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.Count.should.equal(14)
+          var keys = res.body.Items.map(function(item) { return item.a.S })
+          keys.should.eql(['2', '8', '9', '1', '6', 'hello', '0', '5', '4', 'äáöü', 'aardman', '7', '3', 'zapf'])
+          done()
+        })
+      })
+    })
+
+    // XXX: This is very brittle, relies on knowing the hashing scheme
+    it('should return items in number hash order', function(done) {
+      var i, b = {S: helpers.randomString()}, items = [],
+          batchReq = {RequestItems: {}},
+          scanFilter = {b: {ComparisonOperator: 'EQ', AttributeValueList: [b]}}
+
+      for (i = 0; i < 10; i++)
+        items.push({a: {N: String(i)}, b: b})
+
+      items.push({a: {N: '-0.09'}, b: b})
+      items.push({a: {N: '999.9'}, b: b})
+      items.push({a: {N: '0.012345'}, b: b})
+      items.push({a: {N: '-999.9'}, b: b})
+
+      batchReq.RequestItems[helpers.testHashNTable] = items.map(function(item) { return {PutRequest: {Item: item}} })
+
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+
+        request(opts({TableName: helpers.testHashNTable, ScanFilter: scanFilter}), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.Count.should.equal(14)
+          var keys = res.body.Items.map(function(item) { return item.a.N })
+          keys.should.eql(['7', '999.9', '8', '3', '2', '-999.9', '9', '4', '-0.09', '6', '1', '0', '0.012345', '5'])
+          done()
+        })
+      })
+    })
+
+    // XXX: This is very brittle, relies on knowing the hashing scheme
+    it('should return items from correct string hash segments', function(done) {
+      var batchReq = {RequestItems: {}}, items = [
+        {a: {S: '3635'}},
+        {a: {S: '228'}},
+        {a: {S: '1668'}},
+        {a: {S: '3435'}},
+      ]
+      batchReq.RequestItems[helpers.testHashTable] = items.map(function(item) { return {PutRequest: {Item: item}} })
+
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+
+        request(opts({TableName: helpers.testHashTable, Segment: 0, TotalSegments: 4096}), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.Items.should.includeEql(items[0])
+          res.body.Items.should.includeEql(items[1])
+          request(opts({TableName: helpers.testHashTable, Segment: 1, TotalSegments: 4096}), function(err, res) {
+            if (err) return done(err)
+            res.statusCode.should.equal(200)
+            res.body.Items.should.includeEql(items[2])
+            request(opts({TableName: helpers.testHashTable, Segment: 4, TotalSegments: 4096}), function(err, res) {
+              if (err) return done(err)
+              res.statusCode.should.equal(200)
+              res.body.Items.should.includeEql(items[3])
+              done()
+            })
+          })
+        })
+      })
+    })
+
+    // XXX: This is very brittle, relies on knowing the hashing scheme
+    it('should return items from correct number hash segments', function(done) {
+      var batchReq = {RequestItems: {}}, items = [
+        {a: {N: '251'}},
+        {a: {N: '2388'}},
+      ]
+      batchReq.RequestItems[helpers.testHashNTable] = items.map(function(item) { return {PutRequest: {Item: item}} })
+
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+
+        request(opts({TableName: helpers.testHashNTable, Segment: 1, TotalSegments: 4096}), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.Items.should.includeEql(items[0])
+          request(opts({TableName: helpers.testHashNTable, Segment: 4095, TotalSegments: 4096}), function(err, res) {
+            if (err) return done(err)
+            res.statusCode.should.equal(200)
+            res.body.Items.should.includeEql(items[1])
+            done()
           })
         })
       })
