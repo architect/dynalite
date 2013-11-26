@@ -20,6 +20,7 @@ exports.createAndWait = createAndWait
 exports.clearTable = clearTable
 exports.replaceTable = replaceTable
 exports.batchWriteUntilDone = batchWriteUntilDone
+exports.batchBulkPut = batchBulkPut
 exports.assertSerialization = assertSerialization
 exports.assertType = assertType
 exports.assertValidation = assertValidation
@@ -226,14 +227,20 @@ function clearTable(name, keyNames, segments, done) {
 function replaceTable(name, keyNames, items, segments, done) {
   if (!done) { done = segments; segments = 2 }
 
+  clearTable(name, keyNames, segments, function(err) {
+    if (err) return done(err)
+    batchBulkPut(name, items, segments, done)
+  })
+}
+
+function batchBulkPut(name, items, segments, done) {
+  if (!done) { done = segments; segments = 2 }
+
   var itemChunks = [], i
   for (i = 0; i < items.length; i += 25)
     itemChunks.push(items.slice(i, i + 25))
 
-  clearTable(name, keyNames, segments, function(err) {
-    if (err) return done(err)
-    async.eachLimit(itemChunks, segments, function(items, cb) { batchWriteUntilDone(name, {puts: items}, cb) }, done)
-  })
+  async.eachLimit(itemChunks, segments, function(items, cb) { batchWriteUntilDone(name, {puts: items}, cb) }, done)
 }
 
 function batchWriteUntilDone(name, actions, cb) {

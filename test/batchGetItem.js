@@ -610,6 +610,47 @@ describe('batchGetItem', function() {
       })
     })
 
+
+    // TODO: Need high capacity to run this
+    it.skip('should return many unprocessed items if very over the limit', function(done) {
+      this.timeout(100000)
+
+      var i, item, items = [], b = new Array(65533).join('b'),
+          batchReq = {RequestItems: {}, ReturnConsumedCapacity: 'TOTAL'}
+      for (i = 0; i < 20; i++) {
+        if (i < 16) {
+          item = {a: {S: ('0' + i).slice(-2)}, b: {S: b}}
+        } else {
+          item = {a: {S: ('0' + i).slice(-2)}, b: {S: b.slice(0, 18)}}
+        }
+        items.push(item)
+      }
+      helpers.batchBulkPut(helpers.testHashTable, items, function(err) {
+        if (err) return done(err)
+        batchReq.RequestItems[helpers.testHashTable] = {Keys: items.map(function(item) { return {a: item.a} }), ConsistentRead: true}
+        request(opts(batchReq), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.UnprocessedKeys[helpers.testHashTable].ConsistentRead.should.equal(true)
+          res.body.UnprocessedKeys[helpers.testHashTable].Keys.length.should.be.above(0)
+          res.body.Responses[helpers.testHashTable].length.should.be.above(0)
+
+          var totalLength, i, totalCapacity
+
+          totalLength = res.body.Responses[helpers.testHashTable].length +
+            res.body.UnprocessedKeys[helpers.testHashTable].Keys.length
+          totalLength.should.equal(20)
+
+          totalCapacity = res.body.ConsumedCapacity[0].CapacityUnits
+          for (i = 0; i < res.body.UnprocessedKeys[helpers.testHashTable].Keys.length; i++)
+            totalCapacity += res.body.UnprocessedKeys[helpers.testHashTable].Keys[i].a.S < 16 ? 16 : 1
+          totalCapacity.should.equal(340)
+
+          done()
+        })
+      })
+    })
+
   })
 
 })
