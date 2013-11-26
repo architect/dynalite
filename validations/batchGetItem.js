@@ -16,6 +16,7 @@ exports.types = {
           type: 'List',
           notNull: true,
           lengthGreaterThanOrEqual: 1,
+          lengthLessThanOrEqual: 100,
           children: {
             type: 'Map',
             children: {
@@ -53,12 +54,16 @@ exports.types = {
 }
 
 exports.custom = function(data) {
+  var numReqs = 0
   for (var table in data.RequestItems) {
     for (var i = 0; i < data.RequestItems[table].Keys.length; i++) {
       for (var key in data.RequestItems[table].Keys[i]) {
         var msg = validateAttributeValue(data.RequestItems[table].Keys[i][key])
         if (msg) return msg
       }
+      numReqs++
+      if (numReqs > 100)
+        return 'Too many items requested for the BatchGetItem call'
     }
   }
 }

@@ -108,6 +108,33 @@ describe('batchGetItem', function() {
         'Member must not be null', done)
     })
 
+    it('should return ValidationException when fetching more than 100 keys', function(done) {
+      var keys = [], i
+      for (i = 0; i < 101; i++) {
+        keys.push({a: {S: String(i)}})
+      }
+      assertValidation({RequestItems: {abc: {Keys: keys}}},
+        /^1 validation error detected: Value '.*' at 'requestItems.abc.member.keys' failed to satisfy constraint: Member must have length less than or equal to 100$/, done)
+    })
+
+    it('should return ValidationException when fetching more than 100 keys over multiple tables', function(done) {
+      var keys = [], i
+      for (i = 0; i < 100; i++) {
+        keys.push({a: {S: String(i)}})
+      }
+      assertValidation({RequestItems: {abc: {Keys: keys}, abd: {Keys: [{a: {S: '100'}}]}}},
+        'Too many items requested for the BatchGetItem call', done)
+    })
+
+    it('should return ResourceNotFoundException when fetching exactly 100 keys and table does not exist', function(done) {
+      var keys = [], i
+      for (i = 0; i < 100; i++) {
+        keys.push({a: {S: String(i)}})
+      }
+      assertNotFound({RequestItems: {abc: {Keys: keys}}},
+        'Requested resource not found', done)
+    })
+
     it('should return ValidationException for duplicated keys', function(done) {
       var key = {a: {S: helpers.randomString()}},
           batchReq = {RequestItems: {}}

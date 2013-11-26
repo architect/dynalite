@@ -381,10 +381,15 @@ function assertValidation(target, data, msg, done) {
   request(opts(target, data), function(err, res) {
     if (err) return done(err)
     res.statusCode.should.equal(400)
-    res.body.should.eql({
-      __type: 'com.amazon.coral.validate#ValidationException',
-      message: msg,
-    })
+    if (msg instanceof RegExp) {
+      res.body.__type.should.equal('com.amazon.coral.validate#ValidationException')
+      res.body.message.should.match(msg)
+    } else {
+      res.body.should.eql({
+        __type: 'com.amazon.coral.validate#ValidationException',
+        message: msg,
+      })
+    }
     done()
   })
 }

@@ -169,6 +169,24 @@ describe('batchWriteItem', function() {
         'Member must not be null', done)
     })
 
+    it('should return ValidationException when putting more than 25 items', function(done) {
+      var requests = [], i
+      for (i = 0; i < 26; i++) {
+        requests.push(i % 2 ? {DeleteRequest: {Key: {a: {S: String(i)}}}} : {PutRequest: {Item: {a: {S: String(i)}}}})
+      }
+      assertValidation({RequestItems: {abc: requests}},
+        'Too many items requested for the BatchWriteItem call', done)
+    })
+
+    it('should return ResourceNotFoundException when fetching exactly 25 items and table does not exist', function(done) {
+      var requests = [], i
+      for (i = 0; i < 25; i++) {
+        requests.push(i % 2 ? {DeleteRequest: {Key: {a: {S: String(i)}}}} : {PutRequest: {Item: {a: {S: String(i)}}}})
+      }
+      assertNotFound({RequestItems: {abc: requests}},
+        'Requested resource not found', done)
+    })
+
     it('should return ValidationException for puts and deletes of the same item with put first', function(done) {
       var item = {a: {S: helpers.randomString()}, c: {S: 'c'}},
           batchReq = {RequestItems: {}}

@@ -84,6 +84,7 @@ exports.types = {
 }
 
 exports.custom = function(data) {
+  var numReqs = 0
   for (var table in data.RequestItems) {
     if (!data.RequestItems[table].length)
       return 'The batch write request list for a table cannot be null or empty: ' + table
@@ -105,6 +106,9 @@ exports.custom = function(data) {
           if (msg) return msg
         }
       }
+      numReqs++
+      if (numReqs > 25)
+        return 'Too many items requested for the BatchWriteItem call'
     }
   }
 }
