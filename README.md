@@ -72,21 +72,21 @@ TODO
 Problems with Amazon's DynamoDB Local
 -------------------------------------
 
-We've run into trouble using the current version of the DynamoDB Local Java tool (2013-09-12) when trying to test
+We've run into trouble using the current version (2013-09-12) of the DynamoDB Local Java tool when trying to test
 our production code, especially in a manner that simulates actual behaviour on the live instances.
 
-Some of these are documented (eg, no ConsumedCapacity returned), but most aren't -
+Some of these are documented (eg, no `ConsumedCapacity` returned), but most aren't -
 the items below are a rough list of the issues we've found, vaguely in order of importance:
 
-- Returns 400 when `UpdateItem` uses the default `PUT` Action without explicitly specifying it
+- Returns 400 when `UpdateItem` uses the default `PUT` `Action` without explicitly specifying it
   (this actually prevents certain client libraries from being used at all)
-- Does not return correct number of `UnprocessedKeys` in `BatchGet` (one less!)
+- Does not return correct number of `UnprocessedKeys` in `BatchGet` (returns one less!)
 - Returns 400 when trying to put valid numbers with less than 38 significant digits, eg 1e40
 - Returns 200 for duplicated keys in `BatchGetItem`
 - Returns 200 when hash key is too big in `GetItem`/`BatchGetItem`
 - Returns 200 when range key is too big in `GetItem`/`BatchGetItem`
-- Returns 200 for `PutItem`/`GetItem`/`UpdateItem`/`BatchGetItem`/`Scan`/etc with empty strings (eg, {a: {S: ''}})
-- Returns 413 when request is over 1MB (eg, in a `BatchWrite`), but live instances allow 8MB
+- Returns 200 for `PutItem`/`GetItem`/`UpdateItem`/`BatchGetItem`/`Scan`/etc with empty strings (eg, `{a: {S: ''}}`)
+- Returns 413 when request is over 1MB (eg, in a `BatchWrite` with 25 items of 64k), but live instances allow 8MB
 - Returns `ResourceNotFoundException` in `ListTables` if `ExclusiveStartName` no longer exists
 - Does not return `ConsistentRead` property in `UnprocessedKeys` in `BatchGet` even if requested
 - Returns 200 for empty `RequestItems` in `BatchGetItem`/`BatchWriteItem`
