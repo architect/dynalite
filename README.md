@@ -72,11 +72,14 @@ TODO
 Problems with Amazon's DynamoDB Local
 -------------------------------------
 
-We've run into trouble using the current version (2013-09-12) of the DynamoDB Local Java tool when trying to test
-our production code, especially in a manner that simulates actual behaviour on the live instances.
+Part of the reason I wrote dynalite was due to the existing mock libraries not exhibiting the same behaviour as the
+live instances. Amazon released their DynamoDB Local Java tool recently, but the current version (2013-09-12) still
+has quite a number of issues that have prevented us (at [Adslot](http://adslot.com/)) from testing our production code,
+especially in a manner that simulates actual behaviour on the live instances.
 
 Some of these are documented (eg, no `ConsumedCapacity` returned), but most aren't -
-the items below are a rough list of the issues we've found, vaguely in order of importance:
+the items below are a rough list of the issues we've found, vaguely in order of importance
+(none of these issues exist in dynalite... obvs):
 
 - Returns 400 when `UpdateItem` uses the default `PUT` `Action` without explicitly specifying it
   (this actually prevents certain client libraries from being used at all)
