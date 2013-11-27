@@ -78,8 +78,7 @@ has quite a number of issues that have prevented us (at [Adslot](http://adslot.c
 especially in a manner that simulates actual behaviour on the live instances.
 
 Some of these are documented (eg, no `ConsumedCapacity` returned), but most aren't -
-the items below are a rough list of the issues we've found, vaguely in order of importance
-(none of these issues exist in dynalite... obvs):
+the items below are a rough list of the issues we've found (and do not exist in dynalite), vaguely in order of importance:
 
 - Returns 400 when `UpdateItem` uses the default `PUT` `Action` without explicitly specifying it
   (this actually prevents certain client libraries from being used at all)
