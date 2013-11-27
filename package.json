@@ -22,7 +22,7 @@
   "license": "MIT",
   "dependencies": {
     "buffer-crc32": "~0.2.1",
-    "levelup": "~0.18.1",
+    "levelup": "~0.18.2",
     "memdown": "~0.5.1",
     "level-sublevel": "~5.1.1",
     "lock": "~0.0.4",

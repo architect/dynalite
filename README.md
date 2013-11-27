@@ -3,14 +3,17 @@ dynalite
 
 [![Build Status](https://secure.travis-ci.org/mhart/dynalite.png?branch=master)](http://travis-ci.org/mhart/dynalite)
 
-*NB: Not currently working on node v0.8.x due to [this issue](https://github.com/rvagg/node-levelup/issues/216) -
-works fine on latest stable version (v0.10.x) though*
-
 A mock implementation of Amazon's DynamoDB, focussed on correctness and performance, and built on LevelDB
 (well, [@rvagg](https://github.com/rvagg)'s awesome [LevelUP](https://github.com/rvagg/node-levelup) to be precise).
 
 This project aims to match the live DynamoDB instances as closely as possible
 (and is tested against them in various regions), including all limits and error messages.
+
+Why not Amazon's DynamoDB Local?
+--------------------------------
+
+Because it's too buggy! And it differs too much from the live instances in a number of key areas
+([see below](#problems-with-amazons-dynamodb-local))
 
 Example
 -------
@@ -53,16 +56,59 @@ Installation
 With [npm](http://npmjs.org/) do:
 
 ```sh
-$ npm install dynalite
+$ npm install -g dynalite
 ```
 
 TODO
 ----
 
-* Add ProvisionedThroughput checking
-* Add config settings to turn on/off strict checking
-* Allow for other persistence types (LevelDOWN-Hyper, etc)
-* Use efficient range scans for Query calls
-* Implement `ReturnItemCollectionMetrics` on all remaining endpoints
-* At what point does BatchGetItem#UnprocessedKeys get triggered?
-* Is the ListTables limit of names returned 100 if no Limit supplied?
+- Add ProvisionedThroughput checking
+- Add config settings to turn on/off strict checking
+- Allow for other persistence types (LevelDOWN-Hyper, etc)
+- Use efficient range scans for Query calls
+- Implement `ReturnItemCollectionMetrics` on all remaining endpoints
+- Is the ListTables limit of names returned 100 if no Limit supplied?
+
+Problems with Amazon's DynamoDB Local
+-------------------------------------
+
+We've run into trouble using the current version of the DynamoDB Local Java tool (2013-09-12) when trying to test
+our production code, especially in a manner that simulates actual behaviour on the live instances.
+
+Some of these are documented (eg, no ConsumedCapacity returned), but most aren't -
+the items below are a rough list of the issues we've found, vaguely in order of importance:
+
+- Returns 400 when `UpdateItem` uses the default `PUT` Action without explicitly specifying it
+  (this actually prevents certain client libraries from being used at all)
+- Does not return correct number of `UnprocessedKeys` in `BatchGet` (one less!)
+- Returns 400 when trying to put valid numbers with less than 38 significant digits, eg 1e40
+- Returns 200 for duplicated keys in `BatchGetItem`
+- Returns 200 when hash key is too big in `GetItem`/`BatchGetItem`
+- Returns 200 when range key is too big in `GetItem`/`BatchGetItem`
+- Returns 200 for `PutItem`/`GetItem`/`UpdateItem`/`BatchGetItem`/`Scan`/etc with empty strings (eg, {a: {S: ''}})
+- Returns 413 when request is over 1MB (eg, in a `BatchWrite`), but live instances allow 8MB
+- Returns `ResourceNotFoundException` in `ListTables` if `ExclusiveStartName` no longer exists
+- Does not return `ConsistentRead` property in `UnprocessedKeys` in `BatchGet` even if requested
+- Returns 200 for empty `RequestItems` in `BatchGetItem`/`BatchWriteItem`
+- Returns 200 when trying to delete `NS` from `SS` or `NS` from `N` or add `NS` to `SS` or `N` to `NS`
+- Allows `UpdateTable` when read and write capacity are same as current (should be an error)
+- Tables are created in `ACTIVE` state, not `CREATING` state
+- Tables are removed without going into a `DELETING` state
+- Tables are updated without going into a `UPDATING` state
+- `PutItem` returns `Attributes` by default, even though none are requested
+- Does not add `ProvisionedThroughput.LastIncreaseDateTime` in `UpdateTable`
+- Does not update `ProvisionedThroughput.NumberOfDecreasesToday` in `UpdateTable`
+- Different serialization and validation error messages from live instances (makes it hard to debug)
+- Uses uppercase `Message` for error messages (should only use uppercase for `SerializationException`)
+- Often returns 500 instead of 400 (or similarly appropriate status)
+- Doesn't return `ConsumedCapacity` (documented - but makes it very hard to calculate expected usage)
+- Does not calculate the `Scan` size limits correctly so can return too many items
+- Does not return `LastEvaluatedKey` on a `Query` when at end of table
+- Does not return `LastEvaluatedKey` on a `Scan` when `Limit` equals number of matching items
+- Does not return `X-Amzn-RequestId` header
+- Does not return `X-Amz-Crc32` header
+- Does not return `application/json` if `application/json` is requested
+- Fails to put numbers 1e-130 and -1e-130 (succeeds on live instances)
+- Returns an error when calling `Query` on a hash table (succeeds on live instances)
+- Returns 500 if random attributes are supplied (just ignored on live instances)
+- Does not convert doubles to booleans (returns 500 instead)
