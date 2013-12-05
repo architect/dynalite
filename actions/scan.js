@@ -7,7 +7,7 @@ module.exports = function scan(store, data, cb) {
   store.getTable(data.TableName, function(err, table) {
     if (err) return cb(err)
 
-    var opts = {}, vals, scannedCount = 0, itemDb = store.getItemDb(data.TableName),
+    var opts = {}, valStream, vals, scannedCount = 0, itemDb = store.getItemDb(data.TableName),
         size = 0, capacitySize = 0, exclusiveLexiKey, lastItem
 
     if (data.TotalSegments > 1) {
@@ -30,7 +30,8 @@ module.exports = function scan(store, data, cb) {
       opts.start = exclusiveLexiKey + '\x00'
     }
 
-    vals = db.lazy(itemDb.createValueStream(opts), cb)
+    valStream = itemDb.createValueStream(opts)
+    vals = db.lazy(valStream, cb)
 
     vals = vals.takeWhile(function(val) {
       if (scannedCount >= data.Limit || size > 1042000) return false
@@ -61,6 +62,7 @@ module.exports = function scan(store, data, cb) {
 
     vals.join(function(items) {
       var result = {Count: items.length, ScannedCount: scannedCount}
+      valStream.destroy()
       if (data.Select != 'COUNT') result.Items = items
       if ((data.Limit && data.Limit <= scannedCount) || size > 1042000) {
         result.LastEvaluatedKey = table.KeySchema.reduce(function(key, schemaPiece) {

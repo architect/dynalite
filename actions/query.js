@@ -1,6 +1,5 @@
 var once = require('once'),
-    db = require('../db'),
-    scan = require('./scan')
+    db = require('../db')
 
 module.exports = function query(store, data, cb) {
   cb = once(cb)
@@ -9,7 +8,7 @@ module.exports = function query(store, data, cb) {
     if (err) return cb(err)
 
     var i, keySchema, key, comparisonOperator, hashKey, rangeKey, indexAttrs, type,
-        opts = {}, vals, itemDb = store.getItemDb(data.TableName),
+        opts = {}, valStream, vals, itemDb = store.getItemDb(data.TableName),
         size = 0, capacitySize = 0, count = 0, lastItem
 
     hashKey = table.KeySchema[0].AttributeName
@@ -80,7 +79,8 @@ module.exports = function query(store, data, cb) {
       }
     }
 
-    vals = db.lazy(itemDb.createValueStream(opts), cb)
+    valStream = itemDb.createValueStream(opts)
+    vals = db.lazy(valStream, cb)
 
     vals = vals.filter(function(val) {
       if (!db.matchesFilter(val, data.KeyConditions)) {
@@ -117,6 +117,7 @@ module.exports = function query(store, data, cb) {
 
     vals.join(function(items) {
       var result = {Count: items.length}
+      valStream.destroy()
       if (data.Select != 'COUNT') {
         if (data.IndexName) {
           items.sort(function(item1, item2) {
