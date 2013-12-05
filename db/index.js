@@ -83,7 +83,9 @@ function create(options) {
 
 function lazyStream(stream, errHandler) {
   if (errHandler) stream.on('error', errHandler)
-  return lazy(stream)
+  var streamAsLazy = lazy(stream)
+  if (stream.destroy) streamAsLazy.on('pipe', stream.destroy.bind(stream))
+  return streamAsLazy
 }
 
 function validateKey(dataKey, table) {
