@@ -1,4 +1,3 @@
-var db = require('../db')
 
 module.exports = function deleteTable(store, data, cb) {
 

@@ -10,7 +10,7 @@ module.exports = function query(store, data, cb) {
 
     var i, keySchema, key, comparisonOperator, hashKey, rangeKey, indexAttrs, type,
         opts = {}, vals, itemDb = store.getItemDb(data.TableName),
-        size = 0, capacitySize = 0, lastItem
+        size = 0, capacitySize = 0, count = 0, lastItem
 
     hashKey = table.KeySchema[0].AttributeName
     if (table.KeySchema[1]) rangeKey = table.KeySchema[1].AttributeName
@@ -83,20 +83,26 @@ module.exports = function query(store, data, cb) {
     vals = db.lazy(itemDb.createValueStream(opts), cb)
 
     vals = vals.filter(function(val) {
-
       if (!db.matchesFilter(val, data.KeyConditions)) {
         if (lastItem) lastItem = null
         return false
       }
 
-      if (size > 1042000) return false
+      lastItem = val
+      return true
+    })
+
+    vals = vals.takeWhile(function(val) {
+      // Limits don't currently work for traversing index in reverse
+      if ((data.ScanIndexForward !== false && count >= data.Limit) || size > 1042000) return false
+
       size += db.itemSize(val, true)
+      count++
 
       // TODO: Combine this with above
       if (data.ReturnConsumedCapacity == 'TOTAL')
         capacitySize += db.itemSize(val)
 
-      lastItem = val
       return true
     })
 

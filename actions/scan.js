@@ -32,10 +32,9 @@ module.exports = function scan(store, data, cb) {
 
     vals = db.lazy(itemDb.createValueStream(opts), cb)
 
-    if (data.Limit) vals = vals.take(data.Limit)
+    vals = vals.takeWhile(function(val) {
+      if (scannedCount >= data.Limit || size > 1042000) return false
 
-    vals = vals.filter(function(val) {
-      if (size > 1042000) return false
       scannedCount++
       size += db.itemSize(val, true)
 
@@ -45,10 +44,11 @@ module.exports = function scan(store, data, cb) {
 
       lastItem = val
 
-      if (!data.ScanFilter) return true
-
-      return db.matchesFilter(val, data.ScanFilter)
+      return true
     })
+
+    if (data.ScanFilter)
+      vals = vals.filter(function(val) { return db.matchesFilter(val, data.ScanFilter) })
 
     if (data.AttributesToGet) {
       vals = vals.map(function(val) {

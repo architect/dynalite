@@ -1,4 +1,3 @@
-var db = require('../db')
 
 module.exports = function describeTable(store, data, cb) {
 

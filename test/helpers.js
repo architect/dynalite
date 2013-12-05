@@ -4,8 +4,9 @@ var http = require('http'),
     once = require('once'),
     dynalite = require('..')
 
-var requestOpts = process.env.REMOTE ?  {host: 'dynamodb.ap-southeast-2.amazonaws.com', method: 'POST'} :
-  {host: 'localhost', port: 4567, method: 'POST'}
+var port = 10000 + Math.round(Math.random() * 10000),
+    requestOpts = process.env.REMOTE ?
+      {host: 'dynamodb.ap-southeast-2.amazonaws.com', method: 'POST'} : {host: 'localhost', port: port, method: 'POST'}
 
 // Make http limits more reasonable
 http.globalAgent.maxSockets = 1000
@@ -44,7 +45,7 @@ var dynaliteServer = dynalite({path: process.env.DYNALITE_PATH})
 
 before(function(done) {
   this.timeout(200000)
-  dynaliteServer.listen(4567, function(err) {
+  dynaliteServer.listen(port, function(err) {
     if (err) return done(err)
     createTestTables(done)
   })
