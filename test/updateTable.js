@@ -53,11 +53,9 @@ describe('updateTable', function() {
 
     it('should return ValidationException for null attributes', function(done) {
       assertValidation({TableName: 'abc;'},
-        '2 validation errors detected: ' +
+        '1 validation error detected: ' +
         'Value \'abc;\' at \'tableName\' failed to satisfy constraint: ' +
-        'Member must satisfy regular expression pattern: [a-zA-Z0-9_.-]+; ' +
-        'Value null at \'provisionedThroughput\' failed to satisfy constraint: ' +
-        'Member must not be null', done)
+        'Member must satisfy regular expression pattern: [a-zA-Z0-9_.-]+', done)
     })
 
     it('should return ValidationException for empty ProvisionedThroughput', function(done) {

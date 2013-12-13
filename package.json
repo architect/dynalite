@@ -5,8 +5,8 @@
   "main": "index.js",
   "bin": "cli.js",
   "scripts": {
-    "test": "mocha --require should --reporter spec -t $([ $REMOTE ] && echo 30s || echo 4s) -b",
-    "coverage": "istanbul cover ./node_modules/.bin/_mocha -- --require should -t 4s -b"
+    "test": "mocha --require should --reporter spec -t $([ $REMOTE ] && echo 30s || echo 4s)",
+    "coverage": "istanbul cover ./node_modules/.bin/_mocha -- --require should -t 4s"
   },
   "repository": "mhart/dynalite",
   "keywords": [

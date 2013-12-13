@@ -643,7 +643,7 @@ describe('createTable', function() {
           Projection: {ProjectionType: 'ALL'}
         }],
         ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},
-        'One or more parameter values were invalid: Number of indexes exceeds per-table limit of 5', done)
+        'One or more parameter values were invalid: LocalSecondaryIndex count exceeds the per-table limit of 5', done)
     })
 
     it('should succeed for basic', function(done) {

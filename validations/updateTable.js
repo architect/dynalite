@@ -7,7 +7,6 @@ exports.types = {
   },
   ProvisionedThroughput: {
     type: 'Structure',
-    notNull: true,
     children: {
       WriteCapacityUnits: {
         type: 'Long',

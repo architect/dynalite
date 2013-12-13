@@ -202,7 +202,7 @@ exports.custom = function(data) {
     }
 
     if (data.LocalSecondaryIndexes.length > 5)
-      return 'One or more parameter values were invalid: Number of indexes exceeds per-table limit of 5'
+      return 'One or more parameter values were invalid: LocalSecondaryIndex count exceeds the per-table limit of 5'
   }
 
 }
