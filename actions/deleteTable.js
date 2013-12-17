@@ -18,6 +18,7 @@ module.exports = function deleteTable(store, data, cb) {
     }
 
     table.TableStatus = 'DELETING'
+    delete table.GlobalSecondaryIndexes
 
     tableDb.put(key, table, function(err) {
       if (err) return cb(err)

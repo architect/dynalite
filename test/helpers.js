@@ -17,6 +17,7 @@ exports.request = request
 exports.opts = opts
 exports.waitUntilActive = waitUntilActive
 exports.waitUntilDeleted = waitUntilDeleted
+exports.waitUntilIndexesActive = waitUntilIndexesActive
 exports.createAndWait = createAndWait
 exports.clearTable = clearTable
 exports.replaceTable = replaceTable
@@ -190,6 +191,17 @@ function waitUntilDeleted(name, done) {
     else if (res.body.__type)
       return done(new Error(res.body.__type + ': ' + res.body.message))
     setTimeout(waitUntilDeleted, 1000, name, done)
+  })
+}
+
+function waitUntilIndexesActive(name, done) {
+  request(opts('DescribeTable', {TableName: name}), function(err, res) {
+    if (err) return done(err)
+    if (res.body.__type)
+      return done(new Error(res.body.__type + ': ' + res.body.message))
+    else if (res.body.Table.GlobalSecondaryIndexes.every(function(index) { return index.IndexStatus == 'ACTIVE' }))
+      return done(null, res)
+    setTimeout(waitUntilIndexesActive, 1000, name, done)
   })
 }
 

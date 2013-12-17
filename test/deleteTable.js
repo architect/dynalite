@@ -1,4 +1,5 @@
-var helpers = require('./helpers')
+var should = require('should'),
+    helpers = require('./helpers')
 
 var target = 'DeleteTable',
     request = helpers.request,
@@ -67,6 +68,10 @@ describe('deleteTable', function() {
       })
     })
 
+  })
+
+  describe('functionality', function() {
+
     it('should eventually delete', function(done) {
       this.timeout(100000)
       var table = {
@@ -74,22 +79,30 @@ describe('deleteTable', function() {
         AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}],
         KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}],
         ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
+        GlobalSecondaryIndexes: [{
+          IndexName: 'abc',
+          KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}],
+          ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
+          Projection: {ProjectionType: 'KEYS_ONLY'}
+        }]
       }
       request(helpers.opts('CreateTable', table), function(err, res) {
         if (err) return done(err)
+        res.statusCode.should.equal(200)
 
         helpers.waitUntilActive(table.TableName, function(err) {
           if (err) return done(err)
 
           request(opts(table), function(err, res) {
             if (err) return done(err)
-            res.body.TableDescription.TableStatus.should.equal('DELETING')
+            res.statusCode.should.equal(200)
 
-            var start = Date.now()
+            res.body.TableDescription.TableStatus.should.equal('DELETING')
+            should.not.exist(res.body.TableDescription.GlobalSecondaryIndexes)
+
             helpers.waitUntilDeleted(table.TableName, function(err, res) {
               if (err) return done(err)
               res.body.__type.should.equal('com.amazonaws.dynamodb.v20120810#ResourceNotFoundException')
-              //console.log(Date.now() - start)
               done()
             })
           })

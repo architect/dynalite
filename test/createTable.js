@@ -28,6 +28,10 @@ describe('createTable', function() {
       assertType('LocalSecondaryIndexes', 'List', done)
     })
 
+    it('should return SerializationException when GlobalSecondaryIndexes is not a list', function(done) {
+      assertType('GlobalSecondaryIndexes', 'List', done)
+    })
+
     it('should return SerializationException when ProvisionedThroughput is not a struct', function(done) {
       assertType('ProvisionedThroughput', 'Structure', done)
     })
@@ -102,6 +106,58 @@ describe('createTable', function() {
 
     it('should return SerializationException when LocalSecondaryIndexes.0.Projection.NonKeyAttributes.0 is not a string', function(done) {
       assertType('LocalSecondaryIndexes.0.Projection.NonKeyAttributes.0', 'String', done)
+    })
+
+    it('should return SerializationException when GlobalSecondaryIndexes.0 is not a struct', function(done) {
+      assertType('GlobalSecondaryIndexes.0', 'Structure', done)
+    })
+
+    it('should return SerializationException when GlobalSecondaryIndexes.0.IndexName is not a string', function(done) {
+      assertType('GlobalSecondaryIndexes.0.IndexName', 'String', done)
+    })
+
+    it('should return SerializationException when GlobalSecondaryIndexes.0.KeySchema is not a list', function(done) {
+      assertType('GlobalSecondaryIndexes.0.KeySchema', 'List', done)
+    })
+
+    it('should return SerializationException when GlobalSecondaryIndexes.0.Projection is not a struct', function(done) {
+      assertType('GlobalSecondaryIndexes.0.Projection', 'Structure', done)
+    })
+
+    it('should return SerializationException when GlobalSecondaryIndexes.0.KeySchema.0 is not a struct', function(done) {
+      assertType('GlobalSecondaryIndexes.0.KeySchema.0', 'Structure', done)
+    })
+
+    it('should return SerializationException when GlobalSecondaryIndexes.0.KeySchema.0.AttributeName is not a string', function(done) {
+      assertType('GlobalSecondaryIndexes.0.KeySchema.0.AttributeName', 'String', done)
+    })
+
+    it('should return SerializationException when GlobalSecondaryIndexes.0.KeySchema.0.KeyType is not a string', function(done) {
+      assertType('GlobalSecondaryIndexes.0.KeySchema.0.KeyType', 'String', done)
+    })
+
+    it('should return SerializationException when GlobalSecondaryIndexes.0.Projection.NonKeyAttributes is not a list', function(done) {
+      assertType('GlobalSecondaryIndexes.0.Projection.NonKeyAttributes', 'List', done)
+    })
+
+    it('should return SerializationException when GlobalSecondaryIndexes.0.Projection.ProjectionType is not a string', function(done) {
+      assertType('GlobalSecondaryIndexes.0.Projection.ProjectionType', 'String', done)
+    })
+
+    it('should return SerializationException when GlobalSecondaryIndexes.0.Projection.NonKeyAttributes.0 is not a string', function(done) {
+      assertType('GlobalSecondaryIndexes.0.Projection.NonKeyAttributes.0', 'String', done)
+    })
+
+    it('should return SerializationException when GlobalSecondaryIndexes.0.ProvisionedThroughput is not a struct', function(done) {
+      assertType('GlobalSecondaryIndexes.0.ProvisionedThroughput', 'Structure', done)
+    })
+
+    it('should return SerializationException when GlobalSecondaryIndexes.0.ProvisionedThroughput.WriteCapacityUnits is not a long', function(done) {
+      assertType('GlobalSecondaryIndexes.0.ProvisionedThroughput.WriteCapacityUnits', 'Long', done)
+    })
+
+    it('should return SerializationException when GlobalSecondaryIndexes.0.ProvisionedThroughput.ReadCapacityUnits is not a long', function(done) {
+      assertType('GlobalSecondaryIndexes.0.ProvisionedThroughput.ReadCapacityUnits', 'Long', done)
     })
 
   })
@@ -280,7 +336,7 @@ describe('createTable', function() {
         'Invalid KeySchema: Some index key attribute have no definition', done)
     })
 
-    it('should return ValidationException for 5', function(done) {
+    it('should return ValidationException for hash key and range key having same name', function(done) {
       assertValidation({TableName: 'abc',
         AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}, {AttributeName: 'b', AttributeType: 'S'}],
         KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}, {KeyType: 'HASH', AttributeName: 'a'}],
@@ -288,7 +344,7 @@ describe('createTable', function() {
         'Both the Hash Key and the Range Key element in the KeySchema have the same name', done)
     })
 
-    it('should return ValidationException for 6', function(done) {
+    it('should return ValidationException for second key not being range', function(done) {
       assertValidation({TableName: 'abc',
         AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}, {AttributeName: 'b', AttributeType: 'S'}],
         KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}, {KeyType: 'HASH', AttributeName: 'b'}],
@@ -296,7 +352,7 @@ describe('createTable', function() {
         'Invalid KeySchema: The second KeySchemaElement is not a RANGE key type', done)
     })
 
-    it('should return ValidationException for 7', function(done) {
+    it('should return ValidationException for second key being hash', function(done) {
       assertValidation({TableName: 'abc',
         AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}, {AttributeName: 'b', AttributeType: 'S'}],
         KeySchema: [{KeyType: 'RANGE', AttributeName: 'a'}, {KeyType: 'HASH', AttributeName: 'b'}],
@@ -304,7 +360,7 @@ describe('createTable', function() {
         'Invalid KeySchema: The first KeySchemaElement is not a HASH key type', done)
     })
 
-    it('should return ValidationException for 8', function(done) {
+    it('should return ValidationException for both being range key', function(done) {
       assertValidation({TableName: 'abc',
         AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}, {AttributeName: 'b', AttributeType: 'S'}],
         KeySchema: [{KeyType: 'RANGE', AttributeName: 'a'}, {KeyType: 'RANGE', AttributeName: 'b'}],
@@ -312,7 +368,7 @@ describe('createTable', function() {
         'Invalid KeySchema: The first KeySchemaElement is not a HASH key type', done)
     })
 
-    it('should return ValidationException for 9', function(done) {
+    it('should return ValidationException for extra attribute in definitions when range', function(done) {
       assertValidation({TableName: 'abc',
         AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}, {AttributeName: 'c', AttributeType: 'S'}, {AttributeName: 'b', AttributeType: 'S'}],
         KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}, {KeyType: 'RANGE', AttributeName: 'b'}],
@@ -321,7 +377,7 @@ describe('createTable', function() {
         'exactly match number of attributes defined in AttributeDefinitions', done)
     })
 
-    it('should return ValidationException for 10', function(done) {
+    it('should return ValidationException for extra attribute in definitions when hash', function(done) {
       assertValidation({TableName: 'abc',
         AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}, {AttributeName: 'b', AttributeType: 'S'}],
         KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}],
@@ -330,7 +386,7 @@ describe('createTable', function() {
         'exactly match number of attributes defined in AttributeDefinitions', done)
     })
 
-    it('should return ValidationException for 11', function(done) {
+    it('should return ValidationException for empty LocalSecondaryIndexes list', function(done) {
       assertValidation({TableName: 'abc',
         AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}, {AttributeName: 'b', AttributeType: 'S'}],
         KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}],
@@ -339,7 +395,7 @@ describe('createTable', function() {
         'One or more parameter values were invalid: List of LocalSecondaryIndexes is empty', done)
     })
 
-    it('should return ValidationException for 12', function(done) {
+    it('should return ValidationException for more than five empty LocalSecondaryIndexes', function(done) {
       assertValidation({TableName: 'abc',
         AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}, {AttributeName: 'b', AttributeType: 'S'}],
         KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}, {KeyType: 'RANGE', AttributeName: 'b'}],
@@ -368,7 +424,7 @@ describe('createTable', function() {
         'Member must not be null', done)
     })
 
-    it('should return ValidationException for 13', function(done) {
+    it('should return ValidationException for bad LocalSecondaryIndex names', function(done) {
       var name = new Array(256 + 1).join('a')
       assertValidation({TableName: 'abc',
         AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}, {AttributeName: 'b', AttributeType: 'S'}],
@@ -390,7 +446,7 @@ describe('createTable', function() {
         'Member must have length less than or equal to 255', done)
     })
 
-    it('should return ValidationException for 14', function(done) {
+    it('should return ValidationException for no range key with LocalSecondaryIndex', function(done) {
       assertValidation({TableName: 'abc',
         AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}, {AttributeName: 'b', AttributeType: 'S'}],
         KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}],
@@ -400,7 +456,7 @@ describe('createTable', function() {
         'which is required when specifying a LocalSecondaryIndex', done)
     })
 
-    it('should return ValidationException for 15', function(done) {
+    it('should return ValidationException for missing attribute definitions in LocalSecondaryIndex', function(done) {
       assertValidation({TableName: 'abc',
         AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}, {AttributeName: 'b', AttributeType: 'S'}],
         KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}, {KeyType: 'RANGE', AttributeName: 'b'}],
@@ -419,7 +475,7 @@ describe('createTable', function() {
         'Keys: [d, c], AttributeDefinitions: [b, a]', done)
     })
 
-    it('should return ValidationException for 16', function(done) {
+    it('should return ValidationException for first key in LocalSecondaryIndex not being hash', function(done) {
       assertValidation({TableName: 'abc',
         AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}, {AttributeName: 'b', AttributeType: 'S'}],
         KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}, {KeyType: 'RANGE', AttributeName: 'b'}],
@@ -428,7 +484,7 @@ describe('createTable', function() {
         'Invalid KeySchema: The first KeySchemaElement is not a HASH key type', done)
     })
 
-    it('should return ValidationException for 16.5', function(done) {
+    it('should return ValidationException for same names of keys in LocalSecondaryIndex', function(done) {
       assertValidation({TableName: 'abc',
         AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}, {AttributeName: 'b', AttributeType: 'S'}],
         KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}, {KeyType: 'RANGE', AttributeName: 'b'}],
@@ -437,7 +493,7 @@ describe('createTable', function() {
         'Both the Hash Key and the Range Key element in the KeySchema have the same name', done)
     })
 
-    it('should return ValidationException for 16.6', function(done) {
+    it('should return ValidationException for second key of LocalSecondaryIndex not being range', function(done) {
       assertValidation({TableName: 'abc',
         AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}, {AttributeName: 'b', AttributeType: 'S'}],
         KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}, {KeyType: 'RANGE', AttributeName: 'b'}],
@@ -446,7 +502,7 @@ describe('createTable', function() {
         'Invalid KeySchema: The second KeySchemaElement is not a RANGE key type', done)
     })
 
-    it('should return ValidationException for 17', function(done) {
+    it('should return ValidationException for no range key in LocalSecondaryIndex', function(done) {
       assertValidation({TableName: 'abc',
         AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}, {AttributeName: 'b', AttributeType: 'S'}],
         KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}, {KeyType: 'RANGE', AttributeName: 'b'}],
@@ -455,7 +511,7 @@ describe('createTable', function() {
         'One or more parameter values were invalid: Index KeySchema does not have a range key for index: abc', done)
     })
 
-    it('should return ValidationException for 18', function(done) {
+    it('should return ValidationException for different hash key between LocalSecondaryIndex and table', function(done) {
       assertValidation({TableName: 'abc',
         AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}, {AttributeName: 'b', AttributeType: 'S'}],
         KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}, {KeyType: 'RANGE', AttributeName: 'b'}],
@@ -466,7 +522,7 @@ describe('createTable', function() {
         'abc. index hash key: b, table hash key: a', done)
     })
 
-    it('should return ValidationException for 19', function(done) {
+    it('should return ValidationException for same named keys in LocalSecondaryIndex when one hash and one range', function(done) {
       assertValidation({TableName: 'abc',
         AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}, {AttributeName: 'b', AttributeType: 'S'}],
         KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}, {KeyType: 'RANGE', AttributeName: 'b'}],
@@ -475,7 +531,7 @@ describe('createTable', function() {
         'Both the Hash Key and the Range Key element in the KeySchema have the same name', done)
     })
 
-    it('should return ValidationException for 20', function(done) {
+    it('should return ValidationException for missing attribute definitions when hash is same in LocalSecondaryIndex', function(done) {
       assertValidation({TableName: 'abc',
         AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}, {AttributeName: 'b', AttributeType: 'S'}],
         KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}, {KeyType: 'RANGE', AttributeName: 'b'}],
@@ -490,7 +546,7 @@ describe('createTable', function() {
         'Keys: [c, a], AttributeDefinitions: [b, a]', done)
     })
 
-    it('should return ValidationException for 21', function(done) {
+    it('should return ValidationException for empty Projection in LocalSecondaryIndex', function(done) {
       assertValidation({TableName: 'abc',
         AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}, {AttributeName: 'b', AttributeType: 'S'}],
         KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}, {KeyType: 'RANGE', AttributeName: 'b'}],
@@ -499,7 +555,7 @@ describe('createTable', function() {
         'One or more parameter values were invalid: Unknown ProjectionType: null', done)
     })
 
-    it('should return ValidationException for 22', function(done) {
+    it('should return ValidationException for invalid properties in LocalSecondaryIndex', function(done) {
       assertValidation({TableName: 'abc',
         AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}, {AttributeName: 'b', AttributeType: 'S'}],
         KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}, {KeyType: 'RANGE', AttributeName: 'b'}],
@@ -516,7 +572,7 @@ describe('createTable', function() {
         'Member must have length greater than or equal to 1', done)
     })
 
-    it('should return ValidationException for 23', function(done) {
+    it('should return ValidationException for missing ProjectionType in LocalSecondaryIndex', function(done) {
       assertValidation({TableName: 'abc',
         AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}, {AttributeName: 'b', AttributeType: 'S'}],
         KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}, {KeyType: 'RANGE', AttributeName: 'b'}],
@@ -529,7 +585,7 @@ describe('createTable', function() {
         'One or more parameter values were invalid: Unknown ProjectionType: null', done)
     })
 
-    it('should return ValidationException for 24', function(done) {
+    it('should return ValidationException for NonKeyAttributes with ProjectionType ALL in LocalSecondaryIndex', function(done) {
       assertValidation({TableName: 'abc',
         AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}, {AttributeName: 'b', AttributeType: 'S'}],
         KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}, {KeyType: 'RANGE', AttributeName: 'b'}],
@@ -543,7 +599,7 @@ describe('createTable', function() {
         'ProjectionType is ALL, but NonKeyAttributes is specified', done)
     })
 
-    it('should return ValidationException for 25', function(done) {
+    it('should return ValidationException for NonKeyAttributes with ProjectionType KEYS_ONLY in LocalSecondaryIndex', function(done) {
       assertValidation({TableName: 'abc',
         AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}, {AttributeName: 'b', AttributeType: 'S'}],
         KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}, {KeyType: 'RANGE', AttributeName: 'b'}],
@@ -557,7 +613,7 @@ describe('createTable', function() {
         'ProjectionType is KEYS_ONLY, but NonKeyAttributes is specified', done)
     })
 
-    it('should return ValidationException for 26', function(done) {
+    it('should return ValidationException for duplicate index names in LocalSecondaryIndexes', function(done) {
       assertValidation({TableName: 'abc',
         AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}, {AttributeName: 'b', AttributeType: 'S'}],
         KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}, {KeyType: 'RANGE', AttributeName: 'b'}],
@@ -574,7 +630,7 @@ describe('createTable', function() {
         'One or more parameter values were invalid: Duplicate index name: abc', done)
     })
 
-    it('should return ValidationException for 27', function(done) {
+    it('should return ValidationException for extraneous values in LocalSecondaryIndexes', function(done) {
       assertValidation({TableName: 'abc',
         AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}, {AttributeName: 'b', AttributeType: 'S'}],
         KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}, {KeyType: 'RANGE', AttributeName: 'b'}],
@@ -613,7 +669,7 @@ describe('createTable', function() {
         'Member must not be null', done)
     })
 
-    it('should return ValidationException for 28', function(done) {
+    it('should return ValidationException for more than five valid LocalSecondaryIndexes', function(done) {
       assertValidation({TableName: 'abc',
         AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}, {AttributeName: 'b', AttributeType: 'S'}],
         KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}, {KeyType: 'RANGE', AttributeName: 'b'}],
@@ -645,6 +701,430 @@ describe('createTable', function() {
         ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},
         'One or more parameter values were invalid: LocalSecondaryIndex count exceeds the per-table limit of 5', done)
     })
+
+
+    it('should return ValidationException for empty GlobalSecondaryIndexes list', function(done) {
+      assertValidation({TableName: 'abc',
+        AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}, {AttributeName: 'b', AttributeType: 'S'}],
+        KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}],
+        GlobalSecondaryIndexes: [],
+        ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},
+        'One or more parameter values were invalid: List of GlobalSecondaryIndexes is empty', done)
+    })
+
+    it('should return ValidationException for more than five empty GlobalSecondaryIndexes', function(done) {
+      assertValidation({TableName: 'abc',
+        AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}, {AttributeName: 'b', AttributeType: 'S'}],
+        KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}, {KeyType: 'RANGE', AttributeName: 'b'}],
+        GlobalSecondaryIndexes: [{},{},{},{},{},{},{},{},{}],
+        ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},
+        '10 validation errors detected: ' +
+        'Value null at \'globalSecondaryIndexes.1.member.projection\' failed to satisfy constraint: ' +
+        'Member must not be null; ' +
+        'Value null at \'globalSecondaryIndexes.1.member.indexName\' failed to satisfy constraint: ' +
+        'Member must not be null; ' +
+        'Value null at \'globalSecondaryIndexes.1.member.provisionedThroughput\' failed to satisfy constraint: ' +
+        'Member must not be null; ' +
+        'Value null at \'globalSecondaryIndexes.1.member.keySchema\' failed to satisfy constraint: ' +
+        'Member must not be null; ' +
+        'Value null at \'globalSecondaryIndexes.2.member.projection\' failed to satisfy constraint: ' +
+        'Member must not be null; ' +
+        'Value null at \'globalSecondaryIndexes.2.member.indexName\' failed to satisfy constraint: ' +
+        'Member must not be null; ' +
+        'Value null at \'globalSecondaryIndexes.2.member.provisionedThroughput\' failed to satisfy constraint: ' +
+        'Member must not be null; ' +
+        'Value null at \'globalSecondaryIndexes.2.member.keySchema\' failed to satisfy constraint: ' +
+        'Member must not be null; ' +
+        'Value null at \'globalSecondaryIndexes.3.member.projection\' failed to satisfy constraint: ' +
+        'Member must not be null; ' +
+        'Value null at \'globalSecondaryIndexes.3.member.indexName\' failed to satisfy constraint: ' +
+        'Member must not be null', done)
+    })
+
+    it('should return ValidationException for bad GlobalSecondaryIndex names', function(done) {
+      var name = new Array(256 + 1).join('a')
+      assertValidation({TableName: 'abc',
+        AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}, {AttributeName: 'b', AttributeType: 'S'}],
+        KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}],
+        GlobalSecondaryIndexes: [{
+          IndexName: 'h;', KeySchema: [], Projection: {}, ProvisionedThroughput: {ReadCapacityUnits: 0, WriteCapacityUnits: 0}
+        }, {
+          IndexName: name, KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}], Projection: {}, ProvisionedThroughput: {}
+        }],
+        ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},
+        '8 validation errors detected: ' +
+        'Value \'h;\' at \'globalSecondaryIndexes.1.member.indexName\' failed to satisfy constraint: ' +
+        'Member must satisfy regular expression pattern: [a-zA-Z0-9_.-]+; ' +
+        'Value \'h;\' at \'globalSecondaryIndexes.1.member.indexName\' failed to satisfy constraint: ' +
+        'Member must have length greater than or equal to 3; ' +
+        'Value \'0\' at \'globalSecondaryIndexes.1.member.provisionedThroughput.writeCapacityUnits\' failed to satisfy constraint: ' +
+        'Member must have value greater than or equal to 1; ' +
+        'Value \'0\' at \'globalSecondaryIndexes.1.member.provisionedThroughput.readCapacityUnits\' failed to satisfy constraint: ' +
+        'Member must have value greater than or equal to 1; ' +
+        'Value \'[]\' at \'globalSecondaryIndexes.1.member.keySchema\' failed to satisfy constraint: ' +
+        'Member must have length greater than or equal to 1; ' +
+        'Value \'' + name + '\' at \'globalSecondaryIndexes.2.member.indexName\' failed to satisfy constraint: ' +
+        'Member must have length less than or equal to 255; ' +
+        'Value null at \'globalSecondaryIndexes.2.member.provisionedThroughput.writeCapacityUnits\' failed to satisfy constraint: ' +
+        'Member must not be null; ' +
+        'Value null at \'globalSecondaryIndexes.2.member.provisionedThroughput.readCapacityUnits\' failed to satisfy constraint: ' +
+        'Member must not be null', done)
+    })
+
+    it('should return ValidationException for missing attribute definition with only range key with GlobalSecondaryIndex', function(done) {
+      assertValidation({TableName: 'abc',
+        AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}, {AttributeName: 'b', AttributeType: 'S'}],
+        KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}],
+        GlobalSecondaryIndexes: [{IndexName: 'abc', KeySchema: [{AttributeName: 'c', KeyType: 'RANGE'}], Projection: {}, ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}}],
+        ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},
+        'One or more parameter values were invalid: ' +
+        'Some index key attributes are not defined in AttributeDefinitions. ' +
+        'Keys: [c], AttributeDefinitions: [b, a]', done)
+    })
+
+    it('should return ValidationException for missing attribute definitions in GlobalSecondaryIndex', function(done) {
+      assertValidation({TableName: 'abc',
+        AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}, {AttributeName: 'b', AttributeType: 'S'}],
+        KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}, {KeyType: 'RANGE', AttributeName: 'b'}],
+        GlobalSecondaryIndexes: [{
+          IndexName: 'abc',
+          KeySchema: [{AttributeName: 'c', KeyType: 'RANGE'}, {AttributeName: 'd', KeyType: 'RANGE'}],
+          ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
+          Projection: {},
+        }, {
+          IndexName: 'abc',
+          KeySchema: [{AttributeName: 'e', KeyType: 'RANGE'}],
+          ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
+          Projection: {}
+        }],
+        ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},
+        'One or more parameter values were invalid: ' +
+        'Some index key attributes are not defined in AttributeDefinitions. ' +
+        'Keys: [d, c], AttributeDefinitions: [b, a]', done)
+    })
+
+    it('should return ValidationException for first key in GlobalSecondaryIndex not being hash', function(done) {
+      assertValidation({TableName: 'abc',
+        AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}, {AttributeName: 'b', AttributeType: 'S'}],
+        KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}, {KeyType: 'RANGE', AttributeName: 'b'}],
+        GlobalSecondaryIndexes: [{
+          IndexName: 'abc',
+          KeySchema: [{AttributeName: 'a', KeyType: 'RANGE'}],
+          ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
+          Projection: {}
+        }],
+        ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},
+        'Invalid KeySchema: The first KeySchemaElement is not a HASH key type', done)
+    })
+
+    it('should return ValidationException for same names of keys in GlobalSecondaryIndex', function(done) {
+      assertValidation({TableName: 'abc',
+        AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}, {AttributeName: 'b', AttributeType: 'S'}],
+        KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}, {KeyType: 'RANGE', AttributeName: 'b'}],
+        GlobalSecondaryIndexes: [{
+          IndexName: 'abc',
+          KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'a', KeyType: 'HASH'}],
+          ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
+          Projection: {}
+        }],
+        ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},
+        'Both the Hash Key and the Range Key element in the KeySchema have the same name', done)
+    })
+
+    it('should return ValidationException for second key of GlobalSecondaryIndex not being range', function(done) {
+      assertValidation({TableName: 'abc',
+        AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}, {AttributeName: 'b', AttributeType: 'S'}],
+        KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}, {KeyType: 'RANGE', AttributeName: 'b'}],
+        GlobalSecondaryIndexes: [{
+          IndexName: 'abc',
+          KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'HASH'}],
+          ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
+          Projection: {}
+        }],
+        ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},
+        'Invalid KeySchema: The second KeySchemaElement is not a RANGE key type', done)
+    })
+
+    it('should return ValidationException about Projection if no range key in GlobalSecondaryIndex', function(done) {
+      assertValidation({TableName: 'abc',
+        AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}, {AttributeName: 'b', AttributeType: 'S'}],
+        KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}, {KeyType: 'RANGE', AttributeName: 'b'}],
+        GlobalSecondaryIndexes: [{
+          IndexName: 'abc',
+          KeySchema: [{AttributeName: 'b', KeyType: 'HASH'}],
+          ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
+          Projection: {}
+        }],
+        ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},
+        'One or more parameter values were invalid: Unknown ProjectionType: null', done)
+    })
+
+    it('should return ValidationException about Projection for different hash key between GlobalSecondaryIndex and table', function(done) {
+      assertValidation({TableName: 'abc',
+        AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}, {AttributeName: 'b', AttributeType: 'S'}],
+        KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}, {KeyType: 'RANGE', AttributeName: 'b'}],
+        GlobalSecondaryIndexes: [{
+          IndexName: 'abc',
+          KeySchema: [{AttributeName: 'b', KeyType: 'HASH'}, {AttributeName: 'a', KeyType: 'RANGE'}],
+          ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
+          Projection: {}
+        }],
+        ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},
+        'One or more parameter values were invalid: Unknown ProjectionType: null', done)
+    })
+
+    it('should return ValidationException for same named keys in GlobalSecondaryIndex when one hash and one range', function(done) {
+      assertValidation({TableName: 'abc',
+        AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}, {AttributeName: 'b', AttributeType: 'S'}],
+        KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}, {KeyType: 'RANGE', AttributeName: 'b'}],
+        GlobalSecondaryIndexes: [{
+          IndexName: 'abc',
+          KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'a', KeyType: 'RANGE'}],
+          ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
+          Projection: {}
+        }],
+        ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},
+        'Both the Hash Key and the Range Key element in the KeySchema have the same name', done)
+    })
+
+    it('should return ValidationException for missing attribute definitions when hash is same in GlobalSecondaryIndex', function(done) {
+      assertValidation({TableName: 'abc',
+        AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}, {AttributeName: 'b', AttributeType: 'S'}],
+        KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}, {KeyType: 'RANGE', AttributeName: 'b'}],
+        GlobalSecondaryIndexes: [{
+          IndexName: 'abc',
+          KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'c', KeyType: 'RANGE'}],
+          ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
+          Projection: {}
+        }],
+        ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},
+        'One or more parameter values were invalid: ' +
+        'Some index key attributes are not defined in AttributeDefinitions. ' +
+        'Keys: [c, a], AttributeDefinitions: [b, a]', done)
+    })
+
+    it('should return ValidationException for empty Projection in GlobalSecondaryIndex', function(done) {
+      assertValidation({TableName: 'abc',
+        AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}, {AttributeName: 'b', AttributeType: 'S'}],
+        KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}, {KeyType: 'RANGE', AttributeName: 'b'}],
+        GlobalSecondaryIndexes: [{
+          IndexName: 'abc',
+          KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
+          ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
+          Projection: {}
+        }],
+        ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},
+        'One or more parameter values were invalid: Unknown ProjectionType: null', done)
+    })
+
+    it('should return ValidationException for invalid properties in GlobalSecondaryIndex', function(done) {
+      assertValidation({TableName: 'abc',
+        AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}, {AttributeName: 'b', AttributeType: 'S'}],
+        KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}, {KeyType: 'RANGE', AttributeName: 'b'}],
+        GlobalSecondaryIndexes: [{
+          IndexName: 'abc',
+          KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
+          ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
+          Projection: {NonKeyAttributes: [], ProjectionType: 'abc'}
+        }],
+        ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},
+        '2 validation errors detected: ' +
+        'Value \'abc\' at \'globalSecondaryIndexes.1.member.projection.projectionType\' failed to satisfy constraint: ' +
+        'Member must satisfy enum value set: [ALL, INCLUDE, KEYS_ONLY]; ' +
+        'Value \'[]\' at \'globalSecondaryIndexes.1.member.projection.nonKeyAttributes\' failed to satisfy constraint: ' +
+        'Member must have length greater than or equal to 1', done)
+    })
+
+    it('should return ValidationException for missing ProjectionType in GlobalSecondaryIndex', function(done) {
+      assertValidation({TableName: 'abc',
+        AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}, {AttributeName: 'b', AttributeType: 'S'}],
+        KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}, {KeyType: 'RANGE', AttributeName: 'b'}],
+        GlobalSecondaryIndexes: [{
+          IndexName: 'abc',
+          KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
+          ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
+          Projection: {NonKeyAttributes: ['a']}
+        }],
+        ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},
+        'One or more parameter values were invalid: Unknown ProjectionType: null', done)
+    })
+
+    it('should return ValidationException for NonKeyAttributes with ProjectionType ALL in GlobalSecondaryIndex', function(done) {
+      assertValidation({TableName: 'abc',
+        AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}, {AttributeName: 'b', AttributeType: 'S'}],
+        KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}, {KeyType: 'RANGE', AttributeName: 'b'}],
+        GlobalSecondaryIndexes: [{
+          IndexName: 'abc',
+          KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
+          ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
+          Projection: {ProjectionType: 'ALL', NonKeyAttributes: ['a']}
+        }],
+        ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},
+        'One or more parameter values were invalid: ' +
+        'ProjectionType is ALL, but NonKeyAttributes is specified', done)
+    })
+
+    it('should return ValidationException for NonKeyAttributes with ProjectionType KEYS_ONLY in GlobalSecondaryIndex', function(done) {
+      assertValidation({TableName: 'abc',
+        AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}, {AttributeName: 'b', AttributeType: 'S'}],
+        KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}, {KeyType: 'RANGE', AttributeName: 'b'}],
+        GlobalSecondaryIndexes: [{
+          IndexName: 'abc',
+          KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
+          ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
+          Projection: {ProjectionType: 'KEYS_ONLY', NonKeyAttributes: ['a']}
+        }],
+        ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},
+        'One or more parameter values were invalid: ' +
+        'ProjectionType is KEYS_ONLY, but NonKeyAttributes is specified', done)
+    })
+
+    it('should return ValidationException for duplicate index names in GlobalSecondaryIndexes', function(done) {
+      assertValidation({TableName: 'abc',
+        AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}, {AttributeName: 'b', AttributeType: 'S'}],
+        KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}, {KeyType: 'RANGE', AttributeName: 'b'}],
+        GlobalSecondaryIndexes: [{
+          IndexName: 'abc',
+          KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
+          ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
+          Projection: {ProjectionType: 'ALL'}
+        }, {
+          IndexName: 'abc',
+          KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
+          ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
+          Projection: {ProjectionType: 'ALL'}
+        }],
+        ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},
+        'One or more parameter values were invalid: Duplicate index name: abc', done)
+    })
+
+    it('should return ValidationException for extraneous values in GlobalSecondaryIndexes', function(done) {
+      assertValidation({TableName: 'abc',
+        AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}, {AttributeName: 'b', AttributeType: 'S'}],
+        KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}, {KeyType: 'RANGE', AttributeName: 'b'}],
+        GlobalSecondaryIndexes: [{
+          IndexName: 'abc',
+          KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
+          ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
+          Projection: {ProjectionType: 'ALL'}
+        }, {
+          IndexName: 'abd',
+          KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
+          ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
+          Projection: {ProjectionType: 'ALL'}
+        }, {
+          IndexName: 'abe',
+          KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
+          ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
+          Projection: {ProjectionType: 'ALL'}
+        }, {
+          IndexName: 'abf',
+          KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
+          ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
+          Projection: {ProjectionType: 'ALL'}
+        }, {
+          IndexName: 'abg',
+          KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
+          ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
+          Projection: {ProjectionType: 'ALL'}
+        }, {
+          IndexName: 'abh',
+          KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
+          ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
+          Projection: {ProjectionType: 'ALL'}
+        }, {}],
+        ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},
+        '4 validation errors detected: ' +
+        'Value null at \'globalSecondaryIndexes.7.member.projection\' failed to satisfy constraint: ' +
+        'Member must not be null; ' +
+        'Value null at \'globalSecondaryIndexes.7.member.indexName\' failed to satisfy constraint: ' +
+        'Member must not be null; ' +
+        'Value null at \'globalSecondaryIndexes.7.member.provisionedThroughput\' failed to satisfy constraint: ' +
+        'Member must not be null; ' +
+        'Value null at \'globalSecondaryIndexes.7.member.keySchema\' failed to satisfy constraint: ' +
+        'Member must not be null', done)
+    })
+
+    it('should return ValidationException for more than five valid GlobalSecondaryIndexes', function(done) {
+      assertValidation({TableName: 'abc',
+        AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}, {AttributeName: 'b', AttributeType: 'S'}],
+        KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}, {KeyType: 'RANGE', AttributeName: 'b'}],
+        GlobalSecondaryIndexes: [{
+          IndexName: 'abc',
+          KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
+          ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
+          Projection: {ProjectionType: 'ALL'}
+        }, {
+          IndexName: 'abd',
+          KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
+          ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
+          Projection: {ProjectionType: 'ALL'}
+        }, {
+          IndexName: 'abe',
+          KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
+          ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
+          Projection: {ProjectionType: 'ALL'}
+        }, {
+          IndexName: 'abf',
+          KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
+          ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
+          Projection: {ProjectionType: 'ALL'}
+        }, {
+          IndexName: 'abg',
+          KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
+          ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
+          Projection: {ProjectionType: 'ALL'}
+        }, {
+          IndexName: 'abh',
+          KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
+          ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
+          Projection: {ProjectionType: 'ALL'}
+        }],
+        ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},
+        'One or more parameter values were invalid: GlobalSecondaryIndex count exceeds the per-table limit of 5', done)
+    })
+
+    it('should return ValidationException for duplicate index names between LocalSecondaryIndexes and GlobalSecondaryIndexes', function(done) {
+      assertValidation({TableName: 'abc',
+        AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}, {AttributeName: 'b', AttributeType: 'S'}],
+        KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}, {KeyType: 'RANGE', AttributeName: 'b'}],
+        LocalSecondaryIndexes: [{
+          IndexName: 'abc',
+          KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
+          Projection: {ProjectionType: 'ALL'}
+        }],
+        GlobalSecondaryIndexes: [{
+          IndexName: 'abc',
+          KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
+          ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
+          Projection: {ProjectionType: 'ALL'}
+        }],
+        ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},
+        'One or more parameter values were invalid: Duplicate index name: abc', done)
+    })
+
+    it('should return LimitExceededException for more than one table with LocalSecondaryIndexes at a time', function(done) {
+      assertValidation({TableName: 'abc',
+        AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}, {AttributeName: 'b', AttributeType: 'S'}],
+        KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}, {KeyType: 'RANGE', AttributeName: 'b'}],
+        LocalSecondaryIndexes: [{
+          IndexName: 'abc',
+          KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
+          Projection: {ProjectionType: 'ALL'}
+        }],
+        GlobalSecondaryIndexes: [{
+          IndexName: 'abc',
+          KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
+          ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
+          Projection: {ProjectionType: 'ALL'}
+        }],
+        ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},
+        'One or more parameter values were invalid: Duplicate index name: abc', done)
+    })
+
+  })
+
+  describe('functionality', function() {
 
     it('should succeed for basic', function(done) {
       var table = {
@@ -689,42 +1169,9 @@ describe('createTable', function() {
       })
     })
 
-    it('should succeed for indexes', function(done) {
-      var table = {
-        TableName: randomName(),
-        AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}, {AttributeName: 'b', AttributeType: 'S'}],
-        KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}, {KeyType: 'RANGE', AttributeName: 'b'}],
-        LocalSecondaryIndexes: [{
-          IndexName: 'abc',
-          KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
-          Projection: {ProjectionType: 'INCLUDE', NonKeyAttributes: ['a']}
-        }],
-        ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}
-      }, createdAt = Date.now() / 1000
-      request(opts(table), function(err, res) {
-        if (err) return done(err)
-        res.statusCode.should.equal(200)
-        should.exist(res.body.TableDescription)
-        var desc = res.body.TableDescription
-        desc.CreationDateTime.should.be.above(createdAt - 5)
-        ;delete desc.CreationDateTime
-        table.ItemCount = 0
-        table.ProvisionedThroughput.NumberOfDecreasesToday = 0
-        table.TableSizeBytes = 0
-        table.TableStatus = 'CREATING'
-        table.LocalSecondaryIndexes.forEach(function(index) {
-          index.IndexSizeBytes = 0
-          index.ItemCount = 0
-        })
-        desc.should.eql(table)
-        done()
-      })
-    })
-
-    // TODO: Implement this error:
-    //{ __type: 'com.amazonaws.dynamodb.v20120810#LimitExceededException',
-    //message: 'Subscriber limit exceeded: Only 1 table with local secondary index can be created simultaneously' }
-    it.skip('should succeed for multiple indexes', function(done) {
+    // TODO: Seems to block until other tables with secondary indexes have been created
+    it('should succeed for LocalSecondaryIndexes', function(done) {
+      this.timeout(100000)
       var table = {
         TableName: randomName(),
         AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}, {AttributeName: 'b', AttributeType: 'S'}],
@@ -774,6 +1221,75 @@ describe('createTable', function() {
         ;delete table.LocalSecondaryIndexes
         desc.should.eql(table)
         done()
+      })
+    })
+
+    it('should succeed for multiple GlobalSecondaryIndexes', function(done) {
+      this.timeout(200000)
+      var table = {
+        TableName: randomName(),
+        AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}, {AttributeName: 'b', AttributeType: 'S'}],
+        KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}],
+        GlobalSecondaryIndexes: [{
+          IndexName: 'abc',
+          KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
+          ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
+          Projection: {ProjectionType: 'ALL'}
+        }, {
+          IndexName: 'abd',
+          KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
+          ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
+          Projection: {ProjectionType: 'ALL'}
+        }, {
+          IndexName: 'abe',
+          KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
+          ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
+          Projection: {ProjectionType: 'ALL'}
+        }, {
+          IndexName: 'abf',
+          KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
+          ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
+          Projection: {ProjectionType: 'ALL'}
+        }, {
+          IndexName: 'abg',
+          KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
+          ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
+          Projection: {ProjectionType: 'ALL'}
+        }],
+        ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}
+      }, createdAt = Date.now() / 1000, globalIndexes = table.GlobalSecondaryIndexes
+      request(opts(table), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        should.exist(res.body.TableDescription)
+        var desc = res.body.TableDescription
+        desc.CreationDateTime.should.be.above(createdAt - 5)
+        ;delete desc.CreationDateTime
+        table.ItemCount = 0
+        table.ProvisionedThroughput.NumberOfDecreasesToday = 0
+        table.TableSizeBytes = 0
+        table.TableStatus = 'CREATING'
+        // DynamoDB seem to put them in a weird order, so check separately
+        globalIndexes.forEach(function(index) {
+          index.IndexSizeBytes = 0
+          index.ItemCount = 0
+          index.IndexStatus = 'CREATING'
+          desc.GlobalSecondaryIndexes.should.includeEql(index)
+        })
+        desc.GlobalSecondaryIndexes.length.should.equal(globalIndexes.length)
+        ;delete desc.GlobalSecondaryIndexes
+        ;delete table.GlobalSecondaryIndexes
+        desc.should.eql(table)
+
+        // Ensure that the indexes become active too
+        helpers.waitUntilIndexesActive(table.TableName, function(err, res) {
+          if (err) return done(err)
+          globalIndexes.forEach(function(index) {
+            index.IndexStatus = 'ACTIVE'
+            res.body.Table.GlobalSecondaryIndexes.should.includeEql(index)
+          })
+          done()
+        })
       })
     })
 

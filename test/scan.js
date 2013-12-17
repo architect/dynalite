@@ -778,6 +778,8 @@ describe('scan', function() {
       })
     })
 
+    // TODO: Scan with duplicate attributes yields:
+    // ValidationException: One or more parameter values were invalid: Duplicate value in attribute name: approvedCreative
   })
 
   describe('functionality', function() {

@@ -64,10 +64,10 @@ TODO
 
 - Add ProvisionedThroughput checking
 - Add config settings to turn on/off strict checking
-- Allow for other persistence types (LevelDOWN-Hyper, etc)
 - Use efficient range scans for `Query` calls
 - Explore edge cases with `Query` and `ScanIndexForward: false` (combine with above)
 - Implement `ReturnItemCollectionMetrics` on all remaining endpoints
+- Implement size info for tables and indexes
 - Is the `ListTables` limit of names returned 100 if no `Limit` supplied?
 
 Problems with Amazon's DynamoDB Local

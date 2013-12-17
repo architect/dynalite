@@ -26,6 +26,34 @@ describe('updateTable', function() {
       assertType('ProvisionedThroughput.ReadCapacityUnits', 'Long', done)
     })
 
+    it('should return SerializationException when GlobalSecondaryIndexUpdates is not a list', function(done) {
+      assertType('GlobalSecondaryIndexUpdates', 'List', done)
+    })
+
+    it('should return SerializationException when GlobalSecondaryIndexUpdates.0 is not a struct', function(done) {
+      assertType('GlobalSecondaryIndexUpdates.0', 'Structure', done)
+    })
+
+    it('should return SerializationException when GlobalSecondaryIndexUpdates.0.Update is not a struct', function(done) {
+      assertType('GlobalSecondaryIndexUpdates.0.Update', 'Structure', done)
+    })
+
+    it('should return SerializationException when GlobalSecondaryIndexUpdates.0.Update.IndexName is not a string', function(done) {
+      assertType('GlobalSecondaryIndexUpdates.0.Update.IndexName', 'String', done)
+    })
+
+    it('should return SerializationException when GlobalSecondaryIndexUpdates.0.Update.ProvisionedThroughput is not a struct', function(done) {
+      assertType('GlobalSecondaryIndexUpdates.0.Update.ProvisionedThroughput', 'Structure', done)
+    })
+
+    it('should return SerializationException when GlobalSecondaryIndexUpdates.0.Update.ProvisionedThroughput.WriteCapacityUnits is not a long', function(done) {
+      assertType('GlobalSecondaryIndexUpdates.0.Update.ProvisionedThroughput.WriteCapacityUnits', 'Long', done)
+    })
+
+    it('should return SerializationException when GlobalSecondaryIndexUpdates.0.Update.ProvisionedThroughput.ReadCapacityUnits is not a long', function(done) {
+      assertType('GlobalSecondaryIndexUpdates.0.Update.ProvisionedThroughput.ReadCapacityUnits', 'Long', done)
+    })
+
   })
 
   describe('validations', function() {
@@ -102,6 +130,49 @@ describe('updateTable', function() {
         'Given value 1000000000001 for WriteCapacityUnits is out of bounds', done)
     })
 
+    it('should return ValidationException for empty GlobalSecondaryIndexUpdates', function(done) {
+      assertValidation({TableName: 'abc', GlobalSecondaryIndexUpdates: []},
+        'At least one of ProvisionedThroughput or GlobalSecondaryIndexUpdates is required', done)
+    })
+
+    it('should return ValidationException for empty Update', function(done) {
+      assertValidation({TableName: 'abc', GlobalSecondaryIndexUpdates: [{Update: {}}]},
+        '2 validation errors detected: ' +
+        'Value null at \'globalSecondaryIndexUpdates.1.member.update.indexName\' failed to satisfy constraint: ' +
+        'Member must not be null; ' +
+        'Value null at \'globalSecondaryIndexUpdates.1.member.update.provisionedThroughput\' failed to satisfy constraint: ' +
+        'Member must not be null', done)
+    })
+
+    it('should return ValidationException for bad IndexName and ProvisionedThroughput', function(done) {
+      assertValidation({TableName: 'abc', GlobalSecondaryIndexUpdates: [
+        {Update: {IndexName: 'a', ProvisionedThroughput: {}}},
+        {Update: {IndexName: 'abc;', ProvisionedThroughput: {ReadCapacityUnits: 1000000000001, WriteCapacityUnits: 0}}},
+      ]}, '5 validation errors detected: ' +
+        'Value \'a\' at \'globalSecondaryIndexUpdates.1.member.update.indexName\' failed to satisfy constraint: ' +
+        'Member must have length greater than or equal to 3; ' +
+        'Value null at \'globalSecondaryIndexUpdates.1.member.update.provisionedThroughput.writeCapacityUnits\' failed to satisfy constraint: ' +
+        'Member must not be null; ' +
+        'Value null at \'globalSecondaryIndexUpdates.1.member.update.provisionedThroughput.readCapacityUnits\' failed to satisfy constraint: ' +
+        'Member must not be null; ' +
+        'Value \'abc;\' at \'globalSecondaryIndexUpdates.2.member.update.indexName\' failed to satisfy constraint: ' +
+        'Member must satisfy regular expression pattern: [a-zA-Z0-9_.-]+; ' +
+        'Value \'0\' at \'globalSecondaryIndexUpdates.2.member.update.provisionedThroughput.writeCapacityUnits\' failed to satisfy constraint: ' +
+        'Member must have value greater than or equal to 1', done)
+    })
+
+    it('should return ValidationException for high index ReadCapacityUnits', function(done) {
+      assertValidation({TableName: 'abc', GlobalSecondaryIndexUpdates: [
+        {Update: {IndexName: 'abc', ProvisionedThroughput: {ReadCapacityUnits: 1000000000001, WriteCapacityUnits: 1000000000001}}},
+      ]}, 'Given value 1000000000001 for ReadCapacityUnits is out of bounds for index abc', done)
+    })
+
+    it('should return ValidationException for high index WriteCapacityUnits', function(done) {
+      assertValidation({TableName: 'abc', GlobalSecondaryIndexUpdates: [
+        {Update: {IndexName: 'abc', ProvisionedThroughput: {ReadCapacityUnits: 1000000000000, WriteCapacityUnits: 1000000000001}}},
+      ]}, 'Given value 1000000000001 for WriteCapacityUnits is out of bounds for index abc', done)
+    })
+
     it('should return ValidationException if read and write are same', function(done) {
       assertValidation({TableName: helpers.testHashTable,
         ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},
@@ -109,6 +180,18 @@ describe('updateTable', function() {
         'Current ReadCapacityUnits provisioned for the table: 1. Requested ReadCapacityUnits: 1. ' +
         'Current WriteCapacityUnits provisioned for the table: 1. Requested WriteCapacityUnits: 1. ' +
         'Refer to the Amazon DynamoDB Developer Guide for current limits and how to request higher limits.', done)
+    })
+
+    // TODO: Only processes after it finds the table
+    it.skip('should return ValidationException for empty index struct', function(done) {
+      assertValidation({TableName: helpers.testHashTable, GlobalSecondaryIndexUpdates: [{}]},
+        '', done)
+    })
+
+    // TODO: Only processes after it finds the table
+    it.skip('should return ValidationException for too many GlobalSecondaryIndexUpdates', function(done) {
+      assertValidation({TableName: helpers.testHashTable, GlobalSecondaryIndexUpdates: [{}, {}, {}, {}, {}, {}]},
+        '', done)
     })
 
     // TODO: No idea why - this response never returns

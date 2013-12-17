@@ -108,6 +108,71 @@ exports.types = {
       }
     },
   },
+  GlobalSecondaryIndexes: {
+    type: 'List',
+    children: {
+      type: 'Structure',
+      children: {
+        Projection: {
+          type: 'Structure',
+          notNull: true,
+          children: {
+            ProjectionType: {
+              type: 'String',
+              enum: ['ALL', 'INCLUDE', 'KEYS_ONLY'],
+            },
+            NonKeyAttributes: {
+              type: 'List',
+              lengthGreaterThanOrEqual: 1,
+              children: 'String'
+            },
+          }
+        },
+        IndexName: {
+          type: 'String',
+          notNull: true,
+          regex: '[a-zA-Z0-9_.-]+',
+          lengthGreaterThanOrEqual: 3,
+          lengthLessThanOrEqual: 255,
+        },
+        ProvisionedThroughput: {
+          type: 'Structure',
+          notNull: true,
+          children: {
+            WriteCapacityUnits: {
+              type: 'Long',
+              notNull: true,
+              greaterThanOrEqual: 1,
+            },
+            ReadCapacityUnits: {
+              type: 'Long',
+              notNull: true,
+              greaterThanOrEqual: 1,
+            }
+          },
+        },
+        KeySchema: {
+          type: 'List',
+          notNull: true,
+          lengthGreaterThanOrEqual: 1,
+          lengthLessThanOrEqual: 2,
+          children: {
+            type: 'Structure',
+            children: {
+              AttributeName: {
+                type: 'String',
+                notNull: true,
+              },
+              KeyType: {
+                type: 'String',
+                notNull: true,
+              }
+            }
+          }
+        },
+      }
+    },
+  },
 }
 
 exports.custom = function(data) {
@@ -142,14 +207,16 @@ exports.custom = function(data) {
   if (data.KeySchema[1] && data.KeySchema[1].KeyType != 'RANGE')
     return 'Invalid KeySchema: The second KeySchemaElement is not a RANGE key type'
 
-  if (!data.LocalSecondaryIndexes && data.KeySchema.length != data.AttributeDefinitions.length)
+  // TODO: Clean this up!
+  if (!data.LocalSecondaryIndexes && !data.GlobalSecondaryIndexes && data.KeySchema.length != data.AttributeDefinitions.length)
     return 'One or more parameter values were invalid: Number of attributes in KeySchema does not ' +
       'exactly match number of attributes defined in AttributeDefinitions'
+
+  var indexNames = Object.create(null)
 
   if (data.LocalSecondaryIndexes) {
     var indexKeys
     var tableHash = data.KeySchema[0].AttributeName
-    var indexNames = Object.create(null)
 
     if (!data.LocalSecondaryIndexes.length)
       return 'One or more parameter values were invalid: List of LocalSecondaryIndexes is empty'
@@ -205,5 +272,46 @@ exports.custom = function(data) {
       return 'One or more parameter values were invalid: LocalSecondaryIndex count exceeds the per-table limit of 5'
   }
 
+  if (data.GlobalSecondaryIndexes) {
+    var indexKeys
+
+    if (!data.GlobalSecondaryIndexes.length)
+      return 'One or more parameter values were invalid: List of GlobalSecondaryIndexes is empty'
+
+    for (var i = 0; i < data.GlobalSecondaryIndexes.length; i++) {
+      var indexName = data.GlobalSecondaryIndexes[i].IndexName
+      indexKeys = data.GlobalSecondaryIndexes[i].KeySchema.map(function(key) { return key.AttributeName }).reverse()
+      if (indexKeys.some(function(key) { return !~defns.indexOf(key) }))
+        return 'One or more parameter values were invalid: ' +
+          'Some index key attributes are not defined in AttributeDefinitions. ' +
+          'Keys: [' + indexKeys.join(', ') + '], AttributeDefinitions: [' + defns.join(', ') + ']'
+
+      if (data.GlobalSecondaryIndexes[i].KeySchema[1] &&
+          data.GlobalSecondaryIndexes[i].KeySchema[0].AttributeName ==
+          data.GlobalSecondaryIndexes[i].KeySchema[1].AttributeName)
+        return 'Both the Hash Key and the Range Key element in the KeySchema have the same name'
+
+      if (data.GlobalSecondaryIndexes[i].KeySchema[0].KeyType != 'HASH')
+        return 'Invalid KeySchema: The first KeySchemaElement is not a HASH key type'
+      if (data.GlobalSecondaryIndexes[i].KeySchema[1] &&
+          data.GlobalSecondaryIndexes[i].KeySchema[1].KeyType != 'RANGE')
+        return 'Invalid KeySchema: The second KeySchemaElement is not a RANGE key type'
+
+      if (data.GlobalSecondaryIndexes[i].Projection.ProjectionType == null)
+        return 'One or more parameter values were invalid: Unknown ProjectionType: null'
+
+      var projectionType = data.GlobalSecondaryIndexes[i].Projection.ProjectionType
+      if (data.GlobalSecondaryIndexes[i].Projection.NonKeyAttributes && projectionType != 'INCLUDE')
+        return 'One or more parameter values were invalid: ' +
+          'ProjectionType is ' + projectionType + ', but NonKeyAttributes is specified'
+
+      if (indexNames[indexName])
+        return 'One or more parameter values were invalid: Duplicate index name: ' + indexName
+      indexNames[indexName] = true
+    }
+
+    if (data.GlobalSecondaryIndexes.length > 5)
+      return 'One or more parameter values were invalid: GlobalSecondaryIndex count exceeds the per-table limit of 5'
+  }
 }
 

@@ -748,6 +748,8 @@ describe('query', function() {
         'Attempted conditional constraint is not an indexable operation', done)
     })
 
+    // TODO: Querying on global index with consistent read yields:
+    // ValidationException: Consistent reads are not supported on global secondary indexes
   })
 
   describe('functionality', function() {

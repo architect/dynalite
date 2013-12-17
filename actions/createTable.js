@@ -29,6 +29,13 @@ module.exports = function createTable(store, data, cb) {
           index.ItemCount = 0
         })
       }
+      if (data.GlobalSecondaryIndexes) {
+        data.GlobalSecondaryIndexes.forEach(function(index) {
+          index.IndexSizeBytes = 0
+          index.ItemCount = 0
+          index.IndexStatus = 'CREATING'
+        })
+      }
 
       tableDb.put(key, data, function(err) {
         if (err) return cb(err)
@@ -37,6 +44,11 @@ module.exports = function createTable(store, data, cb) {
 
           // Shouldn't need to lock/fetch as nothing should have changed
           data.TableStatus = 'ACTIVE'
+          if (data.GlobalSecondaryIndexes) {
+            data.GlobalSecondaryIndexes.forEach(function(index) {
+              index.IndexStatus = 'ACTIVE'
+            })
+          }
 
           tableDb.put(key, data, function(err) {
             // TODO: Need to check this
