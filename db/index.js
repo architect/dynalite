@@ -185,6 +185,7 @@ function checkKeySize(keyPiece, type, isHash) {
 // Hence, in '07c009', the sign is negative, exponent is 125 - 124 = 1, digits are 10 + -0.09 = 9.91 => -9.91e1
 //
 function toLexiStr(keyPiece, type) {
+  if (keyPiece == null) return ''
   if (type != 'N') return keyPiece
   var bigNum = Big(keyPiece), digits,
       exp = !bigNum.c[0] ? 0 : bigNum.s == -1 ? 125 - bigNum.e : 130 + bigNum.e

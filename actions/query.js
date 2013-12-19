@@ -116,9 +116,9 @@ module.exports = function query(store, data, cb) {
                     tableHashType = Object.keys(item1[tableHashKey] || item2[tableHashKey] || {})[0],
                     tableRangeType = Object.keys(item1[tableRangeKey] || item2[tableRangeKey] || {})[0],
                     hashVal1 = item1[tableHashKey][tableHashType],
-                    rangeVal1 = (item1[tableRangeKey] || {})[tableRangeType] || '',
+                    rangeVal1 = (item1[tableRangeKey] || {})[tableRangeType],
                     hashVal2 = item2[tableHashKey][tableHashType],
-                    rangeVal2 = (item2[tableRangeKey] || {})[tableRangeType] || ''
+                    rangeVal2 = (item2[tableRangeKey] || {})[tableRangeType]
                 val1 = db.hashPrefix(hashVal1, tableHashType, rangeVal1, tableRangeType)
                 val2 = db.hashPrefix(hashVal2, tableHashType, rangeVal2, tableRangeType)
               }
