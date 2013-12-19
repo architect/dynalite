@@ -1,4 +1,6 @@
-var once = require('once'),
+var events = require('events'),
+    once = require('once'),
+    Lazy = require('lazy'),
     db = require('../db')
 
 module.exports = function query(store, data, cb) {
@@ -9,10 +11,38 @@ module.exports = function query(store, data, cb) {
 
     var i, keySchema, key, comparisonOperator, hashKey, rangeKey, indexAttrs, type,
         opts = {}, vals, itemDb = store.getItemDb(data.TableName),
-        size = 0, capacitySize = 0, count = 0, lastItem
+        size = 0, capacitySize = 0, count = 0, lastItem, em
 
-    hashKey = table.KeySchema[0].AttributeName
-    if (table.KeySchema[1]) rangeKey = table.KeySchema[1].AttributeName
+    if (data.IndexName) {
+      for (i = 0; i < (table.LocalSecondaryIndexes || []).length; i++) {
+        if (table.LocalSecondaryIndexes[i].IndexName == data.IndexName) {
+          keySchema = table.LocalSecondaryIndexes[i].KeySchema
+          if (table.LocalSecondaryIndexes[i].Projection.ProjectionType == 'INCLUDE')
+            indexAttrs = table.LocalSecondaryIndexes[i].Projection.NonKeyAttributes
+          break
+        }
+      }
+      for (i = 0; i < (table.GlobalSecondaryIndexes || []).length; i++) {
+        if (table.GlobalSecondaryIndexes[i].IndexName == data.IndexName) {
+          if (data.ConsistentRead)
+            return cb(db.validationError('Consistent reads are not supported on global secondary indexes'))
+          if (data.Select == 'ALL_ATTRIBUTES' && table.GlobalSecondaryIndexes[i].Projection.ProjectionType != 'ALL')
+            return cb(db.validationError('One or more parameter values were invalid: ' +
+              'Select type ALL_ATTRIBUTES is not supported for global secondary index index4 ' +
+              'because its projection type is not ALL'))
+          keySchema = table.GlobalSecondaryIndexes[i].KeySchema
+          if (table.GlobalSecondaryIndexes[i].Projection.ProjectionType == 'INCLUDE')
+            indexAttrs = table.GlobalSecondaryIndexes[i].Projection.NonKeyAttributes
+          break
+        }
+      }
+      if (!keySchema) return cb(db.validationError('The table does not have the specified index'))
+    } else {
+      keySchema = table.KeySchema
+    }
+
+    hashKey = keySchema[0].AttributeName
+    if (keySchema[1]) rangeKey = keySchema[1].AttributeName
 
     if (data.ExclusiveStartKey) {
       if (table.KeySchema.some(function(schemaPiece) { return !data.ExclusiveStartKey[schemaPiece.AttributeName] })) {
@@ -34,20 +64,6 @@ module.exports = function query(store, data, cb) {
         }
       }
       opts.start = db.validateKey(data.ExclusiveStartKey, table) + '\x00'
-    }
-
-    if (data.IndexName) {
-      for (i = 0; i < (table.LocalSecondaryIndexes || []).length; i++) {
-        if (table.LocalSecondaryIndexes[i].IndexName == data.IndexName) {
-          keySchema = table.LocalSecondaryIndexes[i].KeySchema
-          if (table.LocalSecondaryIndexes[i].Projection.ProjectionType == 'INCLUDE')
-            indexAttrs = table.LocalSecondaryIndexes[i].Projection.NonKeyAttributes
-          break
-        }
-      }
-      if (!keySchema) return cb(db.validationError('The table does not have the specified index'))
-    } else {
-      keySchema = table.KeySchema
     }
 
     for (i = 0; i < keySchema.length; i++) {
@@ -79,7 +95,44 @@ module.exports = function query(store, data, cb) {
       }
     }
 
-    vals = db.lazy(itemDb.createValueStream(opts), cb)
+    // TODO: We currently don't deal nicely with indexes or reverse queries
+    if (data.ScanIndexForward === false || data.IndexName) {
+      em = new events.EventEmitter
+      vals = new Lazy(em)
+
+      db.lazy(itemDb.createValueStream(), cb)
+        .filter(function(val) { return db.matchesFilter(val, data.KeyConditions) })
+        .join(function(items) {
+          if (data.IndexName) {
+            items.sort(function(item1, item2) {
+              var val1, val2
+              if (rangeKey) {
+                var rangeType = Object.keys(item1[rangeKey] || item2[rangeKey] || {})[0]
+                val1 = db.toLexiStr(item1[rangeKey][rangeType], rangeType)
+                val2 = db.toLexiStr(item2[rangeKey][rangeType], rangeType)
+              } else {
+                var tableHashKey = table.KeySchema[0].AttributeName,
+                    tableRangeKey = (table.KeySchema[1] || {}).AttributeName,
+                    tableHashType = Object.keys(item1[tableHashKey] || item2[tableHashKey] || {})[0],
+                    tableRangeType = Object.keys(item1[tableRangeKey] || item2[tableRangeKey] || {})[0],
+                    hashVal1 = item1[tableHashKey][tableHashType],
+                    rangeVal1 = (item1[tableRangeKey] || {})[tableRangeType] || '',
+                    hashVal2 = item2[tableHashKey][tableHashType],
+                    rangeVal2 = (item2[tableRangeKey] || {})[tableRangeType] || ''
+                val1 = db.hashPrefix(hashVal1, tableHashType, rangeVal1, tableRangeType)
+                val2 = db.hashPrefix(hashVal2, tableHashType, rangeVal2, tableRangeType)
+              }
+              return val1.localeCompare(val2)
+            })
+          }
+          if (data.ScanIndexForward === false) items.reverse()
+
+          items.forEach(function(item) { em.emit('data', item) })
+          em.emit('end')
+        })
+    } else {
+      vals = db.lazy(itemDb.createValueStream(opts), cb)
+    }
 
     vals = vals.filter(function(val) {
       if (!db.matchesFilter(val, data.KeyConditions)) {
@@ -92,8 +145,7 @@ module.exports = function query(store, data, cb) {
     })
 
     vals = vals.takeWhile(function(val) {
-      // Limits don't currently work for traversing index in reverse
-      if ((data.ScanIndexForward !== false && count >= data.Limit) || size > 1042000) return false
+      if (count >= data.Limit || size > 1042000) return false
 
       size += db.itemSize(val, true)
       count++
@@ -116,25 +168,13 @@ module.exports = function query(store, data, cb) {
 
     vals.join(function(items) {
       var result = {Count: items.length}
-      if (data.Select != 'COUNT') {
-        if (data.IndexName) {
-          items.sort(function(item1, item2) {
-            var type1 = Object.keys(item1[keySchema[1].AttributeName] || {})[0],
-                val1 = type1 ? item1[keySchema[1].AttributeName][type1] : '',
-                type2 = Object.keys(item2[keySchema[1].AttributeName] || {})[0],
-                val2 = type2 ? item2[keySchema[1].AttributeName][type2] : ''
-            return db.toLexiStr(val1, type1).localeCompare(db.toLexiStr(val2, type2))
-          })
-        }
-        if (data.ScanIndexForward === false) items.reverse()
-      }
       // TODO: Check size?
       // TODO: Does this only happen when we're not doing a COUNT?
       if (data.Limit && (items.length > data.Limit || lastItem)) {
         items.splice(data.Limit)
         result.Count = items.length
         if (result.Count) {
-          result.LastEvaluatedKey = table.KeySchema.reduce(function(key, schemaPiece) {
+          result.LastEvaluatedKey = table.KeySchema.concat(keySchema).reduce(function(key, schemaPiece) {
             key[schemaPiece.AttributeName] = items[items.length - 1][schemaPiece.AttributeName]
             return key
           }, {})

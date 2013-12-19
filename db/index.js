@@ -11,6 +11,7 @@ exports.lazy = lazyStream
 exports.validateKey = validateKey
 exports.validateItem = validateItem
 exports.toLexiStr = toLexiStr
+exports.hashPrefix = hashPrefix
 exports.validationError = validationError
 exports.checkConditional = checkConditional
 exports.itemSize = itemSize
@@ -110,7 +111,7 @@ function validateKey(dataKey, table) {
 }
 
 function validateItem(dataItem, table) {
-  var keyStr, i, j, attr, type, sizeError
+  var keyStr, i, j, k, attr, type, sizeError
   for (i = 0; i < table.KeySchema.length; i++) {
     attr = table.KeySchema[i].AttributeName
     if (dataItem[attr] == null)
@@ -130,8 +131,23 @@ function validateItem(dataItem, table) {
       break
     }
   }
+  if (table.GlobalSecondaryIndexes) {
+    for (i = table.GlobalSecondaryIndexes.length - 1; i >= 0; i--) {
+      for (k = 0; k < table.GlobalSecondaryIndexes[i].KeySchema.length; k++) {
+        attr = table.GlobalSecondaryIndexes[i].KeySchema[k].AttributeName
+        for (j = 0; j < table.AttributeDefinitions.length; j++) {
+          if (table.AttributeDefinitions[j].AttributeName != attr) continue
+          type = table.AttributeDefinitions[j].AttributeType
+          if (dataItem[attr] && !dataItem[attr][type])
+            return validationError('One or more parameter values were invalid: ' +
+              'Type mismatch for Index Key ' + attr + ' Expected: ' + type + ' Actual: ' +
+              Object.keys(dataItem[attr])[0] + ' IndexName: ' + table.GlobalSecondaryIndexes[i].IndexName)
+        }
+      }
+    }
+  }
   if (table.LocalSecondaryIndexes) {
-    for (i = 0; i < table.LocalSecondaryIndexes.length; i++) {
+    for (i = table.LocalSecondaryIndexes.length - 1; i >= 0; i--) {
       attr = table.LocalSecondaryIndexes[i].KeySchema[1].AttributeName
       for (j = 0; j < table.AttributeDefinitions.length; j++) {
         if (table.AttributeDefinitions[j].AttributeName != attr) continue
@@ -181,16 +197,27 @@ function toLexiStr(keyPiece, type) {
   return (bigNum.s == -1 ? '0' : '1') + ('0' + exp.toString(16)).slice(-2) + digits
 }
 
-function hashPrefix(hashKey, type) {
-  if (type == 'S') {
+function hashPrefix(hashKey, hashType, rangeKey, rangeType) {
+  if (hashType == 'S') {
     hashKey = new Buffer(hashKey, 'utf8')
-  } else if (type == 'N') {
+  } else if (hashType == 'N') {
     hashKey = numToBuffer(hashKey)
-  } else if (type == 'B') {
+  } else if (hashType == 'B') {
     hashKey = new Buffer(hashKey, 'base64')
   }
+  if (rangeKey) {
+    if (rangeType == 'S') {
+      rangeKey = new Buffer(rangeKey, 'utf8')
+    } else if (rangeType == 'N') {
+      rangeKey = numToBuffer(rangeKey)
+    } else if (rangeType == 'B') {
+      rangeKey = new Buffer(rangeKey, 'base64')
+    }
+  } else {
+    rangeKey = new Buffer(0)
+  }
   // TODO: Can use the whole hash if we deem it important - for now just first six chars
-  return crypto.createHash('md5').update('Outliers').update(hashKey).digest('hex').slice(0, 6)
+  return crypto.createHash('md5').update('Outliers').update(hashKey).update(rangeKey).digest('hex').slice(0, 6)
 }
 
 function numToBuffer(num) {

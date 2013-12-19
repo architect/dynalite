@@ -135,6 +135,17 @@ function createTestTables(done) {
       KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'd', KeyType: 'RANGE'}],
       Projection: {ProjectionType: 'INCLUDE', NonKeyAttributes: ['c']},
     }],
+    GlobalSecondaryIndexes: [{
+      IndexName: 'index3',
+      KeySchema: [{AttributeName: 'c', KeyType: 'HASH'}],
+      ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
+      Projection: {ProjectionType: 'ALL'},
+    }, {
+      IndexName: 'index4',
+      KeySchema: [{AttributeName: 'c', KeyType: 'HASH'}, {AttributeName: 'd', KeyType: 'RANGE'}],
+      ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
+      Projection: {ProjectionType: 'INCLUDE', NonKeyAttributes: ['e']},
+    }],
   }, {
     TableName: exports.testRangeNTable,
     AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}, {AttributeName: 'b', AttributeType: 'N'}],

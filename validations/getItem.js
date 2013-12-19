@@ -50,5 +50,14 @@ exports.custom = function(data) {
     var msg = validateAttributeValue(data.Key[key])
     if (msg) return msg
   }
+  if (data.AttributesToGet) {
+    var attrs = Object.create(null)
+    for (var i = 0; i < data.AttributesToGet.length; i++) {
+      if (attrs[data.AttributesToGet[i]])
+        return 'One or more parameter values were invalid: Duplicate value in attribute name: ' +
+          data.AttributesToGet[i]
+      attrs[data.AttributesToGet[i]] = true
+    }
+  }
 }
 

@@ -138,5 +138,15 @@ exports.custom = function(data) {
       if (msg) return 'The provided starting key is invalid: ' + msg
     }
   }
+
+  if (data.AttributesToGet) {
+    var attrs = Object.create(null)
+    for (var i = 0; i < data.AttributesToGet.length; i++) {
+      if (attrs[data.AttributesToGet[i]])
+        return 'One or more parameter values were invalid: Duplicate value in attribute name: ' +
+          data.AttributesToGet[i]
+      attrs[data.AttributesToGet[i]] = true
+    }
+  }
 }
 

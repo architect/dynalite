@@ -736,6 +736,11 @@ describe('scan', function() {
         'The parameter cannot be converted to a numeric value: b', done)
     })
 
+    it('should return ValidationException duplicate values in AttributesToGet', function(done) {
+      assertValidation({TableName: 'abc', ScanFilter: {a: {ComparisonOperator: 'NULL'}}, AttributesToGet: ['a', 'a']},
+        'One or more parameter values were invalid: Duplicate value in attribute name: a', done)
+    })
+
     it('should return ValidationException for empty ExclusiveStartKey', function(done) {
       assertValidation({
         TableName: helpers.testHashTable,
@@ -778,8 +783,6 @@ describe('scan', function() {
       })
     })
 
-    // TODO: Scan with duplicate attributes yields:
-    // ValidationException: One or more parameter values were invalid: Duplicate value in attribute name: approvedCreative
   })
 
   describe('functionality', function() {

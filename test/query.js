@@ -549,6 +549,11 @@ describe('query', function() {
         'The parameter cannot be converted to a numeric value: b', done)
     })
 
+    it('should return ValidationException duplicate values in AttributesToGet', function(done) {
+      assertValidation({TableName: 'abc', KeyConditions: {a: {ComparisonOperator: 'NULL'}}, AttributesToGet: ['a', 'a']},
+        'One or more parameter values were invalid: Duplicate value in attribute name: a', done)
+    })
+
     it('should return ValidationException if querying with NULL', function(done) {
       assertValidation({
         TableName: helpers.testHashTable,
@@ -715,6 +720,16 @@ describe('query', function() {
         'Query condition missed key schema element b', done)
     })
 
+    it('should return ValidationException for querying global index with incorrect schema', function(done) {
+      assertValidation({
+        TableName: helpers.testRangeTable,
+        IndexName: 'index3',
+        KeyConditions: {
+          a: {ComparisonOperator: 'EQ', AttributeValueList: [{S: 'a'}]},
+        }},
+        'Query condition missed key schema element c', done)
+    })
+
     it('should return ValidationException for non-existent index name', function(done) {
       assertValidation({
         TableName: helpers.testRangeTable,
@@ -748,8 +763,30 @@ describe('query', function() {
         'Attempted conditional constraint is not an indexable operation', done)
     })
 
-    // TODO: Querying on global index with consistent read yields:
-    // ValidationException: Consistent reads are not supported on global secondary indexes
+    it('should return ValidationException for querying global index with ConsistentRead', function(done) {
+      assertValidation({
+        TableName: helpers.testRangeTable,
+        IndexName: 'index3',
+        ConsistentRead: true,
+        KeyConditions: {
+          c: {ComparisonOperator: 'NULL'}
+        }},
+        'Consistent reads are not supported on global secondary indexes', done)
+    })
+
+    it('should return ValidationException for specifying ALL_ATTRIBUTES when global index does not have ALL', function(done) {
+      assertValidation({
+        TableName: helpers.testRangeTable,
+        IndexName: 'index4',
+        Select: 'ALL_ATTRIBUTES',
+        KeyConditions: {
+          c: {ComparisonOperator: 'EQ', AttributeValueList: [{S: 'a'}]}
+        }},
+        'One or more parameter values were invalid: ' +
+        'Select type ALL_ATTRIBUTES is not supported for global secondary index index4 ' +
+        'because its projection type is not ALL', done)
+    })
+
   })
 
   describe('functionality', function() {
@@ -1456,6 +1493,155 @@ describe('query', function() {
           if (err) return done(err)
           res.statusCode.should.equal(200)
           res.body.should.eql({Count: 3, Items: [item2, item3, item4], LastEvaluatedKey: {a: item4.a, b: item4.b}})
+          done()
+        })
+      })
+    })
+
+    it('should query on basic hash global index', function(done) {
+      var item = {a: {S: 'a'}, b: {S: 'a'}, c: {S: helpers.randomString()}, d: {S: 'a'}},
+          item2 = {a: {S: 'b'}, b: {S: 'b'}, c: item.c, d: {S: 'a'}},
+          item3 = {a: {S: 'c'}, b: {S: 'e'}, c: item.c, d: {S: 'a'}},
+          item4 = {a: {S: 'c'}, b: {S: 'd'}, c: item.c, d: {S: 'a'}},
+          item5 = {a: {S: 'c'}, b: {S: 'c'}, c: {S: 'c'}, d: {S: 'a'}},
+          item6 = {a: {S: 'd'}, b: {S: 'a'}, c: item.c, d: {S: 'a'}},
+          item7 = {a: {S: 'e'}, b: {S: 'a'}, c: item.c, d: {S: 'a'}},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testRangeTable] = [
+        {PutRequest: {Item: item}},
+        {PutRequest: {Item: item2}},
+        {PutRequest: {Item: item3}},
+        {PutRequest: {Item: item4}},
+        {PutRequest: {Item: item5}},
+        {PutRequest: {Item: item6}},
+        {PutRequest: {Item: item7}},
+      ]
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        request(opts({TableName: helpers.testRangeTable, KeyConditions: {
+          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+        }, IndexName: 'index3', Limit: 4}), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.should.eql({
+            Count: 4,
+            Items: [item2, item, item3, item7],
+            LastEvaluatedKey: {a: item7.a, b: item7.b, c: item7.c},
+          })
+          done()
+        })
+      })
+    })
+
+    it('should query in reverse on basic hash global index', function(done) {
+      var item = {a: {S: 'a'}, b: {S: 'a'}, c: {S: helpers.randomString()}},
+          item2 = {a: {S: 'b'}, b: {S: 'b'}, c: item.c},
+          item3 = {a: {S: 'c'}, b: {S: 'e'}, c: item.c},
+          item4 = {a: {S: 'c'}, b: {S: 'd'}, c: item.c},
+          item5 = {a: {S: 'c'}, b: {S: 'c'}, c: {S: 'c'}},
+          item6 = {a: {S: 'd'}, b: {S: 'a'}, c: item.c},
+          item7 = {a: {S: 'e'}, b: {S: 'a'}, c: item.c},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testRangeTable] = [
+        {PutRequest: {Item: item}},
+        {PutRequest: {Item: item2}},
+        {PutRequest: {Item: item3}},
+        {PutRequest: {Item: item4}},
+        {PutRequest: {Item: item5}},
+        {PutRequest: {Item: item6}},
+        {PutRequest: {Item: item7}},
+      ]
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        request(opts({TableName: helpers.testRangeTable, KeyConditions: {
+          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+        }, IndexName: 'index3', ScanIndexForward: false, Limit: 4}), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.should.eql({
+            Count: 4,
+            Items: [item4, item6, item7, item3],
+            LastEvaluatedKey: {a: item3.a, b: item3.b, c: item3.c},
+          })
+          done()
+        })
+      })
+    })
+
+    it('should query on range global index', function(done) {
+      var item = {a: {S: 'a'}, b: {S: 'a'}, c: {S: helpers.randomString()}, d: {S: 'f'}, e: {S: 'a'}, f: {S: 'a'}},
+          item2 = {a: {S: 'b'}, b: {S: 'b'}, c: item.c, d: {S: 'a'}, e: {S: 'a'}, f: {S: 'a'}},
+          item3 = {a: {S: 'c'}, b: {S: 'e'}, c: item.c, d: {S: 'b'}, e: {S: 'a'}, f: {S: 'a'}},
+          item4 = {a: {S: 'c'}, b: {S: 'd'}, c: item.c, d: {S: 'c'}, e: {S: 'a'}, f: {S: 'a'}},
+          item5 = {a: {S: 'c'}, b: {S: 'c'}, c: {S: 'c'}, d: {S: 'd'}, e: {S: 'a'}, f: {S: 'a'}},
+          item6 = {a: {S: 'd'}, b: {S: 'a'}, c: item.c, d: {S: 'e'}, e: {S: 'a'}, f: {S: 'a'}},
+          item7 = {a: {S: 'e'}, b: {S: 'a'}, c: item.c, d: {S: 'f'}, e: {S: 'a'}, f: {S: 'a'}},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testRangeTable] = [
+        {PutRequest: {Item: item}},
+        {PutRequest: {Item: item2}},
+        {PutRequest: {Item: item3}},
+        {PutRequest: {Item: item4}},
+        {PutRequest: {Item: item5}},
+        {PutRequest: {Item: item6}},
+        {PutRequest: {Item: item7}},
+      ]
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        request(opts({TableName: helpers.testRangeTable, KeyConditions: {
+          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+          d: {ComparisonOperator: 'LT', AttributeValueList: [item.d]},
+        }, IndexName: 'index4', Limit: 3}), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          delete item2.f
+          delete item3.f
+          delete item4.f
+          res.body.should.eql({
+            Count: 3,
+            Items: [item2, item3, item4],
+            LastEvaluatedKey: {a: item4.a, b: item4.b, c: item4.c, d: item4.d},
+          })
+          done()
+        })
+      })
+    })
+
+    it('should query in reverse on range global index', function(done) {
+      var item = {a: {S: 'a'}, b: {S: 'a'}, c: {S: helpers.randomString()}, d: {S: 'f'}},
+          item2 = {a: {S: 'b'}, b: {S: 'b'}, c: item.c, d: {S: 'a'}},
+          item3 = {a: {S: 'c'}, b: {S: 'e'}, c: item.c, d: {S: 'b'}},
+          item4 = {a: {S: 'c'}, b: {S: 'd'}, c: item.c, d: {S: 'c'}},
+          item5 = {a: {S: 'c'}, b: {S: 'c'}, c: {S: 'c'}, d: {S: 'd'}},
+          item6 = {a: {S: 'd'}, b: {S: 'a'}, c: item.c, d: {S: 'e'}},
+          item7 = {a: {S: 'e'}, b: {S: 'a'}, c: item.c, d: {S: 'f'}},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testRangeTable] = [
+        {PutRequest: {Item: item}},
+        {PutRequest: {Item: item2}},
+        {PutRequest: {Item: item3}},
+        {PutRequest: {Item: item4}},
+        {PutRequest: {Item: item5}},
+        {PutRequest: {Item: item6}},
+        {PutRequest: {Item: item7}},
+      ]
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        request(opts({TableName: helpers.testRangeTable, KeyConditions: {
+          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+          d: {ComparisonOperator: 'LT', AttributeValueList: [item.d]},
+        }, IndexName: 'index4', ScanIndexForward: false, Limit: 3}), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.should.eql({
+            Count: 3,
+            Items: [item6, item4, item3],
+            LastEvaluatedKey: {a: item3.a, b: item3.b, c: item3.c, d: item3.d},
+          })
           done()
         })
       })

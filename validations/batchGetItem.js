@@ -65,6 +65,15 @@ exports.custom = function(data) {
       if (numReqs > 100)
         return 'Too many items requested for the BatchGetItem call'
     }
+    if (data.RequestItems[table].AttributesToGet) {
+      var attrs = Object.create(null)
+      for (var i = 0; i < data.RequestItems[table].AttributesToGet.length; i++) {
+        if (attrs[data.RequestItems[table].AttributesToGet[i]])
+          return 'One or more parameter values were invalid: Duplicate value in attribute name: ' +
+            data.RequestItems[table].AttributesToGet[i]
+        attrs[data.RequestItems[table].AttributesToGet[i]] = true
+      }
+    }
   }
 }
 

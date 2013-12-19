@@ -471,7 +471,7 @@ describe('batchWriteItem', function() {
       batchReq.RequestItems[helpers.testRangeTable] = [{PutRequest: {Item: {a: {S: 'a'}, b: {S: 'a'}, c: {N: '1'}}}}]
       assertValidation(batchReq,
         'One or more parameter values were invalid: ' +
-        'Type mismatch for Index Key c Expected: S Actual: N IndexName: index1', done)
+        'Type mismatch for Index Key c Expected: S Actual: N IndexName: index4', done)
     })
 
     it('should return ValidationException if hash key is too big', function(done) {
