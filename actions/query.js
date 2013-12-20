@@ -45,7 +45,7 @@ module.exports = function query(store, data, cb) {
     if (keySchema[1]) rangeKey = keySchema[1].AttributeName
 
     if (data.ExclusiveStartKey) {
-      if (table.KeySchema.some(function(schemaPiece) { return !data.ExclusiveStartKey[schemaPiece.AttributeName] })) {
+      if (table.KeySchema.concat(keySchema).some(function(schemaPiece) { return !data.ExclusiveStartKey[schemaPiece.AttributeName] })) {
         return cb(db.validationError('The provided starting key is invalid'))
       }
       comparisonOperator = data.KeyConditions[hashKey].ComparisonOperator
@@ -103,29 +103,23 @@ module.exports = function query(store, data, cb) {
       db.lazy(itemDb.createValueStream(), cb)
         .filter(function(val) { return db.matchesFilter(val, data.KeyConditions) })
         .join(function(items) {
-          if (data.IndexName) {
-            items.sort(function(item1, item2) {
-              var val1, val2
-              if (rangeKey) {
-                var rangeType = Object.keys(item1[rangeKey] || item2[rangeKey] || {})[0]
-                val1 = db.toLexiStr(item1[rangeKey][rangeType], rangeType)
-                val2 = db.toLexiStr(item2[rangeKey][rangeType], rangeType)
+          var compareFn = db.itemCompare(rangeKey, table), i
+          if (data.IndexName)
+            items.sort(compareFn)
+          if (data.ScanIndexForward === false)
+            items.reverse()
+          if (data.ExclusiveStartKey) {
+            for (i = 0; i < items.length; i++) {
+              if (data.ScanIndexForward === false) {
+                if (compareFn(data.ExclusiveStartKey, items[i]) > 0)
+                  break
               } else {
-                var tableHashKey = table.KeySchema[0].AttributeName,
-                    tableRangeKey = (table.KeySchema[1] || {}).AttributeName,
-                    tableHashType = Object.keys(item1[tableHashKey] || item2[tableHashKey] || {})[0],
-                    tableRangeType = Object.keys(item1[tableRangeKey] || item2[tableRangeKey] || {})[0],
-                    hashVal1 = item1[tableHashKey][tableHashType],
-                    rangeVal1 = (item1[tableRangeKey] || {})[tableRangeType],
-                    hashVal2 = item2[tableHashKey][tableHashType],
-                    rangeVal2 = (item2[tableRangeKey] || {})[tableRangeType]
-                val1 = db.hashPrefix(hashVal1, tableHashType, rangeVal1, tableRangeType)
-                val2 = db.hashPrefix(hashVal2, tableHashType, rangeVal2, tableRangeType)
+                if (compareFn(data.ExclusiveStartKey, items[i]) < 0)
+                  break
               }
-              return val1.localeCompare(val2)
-            })
+            }
+            items = items.slice(i)
           }
-          if (data.ScanIndexForward === false) items.reverse()
 
           items.forEach(function(item) { em.emit('data', item) })
           em.emit('end')

@@ -12,6 +12,7 @@ exports.validateKey = validateKey
 exports.validateItem = validateItem
 exports.toLexiStr = toLexiStr
 exports.hashPrefix = hashPrefix
+exports.itemCompare = itemCompare
 exports.validationError = validationError
 exports.checkConditional = checkConditional
 exports.itemSize = itemSize
@@ -261,6 +262,30 @@ function numToBuffer(num) {
   }
 
   return new Buffer(byteArray)
+}
+
+function itemCompare(rangeKey, table) {
+  return function(item1, item2) {
+    var val1, val2, rangeType, tableHashKey, tableRangeKey, tableHashType, tableRangeType,
+        hashVal1, rangeVal1, hashVal2, rangeVal2
+    if (rangeKey) {
+      rangeType = Object.keys(item1[rangeKey] || item2[rangeKey] || {})[0]
+      val1 = toLexiStr(item1[rangeKey][rangeType], rangeType)
+      val2 = toLexiStr(item2[rangeKey][rangeType], rangeType)
+    } else {
+      tableHashKey = table.KeySchema[0].AttributeName
+      tableRangeKey = (table.KeySchema[1] || {}).AttributeName
+      tableHashType = Object.keys(item1[tableHashKey] || item2[tableHashKey] || {})[0]
+      tableRangeType = Object.keys(item1[tableRangeKey] || item2[tableRangeKey] || {})[0]
+      hashVal1 = item1[tableHashKey][tableHashType]
+      rangeVal1 = (item1[tableRangeKey] || {})[tableRangeType]
+      hashVal2 = item2[tableHashKey][tableHashType]
+      rangeVal2 = (item2[tableRangeKey] || {})[tableRangeType]
+      val1 = hashPrefix(hashVal1, tableHashType, rangeVal1, tableRangeType)
+      val2 = hashPrefix(hashVal2, tableHashType, rangeVal2, tableRangeType)
+    }
+    return val1.localeCompare(val2)
+  }
 }
 
 function checkConditional(expected, existingItem) {

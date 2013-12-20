@@ -787,6 +787,7 @@ describe('query', function() {
         'because its projection type is not ALL', done)
     })
 
+    // TODO: 'The provided starting key is invalid' when extra attributes
   })
 
   describe('functionality', function() {
@@ -1640,6 +1641,160 @@ describe('query', function() {
           res.body.should.eql({
             Count: 3,
             Items: [item6, item4, item3],
+            LastEvaluatedKey: {a: item3.a, b: item3.b, c: item3.c, d: item3.d},
+          })
+          done()
+        })
+      })
+    })
+
+    it('should query with ExclusiveStartKey on basic hash global index', function(done) {
+      var item = {a: {S: 'a'}, b: {S: 'a'}, c: {S: helpers.randomString()}, d: {S: 'a'}},
+          item2 = {a: {S: 'b'}, b: {S: 'b'}, c: item.c, d: {S: 'a'}},
+          item3 = {a: {S: 'c'}, b: {S: 'e'}, c: item.c, d: {S: 'a'}},
+          item4 = {a: {S: 'c'}, b: {S: 'd'}, c: item.c, d: {S: 'a'}},
+          item5 = {a: {S: 'c'}, b: {S: 'c'}, c: {S: 'c'}, d: {S: 'a'}},
+          item6 = {a: {S: 'd'}, b: {S: 'a'}, c: item.c, d: {S: 'a'}},
+          item7 = {a: {S: 'e'}, b: {S: 'a'}, c: item.c, d: {S: 'a'}},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testRangeTable] = [
+        {PutRequest: {Item: item}},
+        {PutRequest: {Item: item2}},
+        {PutRequest: {Item: item3}},
+        {PutRequest: {Item: item4}},
+        {PutRequest: {Item: item5}},
+        {PutRequest: {Item: item6}},
+        {PutRequest: {Item: item7}},
+      ]
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        delete item3.d
+        request(opts({TableName: helpers.testRangeTable, KeyConditions: {
+          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+        }, IndexName: 'index3', Limit: 2, ExclusiveStartKey: item3}), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.should.eql({
+            Count: 2,
+            Items: [item7, item6],
+            LastEvaluatedKey: {a: item6.a, b: item6.b, c: item6.c},
+          })
+          done()
+        })
+      })
+    })
+
+    it('should query in reverse with ExclusiveStartKey on basic hash global index', function(done) {
+      var item = {a: {S: 'a'}, b: {S: 'a'}, c: {S: helpers.randomString()}},
+          item2 = {a: {S: 'b'}, b: {S: 'b'}, c: item.c},
+          item3 = {a: {S: 'c'}, b: {S: 'e'}, c: item.c},
+          item4 = {a: {S: 'c'}, b: {S: 'd'}, c: item.c},
+          item5 = {a: {S: 'c'}, b: {S: 'c'}, c: {S: 'c'}},
+          item6 = {a: {S: 'd'}, b: {S: 'a'}, c: item.c},
+          item7 = {a: {S: 'e'}, b: {S: 'a'}, c: item.c},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testRangeTable] = [
+        {PutRequest: {Item: item}},
+        {PutRequest: {Item: item2}},
+        {PutRequest: {Item: item3}},
+        {PutRequest: {Item: item4}},
+        {PutRequest: {Item: item5}},
+        {PutRequest: {Item: item6}},
+        {PutRequest: {Item: item7}},
+      ]
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        delete item7.d
+        request(opts({TableName: helpers.testRangeTable, KeyConditions: {
+          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+        }, IndexName: 'index3', ScanIndexForward: false, Limit: 2, ExclusiveStartKey: item7}), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.should.eql({
+            Count: 2,
+            Items: [item3, item],
+            LastEvaluatedKey: {a: item.a, b: item.b, c: item.c},
+          })
+          done()
+        })
+      })
+    })
+
+    it('should query with ExclusiveStartKey on range global index', function(done) {
+      var item = {a: {S: 'a'}, b: {S: 'a'}, c: {S: helpers.randomString()}, d: {S: 'f'}, e: {S: 'a'}, f: {S: 'a'}},
+          item2 = {a: {S: 'b'}, b: {S: 'b'}, c: item.c, d: {S: 'a'}, e: {S: 'a'}, f: {S: 'a'}},
+          item3 = {a: {S: 'c'}, b: {S: 'e'}, c: item.c, d: {S: 'b'}, e: {S: 'a'}, f: {S: 'a'}},
+          item4 = {a: {S: 'c'}, b: {S: 'd'}, c: item.c, d: {S: 'c'}, e: {S: 'a'}, f: {S: 'a'}},
+          item5 = {a: {S: 'c'}, b: {S: 'c'}, c: {S: 'c'}, d: {S: 'd'}, e: {S: 'a'}, f: {S: 'a'}},
+          item6 = {a: {S: 'd'}, b: {S: 'a'}, c: item.c, d: {S: 'e'}, e: {S: 'a'}, f: {S: 'a'}},
+          item7 = {a: {S: 'e'}, b: {S: 'a'}, c: item.c, d: {S: 'f'}, e: {S: 'a'}, f: {S: 'a'}},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testRangeTable] = [
+        {PutRequest: {Item: item}},
+        {PutRequest: {Item: item2}},
+        {PutRequest: {Item: item3}},
+        {PutRequest: {Item: item4}},
+        {PutRequest: {Item: item5}},
+        {PutRequest: {Item: item6}},
+        {PutRequest: {Item: item7}},
+      ]
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        delete item3.e
+        delete item3.f
+        delete item4.f
+        request(opts({TableName: helpers.testRangeTable, KeyConditions: {
+          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+          d: {ComparisonOperator: 'LT', AttributeValueList: [item.d]},
+        }, IndexName: 'index4', Limit: 1, ExclusiveStartKey: item3}), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.should.eql({
+            Count: 1,
+            Items: [item4],
+            LastEvaluatedKey: {a: item4.a, b: item4.b, c: item4.c, d: item4.d},
+          })
+          done()
+        })
+      })
+    })
+
+    it('should query in reverse with ExclusiveStartKey on range global index', function(done) {
+      var item = {a: {S: 'a'}, b: {S: 'a'}, c: {S: helpers.randomString()}, d: {S: 'f'}, e: {S: 'a'}, f: {S: 'a'}},
+          item2 = {a: {S: 'b'}, b: {S: 'b'}, c: item.c, d: {S: 'a'}, e: {S: 'a'}, f: {S: 'a'}},
+          item3 = {a: {S: 'c'}, b: {S: 'e'}, c: item.c, d: {S: 'b'}, e: {S: 'a'}, f: {S: 'a'}},
+          item4 = {a: {S: 'c'}, b: {S: 'd'}, c: item.c, d: {S: 'c'}, e: {S: 'a'}, f: {S: 'a'}},
+          item5 = {a: {S: 'c'}, b: {S: 'c'}, c: {S: 'c'}, d: {S: 'd'}, e: {S: 'a'}, f: {S: 'a'}},
+          item6 = {a: {S: 'd'}, b: {S: 'a'}, c: item.c, d: {S: 'e'}, e: {S: 'a'}, f: {S: 'a'}},
+          item7 = {a: {S: 'e'}, b: {S: 'a'}, c: item.c, d: {S: 'f'}, e: {S: 'a'}, f: {S: 'a'}},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testRangeTable] = [
+        {PutRequest: {Item: item}},
+        {PutRequest: {Item: item2}},
+        {PutRequest: {Item: item3}},
+        {PutRequest: {Item: item4}},
+        {PutRequest: {Item: item5}},
+        {PutRequest: {Item: item6}},
+        {PutRequest: {Item: item7}},
+      ]
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        delete item4.e
+        delete item4.f
+        delete item3.f
+        request(opts({TableName: helpers.testRangeTable, KeyConditions: {
+          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+          d: {ComparisonOperator: 'LT', AttributeValueList: [item.d]},
+        }, IndexName: 'index4', Limit: 1, ScanIndexForward: false, ExclusiveStartKey: item4}), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.should.eql({
+            Count: 1,
+            Items: [item3],
             LastEvaluatedKey: {a: item3.a, b: item3.b, c: item3.c, d: item3.d},
           })
           done()
