@@ -270,8 +270,10 @@ function itemCompare(rangeKey, table) {
         hashVal1, rangeVal1, hashVal2, rangeVal2
     if (rangeKey) {
       rangeType = Object.keys(item1[rangeKey] || item2[rangeKey] || {})[0]
-      val1 = toLexiStr(item1[rangeKey][rangeType], rangeType)
-      val2 = toLexiStr(item2[rangeKey][rangeType], rangeType)
+      rangeVal1 = (item1[rangeKey] || {})[rangeType]
+      rangeVal2 = (item2[rangeKey] || {})[rangeType]
+      val1 = toLexiStr(rangeVal1, rangeType)
+      val2 = toLexiStr(rangeVal2, rangeType)
     } else {
       tableHashKey = table.KeySchema[0].AttributeName
       tableRangeKey = (table.KeySchema[1] || {}).AttributeName
