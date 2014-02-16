@@ -23,7 +23,7 @@
   "dependencies": {
     "buffer-crc32": "~0.2.1",
     "levelup": "~0.18.2",
-    "memdown": "~0.6.0",
+    "memdown": "~0.7.0",
     "level-sublevel": "~5.1.1",
     "lock": "~0.0.4",
     "lazy": "~1.0.11",
