@@ -10,6 +10,7 @@ module.exports = function query(store, data, cb) {
     if (err) return cb(err)
 
     var i, keySchema, key, comparisonOperator, hashKey, rangeKey, indexAttrs, type,
+        tableHashKey = table.KeySchema[0].AttributeName, tableHashType, tableHashVal,
         opts = {}, vals, itemDb = store.getItemDb(data.TableName),
         size = 0, capacitySize = 0, count = 0, lastItem, em
 
@@ -43,6 +44,13 @@ module.exports = function query(store, data, cb) {
 
     hashKey = keySchema[0].AttributeName
     if (keySchema[1]) rangeKey = keySchema[1].AttributeName
+
+    if (data.KeyConditions[tableHashKey] && data.KeyConditions[tableHashKey].ComparisonOperator == 'EQ') {
+      tableHashType = Object.keys(data.KeyConditions[tableHashKey].AttributeValueList[0])[0]
+      tableHashVal = data.KeyConditions[tableHashKey].AttributeValueList[0][tableHashType]
+      opts.start = db.hashPrefix(tableHashVal, tableHashType)
+      opts.end = db.hashPrefix(tableHashVal, tableHashType) + '~~'
+    }
 
     if (data.ExclusiveStartKey) {
       if (table.KeySchema.concat(keySchema).some(function(schemaPiece) { return !data.ExclusiveStartKey[schemaPiece.AttributeName] })) {
@@ -162,6 +170,7 @@ module.exports = function query(store, data, cb) {
 
     vals.join(function(items) {
       var result = {Count: items.length}
+
       // TODO: Check size?
       // TODO: Does this only happen when we're not doing a COUNT?
       if (data.Limit && (items.length > data.Limit || lastItem)) {
