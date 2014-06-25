@@ -77,6 +77,9 @@ module.exports = function updateItem(store, data, cb) {
           }
         }
 
+        if (db.itemSize(item) > 65536)
+            return cb(db.validationError('Item size has exceeded the maximum allowed size'))
+
         if (data.ReturnValues == 'ALL_NEW') {
           returnObj.Attributes = item
         } else if (data.ReturnValues == 'UPDATED_NEW') {
