@@ -6,7 +6,7 @@ var http = require('http'),
 
 var port = 10000 + Math.round(Math.random() * 10000),
     requestOpts = process.env.REMOTE ?
-      {host: 'dynamodb.ap-southeast-2.amazonaws.com', method: 'POST'} : {host: 'localhost', port: port, method: 'POST'}
+      {host: 'dynamodb.us-east-1.amazonaws.com', method: 'POST'} : {host: 'localhost', port: port, method: 'POST'}
 
 // Make http limits more reasonable
 http.globalAgent.maxSockets = 1000
