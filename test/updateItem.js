@@ -489,6 +489,16 @@ describe('updateItem', function() {
       })
     })
 
+    it('should return ValidationException if update item is too big', function(done) {
+      var key = {a: {S: helpers.randomString()}}
+      var updates = {
+        b: {Action: 'PUT', Value: {S: new Array(65536).join('a')}},
+        c: {Action: 'PUT', Value: {N: new Array(38 + 1).join('1') + new Array(89).join('0')}}
+      }
+      assertValidation({TableName: helpers.testHashTable, Key: key, AttributeUpdates: updates},
+        'Item size to update has exceeded the maximum allowed size', done)
+    })
+
   })
 
   describe('functionality', function() {
