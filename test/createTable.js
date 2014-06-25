@@ -1274,6 +1274,7 @@ describe('createTable', function() {
           index.IndexSizeBytes = 0
           index.ItemCount = 0
           index.IndexStatus = 'CREATING'
+          index.ProvisionedThroughput.NumberOfDecreasesToday = 0
           desc.GlobalSecondaryIndexes.should.includeEql(index)
         })
         desc.GlobalSecondaryIndexes.length.should.equal(globalIndexes.length)
