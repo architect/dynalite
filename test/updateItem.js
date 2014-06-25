@@ -437,6 +437,14 @@ describe('updateItem', function() {
         'Cannot update attribute a. This attribute is part of the key', done)
     })
 
+    it('should return ValidationException update item is too big', function(done) {
+      var key = {a: {S: helpers.randomString()}},
+        updates = { b: {Action: 'PUT', Value: {S: new Array(65536).join('a')}},
+        c: {Action: 'PUT', Value: {N: new Array(38 + 1).join('1') + new Array(89).join('0')}}}
+      assertValidation({TableName: helpers.testHashTable, Key: key, AttributeUpdates: updates},
+        'Item size has exceeded the maximum allowed size', done)
+    })
+
     it('should return ValidationException if trying to delete NS from SS', function(done) {
       var key = {a: {S: helpers.randomString()}}
       var updates = {b: {Value: {SS: ['1']}}}
