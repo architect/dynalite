@@ -1,6 +1,7 @@
 var http = require('http'),
     crypto = require('crypto'),
     crc32 = require('buffer-crc32'),
+    winston = require('winston'),
     validations = require('./validations'),
     db = require('./db')
 
@@ -191,8 +192,12 @@ function httpHandler(store, req, res) {
         throw e
       }
 
+      winston.debug('[action]', action, data);
       actions[action](store, data, function(err, data) {
-        if (err && err.statusCode) return sendData(req, res, err.body, err.statusCode)
+        if (err && err.statusCode) {
+          winston.error(err.body);
+          return sendData(req, res, err.body, err.statusCode);
+        }
         if (err) throw err
         sendData(req, res, data)
       })

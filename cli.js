@@ -11,6 +11,7 @@ if (argv.help) {
     '',
     'Options:',
     '--help                Display this help message and exit',
+    '--verbose             Enable logging',
     '--port <port>         The port to listen on (default: 4567)',
     '--path <path>         The path to use for the LevelDB store (in-memory by default)',
     '--createTableMs <ms>  Amount of time tables stay in CREATING state (default: 500)',
@@ -21,4 +22,9 @@ if (argv.help) {
   ].join('\n'))
 }
 
+var winston = require('winston');
+winston.cli();
+winston.level = argv.verbose ? 'debug' : 'off';
+
 require('./index.js')(argv).listen(argv.port || 4567)
+winston.info('starting dynalite server on %d', argv.port || 4567)
