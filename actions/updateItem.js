@@ -58,7 +58,10 @@ module.exports = function updateItem(store, data, cb) {
               if (item[attr] && !item[attr][type])
                 return cb(db.validationError('Type mismatch for attribute to update'))
               if (!item[attr]) item[attr] = {}
-              item[attr][type] = (item[attr][type] || []).concat(data.AttributeUpdates[attr].Value[type])
+              if (!item[attr][type]) item[attr][type] = []
+              item[attr][type] = item[attr][type].concat(data.AttributeUpdates[attr].Value[type].filter(function(a) {
+                return !~item[attr][type].indexOf(a)
+              }))
             }
           } else if (data.AttributeUpdates[attr].Action == 'DELETE') {
             if (data.AttributeUpdates[attr].Value) {

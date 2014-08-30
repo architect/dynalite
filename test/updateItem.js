@@ -695,6 +695,60 @@ describe('updateItem', function() {
       })
     })
 
+    it('should throw away duplicate string values', function(done) {
+      var key = {a: {S: helpers.randomString()}}, updates = {b: {Value: {SS: ['a', 'b']}}}
+      request(opts({TableName: helpers.testHashTable, Key: key, AttributeUpdates: updates}), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        updates.b = {Action: 'ADD', Value: {SS: ['b', 'c', 'd']}}
+        request(opts({TableName: helpers.testHashTable, Key: key, AttributeUpdates: updates, ReturnValues: 'UPDATED_NEW'}), function(err, res) {
+          res.statusCode.should.equal(200)
+          res.body.should.eql({Attributes: {b: {SS: ['a', 'b', 'c', 'd']}}})
+          request(helpers.opts('GetItem', {TableName: helpers.testHashTable, Key: key, ConsistentRead: true}), function(err, res) {
+            res.statusCode.should.equal(200)
+            res.body.should.eql({Item: {a: key.a, b: {SS: ['a', 'b', 'c', 'd']}}})
+            done()
+          })
+        })
+      })
+    })
+
+    it('should throw away duplicate numeric values', function(done) {
+      var key = {a: {S: helpers.randomString()}}, updates = {b: {Value: {NS: ['1', '2']}}}
+      request(opts({TableName: helpers.testHashTable, Key: key, AttributeUpdates: updates}), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        updates.b = {Action: 'ADD', Value: {NS: ['2', '3', '4']}}
+        request(opts({TableName: helpers.testHashTable, Key: key, AttributeUpdates: updates, ReturnValues: 'UPDATED_NEW'}), function(err, res) {
+          res.statusCode.should.equal(200)
+          res.body.should.eql({Attributes: {b: {NS: ['1', '2', '3', '4']}}})
+          request(helpers.opts('GetItem', {TableName: helpers.testHashTable, Key: key, ConsistentRead: true}), function(err, res) {
+            res.statusCode.should.equal(200)
+            res.body.should.eql({Item: {a: key.a, b: {NS: ['1', '2', '3', '4']}}})
+            done()
+          })
+        })
+      })
+    })
+
+    it('should throw away duplicate binary values', function(done) {
+      var key = {a: {S: helpers.randomString()}}, updates = {b: {Value: {BS: ['AQI=', 'Ag==']}}}
+      request(opts({TableName: helpers.testHashTable, Key: key, AttributeUpdates: updates}), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        updates.b = {Action: 'ADD', Value: {BS: ['Ag==', 'AQ==']}}
+        request(opts({TableName: helpers.testHashTable, Key: key, AttributeUpdates: updates, ReturnValues: 'UPDATED_NEW'}), function(err, res) {
+          res.statusCode.should.equal(200)
+          res.body.should.eql({Attributes: {b: {BS: ['AQI=', 'Ag==', 'AQ==']}}})
+          request(helpers.opts('GetItem', {TableName: helpers.testHashTable, Key: key, ConsistentRead: true}), function(err, res) {
+            res.statusCode.should.equal(200)
+            res.body.should.eql({Item: {a: key.a, b: {BS: ['AQI=', 'Ag==', 'AQ==']}}})
+            done()
+          })
+        })
+      })
+    })
+
     it('should return ConsumedCapacity for creating small item', function(done) {
       var key = {a: {S: helpers.randomString()}}, b = new Array(1010 - key.a.S.length).join('b'),
         updates = {b: {Value: {S: b}}, c: {Value: {N: '12.3456'}}, d: {Value: {B: 'AQI='}}, e: {Value: {BS: ['AQI=', 'Ag==', 'AQ==']}}}
