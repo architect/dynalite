@@ -290,16 +290,14 @@ function itemCompare(rangeKey, table) {
   }
 }
 
-function checkConditional(expected, existingItem) {
-  if (!expected) return
+function checkConditional(data, existingItem) {
+  var expected = data.Expected;
+  if (!expected) return;
 
-  existingItem = existingItem || {}
+  existingItem = existingItem || {};
 
-  for (var attr in expected) {
-    if (expected[attr].Exists === false && existingItem[attr] != null)
-      return conditionalError()
-    if (expected[attr].Value && !valueEquals(expected[attr].Value, existingItem[attr]))
-      return conditionalError()
+  if (!matchesFilter(existingItem, expected, data.ConditionalOperator)) {
+    return conditionalError();
   }
 }
 
@@ -372,14 +370,22 @@ function valueEquals(val1, val2) {
   return val1[key1] == val2[key2]
 }
 
-function matchesFilter(val, filter) {
-  for (var attr in filter) {
+function matchesFilter(val, filter, conditionalOperator) {
+  var results = Object.keys(filter).map(function(attr) {
     var comp = filter[attr].ComparisonOperator,
         compVals = filter[attr].AttributeValueList,
         compType = compVals ? Object.keys(compVals[0])[0] : null,
         compVal = compVals ? compVals[0][compType] : null,
         attrType = val[attr] ? Object.keys(val[attr])[0] : null,
-        attrVal = val[attr] ? val[attr][attrType] : null
+        attrVal = val[attr] ? val[attr][attrType] : null,
+        legacy = !('ComparisonOperator' in filter[attr]);
+
+    if (legacy) {
+      if (filter[attr].Exists === false && attrVal != null) return false;
+      if (filter[attr].Value && !valueEquals(filter[attr].Value, val[attr])) return false;
+      return true;
+    }
+
     switch (comp) {
       case 'EQ':
         if (compType != attrType || attrVal != compVal) return false
@@ -466,6 +472,16 @@ function matchesFilter(val, filter) {
           (attrType == 'N' && (!Big(attrVal).gte(compVal) || !Big(attrVal).lte(compVals[1].N))) ||
           (attrType != 'N' && (attrVal < compVal || attrVal > compVals[1][compType]))) return false
     }
-  }
-  return true
+    return true;
+  });
+
+  var passed = results.reduce(function(memo, result) {
+    if (result) memo++;
+    return memo;
+  }, 0);
+
+  if (conditionalOperator && conditionalOperator === 'OR') {
+    if (passed === 0) return false;
+  } else if (passed < Object.keys(filter).length) return false;
+  return true;
 }

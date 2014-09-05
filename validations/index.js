@@ -4,6 +4,7 @@ exports.checkTypes = checkTypes
 exports.checkValidations = checkValidations
 exports.toLowerFirst = toLowerFirst
 exports.validateAttributeValue = validateAttributeValue
+exports.validateAttributeConditions = validateAttributeConditions;
 
 function checkTypes(data, types) {
   var key
@@ -348,4 +349,69 @@ function hasDuplicates(array) {
     setObj[val] = true
     return false
   })
+}
+
+function validateAttributeConditions(data) {
+  if (data.Expected) {
+    for (var key in data.Expected) {
+      var condition = data.Expected[key];
+
+      if ('ComparisonOperator' in condition) {
+        if ('Exists' in condition)
+          return 'One or more parameter values were invalid: ' +
+            'Exists and ComparisonOperator cannot be used together for Attribute: ' + key;
+        if ('AttributeValueList' in condition && 
+            'Value' in condition)
+          return 'One or more parameter values were invalid: ' +
+            'Value and AttributeValueList cannot be used together for Attribute: ' + key;
+
+        var values = condition.AttributeValueList ? 
+          condition.AttributeValueList.length : condition.Value ? 1 : 0;
+        var validAttrCount = false;
+
+        switch(condition.ComparisonOperator) {
+          case 'EQ': 
+          case 'NE': 
+          case 'LE': 
+          case 'LT': 
+          case 'GE': 
+          case 'GT': 
+          case 'CONTAINS':
+          case 'NOT_CONTAINS':
+          case 'BEGINS_WITH':
+            if (values === 1) validAttrCount = true;
+            break;
+          case 'NOT_NULL':
+          case 'NULL':
+            if (values === 0) validAttrCount = true;
+            break;
+          case 'IN': 
+            if (values > 0) validAttrCount = true;
+            break;
+          case 'BETWEEN':
+            if (values === 2) validAttrCount = true;
+            break;
+        }
+        if (!validAttrCount) return 'One or more parameter values were invalid: ' +
+            'Invalid number of argument(s) for the ' + condition.ComparisonOperator + ' ComparisonOperator';
+      } else if ('AttributeValueList' in condition) {
+          return 'One or more parameter values were invalid: ' +
+            'AttributeValueList can only be used with a ComparisonOperator for Attribute: ' + key;
+      } else {
+        var exists = condition.Exists == null || condition.Exists
+        if (exists && condition.Value == null)
+          return 'One or more parameter values were invalid: ' +
+            'Value must be provided when Exists is ' + 
+            (condition.Exists == null ? 'null' : condition.Exists) + 
+            ' for Attribute: ' + key;
+        else if (!exists && condition.Value != null)
+          return 'One or more parameter values were invalid: ' +
+            'Value cannot be used when Exists is false for Attribute: ' + key;
+        if (condition.Value != null) {
+          var msg = validateAttributeValue(condition.Value)
+          if (msg) return msg
+        }
+      }
+    }
+  }
 }

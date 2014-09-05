@@ -1,4 +1,5 @@
-var validateAttributeValue = require('./index').validateAttributeValue
+var validateAttributeValue = require('./index').validateAttributeValue,
+    validateAttributeConditions = require('./index').validateAttributeConditions;
 
 exports.types = {
   ReturnConsumedCapacity: {
@@ -44,11 +45,42 @@ exports.types = {
       }
     }
   },
+  ConditionalOperator: {
+    type: 'String',
+    enum: ['OR', 'AND']
+  },
   Expected: {
     type: 'Map',
     children: {
       type: 'Structure',
       children: {
+        AttributeValueList: {
+          type: 'List',
+          children: {
+            type: 'Structure',
+            children: {
+              S: 'String',
+              B: 'Blob',
+              N: 'String',
+              BS: {
+                type: 'List',
+                children: 'Blob',
+              },
+              NS: {
+                type: 'List',
+                children: 'String',
+              },
+              SS: {
+                type: 'List',
+                children: 'String',
+              }
+            }
+          }
+        },
+        ComparisonOperator: {
+          type: 'String',
+          enum: ['IN', 'NULL', 'BETWEEN', 'LT', 'NOT_CONTAINS', 'EQ', 'GT', 'NOT_NULL', 'NE', 'LE', 'BEGINS_WITH', 'GE', 'CONTAINS']
+        },
         Exists: 'Boolean',
         Value: {
           type: 'Structure',
@@ -105,28 +137,14 @@ exports.types = {
 }
 
 exports.custom = function(data) {
-
+  var msg;
   for (var key in data.Key) {
-    var msg = validateAttributeValue(data.Key[key])
+    msg = validateAttributeValue(data.Key[key])
     if (msg) return msg
   }
 
-  if (data.Expected) {
-    for (var key in data.Expected) {
-      var exists = data.Expected[key].Exists == null || data.Expected[key].Exists
-      if (exists && data.Expected[key].Value == null)
-        return 'One or more parameter values were invalid: ' +
-          '\'Exists\' is set to ' + (data.Expected[key].Exists == null ? 'null' : data.Expected[key].Exists) + '. ' +
-          '\'Exists\' must be set to false when no Attribute value is specified'
-      else if (!exists && data.Expected[key].Value != null)
-        return 'One or more parameter values were invalid: ' +
-          'Cannot expect an attribute to have a specified value while expecting it to not exist'
-      if (data.Expected[key].Value != null) {
-        var msg = validateAttributeValue(data.Expected[key].Value)
-        if (msg) return msg
-      }
-    }
-  }
+  msg = validateAttributeConditions(data);
+  if (msg) return msg;
 
   if (data.AttributeUpdates) {
     for (var key in data.AttributeUpdates) {

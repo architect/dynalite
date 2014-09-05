@@ -24,7 +24,7 @@ module.exports = function updateItem(store, data, cb) {
       itemDb.get(key, function(err, oldItem) {
         if (err && err.name != 'NotFoundError') return cb(err)
 
-        if ((err = db.checkConditional(data.Expected, oldItem)) != null) return cb(err)
+        if ((err = db.checkConditional(data, oldItem)) != null) return cb(err)
 
         var returnObj = {}, item = data.Key
 

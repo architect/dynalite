@@ -14,7 +14,7 @@ module.exports = function deleteItem(store, data, cb) {
       itemDb.get(key, function(err, existingItem) {
         if (err && err.name != 'NotFoundError') return cb(err)
 
-        if ((err = db.checkConditional(data.Expected, existingItem)) != null) return cb(err)
+        if ((err = db.checkConditional(data, existingItem)) != null) return cb(err)
 
         var returnObj = {}
 
