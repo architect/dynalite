@@ -60,7 +60,7 @@ describe('updateTable', function() {
 
     it('should return ValidationException for no TableName', function(done) {
       assertValidation({},
-        'The paramater \'tableName\' is required but was not present in the request', done)
+        'The paramater \'TableName\' is required but was not present in the request', done)
     })
 
     it('should return ValidationException for empty TableName', function(done) {
@@ -175,10 +175,10 @@ describe('updateTable', function() {
 
     it('should return ValidationException if read and write are same', function(done) {
       assertValidation({TableName: helpers.testHashTable,
-        ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},
+        ProvisionedThroughput: {ReadCapacityUnits: 2, WriteCapacityUnits: 2}},
         'The provisioned throughput for the table will not change. The requested value equals the current value. ' +
-        'Current ReadCapacityUnits provisioned for the table: 1. Requested ReadCapacityUnits: 1. ' +
-        'Current WriteCapacityUnits provisioned for the table: 1. Requested WriteCapacityUnits: 1. ' +
+        'Current ReadCapacityUnits provisioned for the table: 2. Requested ReadCapacityUnits: 2. ' +
+        'Current WriteCapacityUnits provisioned for the table: 2. Requested WriteCapacityUnits: 2. ' +
         'Refer to the Amazon DynamoDB Developer Guide for current limits and how to request higher limits.', done)
     })
 
@@ -215,7 +215,7 @@ describe('updateTable', function() {
 
     it('should double rates and then reduce if requested', function(done) {
       this.timeout(200000)
-      var throughput = {ReadCapacityUnits: 2, WriteCapacityUnits: 2}, increase = Date.now() / 1000
+      var throughput = {ReadCapacityUnits: 4, WriteCapacityUnits: 4}, increase = Date.now() / 1000
       request(opts({TableName: helpers.testHashTable, ProvisionedThroughput: throughput}), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
@@ -227,8 +227,8 @@ describe('updateTable', function() {
         desc.KeySchema.should.eql([{AttributeName: 'a', KeyType: 'HASH'}])
         desc.ProvisionedThroughput.LastIncreaseDateTime.should.be.above(increase - 5)
         desc.ProvisionedThroughput.NumberOfDecreasesToday.should.equal(0)
-        desc.ProvisionedThroughput.ReadCapacityUnits.should.equal(1)
-        desc.ProvisionedThroughput.WriteCapacityUnits.should.equal(1)
+        desc.ProvisionedThroughput.ReadCapacityUnits.should.equal(2)
+        desc.ProvisionedThroughput.WriteCapacityUnits.should.equal(2)
         desc.TableName.should.equal(helpers.testHashTable)
         desc.TableSizeBytes.should.be.above(-1)
         desc.TableStatus.should.equal('UPDATING')
@@ -239,11 +239,11 @@ describe('updateTable', function() {
           if (err) return done(err)
 
           var desc = res.body.Table, decrease = Date.now() / 1000
-          desc.ProvisionedThroughput.ReadCapacityUnits.should.equal(2)
-          desc.ProvisionedThroughput.WriteCapacityUnits.should.equal(2)
+          desc.ProvisionedThroughput.ReadCapacityUnits.should.equal(4)
+          desc.ProvisionedThroughput.WriteCapacityUnits.should.equal(4)
           desc.ProvisionedThroughput.LastIncreaseDateTime.should.equal(increase)
 
-          throughput = {ReadCapacityUnits: 1, WriteCapacityUnits: 1}
+          throughput = {ReadCapacityUnits: 2, WriteCapacityUnits: 2}
           request(opts({TableName: helpers.testHashTable, ProvisionedThroughput: throughput}), function(err, res) {
             if (err) return done(err)
             res.statusCode.should.equal(200)
@@ -252,8 +252,8 @@ describe('updateTable', function() {
             desc.ProvisionedThroughput.LastIncreaseDateTime.should.equal(increase)
             desc.ProvisionedThroughput.LastDecreaseDateTime.should.be.above(decrease - 5)
             desc.ProvisionedThroughput.NumberOfDecreasesToday.should.equal(0)
-            desc.ProvisionedThroughput.ReadCapacityUnits.should.equal(2)
-            desc.ProvisionedThroughput.WriteCapacityUnits.should.equal(2)
+            desc.ProvisionedThroughput.ReadCapacityUnits.should.equal(4)
+            desc.ProvisionedThroughput.WriteCapacityUnits.should.equal(4)
             desc.TableStatus.should.equal('UPDATING')
 
             decrease = desc.ProvisionedThroughput.LastDecreaseDateTime
@@ -265,8 +265,8 @@ describe('updateTable', function() {
               desc.ProvisionedThroughput.LastIncreaseDateTime.should.equal(increase)
               desc.ProvisionedThroughput.LastDecreaseDateTime.should.equal(decrease)
               desc.ProvisionedThroughput.NumberOfDecreasesToday.should.equal(1)
-              desc.ProvisionedThroughput.ReadCapacityUnits.should.equal(1)
-              desc.ProvisionedThroughput.WriteCapacityUnits.should.equal(1)
+              desc.ProvisionedThroughput.ReadCapacityUnits.should.equal(2)
+              desc.ProvisionedThroughput.WriteCapacityUnits.should.equal(2)
 
               done()
             })

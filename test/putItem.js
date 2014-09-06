@@ -226,18 +226,18 @@ describe('putItem', function() {
 
     it('should return ValidationException for empty binary', function(done) {
       assertValidation({TableName: 'abc', Item: {a: {B: ''}}},
-        'One or more parameter values were invalid: An AttributeValue may not contain an empty binary type.', done)
+        'One or more parameter values were invalid: An AttributeValue may not contain a null or empty binary type.', done)
     })
 
     // Somehow allows set types for keys
     it('should return ValidationException for empty set key', function(done) {
       assertValidation({TableName: 'abc', Item: {a: {SS: []}}},
-        'One or more parameter values were invalid: An AttributeValue may not contain an empty set.', done)
+        'One or more parameter values were invalid: An string set  may not be empty', done)
     })
 
     it('should return ValidationException for empty string in set', function(done) {
       assertValidation({TableName: 'abc', Item: {a: {SS: ['a', '']}}},
-        'One or more parameter values were invalid: An AttributeValue may not contain an empty string.', done)
+        'One or more parameter values were invalid: An string set may not have a empty string as a member', done)
     })
 
     it('should return ValidationException for empty binary in set', function(done) {

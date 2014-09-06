@@ -6,6 +6,7 @@ var target = 'Scan',
     opts = helpers.opts.bind(null, target),
     assertType = helpers.assertType.bind(null, target),
     assertValidation = helpers.assertValidation.bind(null, target)
+    assertNotFound = helpers.assertNotFound.bind(null, target)
 
 describe('scan', function() {
 
@@ -184,7 +185,7 @@ describe('scan', function() {
           b: {ComparisonOperator: 'NULL'},
           c: {ComparisonOperator: 'NULL'},
         }},
-        'The attempted filter operation is not supported for the provided filter argument count', done)
+        'One or more parameter values were invalid: Invalid number of argument(s) for the EQ ComparisonOperator', done)
     })
 
     it('should return ValidationException for bad key type', function(done) {
@@ -239,392 +240,357 @@ describe('scan', function() {
           b: {ComparisonOperator: 'NULL'},
           c: {ComparisonOperator: 'NULL'},
         }},
-        'The attempted filter operation is not supported for the provided filter argument count', done)
+        'One or more parameter values were invalid: Invalid number of argument(s) for the EQ ComparisonOperator', done)
     })
 
-    it('should return ValidationException for EQ on type SS', function(done) {
-      assertValidation({
+    it('should return ResourceNotFoundException for EQ on type SS when table does not exist', function(done) {
+      assertNotFound({
         TableName: 'abc',
         ScanFilter: {a: {ComparisonOperator: 'EQ', AttributeValueList: [{SS: ['a']}]}}},
-        'The attempted filter operation is not supported for the provided type', done)
-    })
-
-    it('should return ValidationException for EQ on type NS', function(done) {
-      assertValidation({
-        TableName: 'abc',
-        ScanFilter: {a: {ComparisonOperator: 'EQ', AttributeValueList: [{NS: ['1']}]}}},
-        'The attempted filter operation is not supported for the provided type', done)
-    })
-
-    it('should return ValidationException for EQ on type BS', function(done) {
-      assertValidation({
-        TableName: 'abc',
-        ScanFilter: {a: {ComparisonOperator: 'EQ', AttributeValueList: [{BS: ['abcd']}]}}},
-        'The attempted filter operation is not supported for the provided type', done)
+        'Requested resource not found', done)
     })
 
     it('should return ValidationException for 1 arg to NULL', function(done) {
       assertValidation({
         TableName: 'abc',
         ScanFilter: {a: {ComparisonOperator: 'NULL', AttributeValueList: [{S: 'a'}]}}},
-        'The attempted filter operation is not supported for the provided filter argument count', done)
+        'One or more parameter values were invalid: Invalid number of argument(s) for the NULL ComparisonOperator', done)
     })
 
     it('should return ValidationException for 1 arg to NOT_NULL', function(done) {
       assertValidation({
         TableName: 'abc',
         ScanFilter: {a: {ComparisonOperator: 'NOT_NULL', AttributeValueList: [{S: 'a'}]}}},
-        'The attempted filter operation is not supported for the provided filter argument count', done)
+        'One or more parameter values were invalid: Invalid number of argument(s) for the NOT_NULL ComparisonOperator', done)
     })
 
     it('should return ValidationException for 0 args to NE', function(done) {
       assertValidation({
         TableName: 'abc',
         ScanFilter: {a: {ComparisonOperator: 'NE'}}},
-        'The attempted filter operation is not supported for the provided filter argument count', done)
+        'One or more parameter values were invalid: Invalid number of argument(s) for the NE ComparisonOperator', done)
     })
 
     it('should return ValidationException for 2 args to NE', function(done) {
       assertValidation({
         TableName: 'abc',
         ScanFilter: {a: {ComparisonOperator: 'NE', AttributeValueList: [{S: 'a'}, {S: 'a'}]}}},
-        'The attempted filter operation is not supported for the provided filter argument count', done)
-    })
-
-    it('should return ValidationException for NE on type SS', function(done) {
-      assertValidation({
-        TableName: 'abc',
-        ScanFilter: {a: {ComparisonOperator: 'NE', AttributeValueList: [{SS: ['a']}]}}},
-        'The attempted filter operation is not supported for the provided type', done)
-    })
-
-    it('should return ValidationException for NE on type NS', function(done) {
-      assertValidation({
-        TableName: 'abc',
-        ScanFilter: {a: {ComparisonOperator: 'NE', AttributeValueList: [{NS: ['1']}]}}},
-        'The attempted filter operation is not supported for the provided type', done)
-    })
-
-    it('should return ValidationException for NE on type BS', function(done) {
-      assertValidation({
-        TableName: 'abc',
-        ScanFilter: {a: {ComparisonOperator: 'NE', AttributeValueList: [{BS: ['abcd']}]}}},
-        'The attempted filter operation is not supported for the provided type', done)
+        'One or more parameter values were invalid: Invalid number of argument(s) for the NE ComparisonOperator', done)
     })
 
     it('should return ValidationException for 0 args to LE', function(done) {
       assertValidation({
         TableName: 'abc',
         ScanFilter: {a: {ComparisonOperator: 'LE'}}},
-        'The attempted filter operation is not supported for the provided filter argument count', done)
+        'One or more parameter values were invalid: Invalid number of argument(s) for the LE ComparisonOperator', done)
     })
 
     it('should return ValidationException for 2 args to LE', function(done) {
       assertValidation({
         TableName: 'abc',
         ScanFilter: {a: {ComparisonOperator: 'LE', AttributeValueList: [{S: 'a'}, {S: 'a'}]}}},
-        'The attempted filter operation is not supported for the provided filter argument count', done)
+        'One or more parameter values were invalid: Invalid number of argument(s) for the LE ComparisonOperator', done)
     })
 
     it('should return ValidationException for LE on type SS', function(done) {
       assertValidation({
         TableName: 'abc',
         ScanFilter: {a: {ComparisonOperator: 'LE', AttributeValueList: [{SS: ['a']}]}}},
-        'The attempted filter operation is not supported for the provided type', done)
+        'One or more parameter values were invalid: ComparisonOperator LE is not valid for SS AttributeValue type', done)
     })
 
     it('should return ValidationException for LE on type NS', function(done) {
       assertValidation({
         TableName: 'abc',
         ScanFilter: {a: {ComparisonOperator: 'LE', AttributeValueList: [{NS: ['1']}]}}},
-        'The attempted filter operation is not supported for the provided type', done)
+        'One or more parameter values were invalid: ComparisonOperator LE is not valid for NS AttributeValue type', done)
     })
 
     it('should return ValidationException for LE on type BS', function(done) {
       assertValidation({
         TableName: 'abc',
         ScanFilter: {a: {ComparisonOperator: 'LE', AttributeValueList: [{BS: ['abcd']}]}}},
-        'The attempted filter operation is not supported for the provided type', done)
+        'One or more parameter values were invalid: ComparisonOperator LE is not valid for BS AttributeValue type', done)
     })
 
     it('should return ValidationException for 0 args to LT', function(done) {
       assertValidation({
         TableName: 'abc',
         ScanFilter: {a: {ComparisonOperator: 'LT'}}},
-        'The attempted filter operation is not supported for the provided filter argument count', done)
+        'One or more parameter values were invalid: Invalid number of argument(s) for the LT ComparisonOperator', done)
     })
 
     it('should return ValidationException for 2 args to LT', function(done) {
       assertValidation({
         TableName: 'abc',
         ScanFilter: {a: {ComparisonOperator: 'LT', AttributeValueList: [{S: 'a'}, {S: 'a'}]}}},
-        'The attempted filter operation is not supported for the provided filter argument count', done)
+        'One or more parameter values were invalid: Invalid number of argument(s) for the LT ComparisonOperator', done)
     })
 
     it('should return ValidationException for LT on type SS', function(done) {
       assertValidation({
         TableName: 'abc',
         ScanFilter: {a: {ComparisonOperator: 'LT', AttributeValueList: [{SS: ['a']}]}}},
-        'The attempted filter operation is not supported for the provided type', done)
+        'One or more parameter values were invalid: ComparisonOperator LT is not valid for SS AttributeValue type', done)
     })
 
     it('should return ValidationException for LT on type NS', function(done) {
       assertValidation({
         TableName: 'abc',
         ScanFilter: {a: {ComparisonOperator: 'LT', AttributeValueList: [{NS: ['1']}]}}},
-        'The attempted filter operation is not supported for the provided type', done)
+        'One or more parameter values were invalid: ComparisonOperator LT is not valid for NS AttributeValue type', done)
     })
 
     it('should return ValidationException for LT on type BS', function(done) {
       assertValidation({
         TableName: 'abc',
         ScanFilter: {a: {ComparisonOperator: 'LT', AttributeValueList: [{BS: ['abcd']}]}}},
-        'The attempted filter operation is not supported for the provided type', done)
+        'One or more parameter values were invalid: ComparisonOperator LT is not valid for BS AttributeValue type', done)
     })
 
     it('should return ValidationException for 0 args to GE', function(done) {
       assertValidation({
         TableName: 'abc',
         ScanFilter: {a: {ComparisonOperator: 'GE'}}},
-        'The attempted filter operation is not supported for the provided filter argument count', done)
+        'One or more parameter values were invalid: Invalid number of argument(s) for the GE ComparisonOperator', done)
     })
 
     it('should return ValidationException for 2 args to GE', function(done) {
       assertValidation({
         TableName: 'abc',
         ScanFilter: {a: {ComparisonOperator: 'GE', AttributeValueList: [{S: 'a'}, {S: 'a'}]}}},
-        'The attempted filter operation is not supported for the provided filter argument count', done)
+        'One or more parameter values were invalid: Invalid number of argument(s) for the GE ComparisonOperator', done)
     })
 
     it('should return ValidationException for GE on type SS', function(done) {
       assertValidation({
         TableName: 'abc',
         ScanFilter: {a: {ComparisonOperator: 'GE', AttributeValueList: [{SS: ['a']}]}}},
-        'The attempted filter operation is not supported for the provided type', done)
+        'One or more parameter values were invalid: ComparisonOperator GE is not valid for SS AttributeValue type', done)
     })
 
     it('should return ValidationException for GE on type NS', function(done) {
       assertValidation({
         TableName: 'abc',
         ScanFilter: {a: {ComparisonOperator: 'GE', AttributeValueList: [{NS: ['1']}]}}},
-        'The attempted filter operation is not supported for the provided type', done)
+        'One or more parameter values were invalid: ComparisonOperator GE is not valid for NS AttributeValue type', done)
     })
 
     it('should return ValidationException for GE on type BS', function(done) {
       assertValidation({
         TableName: 'abc',
         ScanFilter: {a: {ComparisonOperator: 'GE', AttributeValueList: [{BS: ['abcd']}]}}},
-        'The attempted filter operation is not supported for the provided type', done)
+        'One or more parameter values were invalid: ComparisonOperator GE is not valid for BS AttributeValue type', done)
     })
 
     it('should return ValidationException for 0 args to GT', function(done) {
       assertValidation({
         TableName: 'abc',
         ScanFilter: {a: {ComparisonOperator: 'GT'}}},
-        'The attempted filter operation is not supported for the provided filter argument count', done)
+        'One or more parameter values were invalid: Invalid number of argument(s) for the GT ComparisonOperator', done)
     })
 
     it('should return ValidationException for 2 args to GT', function(done) {
       assertValidation({
         TableName: 'abc',
         ScanFilter: {a: {ComparisonOperator: 'GT', AttributeValueList: [{S: 'a'}, {S: 'a'}]}}},
-        'The attempted filter operation is not supported for the provided filter argument count', done)
+        'One or more parameter values were invalid: Invalid number of argument(s) for the GT ComparisonOperator', done)
     })
 
     it('should return ValidationException for GT on type SS', function(done) {
       assertValidation({
         TableName: 'abc',
         ScanFilter: {a: {ComparisonOperator: 'GT', AttributeValueList: [{SS: ['a']}]}}},
-        'The attempted filter operation is not supported for the provided type', done)
+        'One or more parameter values were invalid: ComparisonOperator GT is not valid for SS AttributeValue type', done)
     })
 
     it('should return ValidationException for GT on type NS', function(done) {
       assertValidation({
         TableName: 'abc',
         ScanFilter: {a: {ComparisonOperator: 'GT', AttributeValueList: [{NS: ['1']}]}}},
-        'The attempted filter operation is not supported for the provided type', done)
+        'One or more parameter values were invalid: ComparisonOperator GT is not valid for NS AttributeValue type', done)
     })
 
     it('should return ValidationException for GT on type BS', function(done) {
       assertValidation({
         TableName: 'abc',
         ScanFilter: {a: {ComparisonOperator: 'GT', AttributeValueList: [{BS: ['abcd']}]}}},
-        'The attempted filter operation is not supported for the provided type', done)
+        'One or more parameter values were invalid: ComparisonOperator GT is not valid for BS AttributeValue type', done)
     })
 
     it('should return ValidationException for 0 args to CONTAINS', function(done) {
       assertValidation({
         TableName: 'abc',
         ScanFilter: {a: {ComparisonOperator: 'CONTAINS'}}},
-        'The attempted filter operation is not supported for the provided filter argument count', done)
+        'One or more parameter values were invalid: Invalid number of argument(s) for the CONTAINS ComparisonOperator', done)
     })
 
     it('should return ValidationException for 2 args to CONTAINS', function(done) {
       assertValidation({
         TableName: 'abc',
         ScanFilter: {a: {ComparisonOperator: 'CONTAINS', AttributeValueList: [{S: 'a'}, {S: 'a'}]}}},
-        'The attempted filter operation is not supported for the provided filter argument count', done)
+        'One or more parameter values were invalid: Invalid number of argument(s) for the CONTAINS ComparisonOperator', done)
     })
 
     it('should return ValidationException for CONTAINS on type SS', function(done) {
       assertValidation({
         TableName: 'abc',
         ScanFilter: {a: {ComparisonOperator: 'CONTAINS', AttributeValueList: [{SS: ['a']}]}}},
-        'The attempted filter operation is not supported for the provided type', done)
+        'One or more parameter values were invalid: ComparisonOperator CONTAINS is not valid for SS AttributeValue type', done)
     })
 
     it('should return ValidationException for CONTAINS on type NS', function(done) {
       assertValidation({
         TableName: 'abc',
         ScanFilter: {a: {ComparisonOperator: 'CONTAINS', AttributeValueList: [{NS: ['1']}]}}},
-        'The attempted filter operation is not supported for the provided type', done)
+        'One or more parameter values were invalid: ComparisonOperator CONTAINS is not valid for NS AttributeValue type', done)
     })
 
     it('should return ValidationException for CONTAINS on type BS', function(done) {
       assertValidation({
         TableName: 'abc',
         ScanFilter: {a: {ComparisonOperator: 'CONTAINS', AttributeValueList: [{BS: ['abcd']}]}}},
-        'The attempted filter operation is not supported for the provided type', done)
+        'One or more parameter values were invalid: ComparisonOperator CONTAINS is not valid for BS AttributeValue type', done)
     })
 
     it('should return ValidationException for 0 args to NOT_CONTAINS', function(done) {
       assertValidation({
         TableName: 'abc',
         ScanFilter: {a: {ComparisonOperator: 'NOT_CONTAINS'}}},
-        'The attempted filter operation is not supported for the provided filter argument count', done)
+        'One or more parameter values were invalid: Invalid number of argument(s) for the NOT_CONTAINS ComparisonOperator', done)
     })
 
     it('should return ValidationException for 2 args to NOT_CONTAINS', function(done) {
       assertValidation({
         TableName: 'abc',
         ScanFilter: {a: {ComparisonOperator: 'NOT_CONTAINS', AttributeValueList: [{S: 'a'}, {S: 'a'}]}}},
-        'The attempted filter operation is not supported for the provided filter argument count', done)
+        'One or more parameter values were invalid: Invalid number of argument(s) for the NOT_CONTAINS ComparisonOperator', done)
     })
 
     it('should return ValidationException for NOT_CONTAINS on type SS', function(done) {
       assertValidation({
         TableName: 'abc',
         ScanFilter: {a: {ComparisonOperator: 'NOT_CONTAINS', AttributeValueList: [{SS: ['a']}]}}},
-        'The attempted filter operation is not supported for the provided type', done)
+        'One or more parameter values were invalid: ComparisonOperator NOT_CONTAINS is not valid for SS AttributeValue type', done)
     })
 
     it('should return ValidationException for NOT_CONTAINS on type NS', function(done) {
       assertValidation({
         TableName: 'abc',
         ScanFilter: {a: {ComparisonOperator: 'NOT_CONTAINS', AttributeValueList: [{NS: ['1']}]}}},
-        'The attempted filter operation is not supported for the provided type', done)
+        'One or more parameter values were invalid: ComparisonOperator NOT_CONTAINS is not valid for NS AttributeValue type', done)
     })
 
     it('should return ValidationException for NOT_CONTAINS on type BS', function(done) {
       assertValidation({
         TableName: 'abc',
         ScanFilter: {a: {ComparisonOperator: 'NOT_CONTAINS', AttributeValueList: [{BS: ['abcd']}]}}},
-        'The attempted filter operation is not supported for the provided type', done)
+        'One or more parameter values were invalid: ComparisonOperator NOT_CONTAINS is not valid for BS AttributeValue type', done)
     })
 
     it('should return ValidationException for 0 args to BEGINS_WITH', function(done) {
       assertValidation({
         TableName: 'abc',
         ScanFilter: {a: {ComparisonOperator: 'BEGINS_WITH'}}},
-        'The attempted filter operation is not supported for the provided filter argument count', done)
+        'One or more parameter values were invalid: Invalid number of argument(s) for the BEGINS_WITH ComparisonOperator', done)
     })
 
     it('should return ValidationException for 2 args to BEGINS_WITH', function(done) {
       assertValidation({
         TableName: 'abc',
         ScanFilter: {a: {ComparisonOperator: 'BEGINS_WITH', AttributeValueList: [{S: 'a'}, {S: 'a'}]}}},
-        'The attempted filter operation is not supported for the provided filter argument count', done)
+        'One or more parameter values were invalid: Invalid number of argument(s) for the BEGINS_WITH ComparisonOperator', done)
     })
 
     it('should return ValidationException for BEGINS_WITH on type N', function(done) {
       assertValidation({
         TableName: 'abc',
         ScanFilter: {a: {ComparisonOperator: 'BEGINS_WITH', AttributeValueList: [{N: '1'}]}}},
-        'The attempted filter operation is not supported for the provided type', done)
+        'One or more parameter values were invalid: ComparisonOperator BEGINS_WITH is not valid for N AttributeValue type', done)
     })
 
     it('should return ValidationException for BEGINS_WITH on type SS', function(done) {
       assertValidation({
         TableName: 'abc',
         ScanFilter: {a: {ComparisonOperator: 'BEGINS_WITH', AttributeValueList: [{SS: ['a']}]}}},
-        'The attempted filter operation is not supported for the provided type', done)
+        'One or more parameter values were invalid: ComparisonOperator BEGINS_WITH is not valid for SS AttributeValue type', done)
     })
 
     it('should return ValidationException for BEGINS_WITH on type NS', function(done) {
       assertValidation({
         TableName: 'abc',
         ScanFilter: {a: {ComparisonOperator: 'BEGINS_WITH', AttributeValueList: [{NS: ['1']}]}}},
-        'The attempted filter operation is not supported for the provided type', done)
+        'One or more parameter values were invalid: ComparisonOperator BEGINS_WITH is not valid for NS AttributeValue type', done)
     })
 
     it('should return ValidationException for BEGINS_WITH on type BS', function(done) {
       assertValidation({
         TableName: 'abc',
         ScanFilter: {a: {ComparisonOperator: 'BEGINS_WITH', AttributeValueList: [{BS: ['abcd']}]}}},
-        'The attempted filter operation is not supported for the provided type', done)
+        'One or more parameter values were invalid: ComparisonOperator BEGINS_WITH is not valid for BS AttributeValue type', done)
     })
 
     it('should return ValidationException for 0 args to IN', function(done) {
       assertValidation({
         TableName: 'abc',
         ScanFilter: {a: {ComparisonOperator: 'IN'}}},
-        'The attempted filter operation is not supported for the provided filter argument count', done)
+        'One or more parameter values were invalid: Invalid number of argument(s) for the IN ComparisonOperator', done)
     })
 
     it('should return ValidationException for IN on type SS', function(done) {
       assertValidation({
         TableName: 'abc',
         ScanFilter: {a: {ComparisonOperator: 'IN', AttributeValueList: [{SS: ['a']}]}}},
-        'The attempted filter operation is not supported for the provided type', done)
+        'One or more parameter values were invalid: ComparisonOperator IN is not valid for SS AttributeValue type', done)
     })
 
     it('should return ValidationException for IN on type NS', function(done) {
       assertValidation({
         TableName: 'abc',
         ScanFilter: {a: {ComparisonOperator: 'IN', AttributeValueList: [{NS: ['1']}]}}},
-        'The attempted filter operation is not supported for the provided type', done)
+        'One or more parameter values were invalid: ComparisonOperator IN is not valid for NS AttributeValue type', done)
     })
 
     it('should return ValidationException for IN on type BS', function(done) {
       assertValidation({
         TableName: 'abc',
         ScanFilter: {a: {ComparisonOperator: 'IN', AttributeValueList: [{BS: ['abcd']}]}}},
-        'The attempted filter operation is not supported for the provided type', done)
+        'One or more parameter values were invalid: ComparisonOperator IN is not valid for BS AttributeValue type', done)
     })
 
     it('should return ValidationException for 0 args to BETWEEN', function(done) {
       assertValidation({
         TableName: 'abc',
         ScanFilter: {a: {ComparisonOperator: 'BETWEEN'}}},
-        'The attempted filter operation is not supported for the provided filter argument count', done)
+        'One or more parameter values were invalid: Invalid number of argument(s) for the BETWEEN ComparisonOperator', done)
     })
 
     it('should return ValidationException for 3 args to BETWEEN', function(done) {
       assertValidation({
         TableName: 'abc',
         ScanFilter: {a: {ComparisonOperator: 'BETWEEN', AttributeValueList: [{S: 'a'}, {S: 'a'}, {S: 'a'}]}}},
-        'The attempted filter operation is not supported for the provided filter argument count', done)
+        'One or more parameter values were invalid: Invalid number of argument(s) for the BETWEEN ComparisonOperator', done)
     })
 
     it('should return ValidationException for BETWEEN on type SS', function(done) {
       assertValidation({
         TableName: 'abc',
         ScanFilter: {a: {ComparisonOperator: 'BETWEEN', AttributeValueList: [{S: 'a'}, {SS: ['a']}]}}},
-        'The attempted filter operation is not supported for the provided type', done)
+        'One or more parameter values were invalid: ComparisonOperator BETWEEN is not valid for SS AttributeValue type', done)
     })
 
     it('should return ValidationException for BETWEEN on type NS', function(done) {
       assertValidation({
         TableName: 'abc',
         ScanFilter: {a: {ComparisonOperator: 'BETWEEN', AttributeValueList: [{S: 'a'}, {NS: ['1']}]}}},
-        'The attempted filter operation is not supported for the provided type', done)
+        'One or more parameter values were invalid: ComparisonOperator BETWEEN is not valid for NS AttributeValue type', done)
     })
 
     it('should return ValidationException for BETWEEN on type BS', function(done) {
       assertValidation({
         TableName: 'abc',
         ScanFilter: {a: {ComparisonOperator: 'BETWEEN', AttributeValueList: [{S: 'a'}, {BS: ['abcd']}]}}},
-        'The attempted filter operation is not supported for the provided type', done)
+        'One or more parameter values were invalid: ComparisonOperator BETWEEN is not valid for BS AttributeValue type', done)
     })
 
     it('should return ValidationException for empty object ExclusiveStartKey', function(done) {
@@ -660,7 +626,7 @@ describe('scan', function() {
         ExclusiveStartKey: {a: {B: ''}},
         ScanFilter: {a: {ComparisonOperator: 'NULL'}}},
         'The provided starting key is invalid: ' +
-        'One or more parameter values were invalid: An AttributeValue may not contain an empty binary type.', done)
+        'One or more parameter values were invalid: An AttributeValue may not contain a null or empty binary type.', done)
     })
 
     // Somehow allows set types for keys
@@ -670,7 +636,7 @@ describe('scan', function() {
         ExclusiveStartKey: {a: {SS: []}},
         ScanFilter: {a: {ComparisonOperator: 'NULL'}}},
         'The provided starting key is invalid: ' +
-        'One or more parameter values were invalid: An AttributeValue may not contain an empty set.', done)
+        'One or more parameter values were invalid: An string set  may not be empty', done)
     })
 
     it('should return ValidationException for empty string in set', function(done) {
@@ -679,7 +645,7 @@ describe('scan', function() {
         ExclusiveStartKey: {a: {SS: ['a', '']}},
         ScanFilter: {a: {ComparisonOperator: 'NULL'}}},
         'The provided starting key is invalid: ' +
-        'One or more parameter values were invalid: An AttributeValue may not contain an empty string.', done)
+        'One or more parameter values were invalid: An string set may not have a empty string as a member', done)
     })
 
     it('should return ValidationException for empty binary in set', function(done) {
@@ -936,6 +902,90 @@ describe('scan', function() {
       })
     })
 
+    it('should scan by EQ on type SS', function(done) {
+      var item = {a: {S: helpers.randomString()}, b: {SS: ['a', 'b']}, c: {S: helpers.randomString()}},
+          item2 = {a: {S: helpers.randomString()}, b: {SS: ['a', 'b']}, c: item.c},
+          item3 = {a: {S: helpers.randomString()}, b: {SS: ['a', 'b', 'c']}, c: item.c},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testHashTable] = [
+        {PutRequest: {Item: item}},
+        {PutRequest: {Item: item2}},
+        {PutRequest: {Item: item3}},
+      ]
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        request(opts({TableName: helpers.testHashTable, ScanFilter: {
+          b: {ComparisonOperator: 'EQ', AttributeValueList: [{SS: ['b', 'a']}]},
+          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+        }}), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.Items.should.includeEql(item)
+          res.body.Items.should.includeEql(item2)
+          res.body.Items.should.have.length(2)
+          res.body.Count.should.equal(2)
+          done()
+        })
+      })
+    })
+
+    it('should scan by EQ on type NS', function(done) {
+      var item = {a: {S: helpers.randomString()}, b: {NS: ['1', '2']}, c: {S: helpers.randomString()}},
+          item2 = {a: {S: helpers.randomString()}, b: {NS: ['1', '2']}, c: item.c},
+          item3 = {a: {S: helpers.randomString()}, b: {NS: ['1', '2', '3']}, c: item.c},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testHashTable] = [
+        {PutRequest: {Item: item}},
+        {PutRequest: {Item: item2}},
+        {PutRequest: {Item: item3}},
+      ]
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        request(opts({TableName: helpers.testHashTable, ScanFilter: {
+          b: {ComparisonOperator: 'EQ', AttributeValueList: [{NS: ['2', '1']}]},
+          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+        }}), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.Items.should.includeEql(item)
+          res.body.Items.should.includeEql(item2)
+          res.body.Items.should.have.length(2)
+          res.body.Count.should.equal(2)
+          done()
+        })
+      })
+    })
+
+    it('should scan by EQ on type BS', function(done) {
+      var item = {a: {S: helpers.randomString()}, b: {BS: ['Yg==', 'abcd']}, c: {S: helpers.randomString()}},
+          item2 = {a: {S: helpers.randomString()}, b: {BS: ['Yg==', 'abcd']}, c: item.c},
+          item3 = {a: {S: helpers.randomString()}, b: {BS: ['Yg==', 'abcd', '1234']}, c: item.c},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testHashTable] = [
+        {PutRequest: {Item: item}},
+        {PutRequest: {Item: item2}},
+        {PutRequest: {Item: item3}},
+      ]
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        request(opts({TableName: helpers.testHashTable, ScanFilter: {
+          b: {ComparisonOperator: 'EQ', AttributeValueList: [{BS: ['abcd', 'Yg==']}]},
+          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+        }}), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.Items.should.includeEql(item)
+          res.body.Items.should.includeEql(item2)
+          res.body.Items.should.have.length(2)
+          res.body.Count.should.equal(2)
+          done()
+        })
+      })
+    })
+
     it('should scan by EQ on different types', function(done) {
       var item = {a: {S: helpers.randomString()}, b: {S: '1234'}, c: {S: helpers.randomString()}},
           item2 = {a: {S: helpers.randomString()}, b: {N: '1234'}, c: item.c},
@@ -984,6 +1034,87 @@ describe('scan', function() {
           res.body.Items.should.includeEql(item3)
           res.body.Items.should.have.length(2)
           res.body.Count.should.equal(2)
+          done()
+        })
+      })
+    })
+
+    it('should scan by NE on type SS', function(done) {
+      var item = {a: {S: helpers.randomString()}, b: {SS: ['a', 'b']}, c: {S: helpers.randomString()}},
+          item2 = {a: {S: helpers.randomString()}, b: {SS: ['a', 'b']}, c: item.c},
+          item3 = {a: {S: helpers.randomString()}, b: {SS: ['a', 'b', 'c']}, c: item.c},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testHashTable] = [
+        {PutRequest: {Item: item}},
+        {PutRequest: {Item: item2}},
+        {PutRequest: {Item: item3}},
+      ]
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        request(opts({TableName: helpers.testHashTable, ScanFilter: {
+          b: {ComparisonOperator: 'NE', AttributeValueList: [{SS: ['b', 'a']}]},
+          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+        }}), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.Items.should.includeEql(item3)
+          res.body.Items.should.have.length(1)
+          res.body.Count.should.equal(1)
+          done()
+        })
+      })
+    })
+
+    it('should scan by NE on type NS', function(done) {
+      var item = {a: {S: helpers.randomString()}, b: {NS: ['1', '2']}, c: {S: helpers.randomString()}},
+          item2 = {a: {S: helpers.randomString()}, b: {NS: ['1', '2']}, c: item.c},
+          item3 = {a: {S: helpers.randomString()}, b: {NS: ['3', '2', '1']}, c: item.c},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testHashTable] = [
+        {PutRequest: {Item: item}},
+        {PutRequest: {Item: item2}},
+        {PutRequest: {Item: item3}},
+      ]
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        request(opts({TableName: helpers.testHashTable, ScanFilter: {
+          b: {ComparisonOperator: 'NE', AttributeValueList: [{NS: ['2', '1']}]},
+          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+        }}), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.Items.should.includeEql(item3)
+          res.body.Items.should.have.length(1)
+          res.body.Count.should.equal(1)
+          done()
+        })
+      })
+    })
+
+    it('should scan by NE on type BS', function(done) {
+      var item = {a: {S: helpers.randomString()}, b: {BS: ['Yg==', 'abcd']}, c: {S: helpers.randomString()}},
+          item2 = {a: {S: helpers.randomString()}, b: {BS: ['Yg==', 'abcd']}, c: item.c},
+          item3 = {a: {S: helpers.randomString()}, b: {BS: ['Yg==', 'abcd', '1234']}, c: item.c},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testHashTable] = [
+        {PutRequest: {Item: item}},
+        {PutRequest: {Item: item2}},
+        {PutRequest: {Item: item3}},
+      ]
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        request(opts({TableName: helpers.testHashTable, ScanFilter: {
+          b: {ComparisonOperator: 'NE', AttributeValueList: [{BS: ['abcd', 'Yg==']}]},
+          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+        }}), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.Items.should.includeEql(item3)
+          res.body.Items.should.have.length(1)
+          res.body.Count.should.equal(1)
           done()
         })
       })
@@ -1519,7 +1650,8 @@ describe('scan', function() {
           c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
         }}), function(err, res) {
           if (err) return done(err)
-          res.body.Items.should.eql([item2])
+          res.body.Items.should.have.lengthOf(1)
+          res.body.Items[0].a.should.eql(item2.a)
           res.body.Count.should.equal(1)
           done()
         })

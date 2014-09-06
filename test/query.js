@@ -223,7 +223,7 @@ describe('query', function() {
           b: {ComparisonOperator: 'NULL'},
           c: {ComparisonOperator: 'NULL'},
         }},
-        'The attempted filter operation is not supported for the provided filter argument count', done)
+        'One or more parameter values were invalid: Invalid number of argument(s) for the EQ ComparisonOperator', done)
     })
 
     it('should return ValidationException for bad key type', function(done) {
@@ -278,154 +278,154 @@ describe('query', function() {
           b: {ComparisonOperator: 'NULL'},
           c: {ComparisonOperator: 'NULL'},
         }},
-        'The attempted filter operation is not supported for the provided filter argument count', done)
+        'One or more parameter values were invalid: Invalid number of argument(s) for the EQ ComparisonOperator', done)
     })
 
     it('should return ValidationException for 1 arg to NULL', function(done) {
       assertValidation({
         TableName: 'abc',
         KeyConditions: {a: {ComparisonOperator: 'NULL', AttributeValueList: [{S: 'a'}]}}},
-        'The attempted filter operation is not supported for the provided filter argument count', done)
+        'One or more parameter values were invalid: Invalid number of argument(s) for the NULL ComparisonOperator', done)
     })
 
     it('should return ValidationException for 1 arg to NOT_NULL', function(done) {
       assertValidation({
         TableName: 'abc',
         KeyConditions: {a: {ComparisonOperator: 'NOT_NULL', AttributeValueList: [{S: 'a'}]}}},
-        'The attempted filter operation is not supported for the provided filter argument count', done)
+        'One or more parameter values were invalid: Invalid number of argument(s) for the NOT_NULL ComparisonOperator', done)
     })
 
     it('should return ValidationException for 0 args to NE', function(done) {
       assertValidation({
         TableName: 'abc',
         KeyConditions: {a: {ComparisonOperator: 'NE'}}},
-        'The attempted filter operation is not supported for the provided filter argument count', done)
+        'One or more parameter values were invalid: Invalid number of argument(s) for the NE ComparisonOperator', done)
     })
 
     it('should return ValidationException for 2 args to NE', function(done) {
       assertValidation({
         TableName: 'abc',
         KeyConditions: {a: {ComparisonOperator: 'NE', AttributeValueList: [{S: 'a'}, {S: 'a'}]}}},
-        'The attempted filter operation is not supported for the provided filter argument count', done)
+        'One or more parameter values were invalid: Invalid number of argument(s) for the NE ComparisonOperator', done)
     })
 
     it('should return ValidationException for 0 args to LE', function(done) {
       assertValidation({
         TableName: 'abc',
         KeyConditions: {a: {ComparisonOperator: 'LE'}}},
-        'The attempted filter operation is not supported for the provided filter argument count', done)
+        'One or more parameter values were invalid: Invalid number of argument(s) for the LE ComparisonOperator', done)
     })
 
     it('should return ValidationException for 2 args to LE', function(done) {
       assertValidation({
         TableName: 'abc',
         KeyConditions: {a: {ComparisonOperator: 'LE', AttributeValueList: [{S: 'a'}, {S: 'a'}]}}},
-        'The attempted filter operation is not supported for the provided filter argument count', done)
+        'One or more parameter values were invalid: Invalid number of argument(s) for the LE ComparisonOperator', done)
     })
 
     it('should return ValidationException for 0 args to LT', function(done) {
       assertValidation({
         TableName: 'abc',
         KeyConditions: {a: {ComparisonOperator: 'LT'}}},
-        'The attempted filter operation is not supported for the provided filter argument count', done)
+        'One or more parameter values were invalid: Invalid number of argument(s) for the LT ComparisonOperator', done)
     })
 
     it('should return ValidationException for 2 args to LT', function(done) {
       assertValidation({
         TableName: 'abc',
         KeyConditions: {a: {ComparisonOperator: 'LT', AttributeValueList: [{S: 'a'}, {S: 'a'}]}}},
-        'The attempted filter operation is not supported for the provided filter argument count', done)
+        'One or more parameter values were invalid: Invalid number of argument(s) for the LT ComparisonOperator', done)
     })
 
     it('should return ValidationException for 0 args to GE', function(done) {
       assertValidation({
         TableName: 'abc',
         KeyConditions: {a: {ComparisonOperator: 'GE'}}},
-        'The attempted filter operation is not supported for the provided filter argument count', done)
+        'One or more parameter values were invalid: Invalid number of argument(s) for the GE ComparisonOperator', done)
     })
 
     it('should return ValidationException for 2 args to GE', function(done) {
       assertValidation({
         TableName: 'abc',
         KeyConditions: {a: {ComparisonOperator: 'GE', AttributeValueList: [{S: 'a'}, {S: 'a'}]}}},
-        'The attempted filter operation is not supported for the provided filter argument count', done)
+        'One or more parameter values were invalid: Invalid number of argument(s) for the GE ComparisonOperator', done)
     })
 
     it('should return ValidationException for 0 args to GT', function(done) {
       assertValidation({
         TableName: 'abc',
         KeyConditions: {a: {ComparisonOperator: 'GT'}}},
-        'The attempted filter operation is not supported for the provided filter argument count', done)
+        'One or more parameter values were invalid: Invalid number of argument(s) for the GT ComparisonOperator', done)
     })
 
     it('should return ValidationException for 2 args to GT', function(done) {
       assertValidation({
         TableName: 'abc',
         KeyConditions: {a: {ComparisonOperator: 'GT', AttributeValueList: [{S: 'a'}, {S: 'a'}]}}},
-        'The attempted filter operation is not supported for the provided filter argument count', done)
+        'One or more parameter values were invalid: Invalid number of argument(s) for the GT ComparisonOperator', done)
     })
 
     it('should return ValidationException for 0 args to CONTAINS', function(done) {
       assertValidation({
         TableName: 'abc',
         KeyConditions: {a: {ComparisonOperator: 'CONTAINS'}}},
-        'The attempted filter operation is not supported for the provided filter argument count', done)
+        'One or more parameter values were invalid: Invalid number of argument(s) for the CONTAINS ComparisonOperator', done)
     })
 
     it('should return ValidationException for 2 args to CONTAINS', function(done) {
       assertValidation({
         TableName: 'abc',
         KeyConditions: {a: {ComparisonOperator: 'CONTAINS', AttributeValueList: [{S: 'a'}, {S: 'a'}]}}},
-        'The attempted filter operation is not supported for the provided filter argument count', done)
+        'One or more parameter values were invalid: Invalid number of argument(s) for the CONTAINS ComparisonOperator', done)
     })
 
     it('should return ValidationException for 0 args to NOT_CONTAINS', function(done) {
       assertValidation({
         TableName: 'abc',
         KeyConditions: {a: {ComparisonOperator: 'NOT_CONTAINS'}}},
-        'The attempted filter operation is not supported for the provided filter argument count', done)
+        'One or more parameter values were invalid: Invalid number of argument(s) for the NOT_CONTAINS ComparisonOperator', done)
     })
 
     it('should return ValidationException for 2 args to NOT_CONTAINS', function(done) {
       assertValidation({
         TableName: 'abc',
         KeyConditions: {a: {ComparisonOperator: 'NOT_CONTAINS', AttributeValueList: [{S: 'a'}, {S: 'a'}]}}},
-        'The attempted filter operation is not supported for the provided filter argument count', done)
+        'One or more parameter values were invalid: Invalid number of argument(s) for the NOT_CONTAINS ComparisonOperator', done)
     })
 
     it('should return ValidationException for 0 args to BEGINS_WITH', function(done) {
       assertValidation({
         TableName: 'abc',
         KeyConditions: {a: {ComparisonOperator: 'BEGINS_WITH'}}},
-        'The attempted filter operation is not supported for the provided filter argument count', done)
+        'One or more parameter values were invalid: Invalid number of argument(s) for the BEGINS_WITH ComparisonOperator', done)
     })
 
     it('should return ValidationException for 2 args to BEGINS_WITH', function(done) {
       assertValidation({
         TableName: 'abc',
         KeyConditions: {a: {ComparisonOperator: 'BEGINS_WITH', AttributeValueList: [{S: 'a'}, {S: 'a'}]}}},
-        'The attempted filter operation is not supported for the provided filter argument count', done)
+        'One or more parameter values were invalid: Invalid number of argument(s) for the BEGINS_WITH ComparisonOperator', done)
     })
 
     it('should return ValidationException for 0 args to IN', function(done) {
       assertValidation({
         TableName: 'abc',
         KeyConditions: {a: {ComparisonOperator: 'IN'}}},
-        'The attempted filter operation is not supported for the provided filter argument count', done)
+        'One or more parameter values were invalid: Invalid number of argument(s) for the IN ComparisonOperator', done)
     })
 
     it('should return ValidationException for 0 args to BETWEEN', function(done) {
       assertValidation({
         TableName: 'abc',
         KeyConditions: {a: {ComparisonOperator: 'BETWEEN'}}},
-        'The attempted filter operation is not supported for the provided filter argument count', done)
+        'One or more parameter values were invalid: Invalid number of argument(s) for the BETWEEN ComparisonOperator', done)
     })
 
     it('should return ValidationException for 3 args to BETWEEN', function(done) {
       assertValidation({
         TableName: 'abc',
         KeyConditions: {a: {ComparisonOperator: 'BETWEEN', AttributeValueList: [{S: 'a'}, {S: 'a'}, {S: 'a'}]}}},
-        'The attempted filter operation is not supported for the provided filter argument count', done)
+        'One or more parameter values were invalid: Invalid number of argument(s) for the BETWEEN ComparisonOperator', done)
     })
 
     it('should return ValidationException for too many conditions', function(done) {
@@ -473,7 +473,7 @@ describe('query', function() {
         ExclusiveStartKey: {a: {B: ''}},
         KeyConditions: {a: {ComparisonOperator: 'NULL'}}},
         'The provided starting key is invalid: ' +
-        'One or more parameter values were invalid: An AttributeValue may not contain an empty binary type.', done)
+        'One or more parameter values were invalid: An AttributeValue may not contain a null or empty binary type.', done)
     })
 
     // Somehow allows set types for keys
@@ -483,7 +483,7 @@ describe('query', function() {
         ExclusiveStartKey: {a: {SS: []}},
         KeyConditions: {a: {ComparisonOperator: 'NULL'}}},
         'The provided starting key is invalid: ' +
-        'One or more parameter values were invalid: An AttributeValue may not contain an empty set.', done)
+        'One or more parameter values were invalid: An string set  may not be empty', done)
     })
 
     it('should return ValidationException for empty string in set', function(done) {
@@ -492,7 +492,7 @@ describe('query', function() {
         ExclusiveStartKey: {a: {SS: ['a', '']}},
         KeyConditions: {a: {ComparisonOperator: 'NULL'}}},
         'The provided starting key is invalid: ' +
-        'One or more parameter values were invalid: An AttributeValue may not contain an empty string.', done)
+        'One or more parameter values were invalid: An string set may not have a empty string as a member', done)
     })
 
     it('should return ValidationException for empty binary in set', function(done) {
@@ -798,7 +798,7 @@ describe('query', function() {
       }}), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        res.body.should.eql({Count: 0, Items: []})
+        res.body.should.eql({Count: 0, ScannedCount: 0, Items: []})
         done()
       })
     })
@@ -821,7 +821,7 @@ describe('query', function() {
         }}), function(err, res) {
           if (err) return done(err)
           res.statusCode.should.equal(200)
-          res.body.should.eql({Count: 1, Items: [item2]})
+          res.body.should.eql({Count: 1, ScannedCount: 1, Items: [item2]})
           done()
         })
       })
@@ -845,7 +845,7 @@ describe('query', function() {
         }}), function(err, res) {
           if (err) return done(err)
           res.statusCode.should.equal(200)
-          res.body.should.eql({Count: 3, Items: [item, item2, item3]})
+          res.body.should.eql({Count: 3, ScannedCount: 3, Items: [item, item2, item3]})
           done()
         })
       })
@@ -870,7 +870,7 @@ describe('query', function() {
         }}), function(err, res) {
           if (err) return done(err)
           res.statusCode.should.equal(200)
-          res.body.should.eql({Count: 1, Items: [item2]})
+          res.body.should.eql({Count: 1, ScannedCount: 1, Items: [item2]})
           done()
         })
       })
@@ -895,7 +895,7 @@ describe('query', function() {
         }}), function(err, res) {
           if (err) return done(err)
           res.statusCode.should.equal(200)
-          res.body.should.eql({Count: 2, Items: [item, item2]})
+          res.body.should.eql({Count: 2, ScannedCount: 2, Items: [item, item2]})
           done()
         })
       })
@@ -920,7 +920,7 @@ describe('query', function() {
         }}), function(err, res) {
           if (err) return done(err)
           res.statusCode.should.equal(200)
-          res.body.should.eql({Count: 1, Items: [item]})
+          res.body.should.eql({Count: 1, ScannedCount: 1, Items: [item]})
           done()
         })
       })
@@ -945,7 +945,7 @@ describe('query', function() {
         }}), function(err, res) {
           if (err) return done(err)
           res.statusCode.should.equal(200)
-          res.body.should.eql({Count: 2, Items: [item2, item3]})
+          res.body.should.eql({Count: 2, ScannedCount: 2, Items: [item2, item3]})
           done()
         })
       })
@@ -970,7 +970,7 @@ describe('query', function() {
         }}), function(err, res) {
           if (err) return done(err)
           res.statusCode.should.equal(200)
-          res.body.should.eql({Count: 1, Items: [item3]})
+          res.body.should.eql({Count: 1, ScannedCount: 1, Items: [item3]})
           done()
         })
       })
@@ -995,7 +995,7 @@ describe('query', function() {
         }}), function(err, res) {
           if (err) return done(err)
           res.statusCode.should.equal(200)
-          res.body.should.eql({Count: 2, Items: [item, item2]})
+          res.body.should.eql({Count: 2, ScannedCount: 2, Items: [item, item2]})
           done()
         })
       })
@@ -1024,7 +1024,7 @@ describe('query', function() {
         }}), function(err, res) {
           if (err) return done(err)
           res.statusCode.should.equal(200)
-          res.body.should.eql({Count: 3, Items: [item2, item3, item4]})
+          res.body.should.eql({Count: 3, ScannedCount: 3, Items: [item2, item3, item4]})
           done()
         })
       })
@@ -1048,7 +1048,7 @@ describe('query', function() {
         }, AttributesToGet: ['b', 'd']}), function(err, res) {
           if (err) return done(err)
           res.statusCode.should.equal(200)
-          res.body.should.eql({Count: 3, Items: [
+          res.body.should.eql({Count: 3, ScannedCount: 3, Items: [
             {b: {S: 'b1'}, d: {S: 'd1'}},
             {b: {S: 'b2'}},
             {b: {S: 'b3'}, d: {S: 'd3'}},
@@ -1081,7 +1081,7 @@ describe('query', function() {
           delete item3.e
           delete item3.f
           delete item4.e
-          res.body.should.eql({Count: 3, Items: [item, item3, item4], ConsumedCapacity: {CapacityUnits: 0.5, TableName: helpers.testRangeTable}})
+          res.body.should.eql({Count: 3, ScannedCount: 3, Items: [item, item3, item4], ConsumedCapacity: {CapacityUnits: 0.5, TableName: helpers.testRangeTable}})
           done()
         })
       })
@@ -1107,7 +1107,7 @@ describe('query', function() {
         }, Select: 'ALL_ATTRIBUTES', ReturnConsumedCapacity: 'TOTAL'}), function(err, res) {
           if (err) return done(err)
           res.statusCode.should.equal(200)
-          res.body.should.eql({Count: 3, Items: [item, item3, item4], ConsumedCapacity: {CapacityUnits: 2, TableName: helpers.testRangeTable}})
+          res.body.should.eql({Count: 3, ScannedCount: 3, Items: [item, item3, item4], ConsumedCapacity: {CapacityUnits: 2, TableName: helpers.testRangeTable}})
           done()
         })
       })
@@ -1137,7 +1137,7 @@ describe('query', function() {
           if (err) return done(err)
           res.statusCode.should.equal(200)
           should.not.exist(res.body.Items)
-          res.body.should.eql({Count: 4})
+          res.body.should.eql({Count: 4, ScannedCount: 4})
           done()
         })
       })
@@ -1166,7 +1166,7 @@ describe('query', function() {
         }, Limit: 2}), function(err, res) {
           if (err) return done(err)
           res.statusCode.should.equal(200)
-          res.body.should.eql({Count: 2, Items: [item, item3], LastEvaluatedKey: {a: item3.a, b: item3.b}})
+          res.body.should.eql({Count: 2, ScannedCount: 2, Items: [item, item3], LastEvaluatedKey: {a: item3.a, b: item3.b}})
           done()
         })
       })
@@ -1195,7 +1195,7 @@ describe('query', function() {
         }, Limit: 2, Select: 'COUNT'}), function(err, res) {
           if (err) return done(err)
           res.statusCode.should.equal(200)
-          res.body.should.eql({Count: 2, LastEvaluatedKey: {a: item3.a, b: item3.b}})
+          res.body.should.eql({Count: 2, ScannedCount: 2, LastEvaluatedKey: {a: item3.a, b: item3.b}})
           done()
         })
       })
@@ -1229,13 +1229,13 @@ describe('query', function() {
           }}), function(err, res) {
             if (err) return done(err)
             res.statusCode.should.equal(200)
-            res.body.should.eql({Count: lastHashItems.length, Items: lastHashItems})
+            res.body.should.eql({Count: lastHashItems.length, ScannedCount: lastHashItems.length, Items: lastHashItems})
             request(opts({TableName: helpers.testRangeTable, KeyConditions: {
               a: {ComparisonOperator: 'EQ', AttributeValueList: [lastHashItem.a]},
             }, Limit: lastHashItems.length}), function(err, res) {
               if (err) return done(err)
               res.statusCode.should.equal(200)
-              res.body.should.eql({Count: lastHashItems.length, Items: lastHashItems, LastEvaluatedKey: {a: lastHashItem.a, b: lastHashItem.b}})
+              res.body.should.eql({Count: lastHashItems.length, ScannedCount: lastHashItems.length, Items: lastHashItems, LastEvaluatedKey: {a: lastHashItem.a, b: lastHashItem.b}})
               request(opts({TableName: helpers.testRangeTable, KeyConditions: {
                 a: {ComparisonOperator: 'EQ', AttributeValueList: [otherHashItem.a]},
               }, Limit: 2}), function(err, res) {
@@ -1247,6 +1247,7 @@ describe('query', function() {
                 //res.body.should.eql({Count: 2, Items: otherHashItems})
 
                 res.body.Count.should.equal(2)
+                res.body.ScannedCount.should.equal(2)
                 res.body.Items.should.eql(otherHashItems)
                 done()
               })
@@ -1286,7 +1287,7 @@ describe('query', function() {
         }}), function(err, res) {
           if (err) return done(err)
           res.statusCode.should.equal(200)
-          res.body.should.eql({Count: 9, Items: [item, item3, item2, item8, item9, item4, item6, item7, item5]})
+          res.body.should.eql({Count: 9, ScannedCount: 9, Items: [item, item3, item2, item8, item9, item4, item6, item7, item5]})
           done()
         })
       })
@@ -1322,7 +1323,7 @@ describe('query', function() {
         }}), function(err, res) {
           if (err) return done(err)
           res.statusCode.should.equal(200)
-          res.body.should.eql({Count: 9, Items: [item, item3, item2, item8, item9, item4, item6, item7, item5]})
+          res.body.should.eql({Count: 9, ScannedCount: 9, Items: [item, item3, item2, item8, item9, item4, item6, item7, item5]})
           done()
         })
       })
@@ -1386,7 +1387,7 @@ describe('query', function() {
         }}), function(err, res) {
           if (err) return done(err)
           res.statusCode.should.equal(200)
-          res.body.should.eql({Count: 23, Items: [item23, item22, item21, item20, item19, item18, item17, item16, item15,
+          res.body.should.eql({Count: 23, ScannedCount: 23, Items: [item23, item22, item21, item20, item19, item18, item17, item16, item15,
             item14, item, item13, item12, item11, item10, item9, item8, item7, item6, item5, item4, item3, item2]})
           done()
         })
@@ -1411,7 +1412,7 @@ describe('query', function() {
         }, ScanIndexForward: false}), function(err, res) {
           if (err) return done(err)
           res.statusCode.should.equal(200)
-          res.body.should.eql({Count: 3, Items: [item2, item3, item]})
+          res.body.should.eql({Count: 3, ScannedCount: 3, Items: [item2, item3, item]})
           done()
         })
       })
@@ -1435,7 +1436,7 @@ describe('query', function() {
         }, ScanIndexForward: false, Limit: 2}), function(err, res) {
           if (err) return done(err)
           res.statusCode.should.equal(200)
-          res.body.should.eql({Count: 2, Items: [item2, item3], LastEvaluatedKey: item3})
+          res.body.should.eql({Count: 2, ScannedCount: 2, Items: [item2, item3], LastEvaluatedKey: item3})
           done()
         })
       })
@@ -1471,7 +1472,7 @@ describe('query', function() {
         }, ScanIndexForward: false}), function(err, res) {
           if (err) return done(err)
           res.statusCode.should.equal(200)
-          res.body.should.eql({Count: 9, Items: [item2, item3, item4, item5, item, item6, item7, item8, item9]})
+          res.body.should.eql({Count: 9, ScannedCount: 9, Items: [item2, item3, item4, item5, item, item6, item7, item8, item9]})
           done()
         })
       })
@@ -1499,7 +1500,7 @@ describe('query', function() {
         }, ScanIndexForward: false, Limit: 3}), function(err, res) {
           if (err) return done(err)
           res.statusCode.should.equal(200)
-          res.body.should.eql({Count: 3, Items: [item2, item3, item4], LastEvaluatedKey: {a: item4.a, b: item4.b}})
+          res.body.should.eql({Count: 3, ScannedCount: 3, Items: [item2, item3, item4], LastEvaluatedKey: {a: item4.a, b: item4.b}})
           done()
         })
       })
@@ -1533,6 +1534,7 @@ describe('query', function() {
           res.statusCode.should.equal(200)
           res.body.should.eql({
             Count: 4,
+            ScannedCount: 4,
             Items: [item2, item, item3, item7],
             LastEvaluatedKey: {a: item7.a, b: item7.b, c: item7.c},
           })
@@ -1569,6 +1571,7 @@ describe('query', function() {
           res.statusCode.should.equal(200)
           res.body.should.eql({
             Count: 4,
+            ScannedCount: 4,
             Items: [item4, item6, item7, item3],
             LastEvaluatedKey: {a: item3.a, b: item3.b, c: item3.c},
           })
@@ -1609,6 +1612,7 @@ describe('query', function() {
           delete item4.f
           res.body.should.eql({
             Count: 3,
+            ScannedCount: 3,
             Items: [item2, item3, item4],
             LastEvaluatedKey: {a: item4.a, b: item4.b, c: item4.c, d: item4.d},
           })
@@ -1646,6 +1650,7 @@ describe('query', function() {
           res.statusCode.should.equal(200)
           res.body.should.eql({
             Count: 3,
+            ScannedCount: 3,
             Items: [item6, item4, item3],
             LastEvaluatedKey: {a: item3.a, b: item3.b, c: item3.c, d: item3.d},
           })
@@ -1683,6 +1688,7 @@ describe('query', function() {
           res.statusCode.should.equal(200)
           res.body.should.eql({
             Count: 2,
+            ScannedCount: 2,
             Items: [item7, item6],
             LastEvaluatedKey: {a: item6.a, b: item6.b, c: item6.c},
           })
@@ -1720,6 +1726,7 @@ describe('query', function() {
           res.statusCode.should.equal(200)
           res.body.should.eql({
             Count: 2,
+            ScannedCount: 2,
             Items: [item3, item],
             LastEvaluatedKey: {a: item.a, b: item.b, c: item.c},
           })
@@ -1760,6 +1767,7 @@ describe('query', function() {
           res.statusCode.should.equal(200)
           res.body.should.eql({
             Count: 1,
+            ScannedCount: 1,
             Items: [item4],
             LastEvaluatedKey: {a: item4.a, b: item4.b, c: item4.c, d: item4.d},
           })
@@ -1800,6 +1808,7 @@ describe('query', function() {
           res.statusCode.should.equal(200)
           res.body.should.eql({
             Count: 1,
+            ScannedCount: 1,
             Items: [item3],
             LastEvaluatedKey: {a: item3.a, b: item3.b, c: item3.c, d: item3.d},
           })

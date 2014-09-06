@@ -231,18 +231,18 @@ describe('updateItem', function() {
 
     it('should return ValidationException for empty binary', function(done) {
       assertValidation({TableName: 'abc', Key: {a: {B: ''}}},
-        'One or more parameter values were invalid: An AttributeValue may not contain an empty binary type.', done)
+        'One or more parameter values were invalid: An AttributeValue may not contain a null or empty binary type.', done)
     })
 
     // Somehow allows set types for keys
     it('should return ValidationException for empty set key', function(done) {
       assertValidation({TableName: 'abc', Key: {a: {SS: []}}},
-        'One or more parameter values were invalid: An AttributeValue may not contain an empty set.', done)
+        'One or more parameter values were invalid: An string set  may not be empty', done)
     })
 
     it('should return ValidationException for empty string in set', function(done) {
       assertValidation({TableName: 'abc', Key: {a: {SS: ['a', '']}}},
-        'One or more parameter values were invalid: An AttributeValue may not contain an empty string.', done)
+        'One or more parameter values were invalid: An string set may not have a empty string as a member', done)
     })
 
     it('should return ValidationException for empty binary in set', function(done) {
@@ -389,7 +389,7 @@ describe('updateItem', function() {
         Key: {a: {S: helpers.randomString()}},
         AttributeUpdates: {a: {Action: 'DELETE', Value: {S: helpers.randomString()}}},
       }, 'One or more parameter values were invalid: ' +
-        'Action DELETE is not supported for the type S', done)
+        'DELETE action with value is not supported for the type S', done)
     })
 
     it('should return ValidationException if trying to delete type N', function(done) {
@@ -398,7 +398,7 @@ describe('updateItem', function() {
         Key: {a: {S: helpers.randomString()}},
         AttributeUpdates: {a: {Action: 'DELETE', Value: {N: helpers.randomString()}}},
       }, 'One or more parameter values were invalid: ' +
-        'Action DELETE is not supported for the type N', done)
+        'DELETE action with value is not supported for the type N', done)
     })
 
     it('should return ValidationException if trying to delete type B', function(done) {
@@ -407,7 +407,7 @@ describe('updateItem', function() {
         Key: {a: {S: helpers.randomString()}},
         AttributeUpdates: {a: {Action: 'DELETE', Value: {B: 'Yg=='}}},
       }, 'One or more parameter values were invalid: ' +
-        'Action DELETE is not supported for the type B', done)
+        'DELETE action with value is not supported for the type B', done)
     })
 
     it('should return ValidationException if trying to add type S', function(done) {
@@ -416,7 +416,7 @@ describe('updateItem', function() {
         Key: {a: {S: helpers.randomString()}},
         AttributeUpdates: {a: {Action: 'ADD', Value: {S: helpers.randomString()}}},
       }, 'One or more parameter values were invalid: ' +
-        'Action ADD is not supported for the type S', done)
+        'ADD action is not supported for the type S', done)
     })
 
     it('should return ValidationException if trying to add type B', function(done) {
@@ -425,7 +425,7 @@ describe('updateItem', function() {
         Key: {a: {S: helpers.randomString()}},
         AttributeUpdates: {a: {Action: 'ADD', Value: {B: 'Yg=='}}},
       }, 'One or more parameter values were invalid: ' +
-        'Action ADD is not supported for the type B', done)
+        'ADD action is not supported for the type B', done)
     })
 
     it('should return ValidationException if trying to update key', function(done) {
@@ -703,10 +703,18 @@ describe('updateItem', function() {
         updates.b = {Action: 'ADD', Value: {SS: ['b', 'c', 'd']}}
         request(opts({TableName: helpers.testHashTable, Key: key, AttributeUpdates: updates, ReturnValues: 'UPDATED_NEW'}), function(err, res) {
           res.statusCode.should.equal(200)
-          res.body.should.eql({Attributes: {b: {SS: ['a', 'b', 'c', 'd']}}})
+          res.body.Attributes.b.SS.should.have.lengthOf(4)
+          res.body.Attributes.b.SS.should.contain('a')
+          res.body.Attributes.b.SS.should.contain('b')
+          res.body.Attributes.b.SS.should.contain('c')
+          res.body.Attributes.b.SS.should.contain('d')
           request(helpers.opts('GetItem', {TableName: helpers.testHashTable, Key: key, ConsistentRead: true}), function(err, res) {
             res.statusCode.should.equal(200)
-            res.body.should.eql({Item: {a: key.a, b: {SS: ['a', 'b', 'c', 'd']}}})
+            res.body.Item.b.SS.should.have.lengthOf(4)
+            res.body.Item.b.SS.should.contain('a')
+            res.body.Item.b.SS.should.contain('b')
+            res.body.Item.b.SS.should.contain('c')
+            res.body.Item.b.SS.should.contain('d')
             done()
           })
         })
@@ -721,10 +729,18 @@ describe('updateItem', function() {
         updates.b = {Action: 'ADD', Value: {NS: ['2', '3', '4']}}
         request(opts({TableName: helpers.testHashTable, Key: key, AttributeUpdates: updates, ReturnValues: 'UPDATED_NEW'}), function(err, res) {
           res.statusCode.should.equal(200)
-          res.body.should.eql({Attributes: {b: {NS: ['1', '2', '3', '4']}}})
+          res.body.Attributes.b.NS.should.have.lengthOf(4)
+          res.body.Attributes.b.NS.should.contain('1')
+          res.body.Attributes.b.NS.should.contain('2')
+          res.body.Attributes.b.NS.should.contain('3')
+          res.body.Attributes.b.NS.should.contain('4')
           request(helpers.opts('GetItem', {TableName: helpers.testHashTable, Key: key, ConsistentRead: true}), function(err, res) {
             res.statusCode.should.equal(200)
-            res.body.should.eql({Item: {a: key.a, b: {NS: ['1', '2', '3', '4']}}})
+            res.body.Item.b.NS.should.have.lengthOf(4)
+            res.body.Item.b.NS.should.contain('1')
+            res.body.Item.b.NS.should.contain('2')
+            res.body.Item.b.NS.should.contain('3')
+            res.body.Item.b.NS.should.contain('4')
             done()
           })
         })
@@ -739,10 +755,16 @@ describe('updateItem', function() {
         updates.b = {Action: 'ADD', Value: {BS: ['Ag==', 'AQ==']}}
         request(opts({TableName: helpers.testHashTable, Key: key, AttributeUpdates: updates, ReturnValues: 'UPDATED_NEW'}), function(err, res) {
           res.statusCode.should.equal(200)
-          res.body.should.eql({Attributes: {b: {BS: ['AQI=', 'Ag==', 'AQ==']}}})
+          res.body.Attributes.b.BS.should.have.lengthOf(3)
+          res.body.Attributes.b.BS.should.contain('AQI=')
+          res.body.Attributes.b.BS.should.contain('Ag==')
+          res.body.Attributes.b.BS.should.contain('AQ==')
           request(helpers.opts('GetItem', {TableName: helpers.testHashTable, Key: key, ConsistentRead: true}), function(err, res) {
             res.statusCode.should.equal(200)
-            res.body.should.eql({Item: {a: key.a, b: {BS: ['AQI=', 'Ag==', 'AQ==']}}})
+            res.body.Item.b.BS.should.have.lengthOf(3)
+            res.body.Item.b.BS.should.contain('AQI=')
+            res.body.Item.b.BS.should.contain('Ag==')
+            res.body.Item.b.BS.should.contain('AQ==')
             done()
           })
         })

@@ -110,12 +110,12 @@ function createTestTables(done) {
     TableName: exports.testHashTable,
     AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}],
     KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}],
-    ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
+    ProvisionedThroughput: {ReadCapacityUnits: 2, WriteCapacityUnits: 2},
   }, {
     TableName: exports.testHashNTable,
     AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'N'}],
     KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}],
-    ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
+    ProvisionedThroughput: {ReadCapacityUnits: 2, WriteCapacityUnits: 2},
   }, {
     TableName: exports.testRangeTable,
     AttributeDefinitions: [
@@ -125,7 +125,7 @@ function createTestTables(done) {
       {AttributeName: 'd', AttributeType: 'S'},
     ],
     KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}, {KeyType: 'RANGE', AttributeName: 'b'}],
-    ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
+    ProvisionedThroughput: {ReadCapacityUnits: 2, WriteCapacityUnits: 2},
     LocalSecondaryIndexes: [{
       IndexName: 'index1',
       KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'c', KeyType: 'RANGE'}],
@@ -138,19 +138,19 @@ function createTestTables(done) {
     GlobalSecondaryIndexes: [{
       IndexName: 'index3',
       KeySchema: [{AttributeName: 'c', KeyType: 'HASH'}],
-      ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
+      ProvisionedThroughput: {ReadCapacityUnits: 2, WriteCapacityUnits: 2},
       Projection: {ProjectionType: 'ALL'},
     }, {
       IndexName: 'index4',
       KeySchema: [{AttributeName: 'c', KeyType: 'HASH'}, {AttributeName: 'd', KeyType: 'RANGE'}],
-      ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
+      ProvisionedThroughput: {ReadCapacityUnits: 2, WriteCapacityUnits: 2},
       Projection: {ProjectionType: 'INCLUDE', NonKeyAttributes: ['e']},
     }],
   }, {
     TableName: exports.testRangeNTable,
     AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}, {AttributeName: 'b', AttributeType: 'N'}],
     KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}, {KeyType: 'RANGE', AttributeName: 'b'}],
-    ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
+    ProvisionedThroughput: {ReadCapacityUnits: 2, WriteCapacityUnits: 2},
   }]
   async.forEach(tables, createAndWait, done)
 }
