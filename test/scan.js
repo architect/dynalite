@@ -797,6 +797,7 @@ describe('scan', function() {
         }}), function(err, res) {
           if (err) return done(err)
           res.statusCode.should.equal(200)
+          /* jshint -W030 */
           res.body.Items.should.be.empty
           res.body.Count.should.equal(0)
           res.body.ScannedCount.should.be.above(0)
@@ -2147,8 +2148,7 @@ describe('scan', function() {
     })
 
     it('should return LastEvaluatedKey if Limit not reached', function(done) {
-      var i, b = {S: helpers.randomString()}, items = [], batchReq = {RequestItems: {}},
-          scanFilter = {b: {ComparisonOperator: 'EQ', AttributeValueList: [b]}}
+      var i, b = {S: helpers.randomString()}, items = [], batchReq = {RequestItems: {}}
 
       for (i = 0; i < 5; i++)
         items.push({a: {S: String(i)}, b: b})
@@ -2163,6 +2163,7 @@ describe('scan', function() {
           if (err) return done(err)
           res.statusCode.should.equal(200)
           res.body.ScannedCount.should.equal(3)
+          /* jshint -W030 */
           res.body.LastEvaluatedKey.a.S.should.not.be.empty
           Object.keys(res.body.LastEvaluatedKey).should.have.length(1)
           done()
@@ -2171,8 +2172,7 @@ describe('scan', function() {
     })
 
     it('should return LastEvaluatedKey even if selecting Count', function(done) {
-      var i, b = {S: helpers.randomString()}, items = [], batchReq = {RequestItems: {}},
-          scanFilter = {b: {ComparisonOperator: 'EQ', AttributeValueList: [b]}}
+      var i, b = {S: helpers.randomString()}, items = [], batchReq = {RequestItems: {}}
 
       for (i = 0; i < 5; i++)
         items.push({a: {S: String(i)}, b: b})
@@ -2187,6 +2187,7 @@ describe('scan', function() {
           if (err) return done(err)
           res.statusCode.should.equal(200)
           res.body.ScannedCount.should.equal(3)
+          /* jshint -W030 */
           res.body.LastEvaluatedKey.a.S.should.not.be.empty
           Object.keys(res.body.LastEvaluatedKey).should.have.length(1)
           done()
@@ -2220,16 +2221,19 @@ describe('scan', function() {
             if (err) return done(err)
             res.statusCode.should.equal(200)
             res.body.Count.should.equal(4)
+            /* jshint -W030 */
             res.body.LastEvaluatedKey.a.S.should.not.be.empty
             request(opts({TableName: helpers.testHashTable, ScanFilter: scanFilter, Limit: lastIx + 1}), function(err, res) {
               if (err) return done(err)
               res.statusCode.should.equal(200)
               res.body.Count.should.equal(5)
+              /* jshint -W030 */
               res.body.LastEvaluatedKey.a.S.should.not.be.empty
               request(opts({TableName: helpers.testHashTable, ScanFilter: scanFilter, Limit: totalItems}), function(err, res) {
                 if (err) return done(err)
                 res.statusCode.should.equal(200)
                 res.body.Count.should.equal(5)
+                /* jshint -W030 */
                 res.body.LastEvaluatedKey.a.S.should.not.be.empty
                 request(opts({TableName: helpers.testHashTable, ScanFilter: scanFilter, Limit: totalItems + 1}), function(err, res) {
                   if (err) return done(err)

@@ -26,17 +26,17 @@ module.exports = function updateItem(store, data, cb) {
 
         if ((err = db.checkConditional(data, oldItem)) != null) return cb(err)
 
-        var returnObj = {}, item = data.Key
+        var attr, type, returnObj = {}, item = data.Key
 
         if (oldItem) {
-          for (var attr in oldItem) {
+          for (attr in oldItem) {
             item[attr] = oldItem[attr]
           }
           if (data.ReturnValues == 'ALL_OLD') {
             returnObj.Attributes = oldItem
           } else if (data.ReturnValues == 'UPDATED_OLD') {
             returnObj.Attributes = {}
-            for (var attr in data.AttributeUpdates) {
+            for (attr in data.AttributeUpdates) {
               if (oldItem[attr] != null) {
                 returnObj.Attributes[attr] = oldItem[attr]
               }
@@ -44,7 +44,7 @@ module.exports = function updateItem(store, data, cb) {
           }
         }
 
-        for (var attr in data.AttributeUpdates) {
+        for (attr in data.AttributeUpdates) {
           if (data.AttributeUpdates[attr].Action == 'PUT' || data.AttributeUpdates[attr].Action == null) {
             item[attr] = data.AttributeUpdates[attr].Value
           } else if (data.AttributeUpdates[attr].Action == 'ADD') {
@@ -54,18 +54,19 @@ module.exports = function updateItem(store, data, cb) {
               if (!item[attr]) item[attr] = {N: '0'}
               item[attr].N = Big(item[attr].N).plus(data.AttributeUpdates[attr].Value.N).toFixed()
             } else {
-              var type = Object.keys(data.AttributeUpdates[attr].Value)[0]
+              type = Object.keys(data.AttributeUpdates[attr].Value)[0]
               if (item[attr] && !item[attr][type])
                 return cb(db.validationError('Type mismatch for attribute to update'))
               if (!item[attr]) item[attr] = {}
               if (!item[attr][type]) item[attr][type] = []
+              /* jshint -W083 */
               item[attr][type] = item[attr][type].concat(data.AttributeUpdates[attr].Value[type].filter(function(a) {
                 return !~item[attr][type].indexOf(a)
               }))
             }
           } else if (data.AttributeUpdates[attr].Action == 'DELETE') {
             if (data.AttributeUpdates[attr].Value) {
-              var type = Object.keys(data.AttributeUpdates[attr].Value)[0]
+              type = Object.keys(data.AttributeUpdates[attr].Value)[0]
               if (item[attr] && !item[attr][type])
                 return cb(db.validationError('Type mismatch for attribute to update'))
               if (item[attr] && item[attr][type]) {
@@ -87,7 +88,8 @@ module.exports = function updateItem(store, data, cb) {
           returnObj.Attributes = item
         } else if (data.ReturnValues == 'UPDATED_NEW') {
           returnObj.Attributes = {}
-          for (var attr in data.AttributeUpdates) {
+          /* jshint -W088 */
+          for (attr in data.AttributeUpdates) {
             if (item[attr]) returnObj.Attributes[attr] = item[attr]
           }
         }

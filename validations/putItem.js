@@ -1,6 +1,6 @@
 var db = require('../db'),
     validateAttributeValue = require('./index').validateAttributeValue,
-    validateAttributeConditions = require('./index').validateAttributeConditions;
+    validateAttributeConditions = require('./index').validateAttributeConditions
 
 exports.types = {
   ReturnConsumedCapacity: {
@@ -109,14 +109,14 @@ exports.types = {
 }
 
 exports.custom = function(data) {
-  var msg;
+  var msg
   for (var key in data.Item) {
     msg = validateAttributeValue(data.Item[key])
     if (msg) return msg
   }
-  
-  msg = validateAttributeConditions(data);
-  if (msg) return msg;
+
+  msg = validateAttributeConditions(data)
+  if (msg) return msg
 
   if (data.ReturnValues && data.ReturnValues != 'ALL_OLD' && data.ReturnValues != 'NONE')
     return 'ReturnValues can only be ALL_OLD or NONE'

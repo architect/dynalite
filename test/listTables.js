@@ -101,6 +101,7 @@ describe('listTables', function() {
         res.statusCode.should.equal(200)
         res.body.TableNames.should.be.an.instanceOf(Array)
         res.headers['x-amzn-requestid'].length.should.equal(52)
+        /* jshint -W030 */
         res.headers['x-amz-crc32'].should.not.be.empty
         res.headers['content-type'].should.equal('application/json')
         res.headers['content-length'].should.equal(String(Buffer.byteLength(JSON.stringify(res.body), 'utf8')))
@@ -114,6 +115,7 @@ describe('listTables', function() {
         res.statusCode.should.equal(200)
         res.body.TableNames.should.be.an.instanceOf(Array)
         res.headers['x-amzn-requestid'].length.should.equal(52)
+        /* jshint -W030 */
         res.headers['x-amz-crc32'].should.not.be.empty
         res.headers['content-type'].should.equal('application/x-amz-json-1.0')
         res.headers['content-length'].should.equal(String(Buffer.byteLength(JSON.stringify(res.body), 'utf8')))

@@ -6,7 +6,8 @@
   "bin": "cli.js",
   "scripts": {
     "test": "mocha --require should --reporter spec -t $([ $REMOTE ] && echo 30s || echo 4s)",
-    "coverage": "istanbul cover ./node_modules/.bin/_mocha -- --require should -t 4s"
+    "coverage": "istanbul cover ./node_modules/.bin/_mocha -- --require should -t 4s",
+    "jshint": "find . -name '*.js' | grep -v -E 'node_modules|coverage' | xargs jshint --verbose"
   },
   "repository": "mhart/dynalite",
   "keywords": [

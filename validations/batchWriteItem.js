@@ -84,25 +84,26 @@ exports.types = {
 }
 
 exports.custom = function(data) {
-  var numReqs = 0
-  for (var table in data.RequestItems) {
+  var numReqs = 0, table, i, request, key, msg
+  for (table in data.RequestItems) {
     if (!data.RequestItems[table].length)
       return 'The batch write request list for a table cannot be null or empty: ' + table
+    /* jshint -W083 */
     if (data.RequestItems[table].some(function(item) { return !Object.keys(item).length }))
       return 'Supplied AttributeValue has more than one datatypes set, ' +
         'must contain exactly one of the supported datatypes'
-    for (var i = 0; i < data.RequestItems[table].length; i++) {
-      var request = data.RequestItems[table][i]
+    for (i = 0; i < data.RequestItems[table].length; i++) {
+      request = data.RequestItems[table][i]
       if (request.PutRequest) {
-        for (var key in request.PutRequest.Item) {
-          var msg = validateAttributeValue(request.PutRequest.Item[key])
+        for (key in request.PutRequest.Item) {
+          msg = validateAttributeValue(request.PutRequest.Item[key])
           if (msg) return msg
         }
         if (db.itemSize(request.PutRequest.Item) > 65536)
           return 'Item size has exceeded the maximum allowed size'
       } else if (request.DeleteRequest) {
-        for (var key in request.DeleteRequest.Key) {
-          var msg = validateAttributeValue(request.DeleteRequest.Key[key])
+        for (key in request.DeleteRequest.Key) {
+          msg = validateAttributeValue(request.DeleteRequest.Key[key])
           if (msg) return msg
         }
       }

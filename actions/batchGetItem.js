@@ -15,6 +15,7 @@ module.exports = function batchGetItem(store, data, cb) {
     for (table in tableResponses) {
       // Order is pretty random
       // Assign keys before we shuffle
+      /* jshint -W083 */
       tableResponses[table].forEach(function(tableRes, ix) { tableRes._key = data.RequestItems[table].Keys[ix] })
       shuffle(tableResponses[table])
       res.Responses[table] = tableResponses[table].map(function(tableRes) {

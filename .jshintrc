@@ -1,0 +1,42 @@
+/* vim: set filetype=json : */
+{
+  "maxerr": 100,
+
+  "predef": [ "define", "describe", "before", "after", "beforeEach", "afterEach", "it" ],
+  "node": true,
+
+  // No missing semicolon warnings
+  "asi": true,
+  // Allow `== null`
+  "eqnull": true,
+  // Allow `debugger` statements
+  "debug": true,
+  // Allow ES.next features
+  "esnext": true,
+  // Allow constructors like `new Object`
+  "supernew": true,
+
+  // Enforce camelcasing on all variables
+  "camelcase": true,
+  // Ensure immediate functions are wrapped in parens
+  "immed": true,
+  // Prohibit deprecated `arguments.caller` and `arguments.callee`
+  "noarg": true,
+  // Don't allow empty blocks
+  "noempty": true,
+  // Cannot just call a constructor without assigning it
+  "nonew": true,
+  // Only allow single quotes
+  "quotmark": "single",
+  // Cannot use undeclared variables
+  "undef": true,
+  // Warn when vars are defined but unused
+  "unused": true,
+  // Don't allow trailing whitespace
+  "trailing": true,
+  // Only allow one variable declaration per function (legacy)
+  "onevar": true,
+
+  "strict": false,
+  "white": false
+}

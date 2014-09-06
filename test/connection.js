@@ -1,5 +1,4 @@
-var request = require('./helpers').request,
-    dynalite = require('..')
+var request = require('./helpers').request
 
 describe('dynalite connections', function() {
 

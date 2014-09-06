@@ -1,5 +1,5 @@
 var validateAttributeValue = require('./index').validateAttributeValue,
-    validateAttributeConditions = require('./index').validateAttributeConditions;
+    validateAttributeConditions = require('./index').validateAttributeConditions
 
 exports.types = {
   ReturnConsumedCapacity: {
@@ -137,32 +137,32 @@ exports.types = {
 }
 
 exports.custom = function(data) {
-  var msg;
-  for (var key in data.Key) {
+  var msg, key, type
+  for (key in data.Key) {
     msg = validateAttributeValue(data.Key[key])
     if (msg) return msg
   }
 
-  msg = validateAttributeConditions(data);
-  if (msg) return msg;
+  msg = validateAttributeConditions(data)
+  if (msg) return msg
 
   if (data.AttributeUpdates) {
-    for (var key in data.AttributeUpdates) {
+    for (key in data.AttributeUpdates) {
       if (data.AttributeUpdates[key].Value != null) {
-        var msg = validateAttributeValue(data.AttributeUpdates[key].Value)
+        msg = validateAttributeValue(data.AttributeUpdates[key].Value)
         if (msg) return msg
       }
       if (data.AttributeUpdates[key].Value == null && data.AttributeUpdates[key].Action != 'DELETE')
         return 'One or more parameter values were invalid: ' +
           'Only DELETE action is allowed when no attribute value is specified'
       if (data.AttributeUpdates[key].Value != null && data.AttributeUpdates[key].Action == 'DELETE') {
-        var type = Object.keys(data.AttributeUpdates[key].Value)[0]
+        type = Object.keys(data.AttributeUpdates[key].Value)[0]
         if (type != 'SS' && type != 'NS' && type != 'BS')
           return 'One or more parameter values were invalid: ' +
             'DELETE action with value is not supported for the type ' + type
       }
       if (data.AttributeUpdates[key].Value != null && data.AttributeUpdates[key].Action == 'ADD') {
-        var type = Object.keys(data.AttributeUpdates[key].Value)[0]
+        type = Object.keys(data.AttributeUpdates[key].Value)[0]
         if (type != 'SS' && type != 'NS' && type != 'BS' && type != 'N')
           return 'One or more parameter values were invalid: ' +
             'ADD action is not supported for the type ' + type

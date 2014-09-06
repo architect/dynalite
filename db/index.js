@@ -291,13 +291,13 @@ function itemCompare(rangeKey, table) {
 }
 
 function checkConditional(data, existingItem) {
-  var expected = data.Expected;
-  if (!expected) return;
+  var expected = data.Expected
+  if (!expected) return
 
-  existingItem = existingItem || {};
+  existingItem = existingItem || {}
 
   if (!matchesFilter(existingItem, expected, data.ConditionalOperator)) {
-    return conditionalError();
+    return conditionalError()
   }
 }
 
@@ -326,6 +326,7 @@ function conditionalError(msg) {
 function itemSize(item, skipAttr) {
   var size = 0, attr, type, val
   for (attr in item) {
+    /* jshint -W083 */
     type = Object.keys(item[attr])[0]
     val = item[attr][type]
     size += skipAttr ? 2 : attr.length
@@ -362,12 +363,20 @@ function capacityUnits(item, isRead, isConsistent) {
   return size / (!isRead || isConsistent ? 1 : 2)
 }
 
-// TODO: Ensure that sets match
 function valueEquals(val1, val2) {
   if (!val1 || !val2) return false
   var key1 = Object.keys(val1)[0], key2 = Object.keys(val2)[0]
   if (key1 != key2) return false
-  return val1[key1] == val2[key2]
+  return valsEqual(val1[key1], val2[key2])
+}
+
+function valsEqual(val1, val2) {
+  if (Array.isArray(val1) && Array.isArray(val2)) {
+    if (val1.length != val2.length) return false
+    return val1.every(function(val) { return ~val2.indexOf(val) })
+  } else {
+    return val1 == val2
+  }
 }
 
 function matchesFilter(val, filter, conditionalOperator) {
@@ -378,12 +387,12 @@ function matchesFilter(val, filter, conditionalOperator) {
         compVal = compVals ? compVals[0][compType] : null,
         attrType = val[attr] ? Object.keys(val[attr])[0] : null,
         attrVal = val[attr] ? val[attr][attrType] : null,
-        legacy = !('ComparisonOperator' in filter[attr]);
+        legacy = !('ComparisonOperator' in filter[attr])
 
     if (legacy) {
-      if (filter[attr].Exists === false && attrVal != null) return false;
-      if (filter[attr].Value && !valueEquals(filter[attr].Value, val[attr])) return false;
-      return true;
+      if (filter[attr].Exists === false && attrVal != null) return false
+      if (filter[attr].Value && !valueEquals(filter[attr].Value, val[attr])) return false
+      return true
     }
 
     switch (comp) {
@@ -472,25 +481,16 @@ function matchesFilter(val, filter, conditionalOperator) {
           (attrType == 'N' && (!Big(attrVal).gte(compVal) || !Big(attrVal).lte(compVals[1].N))) ||
           (attrType != 'N' && (attrVal < compVal || attrVal > compVals[1][compType]))) return false
     }
-    return true;
-  });
+    return true
+  })
 
   var passed = results.reduce(function(memo, result) {
-    if (result) memo++;
-    return memo;
-  }, 0);
+    if (result) memo++
+    return memo
+  }, 0)
 
   if (conditionalOperator && conditionalOperator === 'OR') {
-    if (passed === 0) return false;
-  } else if (passed < Object.keys(filter).length) return false;
-  return true;
-}
-
-function valsEqual(val1, val2) {
-  if (Array.isArray(val1) && Array.isArray(val2)) {
-    if (val1.length != val2.length) return false
-    return val1.every(function(val) { return ~val2.indexOf(val) })
-  } else {
-    return val1 == val2
-  }
+    if (passed === 0) return false
+  } else if (passed < Object.keys(filter).length) return false
+  return true
 }

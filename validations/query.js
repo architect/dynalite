@@ -100,7 +100,7 @@ exports.custom = function(data) {
     return 'Conditions must not be null'
   var conditionKeys = Object.keys(data.KeyConditions)
 
-  var msg = ''
+  var msg = '', i
   var lengths = {
     NULL: 0,
     NOT_NULL: 0,
@@ -119,7 +119,7 @@ exports.custom = function(data) {
   for (var key in data.KeyConditions) {
     var comparisonOperator = data.KeyConditions[key].ComparisonOperator
     var attrValList = data.KeyConditions[key].AttributeValueList || []
-    for (var i = 0; i < attrValList.length; i++) {
+    for (i = 0; i < attrValList.length; i++) {
       msg = validateAttributeValue(attrValList[i])
       if (msg) return msg
     }
@@ -142,7 +142,7 @@ exports.custom = function(data) {
 
   if (data.AttributesToGet) {
     var attrs = Object.create(null)
-    for (var i = 0; i < data.AttributesToGet.length; i++) {
+    for (i = 0; i < data.AttributesToGet.length; i++) {
       if (attrs[data.AttributesToGet[i]])
         return 'One or more parameter values were invalid: Duplicate value in attribute name: ' +
           data.AttributesToGet[i]

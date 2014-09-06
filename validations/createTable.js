@@ -212,11 +212,10 @@ exports.custom = function(data) {
     return 'One or more parameter values were invalid: Number of attributes in KeySchema does not ' +
       'exactly match number of attributes defined in AttributeDefinitions'
 
-  var indexNames = Object.create(null)
+  var indexNames = Object.create(null), indexKeys, tableHash, i, indexName, indexHash, projectionType
 
   if (data.LocalSecondaryIndexes) {
-    var indexKeys
-    var tableHash = data.KeySchema[0].AttributeName
+    tableHash = data.KeySchema[0].AttributeName
 
     if (!data.LocalSecondaryIndexes.length)
       return 'One or more parameter values were invalid: List of LocalSecondaryIndexes is empty'
@@ -225,8 +224,9 @@ exports.custom = function(data) {
       return 'One or more parameter values were invalid: Table KeySchema does not have a range key, ' +
         'which is required when specifying a LocalSecondaryIndex'
 
-    for (var i = 0; i < data.LocalSecondaryIndexes.length; i++) {
-      var indexName = data.LocalSecondaryIndexes[i].IndexName
+    for (i = 0; i < data.LocalSecondaryIndexes.length; i++) {
+      /* jshint -W083 */
+      indexName = data.LocalSecondaryIndexes[i].IndexName
       indexKeys = data.LocalSecondaryIndexes[i].KeySchema.map(function(key) { return key.AttributeName }).reverse()
       if (indexKeys.some(function(key) { return !~defns.indexOf(key) }))
         return 'One or more parameter values were invalid: ' +
@@ -248,7 +248,7 @@ exports.custom = function(data) {
         return 'One or more parameter values were invalid: Index KeySchema does not have a range key for index: ' +
           data.LocalSecondaryIndexes[i].IndexName
 
-      var indexHash = data.LocalSecondaryIndexes[i].KeySchema[0].AttributeName
+      indexHash = data.LocalSecondaryIndexes[i].KeySchema[0].AttributeName
       if (indexHash != tableHash)
         return 'One or more parameter values were invalid: ' +
           'Index KeySchema does not have the same leading hash key as table KeySchema for index: ' +
@@ -258,7 +258,7 @@ exports.custom = function(data) {
       if (data.LocalSecondaryIndexes[i].Projection.ProjectionType == null)
         return 'One or more parameter values were invalid: Unknown ProjectionType: null'
 
-      var projectionType = data.LocalSecondaryIndexes[i].Projection.ProjectionType
+      projectionType = data.LocalSecondaryIndexes[i].Projection.ProjectionType
       if (data.LocalSecondaryIndexes[i].Projection.NonKeyAttributes && projectionType != 'INCLUDE')
         return 'One or more parameter values were invalid: ' +
           'ProjectionType is ' + projectionType + ', but NonKeyAttributes is specified'
@@ -273,13 +273,11 @@ exports.custom = function(data) {
   }
 
   if (data.GlobalSecondaryIndexes) {
-    var indexKeys
-
     if (!data.GlobalSecondaryIndexes.length)
       return 'One or more parameter values were invalid: List of GlobalSecondaryIndexes is empty'
 
-    for (var i = 0; i < data.GlobalSecondaryIndexes.length; i++) {
-      var indexName = data.GlobalSecondaryIndexes[i].IndexName
+    for (i = 0; i < data.GlobalSecondaryIndexes.length; i++) {
+      indexName = data.GlobalSecondaryIndexes[i].IndexName
       indexKeys = data.GlobalSecondaryIndexes[i].KeySchema.map(function(key) { return key.AttributeName }).reverse()
       if (indexKeys.some(function(key) { return !~defns.indexOf(key) }))
         return 'One or more parameter values were invalid: ' +
@@ -300,7 +298,7 @@ exports.custom = function(data) {
       if (data.GlobalSecondaryIndexes[i].Projection.ProjectionType == null)
         return 'One or more parameter values were invalid: Unknown ProjectionType: null'
 
-      var projectionType = data.GlobalSecondaryIndexes[i].Projection.ProjectionType
+      projectionType = data.GlobalSecondaryIndexes[i].Projection.ProjectionType
       if (data.GlobalSecondaryIndexes[i].Projection.NonKeyAttributes && projectionType != 'INCLUDE')
         return 'One or more parameter values were invalid: ' +
           'ProjectionType is ' + projectionType + ', but NonKeyAttributes is specified'

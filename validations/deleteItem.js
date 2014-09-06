@@ -1,5 +1,5 @@
 var validateAttributeValue = require('./index').validateAttributeValue,
-    validateAttributeConditions = require('./index').validateAttributeConditions;
+    validateAttributeConditions = require('./index').validateAttributeConditions
 
 exports.types = {
   ReturnConsumedCapacity: {
@@ -108,13 +108,13 @@ exports.types = {
 }
 
 exports.custom = function(data) {
-  var msg;
+  var msg
   for (var key in data.Key) {
     msg = validateAttributeValue(data.Key[key])
     if (msg) return msg
   }
 
-  msg = validateAttributeConditions(data);
-  if (msg) return msg;
+  msg = validateAttributeConditions(data)
+  if (msg) return msg
 }
 

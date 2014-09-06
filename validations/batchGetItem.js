@@ -54,11 +54,11 @@ exports.types = {
 }
 
 exports.custom = function(data) {
-  var numReqs = 0
-  for (var table in data.RequestItems) {
-    for (var i = 0; i < data.RequestItems[table].Keys.length; i++) {
-      for (var key in data.RequestItems[table].Keys[i]) {
-        var msg = validateAttributeValue(data.RequestItems[table].Keys[i][key])
+  var numReqs = 0, table, i, key, msg, attrs
+  for (table in data.RequestItems) {
+    for (i = 0; i < data.RequestItems[table].Keys.length; i++) {
+      for (key in data.RequestItems[table].Keys[i]) {
+        msg = validateAttributeValue(data.RequestItems[table].Keys[i][key])
         if (msg) return msg
       }
       numReqs++
@@ -66,8 +66,8 @@ exports.custom = function(data) {
         return 'Too many items requested for the BatchGetItem call'
     }
     if (data.RequestItems[table].AttributesToGet) {
-      var attrs = Object.create(null)
-      for (var i = 0; i < data.RequestItems[table].AttributesToGet.length; i++) {
+      attrs = Object.create(null)
+      for (i = 0; i < data.RequestItems[table].AttributesToGet.length; i++) {
         if (attrs[data.RequestItems[table].AttributesToGet[i]])
           return 'One or more parameter values were invalid: Duplicate value in attribute name: ' +
             data.RequestItems[table].AttributesToGet[i]
