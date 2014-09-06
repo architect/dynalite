@@ -96,7 +96,7 @@ exports.types = {
 }
 
 exports.custom = function(data) {
-  var msg = ''
+  var msg = '', i
   var lengths = {
     NULL: 0,
     NOT_NULL: 0,
@@ -113,8 +113,8 @@ exports.custom = function(data) {
     BETWEEN: 2,
   }
   var types = {
-    EQ: ['S', 'N', 'B'],
-    NE: ['S', 'N', 'B'],
+    EQ: ['S', 'N', 'B', 'SS', 'NS', 'BS'],
+    NE: ['S', 'N', 'B', 'SS', 'NS', 'BS'],
     LE: ['S', 'N', 'B'],
     LT: ['S', 'N', 'B'],
     GE: ['S', 'N', 'B'],
@@ -128,18 +128,23 @@ exports.custom = function(data) {
   for (var key in data.ScanFilter) {
     var comparisonOperator = data.ScanFilter[key].ComparisonOperator
     var attrValList = data.ScanFilter[key].AttributeValueList || []
-    for (var i = 0; i < attrValList.length; i++) {
+    for (i = 0; i < attrValList.length; i++) {
       msg = validateAttributeValue(attrValList[i])
       if (msg) return msg
     }
 
     if ((typeof lengths[comparisonOperator] == 'number' && attrValList.length != lengths[comparisonOperator]) ||
         (attrValList.length < lengths[comparisonOperator][0] || attrValList.length > lengths[comparisonOperator][1]))
-      return 'The attempted filter operation is not supported for the provided filter argument count'
+      return 'One or more parameter values were invalid: Invalid number of argument(s) for the ' +
+        comparisonOperator + ' ComparisonOperator'
 
-    if (types[comparisonOperator] &&
-        attrValList.some(function(attrVal) { return !~types[comparisonOperator].indexOf(Object.keys(attrVal)[0]) }))
-      return 'The attempted filter operation is not supported for the provided type'
+    if (types[comparisonOperator]) {
+      for (i = 0; i < attrValList.length; i++) {
+        if (!~types[comparisonOperator].indexOf(Object.keys(attrValList[i])[0]))
+          return 'One or more parameter values were invalid: ComparisonOperator ' + comparisonOperator +
+            ' is not valid for ' + Object.keys(attrValList[i])[0] + ' AttributeValue type'
+      }
+    }
   }
 
   if (data.ExclusiveStartKey) {
@@ -151,7 +156,7 @@ exports.custom = function(data) {
 
   if (data.AttributesToGet) {
     var attrs = Object.create(null)
-    for (var i = 0; i < data.AttributesToGet.length; i++) {
+    for (i = 0; i < data.AttributesToGet.length; i++) {
       if (attrs[data.AttributesToGet[i]])
         return 'One or more parameter values were invalid: Duplicate value in attribute name: ' +
           data.AttributesToGet[i]

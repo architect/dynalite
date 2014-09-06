@@ -125,7 +125,8 @@ exports.custom = function(data) {
     }
     if ((typeof lengths[comparisonOperator] == 'number' && attrValList.length != lengths[comparisonOperator]) ||
         (attrValList.length < lengths[comparisonOperator][0] || attrValList.length > lengths[comparisonOperator][1]))
-      return 'The attempted filter operation is not supported for the provided filter argument count'
+      return 'One or more parameter values were invalid: Invalid number of argument(s) for the ' +
+        comparisonOperator + ' ComparisonOperator'
   }
 
   if (conditionKeys.length != 1 && conditionKeys.length != 2) {

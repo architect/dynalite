@@ -388,10 +388,10 @@ function matchesFilter(val, filter, conditionalOperator) {
 
     switch (comp) {
       case 'EQ':
-        if (compType != attrType || attrVal != compVal) return false
+        if (compType != attrType || !valsEqual(attrVal, compVal)) return false
         break
       case 'NE':
-        if (compType == attrType && attrVal == compVal) return false
+        if (compType == attrType && valsEqual(attrVal, compVal)) return false
         break
       case 'LE':
         if (compType != attrType ||
@@ -484,4 +484,13 @@ function matchesFilter(val, filter, conditionalOperator) {
     if (passed === 0) return false;
   } else if (passed < Object.keys(filter).length) return false;
   return true;
+}
+
+function valsEqual(val1, val2) {
+  if (Array.isArray(val1) && Array.isArray(val2)) {
+    if (val1.length != val2.length) return false
+    return val1.every(function(val) { return ~val2.indexOf(val) })
+  } else {
+    return val1 == val2
+  }
 }

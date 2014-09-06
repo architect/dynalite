@@ -169,13 +169,14 @@ module.exports = function query(store, data, cb) {
     }
 
     vals.join(function(items) {
-      var result = {Count: items.length}
+      var result = {Count: items.length, ScannedCount: items.length}
 
       // TODO: Check size?
       // TODO: Does this only happen when we're not doing a COUNT?
       if (data.Limit && (items.length > data.Limit || lastItem)) {
         items.splice(data.Limit)
         result.Count = items.length
+        result.ScannedCount = items.length
         if (result.Count) {
           result.LastEvaluatedKey = table.KeySchema.concat(keySchema).reduce(function(key, schemaPiece) {
             key[schemaPiece.AttributeName] = items[items.length - 1][schemaPiece.AttributeName]

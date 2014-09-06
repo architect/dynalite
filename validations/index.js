@@ -163,20 +163,11 @@ function checkValidations(data, validations, custom, target) {
 
   for (attr in validations) {
     if (validations[attr].required && data[attr] == null) {
-      throw validationError('The paramater \'' + toLowerFirst(attr) + '\' is required but was not present in the request')
-    }
-    if (validations[attr].requiredMap && (data[attr] == null || !Object.keys(data[attr]).length)) {
-      throw validationError('The ' + toLowerFirst(attr) + ' parameter is required for ' + target)
+      throw validationError('The paramater \'' + attr + '\' is required but was not present in the request')
     }
     if (validations[attr].tableName) {
       msg = validateTableName(attr, data[attr])
       if (msg) throw validationError(msg)
-    }
-    if (validations[attr].tableMap && data[attr] != null) {
-      Object.keys(data[attr]).forEach(function(key) {
-        msg = validateTableName('TableName', key)
-        if (msg) throw validationError(msg)
-      })
     }
   }
 
@@ -192,7 +183,7 @@ function checkValidations(data, validations, custom, target) {
     if (validations == null || typeof validations != 'object') return
     for (var validation in validations) {
       if (errors.length >= 10) return
-      if (~['type', 'required', 'requiredMap', 'tableName', 'tableMap'].indexOf(validation)) continue
+      if (~['type', 'required', 'tableName'].indexOf(validation)) continue
       if (validation != 'notNull' && data == null) continue
       if (validation == 'children') {
         if (validations.type == 'List') {
@@ -280,16 +271,19 @@ function validateAttributeValue(value) {
     }
 
     if (type == 'B' && !value[type])
-      return 'One or more parameter values were invalid: An AttributeValue may not contain an empty binary type.'
+      return 'One or more parameter values were invalid: An AttributeValue may not contain a null or empty binary type.'
 
     if (type == 'S' && !value[type])
       return 'One or more parameter values were invalid: An AttributeValue may not contain an empty string.'
 
-    if ((type == 'SS' || type == 'NS' || type == 'BS') && !value[type].length)
+    if (type == 'SS' && !value[type].length)
+      return 'One or more parameter values were invalid: An string set  may not be empty'
+
+    if ((type == 'NS' || type == 'BS') && !value[type].length)
       return 'One or more parameter values were invalid: An AttributeValue may not contain an empty set.'
 
     if (type == 'SS' && value[type].some(function(x) { return !x }))
-      return 'One or more parameter values were invalid: An AttributeValue may not contain an empty string.'
+      return 'One or more parameter values were invalid: An string set may not have a empty string as a member'
 
     if (type == 'BS' && value[type].some(function(x) { return !x }))
       return 'One or more parameter values were invalid: Binary sets may not contain null or empty values'
