@@ -159,6 +159,12 @@ module.exports = function query(store, data, cb) {
       return true
     })
 
+    if(data.QueryFilter) {
+      vals = vals.filter(function(val) {
+        return db.matchesFilter(val, data.QueryFilter);
+      })
+    }
+
     if (data.AttributesToGet) {
       vals = vals.map(function(val) {
         return data.AttributesToGet.reduce(function(item, attr) {

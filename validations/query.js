@@ -28,6 +28,42 @@ exports.types = {
       }
     }
   },
+  QueryFilter: {
+    type: 'Map',
+    children: {
+      type: 'Structure',
+      children: {
+        AttributeValueList: {
+          type: 'List',
+          children: {
+            type: 'Structure',
+            children: {
+              S: 'String',
+              B: 'Blob',
+              N: 'String',
+              BS: {
+                type: 'List',
+                children: 'Blob',
+              },
+              NS: {
+                type: 'List',
+                children: 'String',
+              },
+              SS: {
+                type: 'List',
+                children: 'String',
+              }
+            }
+          }
+        },
+        ComparisonOperator: {
+          type: 'String',
+          notNull: true,
+          enum: ['IN', 'NULL', 'BETWEEN', 'LT', 'NOT_CONTAINS', 'EQ', 'GT', 'NOT_NULL', 'NE', 'LE', 'BEGINS_WITH', 'GE', 'CONTAINS']
+        }
+      }
+    }
+  },
   ReturnConsumedCapacity: {
     type: 'String',
     enum: ['INDEXES', 'TOTAL', 'NONE']
@@ -131,6 +167,19 @@ exports.custom = function(data) {
 
   if (conditionKeys.length != 1 && conditionKeys.length != 2) {
     return 'Conditions can be of length 1 or 2 only'
+  }
+
+  for (var key in data.QueryFilter) {
+    var comparisonOperator = data.QueryFilter[key].ComparisonOperator
+    var attrValList = data.QueryFilter[key].AttributeValueList || []
+    for (i = 0; i < attrValList.length; i++) {
+      msg = validateAttributeValue(attrValList[i])
+      if (msg) return msg
+    }
+    if ((typeof lengths[comparisonOperator] == 'number' && attrValList.length != lengths[comparisonOperator]) ||
+        (attrValList.length < lengths[comparisonOperator][0] || attrValList.length > lengths[comparisonOperator][1]))
+      return 'One or more parameter values were invalid: Invalid number of argument(s) for the ' +
+        comparisonOperator + ' ComparisonOperator'
   }
 
   if (data.ExclusiveStartKey) {
