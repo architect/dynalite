@@ -160,13 +160,13 @@ module.exports = function query(store, data, cb) {
     })
 
     if(data.QueryFilter) {
-      for(var i =0; i < keySchema.length; i++) {
+      for(i =0; i < keySchema.length; i++) {
           if(data.QueryFilter[keySchema[i].AttributeName])
             return cb(db.validationError('QueryFilter can only contain non-primary key attributes: Primary key attribute: '+keySchema[i].AttributeName))
       }
 
       vals = vals.filter(function(val) {
-        return db.matchesFilter(val, data.QueryFilter);
+        return db.matchesFilter(val, data.QueryFilter)
       })
     }
 
