@@ -12,7 +12,7 @@ module.exports = function query(store, data, cb) {
     var i, keySchema, key, comparisonOperator, hashKey, rangeKey, indexAttrs, type,
         tableHashKey = table.KeySchema[0].AttributeName, tableHashType, tableHashVal,
         opts = {}, vals, itemDb = store.getItemDb(data.TableName),
-        size = 0, capacitySize = 0, count = 0, lastItem, em
+        size = 0, capacitySize = 0, count = 0, lastItem, em, scannedCount
 
     if (data.IndexName) {
       for (i = 0; i < (table.LocalSecondaryIndexes || []).length; i++) {
@@ -166,6 +166,7 @@ module.exports = function query(store, data, cb) {
       }
 
       vals = vals.filter(function(val) {
+        scannedCount = (scannedCount || 0) + 1
         return db.matchesFilter(val, data.QueryFilter)
       })
     }
@@ -180,7 +181,7 @@ module.exports = function query(store, data, cb) {
     }
 
     vals.join(function(items) {
-      var result = {Count: items.length, ScannedCount: items.length}
+      var result = {Count: items.length, ScannedCount: scannedCount || items.length}
 
       // TODO: Check size?
       // TODO: Does this only happen when we're not doing a COUNT?
