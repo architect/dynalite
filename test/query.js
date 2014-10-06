@@ -1078,7 +1078,7 @@ describe('query', function() {
         }}), function(err, res) {
           if (err) return done(err)
           res.statusCode.should.equal(200)
-          res.body.should.eql({Count: 1, ScannedCount: 1, Items: [
+          res.body.should.eql({Count: 1, ScannedCount: 3, Items: [
             {a: item.a, b: {S: 'b3'}, d: {S: 'd3'}, e: {S: 'e3'}},
           ]})
           done()
