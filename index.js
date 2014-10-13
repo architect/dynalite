@@ -123,11 +123,11 @@ function httpHandler(store, req, res) {
       // TODO: Go through key-vals first
       // "'Credential' not a valid key=value pair (missing equal-sign) in Authorization header: 'AWS4-HMAC-SHA256 \
       // Signature=b,    Credential,    SignedHeaders'."
-      for (var i in headers) {
-        if (!authParams[headers[i]])
+      headers.forEach(function(header) {
+        if (!authParams[header])
           // TODO: SignedHeaders *is* allowed to be an empty string at this point
-          msg += 'Authorization header requires \'' + headers[i] + '\' parameter. '
-      }
+          msg += 'Authorization header requires \'' + header + '\' parameter. '
+      })
       if (!date)
         msg += 'Authorization header requires existence of either a \'X-Amz-Date\' or a \'Date\' header. '
       if (msg) {
