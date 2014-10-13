@@ -99,7 +99,7 @@ exports.custom = function(data) {
           msg = validateAttributeValue(request.PutRequest.Item[key])
           if (msg) return msg
         }
-        if (db.itemSize(request.PutRequest.Item) > 65536)
+        if (db.itemSize(request.PutRequest.Item) > db.MAX_SIZE)
           return 'Item size has exceeded the maximum allowed size'
       } else if (request.DeleteRequest) {
         for (key in request.DeleteRequest.Key) {

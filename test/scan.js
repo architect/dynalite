@@ -1,5 +1,6 @@
 var helpers = require('./helpers'),
-    should = require('should')
+    should = require('should'),
+    db = require('../db')
 
 var target = 'Scan',
     request = helpers.request,
@@ -218,7 +219,7 @@ describe('scan', function() {
           b: {ComparisonOperator: 'NULL'},
           c: {ComparisonOperator: 'NULL'},
         }},
-        'One or more parameter values were invalid: An AttributeValue may not contain an empty string.', done)
+        'One or more parameter values were invalid: An AttributeValue may not contain an empty string', done)
     })
 
     it('should return empty response if key has incorrect numeric type', function(done) {
@@ -617,7 +618,7 @@ describe('scan', function() {
         ExclusiveStartKey: {a: {S: ''}},
         ScanFilter: {a: {ComparisonOperator: 'NULL'}}},
         'The provided starting key is invalid: ' +
-        'One or more parameter values were invalid: An AttributeValue may not contain an empty string.', done)
+        'One or more parameter values were invalid: An AttributeValue may not contain an empty string', done)
     })
 
     it('should return ValidationException for empty binary', function(done) {
@@ -2437,7 +2438,7 @@ describe('scan', function() {
 
     // TODO: Need high capacity to run this
     it.skip('should return all if just under limit', function(done) {
-      this.timeout(100000)
+      this.timeout(200000)
 
       var i, items = []
       for (i = 0; i < 25; i++)
@@ -2457,7 +2458,7 @@ describe('scan', function() {
           for (i = 0; i < 25; i++) {
             if (i == 23) {
               // Second last item
-              items[i].b = {S: b.slice(0, 43366)}
+              items[i].b = {S: b.slice(0, 43412 - 46)}
               items[i].c = {N: '12.3456'}
               items[i].d = {B: 'AQI='}
               items[i].e = {SS: ['a', 'bc']}
@@ -2508,7 +2509,7 @@ describe('scan', function() {
           for (i = 0; i < 25; i++) {
             if (i == 23) {
               // Second last item
-              items[i].b = {S: b.slice(0, 43367)}
+              items[i].b = {S: b.slice(0, 43412 - 45)}
               items[i].c = {N: '12.3456'}
               items[i].d = {B: 'AQI='}
               items[i].e = {SS: ['a', 'bc']}

@@ -39,10 +39,9 @@ describe('dynalite connections', function() {
       }
     }
 
-    // Appears to currently be 8MB in us-east-1, us-west-1 and us-west-2 - not sure about others
     it.skip('should return 413 if request too large', function(done) {
       this.timeout(100000)
-      var body = Array(8 * 1024 * 1024 + 1), i
+      var body = Array(16 * 1024 * 1024 + 1), i
       for (i = 0; i < body.length; i++)
         body[i] = 'a'
 
@@ -56,7 +55,7 @@ describe('dynalite connections', function() {
 
     it.skip('should not return 413 if request not too large', function(done) {
       this.timeout(100000)
-      var body = Array(8 * 1024 * 1024), i
+      var body = Array(16 * 1024 * 1024), i
       for (i = 0; i < body.length; i++)
         body[i] = 'a'
 

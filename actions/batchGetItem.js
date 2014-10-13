@@ -22,7 +22,7 @@ module.exports = function batchGetItem(store, data, cb) {
         if (tableRes.Item) {
           // TODO: This is totally inefficient - should fix this
           var newSize = totalSize + db.itemSize(tableRes.Item)
-          if (newSize > 1048574) {
+          if (newSize > (1024 * 1024 + db.MAX_SIZE - 3)) {
             if (!res.UnprocessedKeys[table]) {
               res.UnprocessedKeys[table] = {Keys: []}
               if (data.RequestItems[table].AttributesToGet)
@@ -30,6 +30,8 @@ module.exports = function batchGetItem(store, data, cb) {
               if (data.RequestItems[table].ConsistentRead)
                 res.UnprocessedKeys[table].ConsistentRead = data.RequestItems[table].ConsistentRead
             }
+            if (!capacities[table]) capacities[table] = 0
+            capacities[table] += 1
             res.UnprocessedKeys[table].Keys.push(tableRes._key)
             return
           }

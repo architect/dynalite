@@ -4,7 +4,7 @@ var http = require('http'),
     validations = require('./validations'),
     db = require('./db')
 
-var MAX_REQUEST_BYTES = 8 * 1024 * 1024
+var MAX_REQUEST_BYTES = 16 * 1024 * 1024
 
 var validApis = ['DynamoDB_20111205', 'DynamoDB_20120810'],
     validOperations = ['BatchGetItem', 'BatchWriteItem', 'CreateTable', 'DeleteItem', 'DeleteTable',

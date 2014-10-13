@@ -119,7 +119,7 @@ describe('getItem', function() {
 
     it('should return ValidationException for empty string', function(done) {
       assertValidation({TableName: 'abc', Key: {a: {S: ''}}},
-        'One or more parameter values were invalid: An AttributeValue may not contain an empty string.', done)
+        'One or more parameter values were invalid: An AttributeValue may not contain an empty string', done)
     })
 
     it('should return ValidationException for empty binary', function(done) {

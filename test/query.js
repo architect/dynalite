@@ -256,7 +256,7 @@ describe('query', function() {
           b: {ComparisonOperator: 'NULL'},
           c: {ComparisonOperator: 'NULL'},
         }},
-        'One or more parameter values were invalid: An AttributeValue may not contain an empty string.', done)
+        'One or more parameter values were invalid: An AttributeValue may not contain an empty string', done)
     })
 
     it('should return empty response if key has incorrect numeric type', function(done) {
@@ -464,7 +464,7 @@ describe('query', function() {
         ExclusiveStartKey: {a: {S: ''}},
         KeyConditions: {a: {ComparisonOperator: 'NULL'}}},
         'The provided starting key is invalid: ' +
-        'One or more parameter values were invalid: An AttributeValue may not contain an empty string.', done)
+        'One or more parameter values were invalid: An AttributeValue may not contain an empty string', done)
     })
 
     it('should return ValidationException for empty binary', function(done) {

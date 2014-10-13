@@ -1,4 +1,5 @@
-var helpers = require('./helpers')
+var helpers = require('./helpers'),
+    db = require('../db')
 
 var target = 'BatchGetItem',
     request = helpers.request,
@@ -166,7 +167,7 @@ describe('batchGetItem', function() {
 
     it('should return ValidationException for empty string', function(done) {
       assertValidation({RequestItems: {abc: {Keys: [{a: {S: ''}}]}}},
-        'One or more parameter values were invalid: An AttributeValue may not contain an empty string.', done)
+        'One or more parameter values were invalid: An AttributeValue may not contain an empty string', done)
     })
 
     it('should return ValidationException for empty binary', function(done) {
@@ -551,15 +552,15 @@ describe('batchGetItem', function() {
 
     // TODO: Need high capacity to run this
     it.skip('should return all items if just under limit', function(done) {
-      this.timeout(100000)
+      this.timeout(200000)
 
-      var i, item, items = [], b = new Array(65530).join('b'),
+      var i, item, items = [], b = new Array(db.MAX_SIZE - 6).join('b'),
           batchReq = {RequestItems: {}, ReturnConsumedCapacity: 'TOTAL'}
-      for (i = 0; i < 17; i++) {
-        if (i < 16) {
+      for (i = 0; i < 4; i++) {
+        if (i < 3) {
           item = {a: {S: ('0' + i).slice(-2)}, b: {S: b}}
         } else {
-          item = {a: {S: ('0' + i).slice(-2)}, b: {S: b.slice(0, 17)}, c: {N: '12.3456'}, d: {B: 'AQI='},
+          item = {a: {S: ('0' + i).slice(-2)}, b: {S: b.slice(0, 229353)}, c: {N: '12.3456'}, d: {B: 'AQI='},
             e: {SS: ['a', 'bc']}, f: {NS: ['1.23', '12.3']}, g: {BS: ['AQI=', 'Ag==', 'AQ==']}}
         }
         items.push(item)
@@ -571,8 +572,8 @@ describe('batchGetItem', function() {
           if (err) return done(err)
           res.statusCode.should.equal(200)
           res.body.UnprocessedKeys.should.eql({})
-          res.body.Responses[helpers.testHashTable].should.have.length(17)
-          res.body.ConsumedCapacity.should.eql([{CapacityUnits: 257, TableName: helpers.testHashTable}])
+          res.body.Responses[helpers.testHashTable].should.have.length(4)
+          res.body.ConsumedCapacity.should.eql([{CapacityUnits: 357, TableName: helpers.testHashTable}])
           done()
         })
       })
@@ -580,15 +581,15 @@ describe('batchGetItem', function() {
 
     // TODO: Need high capacity to run this
     it.skip('should return an unprocessed item if just over limit', function(done) {
-      this.timeout(100000)
+      this.timeout(200000)
 
-      var i, item, items = [], b = new Array(65530).join('b'),
+      var i, item, items = [], b = new Array(db.MAX_SIZE - 6).join('b'),
           batchReq = {RequestItems: {}, ReturnConsumedCapacity: 'TOTAL'}
-      for (i = 0; i < 17; i++) {
-        if (i < 16) {
+      for (i = 0; i < 4; i++) {
+        if (i < 3) {
           item = {a: {S: ('0' + i).slice(-2)}, b: {S: b}}
         } else {
-          item = {a: {S: ('0' + i).slice(-2)}, b: {S: b.slice(0, 18)}, c: {N: '12.3456'}, d: {B: 'AQI='},
+          item = {a: {S: ('0' + i).slice(-2)}, b: {S: b.slice(0, 229354)}, c: {N: '12.3456'}, d: {B: 'AQI='},
             e: {SS: ['a', 'bc']}, f: {NS: ['1.23', '12.3']}, g: {BS: ['AQI=', 'Ag==', 'AQ==']}}
         }
         items.push(item)
@@ -602,14 +603,14 @@ describe('batchGetItem', function() {
           res.body.UnprocessedKeys[helpers.testHashTable].ConsistentRead.should.equal(true)
           res.body.UnprocessedKeys[helpers.testHashTable].Keys.should.have.length(1)
           Object.keys(res.body.UnprocessedKeys[helpers.testHashTable].Keys[0]).should.have.length(1)
-          if (res.body.UnprocessedKeys[helpers.testHashTable].Keys[0].a.S == '16') {
-            res.body.ConsumedCapacity.should.eql([{CapacityUnits: 256, TableName: helpers.testHashTable}])
+          if (res.body.UnprocessedKeys[helpers.testHashTable].Keys[0].a.S == '03') {
+            res.body.ConsumedCapacity.should.eql([{CapacityUnits: 301, TableName: helpers.testHashTable}])
           } else {
             res.body.UnprocessedKeys[helpers.testHashTable].Keys[0].a.S.should.be.above(-1)
-            res.body.UnprocessedKeys[helpers.testHashTable].Keys[0].a.S.should.be.below(17)
-            res.body.ConsumedCapacity.should.eql([{CapacityUnits: 241, TableName: helpers.testHashTable}])
+            res.body.UnprocessedKeys[helpers.testHashTable].Keys[0].a.S.should.be.below(4)
+            res.body.ConsumedCapacity.should.eql([{CapacityUnits: 258, TableName: helpers.testHashTable}])
           }
-          res.body.Responses[helpers.testHashTable].should.have.length(16)
+          res.body.Responses[helpers.testHashTable].should.have.length(3)
           done()
         })
       })
@@ -618,15 +619,15 @@ describe('batchGetItem', function() {
 
     // TODO: Need high capacity to run this
     it.skip('should return many unprocessed items if very over the limit', function(done) {
-      this.timeout(100000)
+      this.timeout(200000)
 
-      var i, item, items = [], b = new Array(65533).join('b'),
+      var i, item, items = [], b = new Array(db.MAX_SIZE - 3).join('b'),
           batchReq = {RequestItems: {}, ReturnConsumedCapacity: 'TOTAL'}
       for (i = 0; i < 20; i++) {
-        if (i < 16) {
+        if (i < 3) {
           item = {a: {S: ('0' + i).slice(-2)}, b: {S: b}}
         } else {
-          item = {a: {S: ('0' + i).slice(-2)}, b: {S: b.slice(0, 18)}}
+          item = {a: {S: ('0' + i).slice(-2)}, b: {S: b.slice(0, 20000)}}
         }
         items.push(item)
       }
@@ -648,8 +649,8 @@ describe('batchGetItem', function() {
 
           totalCapacity = res.body.ConsumedCapacity[0].CapacityUnits
           for (i = 0; i < res.body.UnprocessedKeys[helpers.testHashTable].Keys.length; i++)
-            totalCapacity += res.body.UnprocessedKeys[helpers.testHashTable].Keys[i].a.S < 16 ? 16 : 1
-          totalCapacity.should.equal(340)
+            totalCapacity += res.body.UnprocessedKeys[helpers.testHashTable].Keys[i].a.S < 3 ? 99 : 4
+          totalCapacity.should.equal(385)
 
           done()
         })

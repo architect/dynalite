@@ -167,7 +167,7 @@ describe('deleteItem', function() {
 
     it('should return ValidationException for empty key', function(done) {
       assertValidation({TableName: 'abc', Key: {a: {S: ''}}},
-        'One or more parameter values were invalid: An AttributeValue may not contain an empty string.', done)
+        'One or more parameter values were invalid: An AttributeValue may not contain an empty string', done)
     })
 
     it('should return empty response if key has incorrect numeric type', function(done) {

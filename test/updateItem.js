@@ -1,4 +1,5 @@
-var helpers = require('./helpers')
+var helpers = require('./helpers'),
+    db = require('../db')
 
 var target = 'UpdateItem',
     request = helpers.request,
@@ -226,7 +227,7 @@ describe('updateItem', function() {
 
     it('should return ValidationException for empty string', function(done) {
       assertValidation({TableName: 'abc', Key: {a: {S: ''}}},
-        'One or more parameter values were invalid: An AttributeValue may not contain an empty string.', done)
+        'One or more parameter values were invalid: An AttributeValue may not contain an empty string', done)
     })
 
     it('should return ValidationException for empty binary', function(done) {
@@ -492,7 +493,7 @@ describe('updateItem', function() {
     it('should return ValidationException if update item is too big', function(done) {
       var key = {a: {S: helpers.randomString()}}
       var updates = {
-        b: {Action: 'PUT', Value: {S: new Array(65536).join('a')}},
+        b: {Action: 'PUT', Value: {S: new Array(db.MAX_SIZE).join('a')}},
         c: {Action: 'PUT', Value: {N: new Array(38 + 1).join('1') + new Array(89).join('0')}}
       }
       assertValidation({TableName: helpers.testHashTable, Key: key, AttributeUpdates: updates},

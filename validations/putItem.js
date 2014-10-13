@@ -121,7 +121,7 @@ exports.custom = function(data) {
   if (data.ReturnValues && data.ReturnValues != 'ALL_OLD' && data.ReturnValues != 'NONE')
     return 'ReturnValues can only be ALL_OLD or NONE'
 
-  if (db.itemSize(data.Item) > 65536)
+  if (db.itemSize(data.Item) > db.MAX_SIZE)
     return 'Item size has exceeded the maximum allowed size'
 }
 

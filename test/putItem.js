@@ -1,5 +1,6 @@
 var async = require('async'),
-    helpers = require('./helpers')
+    helpers = require('./helpers'),
+    db = require('../db')
 
 var target = 'PutItem',
     request = helpers.request,
@@ -221,7 +222,7 @@ describe('putItem', function() {
 
     it('should return ValidationException for empty string', function(done) {
       assertValidation({TableName: 'abc', Item: {a: {S: ''}}},
-        'One or more parameter values were invalid: An AttributeValue may not contain an empty string.', done)
+        'One or more parameter values were invalid: An AttributeValue may not contain an empty string', done)
     })
 
     it('should return ValidationException for empty binary', function(done) {
@@ -326,7 +327,7 @@ describe('putItem', function() {
     })
 
     it('should return ValidationException if item is too big with small attribute', function(done) {
-      var keyStr = helpers.randomString(), b = new Array(65536 + 1 - keyStr.length - 1).join('a')
+      var keyStr = helpers.randomString(), b = new Array(db.MAX_SIZE + 1 - keyStr.length - 1).join('a')
       assertValidation({TableName: 'aaa', Item: {a: {S: keyStr}, b: {S: b}}},
         'Item size has exceeded the maximum allowed size', done)
     })
@@ -397,86 +398,86 @@ describe('putItem', function() {
     })
 
     it('should return ResourceNotFoundException if item is just small enough with small attribute', function(done) {
-      var keyStr = helpers.randomString(), b = new Array(65536 + 1 - keyStr.length - 2).join('a')
+      var keyStr = helpers.randomString(), b = new Array(db.MAX_SIZE + 1 - keyStr.length - 2).join('a')
       assertNotFound({TableName: 'aaa', Item: {a: {S: keyStr}, b: {S: b}}},
         'Requested resource not found', done)
     })
 
     it('should return ValidationException if item is too big with larger attribute', function(done) {
-      var keyStr = helpers.randomString(), b = new Array(65536 + 1 - keyStr.length - 27).join('a')
+      var keyStr = helpers.randomString(), b = new Array(db.MAX_SIZE + 1 - keyStr.length - 27).join('a')
       assertValidation({TableName: 'aaa', Item: {a: {S: keyStr}, bbbbbbbbbbbbbbbbbbbbbbbbbbb: {S: b}}},
         'Item size has exceeded the maximum allowed size', done)
     })
 
     it('should return ResourceNotFoundException if item is just small enough with larger attribute', function(done) {
-      var keyStr = helpers.randomString(), b = new Array(65536 + 1 - keyStr.length - 28).join('a')
+      var keyStr = helpers.randomString(), b = new Array(db.MAX_SIZE + 1 - keyStr.length - 28).join('a')
       assertNotFound({TableName: 'aaa', Item: {a: {S: keyStr}, bbbbbbbbbbbbbbbbbbbbbbbbbbb: {S: b}}},
         'Requested resource not found', done)
     })
 
     it('should return ValidationException if item is too big with multi attributes', function(done) {
-      var keyStr = helpers.randomString(), b = new Array(65536 + 1 - keyStr.length - 7).join('a')
+      var keyStr = helpers.randomString(), b = new Array(db.MAX_SIZE + 1 - keyStr.length - 7).join('a')
       assertValidation({TableName: 'aaa', Item: {a: {S: keyStr}, bb: {S: b}, ccc: {S: 'cc'}}},
         'Item size has exceeded the maximum allowed size', done)
     })
 
     it('should return ResourceNotFoundException if item is just small enough with multi attributes', function(done) {
-      var keyStr = helpers.randomString(), b = new Array(65536 + 1 - keyStr.length - 8).join('a')
+      var keyStr = helpers.randomString(), b = new Array(db.MAX_SIZE + 1 - keyStr.length - 8).join('a')
       assertNotFound({TableName: 'aaa', Item: {a: {S: keyStr}, bb: {S: b}, ccc: {S: 'cc'}}},
         'Requested resource not found', done)
     })
 
     it('should return ValidationException if item is too big with big number attribute', function(done) {
-      var keyStr = helpers.randomString(), b = new Array(65536 + 1 - keyStr.length - 1 - 1 - 20).join('a'),
+      var keyStr = helpers.randomString(), b = new Array(db.MAX_SIZE + 1 - keyStr.length - 1 - 1 - 20).join('a'),
         c = new Array(38 + 1).join('1') + new Array(89).join('0')
       assertValidation({TableName: 'aaa', Item: {a: {S: keyStr}, b: {S: b}, c: {N: c}}},
         'Item size has exceeded the maximum allowed size', done)
     })
 
     it('should return ValidationException if item is too big with smallest number attribute', function(done) {
-      var keyStr = helpers.randomString(), b = new Array(65536 + 1 - keyStr.length - 1 - 1 - 2).join('a'),
+      var keyStr = helpers.randomString(), b = new Array(db.MAX_SIZE + 1 - keyStr.length - 1 - 1 - 2).join('a'),
         c = '1' + new Array(126).join('0')
       assertValidation({TableName: 'aaa', Item: {a: {S: keyStr}, b: {S: b}, c: {N: c}}},
         'Item size has exceeded the maximum allowed size', done)
     })
 
     it('should return ValidationException if item is too big with smaller number attribute', function(done) {
-      var keyStr = helpers.randomString(), b = new Array(65536 + 1 - keyStr.length - 1 - 1 - 2).join('a'),
+      var keyStr = helpers.randomString(), b = new Array(db.MAX_SIZE + 1 - keyStr.length - 1 - 1 - 2).join('a'),
         c = '11' + new Array(125).join('0')
       assertValidation({TableName: 'aaa', Item: {a: {S: keyStr}, b: {S: b}, c: {N: c}}},
         'Item size has exceeded the maximum allowed size', done)
     })
 
     it('should return ValidationException if item is too big with medium number attribute', function(done) {
-      var keyStr = helpers.randomString(), b = new Array(65536 + 1 - keyStr.length - 1 - 1 - 4).join('a'),
+      var keyStr = helpers.randomString(), b = new Array(db.MAX_SIZE + 1 - keyStr.length - 1 - 1 - 4).join('a'),
         c = '11111' + new Array(122).join('0')
       assertValidation({TableName: 'aaa', Item: {a: {S: keyStr}, b: {S: b}, c: {N: c}}},
         'Item size has exceeded the maximum allowed size', done)
     })
 
     it('should return ValidationException if item is too big with medium number attribute', function(done) {
-      var keyStr = helpers.randomString(), b = new Array(65536 + 1 - keyStr.length - 1 - 1 - 4).join('a'),
+      var keyStr = helpers.randomString(), b = new Array(db.MAX_SIZE + 1 - keyStr.length - 1 - 1 - 4).join('a'),
         c = '111111' + new Array(121).join('0')
       assertValidation({TableName: 'aaa', Item: {a: {S: keyStr}, b: {S: b}, c: {N: c}}},
         'Item size has exceeded the maximum allowed size', done)
     })
 
     it('should return ValidationException if item is too big with medium number attribute', function(done) {
-      var keyStr = helpers.randomString(), b = new Array(65536 + 1 - keyStr.length - 1 - 1 - 5).join('a'),
+      var keyStr = helpers.randomString(), b = new Array(db.MAX_SIZE + 1 - keyStr.length - 1 - 1 - 5).join('a'),
         c = '1111111' + new Array(120).join('0')
       assertValidation({TableName: 'aaa', Item: {a: {S: keyStr}, b: {S: b}, c: {N: c}}},
         'Item size has exceeded the maximum allowed size', done)
     })
 
     it('should return ValidationException if item is too big with multi number attribute', function(done) {
-      var keyStr = helpers.randomString(), b = new Array(65536 + 1 - keyStr.length - 1 - 1 - 5 - 1 - 5).join('a'),
+      var keyStr = helpers.randomString(), b = new Array(db.MAX_SIZE + 1 - keyStr.length - 1 - 1 - 5 - 1 - 5).join('a'),
         c = '1111111' + new Array(120).join('0'), d = '1111111' + new Array(120).join('0')
       assertValidation({TableName: 'aaa', Item: {a: {S: keyStr}, b: {S: b}, c: {N: c}, d: {N: d}}},
         'Item size has exceeded the maximum allowed size', done)
     })
 
     it('should return ResourceNotFoundException if item is just small enough with multi number attribute', function(done) {
-      var keyStr = helpers.randomString(), b = new Array(65536 + 1 - keyStr.length - 1 - 1 - 5 - 1 - 6).join('a'),
+      var keyStr = helpers.randomString(), b = new Array(db.MAX_SIZE + 1 - keyStr.length - 1 - 1 - 5 - 1 - 6).join('a'),
         c = '1111111' + new Array(120).join('0'), d = '1111111' + new Array(120).join('0')
       assertNotFound({TableName: 'aaa', Item: {a: {S: keyStr}, b: {S: b}, c: {N: c}, d: {N: d}}},
         'Requested resource not found', done)

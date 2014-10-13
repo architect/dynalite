@@ -277,7 +277,7 @@ function validateAttributeValue(value) {
       return 'One or more parameter values were invalid: An AttributeValue may not contain a null or empty binary type.'
 
     if (type == 'S' && !value[type])
-      return 'One or more parameter values were invalid: An AttributeValue may not contain an empty string.'
+      return 'One or more parameter values were invalid: An AttributeValue may not contain an empty string'
 
     if (type == 'SS' && !value[type].length)
       return 'One or more parameter values were invalid: An string set  may not be empty'
