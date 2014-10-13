@@ -124,6 +124,7 @@ function httpHandler(store, req, res) {
       // "'Credential' not a valid key=value pair (missing equal-sign) in Authorization header: 'AWS4-HMAC-SHA256 \
       // Signature=b,    Credential,    SignedHeaders'."
       for (var i in headers) {
+        if (typeof headers[i] === 'function') continue;
         if (!authParams[headers[i]])
           // TODO: SignedHeaders *is* allowed to be an empty string at this point
           msg += 'Authorization header requires \'' + headers[i] + '\' parameter. '
