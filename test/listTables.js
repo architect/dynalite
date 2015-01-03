@@ -163,7 +163,7 @@ describe('listTables', function() {
         request(opts({}), function(err, res) {
           if (err) return done(err)
           res.statusCode.should.equal(200)
-          res.body.TableNames.should.include(name)
+          res.body.TableNames.should.containEql(name)
           done()
         })
       })
@@ -196,8 +196,8 @@ describe('listTables', function() {
             request(opts({ExclusiveStartTableName: names[0]}), function(err, res) {
               if (err) return done(err)
               res.statusCode.should.equal(200)
-              res.body.TableNames.should.not.include(names[0])
-              res.body.TableNames.should.include(names[1])
+              res.body.TableNames.should.not.containEql(names[0])
+              res.body.TableNames.should.containEql(names[1])
               done()
             })
           },
@@ -205,8 +205,8 @@ describe('listTables', function() {
             request(opts({ExclusiveStartTableName: beforeName}), function(err, res) {
               if (err) return done(err)
               res.statusCode.should.equal(200)
-              res.body.TableNames.should.include(names[0])
-              res.body.TableNames.should.include(names[1])
+              res.body.TableNames.should.containEql(names[0])
+              res.body.TableNames.should.containEql(names[1])
               done()
             })
           },

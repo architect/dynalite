@@ -608,15 +608,15 @@ describe('batchWriteItem', function() {
       request(opts(batchReq), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        res.body.ConsumedCapacity.should.includeEql({CapacityUnits: 2, TableName: helpers.testHashTable})
-        res.body.ConsumedCapacity.should.includeEql({CapacityUnits: 1, TableName: helpers.testHashNTable})
+        res.body.ConsumedCapacity.should.containEql({CapacityUnits: 2, TableName: helpers.testHashTable})
+        res.body.ConsumedCapacity.should.containEql({CapacityUnits: 1, TableName: helpers.testHashNTable})
         batchReq.RequestItems[helpers.testHashTable] = [{DeleteRequest: {Key: {a: item.a}}}, {DeleteRequest: {Key: {a: {S: key2}}}}]
         batchReq.RequestItems[helpers.testHashNTable] = [{DeleteRequest: {Key: {a: {N: key3}}}}]
         request(opts(batchReq), function(err, res) {
           if (err) return done(err)
           res.statusCode.should.equal(200)
-          res.body.ConsumedCapacity.should.includeEql({CapacityUnits: 2, TableName: helpers.testHashTable})
-          res.body.ConsumedCapacity.should.includeEql({CapacityUnits: 1, TableName: helpers.testHashNTable})
+          res.body.ConsumedCapacity.should.containEql({CapacityUnits: 2, TableName: helpers.testHashTable})
+          res.body.ConsumedCapacity.should.containEql({CapacityUnits: 1, TableName: helpers.testHashNTable})
           done()
         })
       })
@@ -632,15 +632,15 @@ describe('batchWriteItem', function() {
       request(opts(batchReq), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        res.body.ConsumedCapacity.should.includeEql({CapacityUnits: 3, TableName: helpers.testHashTable})
-        res.body.ConsumedCapacity.should.includeEql({CapacityUnits: 1, TableName: helpers.testHashNTable})
+        res.body.ConsumedCapacity.should.containEql({CapacityUnits: 3, TableName: helpers.testHashTable})
+        res.body.ConsumedCapacity.should.containEql({CapacityUnits: 1, TableName: helpers.testHashNTable})
         batchReq.RequestItems[helpers.testHashTable] = [{DeleteRequest: {Key: {a: item.a}}}, {DeleteRequest: {Key: {a: {S: key2}}}}]
         batchReq.RequestItems[helpers.testHashNTable] = [{DeleteRequest: {Key: {a: {N: key3}}}}]
         request(opts(batchReq), function(err, res) {
           if (err) return done(err)
           res.statusCode.should.equal(200)
-          res.body.ConsumedCapacity.should.includeEql({CapacityUnits: 3, TableName: helpers.testHashTable})
-          res.body.ConsumedCapacity.should.includeEql({CapacityUnits: 1, TableName: helpers.testHashNTable})
+          res.body.ConsumedCapacity.should.containEql({CapacityUnits: 3, TableName: helpers.testHashTable})
+          res.body.ConsumedCapacity.should.containEql({CapacityUnits: 1, TableName: helpers.testHashNTable})
           done()
         })
       })

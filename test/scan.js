@@ -762,7 +762,7 @@ describe('scan', function() {
         request(opts({TableName: helpers.testHashTable}), function(err, res) {
           if (err) return done(err)
           res.statusCode.should.equal(200)
-          res.body.Items.should.includeEql(item)
+          res.body.Items.should.containEql(item)
           res.body.Count.should.be.above(0)
           res.body.ScannedCount.should.be.above(0)
           done()
@@ -839,8 +839,8 @@ describe('scan', function() {
         }}), function(err, res) {
           if (err) return done(err)
           res.statusCode.should.equal(200)
-          res.body.Items.should.includeEql(item)
-          res.body.Items.should.includeEql(item2)
+          res.body.Items.should.containEql(item)
+          res.body.Items.should.containEql(item2)
           res.body.Items.should.have.length(2)
           res.body.Count.should.equal(2)
           done()
@@ -867,8 +867,8 @@ describe('scan', function() {
         }}), function(err, res) {
           if (err) return done(err)
           res.statusCode.should.equal(200)
-          res.body.Items.should.includeEql(item)
-          res.body.Items.should.includeEql(item2)
+          res.body.Items.should.containEql(item)
+          res.body.Items.should.containEql(item2)
           res.body.Items.should.have.length(2)
           res.body.Count.should.equal(2)
           done()
@@ -895,8 +895,8 @@ describe('scan', function() {
         }}), function(err, res) {
           if (err) return done(err)
           res.statusCode.should.equal(200)
-          res.body.Items.should.includeEql(item)
-          res.body.Items.should.includeEql(item2)
+          res.body.Items.should.containEql(item)
+          res.body.Items.should.containEql(item2)
           res.body.Items.should.have.length(2)
           res.body.Count.should.equal(2)
           done()
@@ -923,8 +923,8 @@ describe('scan', function() {
         }}), function(err, res) {
           if (err) return done(err)
           res.statusCode.should.equal(200)
-          res.body.Items.should.includeEql(item)
-          res.body.Items.should.includeEql(item2)
+          res.body.Items.should.containEql(item)
+          res.body.Items.should.containEql(item2)
           res.body.Items.should.have.length(2)
           res.body.Count.should.equal(2)
           done()
@@ -951,8 +951,8 @@ describe('scan', function() {
         }}), function(err, res) {
           if (err) return done(err)
           res.statusCode.should.equal(200)
-          res.body.Items.should.includeEql(item)
-          res.body.Items.should.includeEql(item2)
+          res.body.Items.should.containEql(item)
+          res.body.Items.should.containEql(item2)
           res.body.Items.should.have.length(2)
           res.body.Count.should.equal(2)
           done()
@@ -979,8 +979,8 @@ describe('scan', function() {
         }}), function(err, res) {
           if (err) return done(err)
           res.statusCode.should.equal(200)
-          res.body.Items.should.includeEql(item)
-          res.body.Items.should.includeEql(item2)
+          res.body.Items.should.containEql(item)
+          res.body.Items.should.containEql(item2)
           res.body.Items.should.have.length(2)
           res.body.Count.should.equal(2)
           done()
@@ -1032,8 +1032,8 @@ describe('scan', function() {
           c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
         }}), function(err, res) {
           if (err) return done(err)
-          res.body.Items.should.includeEql(item2)
-          res.body.Items.should.includeEql(item3)
+          res.body.Items.should.containEql(item2)
+          res.body.Items.should.containEql(item3)
           res.body.Items.should.have.length(2)
           res.body.Count.should.equal(2)
           done()
@@ -1060,7 +1060,7 @@ describe('scan', function() {
         }}), function(err, res) {
           if (err) return done(err)
           res.statusCode.should.equal(200)
-          res.body.Items.should.includeEql(item3)
+          res.body.Items.should.containEql(item3)
           res.body.Items.should.have.length(1)
           res.body.Count.should.equal(1)
           done()
@@ -1087,7 +1087,7 @@ describe('scan', function() {
         }}), function(err, res) {
           if (err) return done(err)
           res.statusCode.should.equal(200)
-          res.body.Items.should.includeEql(item3)
+          res.body.Items.should.containEql(item3)
           res.body.Items.should.have.length(1)
           res.body.Count.should.equal(1)
           done()
@@ -1114,7 +1114,7 @@ describe('scan', function() {
         }}), function(err, res) {
           if (err) return done(err)
           res.statusCode.should.equal(200)
-          res.body.Items.should.includeEql(item3)
+          res.body.Items.should.containEql(item3)
           res.body.Items.should.have.length(1)
           res.body.Count.should.equal(1)
           done()
@@ -1144,10 +1144,10 @@ describe('scan', function() {
           c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
         }}), function(err, res) {
           if (err) return done(err)
-          res.body.Items.should.includeEql(item)
-          res.body.Items.should.includeEql(item2)
-          res.body.Items.should.includeEql(item3)
-          res.body.Items.should.includeEql(item5)
+          res.body.Items.should.containEql(item)
+          res.body.Items.should.containEql(item2)
+          res.body.Items.should.containEql(item3)
+          res.body.Items.should.containEql(item5)
           res.body.Items.should.have.length(4)
           res.body.Count.should.equal(4)
           done()
@@ -1177,10 +1177,10 @@ describe('scan', function() {
           c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
         }}), function(err, res) {
           if (err) return done(err)
-          res.body.Items.should.includeEql(item)
-          res.body.Items.should.includeEql(item2)
-          res.body.Items.should.includeEql(item3)
-          res.body.Items.should.includeEql(item5)
+          res.body.Items.should.containEql(item)
+          res.body.Items.should.containEql(item2)
+          res.body.Items.should.containEql(item3)
+          res.body.Items.should.containEql(item5)
           res.body.Items.should.have.length(4)
           res.body.Count.should.equal(4)
           done()
@@ -1210,9 +1210,9 @@ describe('scan', function() {
           c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
         }}), function(err, res) {
           if (err) return done(err)
-          res.body.Items.should.includeEql(item)
-          res.body.Items.should.includeEql(item3)
-          res.body.Items.should.includeEql(item5)
+          res.body.Items.should.containEql(item)
+          res.body.Items.should.containEql(item3)
+          res.body.Items.should.containEql(item5)
           res.body.Items.should.have.length(3)
           res.body.Count.should.equal(3)
           done()
@@ -1242,10 +1242,10 @@ describe('scan', function() {
           c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
         }}), function(err, res) {
           if (err) return done(err)
-          res.body.Items.should.includeEql(item)
-          res.body.Items.should.includeEql(item2)
-          res.body.Items.should.includeEql(item3)
-          res.body.Items.should.includeEql(item5)
+          res.body.Items.should.containEql(item)
+          res.body.Items.should.containEql(item2)
+          res.body.Items.should.containEql(item3)
+          res.body.Items.should.containEql(item5)
           res.body.Items.should.have.length(4)
           res.body.Count.should.equal(4)
           done()
@@ -1275,9 +1275,9 @@ describe('scan', function() {
           c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
         }}), function(err, res) {
           if (err) return done(err)
-          res.body.Items.should.includeEql(item2)
-          res.body.Items.should.includeEql(item3)
-          res.body.Items.should.includeEql(item5)
+          res.body.Items.should.containEql(item2)
+          res.body.Items.should.containEql(item3)
+          res.body.Items.should.containEql(item5)
           res.body.Items.should.have.length(3)
           res.body.Count.should.equal(3)
           done()
@@ -1307,9 +1307,9 @@ describe('scan', function() {
           c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
         }}), function(err, res) {
           if (err) return done(err)
-          res.body.Items.should.includeEql(item2)
-          res.body.Items.should.includeEql(item3)
-          res.body.Items.should.includeEql(item5)
+          res.body.Items.should.containEql(item2)
+          res.body.Items.should.containEql(item3)
+          res.body.Items.should.containEql(item5)
           res.body.Items.should.have.length(3)
           res.body.Count.should.equal(3)
           done()
@@ -1339,9 +1339,9 @@ describe('scan', function() {
           c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
         }}), function(err, res) {
           if (err) return done(err)
-          res.body.Items.should.includeEql(item2)
-          res.body.Items.should.includeEql(item3)
-          res.body.Items.should.includeEql(item5)
+          res.body.Items.should.containEql(item2)
+          res.body.Items.should.containEql(item3)
+          res.body.Items.should.containEql(item5)
           res.body.Items.should.have.length(3)
           res.body.Count.should.equal(3)
           done()
@@ -1371,10 +1371,10 @@ describe('scan', function() {
           c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
         }}), function(err, res) {
           if (err) return done(err)
-          res.body.Items.should.includeEql(item)
-          res.body.Items.should.includeEql(item2)
-          res.body.Items.should.includeEql(item3)
-          res.body.Items.should.includeEql(item4)
+          res.body.Items.should.containEql(item)
+          res.body.Items.should.containEql(item2)
+          res.body.Items.should.containEql(item3)
+          res.body.Items.should.containEql(item4)
           res.body.Items.should.have.length(4)
           res.body.Count.should.equal(4)
           done()
@@ -1404,9 +1404,9 @@ describe('scan', function() {
           c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
         }}), function(err, res) {
           if (err) return done(err)
-          res.body.Items.should.includeEql(item)
-          res.body.Items.should.includeEql(item2)
-          res.body.Items.should.includeEql(item4)
+          res.body.Items.should.containEql(item)
+          res.body.Items.should.containEql(item2)
+          res.body.Items.should.containEql(item4)
           res.body.Items.should.have.length(3)
           res.body.Count.should.equal(3)
           done()
@@ -1436,10 +1436,10 @@ describe('scan', function() {
           c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
         }}), function(err, res) {
           if (err) return done(err)
-          res.body.Items.should.includeEql(item)
-          res.body.Items.should.includeEql(item2)
-          res.body.Items.should.includeEql(item3)
-          res.body.Items.should.includeEql(item4)
+          res.body.Items.should.containEql(item)
+          res.body.Items.should.containEql(item2)
+          res.body.Items.should.containEql(item3)
+          res.body.Items.should.containEql(item4)
           res.body.Items.should.have.length(4)
           res.body.Count.should.equal(4)
           done()
@@ -1469,9 +1469,9 @@ describe('scan', function() {
           c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
         }}), function(err, res) {
           if (err) return done(err)
-          res.body.Items.should.includeEql(item)
-          res.body.Items.should.includeEql(item2)
-          res.body.Items.should.includeEql(item4)
+          res.body.Items.should.containEql(item)
+          res.body.Items.should.containEql(item2)
+          res.body.Items.should.containEql(item4)
           res.body.Items.should.have.length(3)
           res.body.Count.should.equal(3)
           done()
@@ -1501,8 +1501,8 @@ describe('scan', function() {
           c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
         }}), function(err, res) {
           if (err) return done(err)
-          res.body.Items.should.includeEql(item)
-          res.body.Items.should.includeEql(item4)
+          res.body.Items.should.containEql(item)
+          res.body.Items.should.containEql(item4)
           res.body.Items.should.have.length(2)
           res.body.Count.should.equal(2)
           done()
@@ -1532,9 +1532,9 @@ describe('scan', function() {
           c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
         }}), function(err, res) {
           if (err) return done(err)
-          res.body.Items.should.includeEql(item)
-          res.body.Items.should.includeEql(item2)
-          res.body.Items.should.includeEql(item4)
+          res.body.Items.should.containEql(item)
+          res.body.Items.should.containEql(item2)
+          res.body.Items.should.containEql(item4)
           res.body.Items.should.have.length(3)
           res.body.Count.should.equal(3)
           done()
@@ -1560,8 +1560,8 @@ describe('scan', function() {
           c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
         }}), function(err, res) {
           if (err) return done(err)
-          res.body.Items.should.includeEql(item)
-          res.body.Items.should.includeEql(item2)
+          res.body.Items.should.containEql(item)
+          res.body.Items.should.containEql(item2)
           res.body.Items.should.have.length(2)
           res.body.Count.should.equal(2)
           done()
@@ -1587,8 +1587,8 @@ describe('scan', function() {
           c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
         }}), function(err, res) {
           if (err) return done(err)
-          res.body.Items.should.includeEql(item)
-          res.body.Items.should.includeEql(item2)
+          res.body.Items.should.containEql(item)
+          res.body.Items.should.containEql(item2)
           res.body.Items.should.have.length(2)
           res.body.Count.should.equal(2)
           done()
@@ -1620,9 +1620,9 @@ describe('scan', function() {
           c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
         }}), function(err, res) {
           if (err) return done(err)
-          res.body.Items.should.includeEql(item)
-          res.body.Items.should.includeEql(item2)
-          res.body.Items.should.includeEql(item5)
+          res.body.Items.should.containEql(item)
+          res.body.Items.should.containEql(item2)
+          res.body.Items.should.containEql(item5)
           res.body.Items.should.have.length(3)
           res.body.Count.should.equal(3)
           done()
@@ -1684,9 +1684,9 @@ describe('scan', function() {
           c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
         }}), function(err, res) {
           if (err) return done(err)
-          res.body.Items.should.includeEql(item3)
-          res.body.Items.should.includeEql(item4)
-          res.body.Items.should.includeEql(item5)
+          res.body.Items.should.containEql(item3)
+          res.body.Items.should.containEql(item4)
+          res.body.Items.should.containEql(item5)
           res.body.Items.should.have.length(3)
           res.body.Count.should.equal(3)
           done()
@@ -1718,9 +1718,9 @@ describe('scan', function() {
           c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
         }}), function(err, res) {
           if (err) return done(err)
-          res.body.Items.should.includeEql(item3)
-          res.body.Items.should.includeEql(item4)
-          res.body.Items.should.includeEql(item6)
+          res.body.Items.should.containEql(item3)
+          res.body.Items.should.containEql(item4)
+          res.body.Items.should.containEql(item6)
           res.body.Items.should.have.length(3)
           res.body.Count.should.equal(3)
           done()
@@ -1750,10 +1750,10 @@ describe('scan', function() {
           c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
         }}), function(err, res) {
           if (err) return done(err)
-          res.body.Items.should.includeEql(item)
-          res.body.Items.should.includeEql(item3)
-          res.body.Items.should.includeEql(item4)
-          res.body.Items.should.includeEql(item5)
+          res.body.Items.should.containEql(item)
+          res.body.Items.should.containEql(item3)
+          res.body.Items.should.containEql(item4)
+          res.body.Items.should.containEql(item5)
           res.body.Items.should.have.length(4)
           res.body.Count.should.equal(4)
           done()
@@ -1785,9 +1785,9 @@ describe('scan', function() {
           c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
         }}), function(err, res) {
           if (err) return done(err)
-          res.body.Items.should.includeEql(item)
-          res.body.Items.should.includeEql(item2)
-          res.body.Items.should.includeEql(item6)
+          res.body.Items.should.containEql(item)
+          res.body.Items.should.containEql(item2)
+          res.body.Items.should.containEql(item6)
           res.body.Items.should.have.length(3)
           res.body.Count.should.equal(3)
           done()
@@ -1817,8 +1817,8 @@ describe('scan', function() {
           c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
         }}), function(err, res) {
           if (err) return done(err)
-          res.body.Items.should.includeEql(item)
-          res.body.Items.should.includeEql(item5)
+          res.body.Items.should.containEql(item)
+          res.body.Items.should.containEql(item5)
           res.body.Items.should.have.length(2)
           res.body.Count.should.equal(2)
           done()
@@ -1848,8 +1848,8 @@ describe('scan', function() {
           c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
         }}), function(err, res) {
           if (err) return done(err)
-          res.body.Items.should.includeEql(item3)
-          res.body.Items.should.includeEql(item5)
+          res.body.Items.should.containEql(item3)
+          res.body.Items.should.containEql(item5)
           res.body.Items.should.have.length(2)
           res.body.Count.should.equal(2)
           done()
@@ -1879,8 +1879,8 @@ describe('scan', function() {
           c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
         }}), function(err, res) {
           if (err) return done(err)
-          res.body.Items.should.includeEql(item)
-          res.body.Items.should.includeEql(item5)
+          res.body.Items.should.containEql(item)
+          res.body.Items.should.containEql(item5)
           res.body.Items.should.have.length(2)
           res.body.Count.should.equal(2)
           done()
@@ -1910,8 +1910,8 @@ describe('scan', function() {
           c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
         }}), function(err, res) {
           if (err) return done(err)
-          res.body.Items.should.includeEql(item4)
-          res.body.Items.should.includeEql(item5)
+          res.body.Items.should.containEql(item4)
+          res.body.Items.should.containEql(item5)
           res.body.Items.should.have.length(2)
           res.body.Count.should.equal(2)
           done()
@@ -1941,8 +1941,8 @@ describe('scan', function() {
           c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
         }}), function(err, res) {
           if (err) return done(err)
-          res.body.Items.should.includeEql(item3)
-          res.body.Items.should.includeEql(item5)
+          res.body.Items.should.containEql(item3)
+          res.body.Items.should.containEql(item5)
           res.body.Items.should.have.length(2)
           res.body.Count.should.equal(2)
           done()
@@ -1972,9 +1972,9 @@ describe('scan', function() {
           c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
         }}), function(err, res) {
           if (err) return done(err)
-          res.body.Items.should.includeEql(item2)
-          res.body.Items.should.includeEql(item3)
-          res.body.Items.should.includeEql(item4)
+          res.body.Items.should.containEql(item2)
+          res.body.Items.should.containEql(item3)
+          res.body.Items.should.containEql(item4)
           res.body.Items.should.have.length(3)
           res.body.Count.should.equal(3)
           done()
@@ -2004,9 +2004,9 @@ describe('scan', function() {
           c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
         }}), function(err, res) {
           if (err) return done(err)
-          res.body.Items.should.includeEql(item2)
-          res.body.Items.should.includeEql(item3)
-          res.body.Items.should.includeEql(item4)
+          res.body.Items.should.containEql(item2)
+          res.body.Items.should.containEql(item3)
+          res.body.Items.should.containEql(item4)
           res.body.Items.should.have.length(3)
           res.body.Count.should.equal(3)
           done()
@@ -2036,9 +2036,9 @@ describe('scan', function() {
           c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
         }}), function(err, res) {
           if (err) return done(err)
-          res.body.Items.should.includeEql(item2)
-          res.body.Items.should.includeEql(item3)
-          res.body.Items.should.includeEql(item4)
+          res.body.Items.should.containEql(item2)
+          res.body.Items.should.containEql(item3)
+          res.body.Items.should.containEql(item4)
           res.body.Items.should.have.length(3)
           res.body.Count.should.equal(3)
           done()
@@ -2064,9 +2064,9 @@ describe('scan', function() {
         }, AttributesToGet: ['b', 'd']}), function(err, res) {
           if (err) return done(err)
           res.statusCode.should.equal(200)
-          res.body.Items.should.includeEql({b: {S: 'b1'}, d: {S: 'd1'}})
-          res.body.Items.should.includeEql({b: {S: 'b2'}})
-          res.body.Items.should.includeEql({b: {S: 'b3'}, d: {S: 'd3'}})
+          res.body.Items.should.containEql({b: {S: 'b1'}, d: {S: 'd1'}})
+          res.body.Items.should.containEql({b: {S: 'b2'}})
+          res.body.Items.should.containEql({b: {S: 'b3'}, d: {S: 'd3'}})
           res.body.Items.should.have.length(3)
           res.body.Count.should.equal(3)
           done()
@@ -2284,25 +2284,25 @@ describe('scan', function() {
               if (err) return done(err)
               res.statusCode.should.equal(200)
 
-              res.body.Items.forEach(function(item) { firstHalf.should.includeEql(item) })
+              res.body.Items.forEach(function(item) { firstHalf.should.containEql(item) })
 
               request(opts({TableName: helpers.testHashTable, Segment: 1, TotalSegments: 4, ScanFilter: scanFilter}), function(err, res) {
                 if (err) return done(err)
                 res.statusCode.should.equal(200)
 
-                res.body.Items.forEach(function(item) { firstHalf.should.includeEql(item) })
+                res.body.Items.forEach(function(item) { firstHalf.should.containEql(item) })
 
                 request(opts({TableName: helpers.testHashTable, Segment: 2, TotalSegments: 4, ScanFilter: scanFilter}), function(err, res) {
                   if (err) return done(err)
                   res.statusCode.should.equal(200)
 
-                  res.body.Items.forEach(function(item) { secondHalf.should.includeEql(item) })
+                  res.body.Items.forEach(function(item) { secondHalf.should.containEql(item) })
 
                   request(opts({TableName: helpers.testHashTable, Segment: 3, TotalSegments: 4, ScanFilter: scanFilter}), function(err, res) {
                     if (err) return done(err)
                     res.statusCode.should.equal(200)
 
-                    res.body.Items.forEach(function(item) { secondHalf.should.includeEql(item) })
+                    res.body.Items.forEach(function(item) { secondHalf.should.containEql(item) })
 
                     done()
                   })
@@ -2393,16 +2393,16 @@ describe('scan', function() {
         request(opts({TableName: helpers.testHashTable, Segment: 0, TotalSegments: 4096}), function(err, res) {
           if (err) return done(err)
           res.statusCode.should.equal(200)
-          res.body.Items.should.includeEql(items[0])
-          res.body.Items.should.includeEql(items[1])
+          res.body.Items.should.containEql(items[0])
+          res.body.Items.should.containEql(items[1])
           request(opts({TableName: helpers.testHashTable, Segment: 1, TotalSegments: 4096}), function(err, res) {
             if (err) return done(err)
             res.statusCode.should.equal(200)
-            res.body.Items.should.includeEql(items[2])
+            res.body.Items.should.containEql(items[2])
             request(opts({TableName: helpers.testHashTable, Segment: 4, TotalSegments: 4096}), function(err, res) {
               if (err) return done(err)
               res.statusCode.should.equal(200)
-              res.body.Items.should.includeEql(items[3])
+              res.body.Items.should.containEql(items[3])
               done()
             })
           })
@@ -2425,11 +2425,11 @@ describe('scan', function() {
         request(opts({TableName: helpers.testHashNTable, Segment: 1, TotalSegments: 4096}), function(err, res) {
           if (err) return done(err)
           res.statusCode.should.equal(200)
-          res.body.Items.should.includeEql(items[0])
+          res.body.Items.should.containEql(items[0])
           request(opts({TableName: helpers.testHashNTable, Segment: 4095, TotalSegments: 4096}), function(err, res) {
             if (err) return done(err)
             res.statusCode.should.equal(200)
-            res.body.Items.should.includeEql(items[1])
+            res.body.Items.should.containEql(items[1])
             done()
           })
         })

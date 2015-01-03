@@ -1214,7 +1214,7 @@ describe('createTable', function() {
         table.LocalSecondaryIndexes.forEach(function(index) {
           index.IndexSizeBytes = 0
           index.ItemCount = 0
-          desc.LocalSecondaryIndexes.should.includeEql(index)
+          desc.LocalSecondaryIndexes.should.containEql(index)
         })
         desc.LocalSecondaryIndexes.length.should.equal(table.LocalSecondaryIndexes.length)
         ;delete desc.LocalSecondaryIndexes
@@ -1275,7 +1275,7 @@ describe('createTable', function() {
           index.ItemCount = 0
           index.IndexStatus = 'CREATING'
           index.ProvisionedThroughput.NumberOfDecreasesToday = 0
-          desc.GlobalSecondaryIndexes.should.includeEql(index)
+          desc.GlobalSecondaryIndexes.should.containEql(index)
         })
         desc.GlobalSecondaryIndexes.length.should.equal(globalIndexes.length)
         ;delete desc.GlobalSecondaryIndexes
@@ -1287,7 +1287,7 @@ describe('createTable', function() {
           if (err) return done(err)
           globalIndexes.forEach(function(index) {
             index.IndexStatus = 'ACTIVE'
-            res.body.Table.GlobalSecondaryIndexes.should.includeEql(index)
+            res.body.Table.GlobalSecondaryIndexes.should.containEql(index)
           })
           done()
         })
