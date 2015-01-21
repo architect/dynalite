@@ -1058,6 +1058,84 @@ describe('query', function() {
       })
     })
 
+    it('should filter items by query filter', function(done) {
+      var item = {a: {S: helpers.randomString()}, b: {S: 'b1'}, d: {S: '1'}},
+          item2 = {a: item.a, b: {S: 'b2'}},
+          item3 = {a: item.a, b: {S: 'b3'}, d: {S: 'd3'}, e: {S: 'e3'}},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testRangeTable] = [
+        {PutRequest: {Item: item}},
+        {PutRequest: {Item: item2}},
+        {PutRequest: {Item: item3}},
+      ]
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        request(opts({TableName: helpers.testRangeTable, KeyConditions: {
+          a: {ComparisonOperator: 'EQ', AttributeValueList: [item.a]},
+        }, QueryFilter: {
+          e: {ComparisonOperator: 'NOT_NULL'},
+        }}), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.should.eql({Count: 1, ScannedCount: 3, Items: [
+            {a: item.a, b: {S: 'b3'}, d: {S: 'd3'}, e: {S: 'e3'}},
+          ]})
+          done()
+        })
+      })
+    })
+
+    it('should fail with messing params in query filter', function(done) {
+      var item = {a: {S: helpers.randomString()}, b: {S: 'b1'}, d: {S: '1'}},
+          item2 = {a: item.a, b: {S: 'b2'}},
+          item3 = {a: item.a, b: {S: 'b3'}, d: {S: 'd3'}, e: {S: 'e3'}},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testRangeTable] = [
+        {PutRequest: {Item: item}},
+        {PutRequest: {Item: item2}},
+        {PutRequest: {Item: item3}},
+      ]
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        request(opts({TableName: helpers.testRangeTable, KeyConditions: {
+          a: {ComparisonOperator: 'EQ', AttributeValueList: [item.a]},
+        }, QueryFilter: {
+          e: {ComparisonOperator: 'EQ'},
+        }}), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(400)
+          res.body.message.should.equal('One or more parameter values were invalid: Invalid number of argument(s) for the EQ ComparisonOperator')
+          done()
+        })
+      })
+    })
+    it('should fail with primary key attributes in query filter', function(done) {
+      var item = {a: {S: helpers.randomString()}, b: {S: 'b1'}, d: {S: '1'}},
+          item2 = {a: item.a, b: {S: 'b2'}},
+          item3 = {a: item.a, b: {S: 'b3'}, d: {S: 'd3'}, e: {S: 'e3'}},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testRangeTable] = [
+        {PutRequest: {Item: item}},
+        {PutRequest: {Item: item2}},
+        {PutRequest: {Item: item3}},
+      ]
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        request(opts({TableName: helpers.testRangeTable, KeyConditions: {
+          a: {ComparisonOperator: 'EQ', AttributeValueList: [item.a]},
+        }, QueryFilter: {
+          a: {ComparisonOperator: 'EQ', AttributeValueList: [item.a]},
+        }}), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(400)
+          res.body.message.should.equal('QueryFilter can only contain non-primary key attributes: Primary key attribute: a')
+          done()
+        })
+      })
+    })
     it('should only return projected attributes by default for secondary indexes', function(done) {
       var item = {a: {S: helpers.randomString()}, b: {S: 'b1'}, c: {S: 'c1'}, d: {S: 'd1'}},
           item2 = {a: item.a, b: {S: 'b2'}},
