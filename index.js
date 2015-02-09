@@ -1,6 +1,7 @@
 var http = require('http'),
     https = require('https'),
     fs = require('fs'),
+    url = require('url'),
     crypto = require('crypto'),
     crc32 = require('buffer-crc32'),
     validations = require('./validations'),
@@ -127,22 +128,47 @@ function httpHandler(store, req, res) {
 
     var action = validations.toLowerFirst(target[1])
 
-    var auth = req.headers.authorization
+    var auth = req.headers.authorization,
+        hasAuth = !!auth,
+        hasAuthParams = false,
+        authParams = {},
+        authPrefix = 'X-Amz-',
+        headers = ['Credential', 'Signature', 'SignedHeaders'],
+        authDate
 
-    if (!auth || auth.trim().slice(0, 5) != 'AWS4-')
+
+    // validate authorization from query string when not in the request headers.
+    if(!hasAuth){
+      var urlObject = url.parse(req.url, true)
+      var urlParams = urlObject.query
+      hasAuthParams = headers.every(function(header){
+        var headerName = authPrefix+header
+        if (typeof urlParams[headerName] === "undefined") {
+          return false
+        }
+        authParams[header] = urlParams[headerName]
+        return true
+      })
+      authDate = urlParams[authPrefix+'Date']
+    }else{
+      hasAuthParams = (auth.trim().slice(0, 5) === 'AWS4-')
+    }
+
+    if (!hasAuthParams)
       return sendData(req, res, {
         __type: 'com.amazon.coral.service#MissingAuthenticationTokenException',
         message: 'Request is missing Authentication Token',
       }, 400)
 
-    var authParams = auth.split(' ').slice(1).join('').split(',').reduce(function(obj, x) {
-          var keyVal = x.trim().split('=')
-          obj[keyVal[0]] = keyVal[1]
-          return obj
-        }, {}),
-        date = req.headers['x-amz-date'] || req.headers.date
+    if(hasAuth){
+      authParams = auth.split(' ').slice(1).join('').split(',').reduce(function(obj, x) {
+            var keyVal = x.trim().split('=')
+            obj[keyVal[0]] = keyVal[1]
+            return obj
+          }, {})
+    }
+    authDate = authDate || req.headers['x-amz-date'] || req.headers.date
 
-    var headers = ['Credential', 'Signature', 'SignedHeaders']
     var msg = ''
     // TODO: Go through key-vals first
     // "'Credential' not a valid key=value pair (missing equal-sign) in Authorization header: 'AWS4-HMAC-SHA256 \
@@ -152,7 +178,7 @@ function httpHandler(store, req, res) {
         // TODO: SignedHeaders *is* allowed to be an empty string at this point
         msg += 'Authorization header requires \'' + header + '\' parameter. '
     })
-    if (!date)
+    if (!authDate)
       msg += 'Authorization header requires existence of either a \'X-Amz-Date\' or a \'Date\' header. '
     if (msg) {
       return sendData(req, res, {

@@ -254,4 +254,100 @@ describe('dynalite connections', function() {
     })
   })
 
+  describe('GetParameter', function() {
+
+    function assertSuccessQuery(done) {
+      return function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        checkHeader(res)
+        res.body.TableNames.forEach(function(table){
+          table.should.startWith('__dynalite_test_')
+        })
+        done()
+      }
+    }
+
+    function assertErrorQuery(body, done) {
+      return function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(400)
+        res.body.should.eql(body)
+        checkHeader(res)
+        done()
+      }
+    }
+
+    function checkHeader(res){
+      res.headers['x-amzn-requestid'].length.should.equal(52)
+      res.headers['content-type'].should.equal('application/x-amz-json-1.0')
+      res.headers['content-length'].should.equal(String(Buffer.byteLength(JSON.stringify(res.body), 'utf8')))
+    }
+
+    function ISODateString(d){
+      function pad(n){return n<10 ? '0'+n : n}
+      return d.getUTCFullYear()+
+        + pad(d.getUTCMonth()+1)+
+        + pad(d.getUTCDate())+'T'
+        + pad(d.getUTCHours())+
+        + pad(d.getUTCMinutes())+
+        + pad(d.getUTCSeconds())+'Z'
+    }
+
+    beforeEach(function(done){
+      queryHeaders = {
+          'Content-Length': 2,
+          'Content-Type': 'application/x-amz-json-1.0',
+          'x-amz-target': 'DynamoDB_20120810.ListTables',
+          'X-Amz-Content-Sha256': 'foobar'
+      };
+      requestParams = {
+        headers: queryHeaders,
+        method: 'POST',
+        body: '{}',
+        noSign: true
+      }
+      queryParams = [
+        'X-Amz-Credential=foobar%2F20150101%2ue-east-1%2Fdynamodb%2Faws4_request',
+        'X-Amz-Signature=foobar',
+        'X-Amz-SignedHeaders=host%3Bx-amz-target',
+        'X-Amz-Date=20150101T100000Z'
+      ]
+      done();
+    })
+
+    it('should be successfully authorized with required parameters', function(done) {
+      requestParams.path = '/?' + queryParams.join('&')
+      request(requestParams, assertSuccessQuery(done))
+    })
+
+    it('should return MissingAuthenticationTokenException if no Credential parameter', function(done) {
+      delete queryParams[0]
+      requestParams.path = '/?' + queryParams.join('&')
+      request(requestParams, assertErrorQuery({__type: 'com.amazon.coral.service#MissingAuthenticationTokenException',
+        message: 'Request is missing Authentication Token'}, done))
+    })
+
+    it('should return MissingAuthenticationTokenException if no Signature parameter', function(done) {
+      delete queryParams[1]
+      requestParams.path = '/?' + queryParams.join('&')
+      request(requestParams, assertErrorQuery({__type: 'com.amazon.coral.service#MissingAuthenticationTokenException',
+        message: 'Request is missing Authentication Token'}, done))
+    })
+
+    it('should return MissingAuthenticationTokenException if no SignedHeaders parameter', function(done) {
+      delete queryParams[2]
+      requestParams.path = '/?' + queryParams.join('&')
+      request(requestParams, assertErrorQuery({__type: 'com.amazon.coral.service#MissingAuthenticationTokenException',
+        message: 'Request is missing Authentication Token'}, done))
+    })
+
+    it('should return IncompleteSignatureException if no Date parameter', function(done) {
+      delete queryParams[3]
+      requestParams.path = '/?' + queryParams.join('&')
+      request(requestParams, assertErrorQuery({__type: 'com.amazon.coral.service#IncompleteSignatureException',
+        message: "Authorization header requires existence of either a 'X-Amz-Date' or a 'Date' header. Authorization=undefined"}, done))
+    })
+  })
+
 })
