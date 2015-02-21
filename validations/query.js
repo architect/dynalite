@@ -93,6 +93,42 @@ exports.types = {
     lengthLessThanOrEqual: 255,
   },
   ScanIndexForward: 'Boolean',
+  QueryFilter: {
+    type: 'Map',
+    children: {
+      type: 'Structure',
+      children: {
+        AttributeValueList: {
+          type: 'List',
+          children: {
+            type: 'Structure',
+            children: {
+              S: 'String',
+              B: 'Blob',
+              N: 'String',
+              BS: {
+                type: 'List',
+                children: 'Blob',
+              },
+              NS: {
+                type: 'List',
+                children: 'String',
+              },
+              SS: {
+                type: 'List',
+                children: 'String',
+              }
+            }
+          }
+        },
+        ComparisonOperator: {
+          type: 'String',
+          notNull: true,
+          enum: ['IN', 'NULL', 'BETWEEN', 'LT', 'NOT_CONTAINS', 'EQ', 'GT', 'NOT_NULL', 'NE', 'LE', 'BEGINS_WITH', 'GE', 'CONTAINS']
+        }
+      }
+    }
+  },
 }
 
 exports.custom = function(data) {

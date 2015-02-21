@@ -135,6 +135,13 @@ module.exports = function query(store, data, cb) {
     } else {
       vals = db.lazy(itemDb.createValueStream(opts), cb)
     }
+	
+	//TODO: This doesn't handle reporting counts correctly
+	if(data.QueryFilter) {
+		vals = vals.filter(function(val) {
+		  return db.matchesFilter(val, data.QueryFilter);
+		})
+	}
 
     vals = vals.filter(function(val) {
       if (!db.matchesFilter(val, data.KeyConditions)) {
