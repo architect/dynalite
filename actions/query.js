@@ -147,7 +147,7 @@ module.exports = function query(store, data, cb) {
     })
 
     vals = vals.takeWhile(function(val) {
-      if (count >= data.Limit || size > 1042000) return false
+      if (count > data.Limit || size > 1042000) return false
 
       size += db.itemSize(val, true)
       count++
@@ -171,9 +171,10 @@ module.exports = function query(store, data, cb) {
     vals.join(function(items) {
       var result = {Count: items.length, ScannedCount: items.length}
 
-      // TODO: Check size?
-      // TODO: Does this only happen when we're not doing a COUNT?
-      if (data.Limit && (items.length > data.Limit || lastItem)) {
+	  // LastEvaluatedKey is only included if you provide a limit or you exceed size (unlike query)
+	  // If the the last item matches the limit, real dynamo does not return a last evaluated key
+	  // Local dynamo sometimes fails to return a last evaluated key when using a byte[] key probably because of a comparison post base64 or something like that
+      if (data.Limit && items.length > data.Limit) {
         items.splice(data.Limit)
         result.Count = items.length
         result.ScannedCount = items.length
@@ -183,7 +184,12 @@ module.exports = function query(store, data, cb) {
             return key
           }, {})
         }
-      }
+      } else if(size > 1042000){
+		  result.LastEvaluatedKey = table.KeySchema.concat(keySchema).reduce(function(key, schemaPiece) {
+			key[schemaPiece.AttributeName] = items[items.length - 1][schemaPiece.AttributeName]
+			return key
+		  }, {})
+	  }
       if (data.Select != 'COUNT') result.Items = items
       if (data.ReturnConsumedCapacity == 'TOTAL')
         result.ConsumedCapacity = {CapacityUnits: Math.ceil(capacitySize / 1024 / 4) * 0.5, TableName: data.TableName}
