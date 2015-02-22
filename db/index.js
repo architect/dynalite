@@ -295,7 +295,7 @@ function itemCompare(rangeKey, table) {
 function checkConditional(data, existingItem) {
   var expected = data.Expected
   if (!expected) return
-
+  
   existingItem = existingItem || {}
 
   if (!matchesFilter(existingItem, expected, data.ConditionalOperator)) {
@@ -395,6 +395,12 @@ function matchesFilter(val, filter, conditionalOperator) {
       if (filter[attr].Exists === false && attrVal != null) return false
       if (filter[attr].Value && !valueEquals(filter[attr].Value, val[attr])) return false
       return true
+    }
+	
+	//support non-attribute list mechanism used by conditional update expressions
+	if(compVal == null && filter[attr].Value !== undefined) {
+        compType = Object.keys(filter[attr].Value)[0];
+        compVal = filter[attr].Value[compType];
     }
 
     switch (comp) {
