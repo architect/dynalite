@@ -287,7 +287,7 @@ function itemCompare(rangeKey, table) {
       val1 = hashPrefix(hashVal1, tableHashType, rangeVal1, tableRangeType)
       val2 = hashPrefix(hashVal2, tableHashType, rangeVal2, tableRangeType)
     }
-    return val1.localeCompare(val2)
+    return val1 < val2 ? -1 : val1 > val2 ? 1 : 0
   }
 }
 
