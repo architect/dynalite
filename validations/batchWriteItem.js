@@ -14,6 +14,15 @@ exports.types = {
     type: 'Map',
     notNull: true,
     lengthGreaterThanOrEqual: 1,
+    keys: {
+      lengthLessThanOrEqual: 255,
+      lengthGreaterThanOrEqual: 3,
+      regex: '[a-zA-Z0-9_.-]+',
+    },
+    values: {
+      lengthLessThanOrEqual: 25,
+      lengthGreaterThanOrEqual: 1,
+    },
     children: {
       type: 'List',
       children: {
@@ -84,10 +93,8 @@ exports.types = {
 }
 
 exports.custom = function(data) {
-  var numReqs = 0, table, i, request, key, msg
+  var table, i, request, key, msg
   for (table in data.RequestItems) {
-    if (!data.RequestItems[table].length)
-      return 'The batch write request list for a table cannot be null or empty: ' + table
     /* jshint -W083 */
     if (data.RequestItems[table].some(function(item) { return !Object.keys(item).length }))
       return 'Supplied AttributeValue has more than one datatypes set, ' +
@@ -107,9 +114,6 @@ exports.custom = function(data) {
           if (msg) return msg
         }
       }
-      numReqs++
-      if (numReqs > 25)
-        return 'Too many items requested for the BatchWriteItem call'
     }
   }
 }

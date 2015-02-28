@@ -9,6 +9,11 @@ exports.types = {
     type: 'Map',
     notNull: true,
     lengthGreaterThanOrEqual: 1,
+    keys: {
+      lengthLessThanOrEqual: 255,
+      lengthGreaterThanOrEqual: 3,
+      regex: '[a-zA-Z0-9_.-]+',
+    },
     children: {
       type: 'Structure',
       children: {

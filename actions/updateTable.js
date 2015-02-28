@@ -43,13 +43,18 @@ module.exports = function updateTable(store, data, cb) {
 
         setTimeout(function() {
 
+          // Shouldn't need to lock/fetch as nothing should have changed
           updates.forEach(function(update) {
             var dataThroughput = update.dataThroughput, tableThroughput = update.tableThroughput
 
-            // Shouldn't need to lock/fetch as nothing should have changed
             update.setStatus('ACTIVE')
 
-            if (update.readDiff < 0 || update.writeDiff < 0) tableThroughput.NumberOfDecreasesToday++
+            if (update.readDiff > 0 || update.writeDiff > 0) {
+              tableThroughput.LastIncreaseDateTime = Date.now() / 1000
+            } else if (update.readDiff < 0 || update.writeDiff < 0) {
+              tableThroughput.LastDecreaseDateTime = Date.now() / 1000
+              tableThroughput.NumberOfDecreasesToday++
+            }
 
             tableThroughput.ReadCapacityUnits = dataThroughput.ReadCapacityUnits
             tableThroughput.WriteCapacityUnits = dataThroughput.WriteCapacityUnits
@@ -60,7 +65,7 @@ module.exports = function updateTable(store, data, cb) {
             if (err) console.error(err)
           })
 
-        }, db.updateTableMs)
+        }, store.updateTableMs)
 
         cb(null, {TableDescription: table})
       })
@@ -81,7 +86,7 @@ function getThroughputUpdates(data, table) {
   if (data.GlobalSecondaryIndexUpdates) {
     data.GlobalSecondaryIndexUpdates.forEach(function(update) {
       table.GlobalSecondaryIndexes.forEach(function(index) {
-        if (index.IndexName == update.Update.IndexName) {
+        if (update.Update && index.IndexName == update.Update.IndexName) {
           updates.push({
             dataThroughput: update.Update.ProvisionedThroughput,
             tableThroughput: index.ProvisionedThroughput,

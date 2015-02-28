@@ -37,7 +37,7 @@ module.exports = function query(store, data, cb) {
           break
         }
       }
-      if (!keySchema) return cb(db.validationError('The table does not have the specified index'))
+      if (!keySchema) return cb(db.validationError('The table does not have the specified index: ' + data.IndexName))
     } else {
       keySchema = table.KeySchema
     }

@@ -241,6 +241,42 @@ validateFns.lengthLessThanOrEqual = function(parent, key, val, data, errors) {
 validateFns.enum = function(parent, key, val, data, errors) {
   validate(~val.indexOf(data), 'Member must satisfy enum value set: [' + val.join(', ') + ']', data, parent, key, errors)
 }
+validateFns.keys = function(parent, key, val, data, errors) {
+  Object.keys(data).forEach(function(mapKey) {
+    try {
+      Object.keys(val).forEach(function(validation) {
+        validateFns[validation]('', '', val[validation], mapKey, [])
+      })
+    } catch (e) {
+      var msgs = Object.keys(val).map(function(validation) {
+        if (validation == 'lengthGreaterThanOrEqual')
+          return 'Member must have length greater than or equal to ' + val[validation]
+        if (validation == 'lengthLessThanOrEqual')
+          return 'Member must have length less than or equal to ' + val[validation]
+        if (validation == 'regex')
+          return 'Member must satisfy regular expression pattern: ' + val[validation]
+      })
+      validate(false, 'Map keys must satisfy constraint: [' + msgs.join(', ') + ']', data, parent, key, errors)
+    }
+  })
+}
+validateFns.values = function(parent, key, val, data, errors) {
+  Object.keys(data).forEach(function(mapKey) {
+    try {
+      Object.keys(val).forEach(function(validation) {
+        validateFns[validation]('', '', val[validation], data[mapKey], [])
+      })
+    } catch (e) {
+      var msgs = Object.keys(val).map(function(validation) {
+        if (validation == 'lengthGreaterThanOrEqual')
+          return 'Member must have length greater than or equal to ' + val[validation]
+        if (validation == 'lengthLessThanOrEqual')
+          return 'Member must have length less than or equal to ' + val[validation]
+      })
+      validate(false, 'Map value must satisfy constraint: [' + msgs.join(', ') + ']', data, parent, key, errors)
+    }
+  })
+}
 
 function validate(predicate, msg, data, parent, key, errors) {
   if (predicate) return
@@ -336,7 +372,8 @@ function checkNum(attr, obj) {
 }
 
 function valueStr(data) {
-  return data == null ? 'null' : Array.isArray(data) ? '[' + data.join(', ') + ']' : typeof data == 'object' ? JSON.stringify(data) : data
+  return data == null ? 'null' : Array.isArray(data) ? '[' + data.map(valueStr).join(', ') + ']' :
+    typeof data == 'object' ? JSON.stringify(data) : data
 }
 
 function hasDuplicates(array) {

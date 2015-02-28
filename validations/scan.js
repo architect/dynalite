@@ -5,10 +5,6 @@ exports.types = {
     type: 'Integer',
     greaterThanOrEqual: 1,
   },
-  TotalSegments: {
-    type: 'Integer',
-    greaterThanOrEqual: 1,
-  },
   ReturnConsumedCapacity: {
     type: 'String',
     enum: ['INDEXES', 'TOTAL', 'NONE']
@@ -19,43 +15,13 @@ exports.types = {
     lengthLessThanOrEqual: 255,
     children: 'String',
   },
-  Select: {
-    type: 'String',
-    enum: ['SPECIFIC_ATTRIBUTES', 'COUNT', 'ALL_ATTRIBUTES', 'ALL_PROJECTED_ATTRIBUTES']
-  },
-  TableName: {
-    type: 'String',
-    notNull: true,
-    regex: '[a-zA-Z0-9_.-]+',
-    lengthGreaterThanOrEqual: 3,
-    lengthLessThanOrEqual: 255,
-  },
-  ExclusiveStartKey: {
-    type: 'Map',
-    children: {
-      type: 'Structure',
-      children: {
-        S: 'String',
-        B: 'Blob',
-        N: 'String',
-        BS: {
-          type: 'List',
-          children: 'Blob',
-        },
-        NS: {
-          type: 'List',
-          children: 'String',
-        },
-        SS: {
-          type: 'List',
-          children: 'String',
-        }
-      }
-    }
-  },
   Segment: {
     type: 'Integer',
     greaterThanOrEqual: 0,
+  },
+  Select: {
+    type: 'String',
+    enum: ['SPECIFIC_ATTRIBUTES', 'COUNT', 'ALL_ATTRIBUTES', 'ALL_PROJECTED_ATTRIBUTES']
   },
   ScanFilter: {
     type: 'Map',
@@ -89,6 +55,40 @@ exports.types = {
           type: 'String',
           notNull: true,
           enum: ['IN', 'NULL', 'BETWEEN', 'LT', 'NOT_CONTAINS', 'EQ', 'GT', 'NOT_NULL', 'NE', 'LE', 'BEGINS_WITH', 'GE', 'CONTAINS']
+        }
+      }
+    }
+  },
+  TotalSegments: {
+    type: 'Integer',
+    greaterThanOrEqual: 1,
+  },
+  TableName: {
+    type: 'String',
+    notNull: true,
+    regex: '[a-zA-Z0-9_.-]+',
+    lengthGreaterThanOrEqual: 3,
+    lengthLessThanOrEqual: 255,
+  },
+  ExclusiveStartKey: {
+    type: 'Map',
+    children: {
+      type: 'Structure',
+      children: {
+        S: 'String',
+        B: 'Blob',
+        N: 'String',
+        BS: {
+          type: 'List',
+          children: 'Blob',
+        },
+        NS: {
+          type: 'List',
+          children: 'String',
+        },
+        SS: {
+          type: 'List',
+          children: 'String',
         }
       }
     }

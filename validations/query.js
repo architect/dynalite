@@ -28,6 +28,20 @@ exports.types = {
       }
     }
   },
+  ReturnConsumedCapacity: {
+    type: 'String',
+    enum: ['INDEXES', 'TOTAL', 'NONE']
+  },
+  AttributesToGet: {
+    type: 'List',
+    lengthGreaterThanOrEqual: 1,
+    lengthLessThanOrEqual: 255,
+    children: 'String',
+  },
+  Select: {
+    type: 'String',
+    enum: ['SPECIFIC_ATTRIBUTES', 'COUNT', 'ALL_ATTRIBUTES', 'ALL_PROJECTED_ATTRIBUTES']
+  },
   KeyConditions: {
     type: 'Map',
     children: {
@@ -64,26 +78,12 @@ exports.types = {
       }
     }
   },
-  ReturnConsumedCapacity: {
-    type: 'String',
-    enum: ['INDEXES', 'TOTAL', 'NONE']
-  },
-  AttributesToGet: {
-    type: 'List',
-    lengthGreaterThanOrEqual: 1,
-    lengthLessThanOrEqual: 255,
-    children: 'String',
-  },
   TableName: {
     type: 'String',
     notNull: true,
     regex: '[a-zA-Z0-9_.-]+',
     lengthGreaterThanOrEqual: 3,
     lengthLessThanOrEqual: 255,
-  },
-  Select: {
-    type: 'String',
-    enum: ['SPECIFIC_ATTRIBUTES', 'COUNT', 'ALL_ATTRIBUTES', 'ALL_PROJECTED_ATTRIBUTES']
   },
   ConsistentRead: 'Boolean',
   IndexName: {
