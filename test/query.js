@@ -189,18 +189,18 @@ describe('query', function() {
         '8 validation errors detected: ' +
         'Value \'-1\' at \'limit\' failed to satisfy constraint: ' +
         'Member must have value greater than or equal to 1; ' +
-        'Value \'\' at \'keyConditions.b.member.comparisonOperator\' failed to satisfy constraint: ' +
-        'Member must satisfy enum value set: [IN, NULL, BETWEEN, LT, NOT_CONTAINS, EQ, GT, NOT_NULL, NE, LE, BEGINS_WITH, GE, CONTAINS]; ' +
-        'Value null at \'keyConditions.a.member.comparisonOperator\' failed to satisfy constraint: ' +
-        'Member must not be null; ' +
         'Value \'hi\' at \'returnConsumedCapacity\' failed to satisfy constraint: ' +
         'Member must satisfy enum value set: [INDEXES, TOTAL, NONE]; ' +
         'Value \'[]\' at \'attributesToGet\' failed to satisfy constraint: ' +
         'Member must have length greater than or equal to 1; ' +
-        'Value \'abc;\' at \'tableName\' failed to satisfy constraint: ' +
-        'Member must satisfy regular expression pattern: [a-zA-Z0-9_.-]+; ' +
         'Value \'hi\' at \'select\' failed to satisfy constraint: ' +
         'Member must satisfy enum value set: [SPECIFIC_ATTRIBUTES, COUNT, ALL_ATTRIBUTES, ALL_PROJECTED_ATTRIBUTES]; ' +
+        'Value \'\' at \'keyConditions.b.member.comparisonOperator\' failed to satisfy constraint: ' +
+        'Member must satisfy enum value set: [IN, NULL, BETWEEN, LT, NOT_CONTAINS, EQ, GT, NOT_NULL, NE, LE, BEGINS_WITH, GE, CONTAINS]; ' +
+        'Value null at \'keyConditions.a.member.comparisonOperator\' failed to satisfy constraint: ' +
+        'Member must not be null; ' +
+        'Value \'abc;\' at \'tableName\' failed to satisfy constraint: ' +
+        'Member must satisfy regular expression pattern: [a-zA-Z0-9_.-]+; ' +
         'Value \'abc;\' at \'indexName\' failed to satisfy constraint: ' +
         'Member must satisfy regular expression pattern: [a-zA-Z0-9_.-]+', done)
     })
@@ -738,7 +738,7 @@ describe('query', function() {
           a: {ComparisonOperator: 'EQ', AttributeValueList: [{S: 'a'}]},
           c: {ComparisonOperator: 'NULL'},
         }},
-        'The table does not have the specified index', done)
+        'The table does not have the specified index: whatever', done)
     })
 
     it('should return ValidationException for incorrect index', function(done) {

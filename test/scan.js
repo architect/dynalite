@@ -160,22 +160,22 @@ describe('scan', function() {
         '9 validation errors detected: ' +
         'Value \'-1\' at \'limit\' failed to satisfy constraint: ' +
         'Member must have value greater than or equal to 1; ' +
-        'Value \'-1\' at \'totalSegments\' failed to satisfy constraint: ' +
-        'Member must have value greater than or equal to 1; ' +
         'Value \'hi\' at \'returnConsumedCapacity\' failed to satisfy constraint: ' +
         'Member must satisfy enum value set: [INDEXES, TOTAL, NONE]; ' +
         'Value \'[]\' at \'attributesToGet\' failed to satisfy constraint: ' +
         'Member must have length greater than or equal to 1; ' +
-        'Value \'hi\' at \'select\' failed to satisfy constraint: ' +
-        'Member must satisfy enum value set: [SPECIFIC_ATTRIBUTES, COUNT, ALL_ATTRIBUTES, ALL_PROJECTED_ATTRIBUTES]; ' +
-        'Value \'abc;\' at \'tableName\' failed to satisfy constraint: ' +
-        'Member must satisfy regular expression pattern: [a-zA-Z0-9_.-]+; ' +
         'Value \'-1\' at \'segment\' failed to satisfy constraint: ' +
         'Member must have value greater than or equal to 0; ' +
+        'Value \'hi\' at \'select\' failed to satisfy constraint: ' +
+        'Member must satisfy enum value set: [SPECIFIC_ATTRIBUTES, COUNT, ALL_ATTRIBUTES, ALL_PROJECTED_ATTRIBUTES]; ' +
         'Value \'\' at \'scanFilter.b.member.comparisonOperator\' failed to satisfy constraint: ' +
         'Member must satisfy enum value set: [IN, NULL, BETWEEN, LT, NOT_CONTAINS, EQ, GT, NOT_NULL, NE, LE, BEGINS_WITH, GE, CONTAINS]; ' +
         'Value null at \'scanFilter.a.member.comparisonOperator\' failed to satisfy constraint: ' +
-        'Member must not be null', done)
+        'Member must not be null; ' +
+        'Value \'-1\' at \'totalSegments\' failed to satisfy constraint: ' +
+        'Member must have value greater than or equal to 1; ' +
+        'Value \'abc;\' at \'tableName\' failed to satisfy constraint: ' +
+        'Member must satisfy regular expression pattern: [a-zA-Z0-9_.-]+', done)
     })
 
     it('should return ValidationException for incorrect number of filter arguments', function(done) {

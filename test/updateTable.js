@@ -173,6 +173,28 @@ describe('updateTable', function() {
       ]}, 'Given value 1000000000001 for WriteCapacityUnits is out of bounds for index abc', done)
     })
 
+    it('should return ValidationException for empty index struct', function(done) {
+      assertValidation({TableName: 'abc', GlobalSecondaryIndexUpdates: [{}]},
+        'One or more parameter values were invalid: ' +
+        'One of GlobalSecondaryIndexUpdate.Update, ' +
+        'GlobalSecondaryIndexUpdate.Create, ' +
+        'GlobalSecondaryIndexUpdate.Delete must not be null', done)
+    })
+
+    it('should return ValidationException for too many empty GlobalSecondaryIndexUpdates', function(done) {
+      assertValidation({TableName: 'abc', GlobalSecondaryIndexUpdates: [{}, {}, {}, {}, {}, {}]},
+        'One or more parameter values were invalid: ' +
+        'One of GlobalSecondaryIndexUpdate.Update, ' +
+        'GlobalSecondaryIndexUpdate.Create, ' +
+        'GlobalSecondaryIndexUpdate.Delete must not be null', done)
+    })
+
+    it('should return ValidationException for repeated GlobalSecondaryIndexUpdates', function(done) {
+      assertValidation({TableName: 'abc', GlobalSecondaryIndexUpdates: [{Delete: {IndexName: 'abc'}}, {Delete: {IndexName: 'abc'}}]},
+        'One or more parameter values were invalid: ' +
+        'Only one global secondary index update per index is allowed simultaneously. Index: abc', done)
+    })
+
     it('should return ValidationException if read and write are same', function(done) {
       assertValidation({TableName: helpers.testHashTable,
         ProvisionedThroughput: {ReadCapacityUnits: 2, WriteCapacityUnits: 2}},
@@ -182,30 +204,20 @@ describe('updateTable', function() {
         'Refer to the Amazon DynamoDB Developer Guide for current limits and how to request higher limits.', done)
     })
 
-    // TODO: Only processes after it finds the table
-    it.skip('should return ValidationException for empty index struct', function(done) {
-      assertValidation({TableName: helpers.testHashTable, GlobalSecondaryIndexUpdates: [{}]},
-        '', done)
-    })
-
-    // TODO: Only processes after it finds the table
+    // TODO: never returns?
     it.skip('should return ValidationException for too many GlobalSecondaryIndexUpdates', function(done) {
-      assertValidation({TableName: helpers.testHashTable, GlobalSecondaryIndexUpdates: [{}, {}, {}, {}, {}, {}]},
-        '', done)
-    })
-
-    // TODO: No idea why - this response never returns
-    it.skip('should return ValidationException if read rate is more than double', function(done) {
-      assertValidation({TableName: helpers.testHashTable,
-        ProvisionedThroughput: {ReadCapacityUnits: 3, WriteCapacityUnits: 1}},
-        '', done)
-    })
-
-    // TODO: No idea why - this response never returns
-    it.skip('should return ValidationException if write rate is more than double', function(done) {
-      assertValidation({TableName: helpers.testHashTable,
-        ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 3}},
-        '', done)
+      assertValidation({TableName: helpers.testHashTable, GlobalSecondaryIndexUpdates: [
+        {Delete: {IndexName: 'abc'}},
+        {Delete: {IndexName: 'abd'}},
+        {Delete: {IndexName: 'abe'}},
+        {Delete: {IndexName: 'abf'}},
+        {Delete: {IndexName: 'abg'}},
+        {Delete: {IndexName: 'abh'}}
+      ]},
+        'One or more parameter values were invalid: ' +
+        'One of GlobalSecondaryIndexUpdate.Update, ' +
+        'GlobalSecondaryIndexUpdate.Create, ' +
+        'GlobalSecondaryIndexUpdate.Delete must not be null', done)
     })
 
     // TODO: No more than four decreases in a single UTC calendar day
@@ -241,7 +253,9 @@ describe('updateTable', function() {
           var desc = res.body.Table, decrease = Date.now() / 1000
           desc.ProvisionedThroughput.ReadCapacityUnits.should.equal(4)
           desc.ProvisionedThroughput.WriteCapacityUnits.should.equal(4)
-          desc.ProvisionedThroughput.LastIncreaseDateTime.should.equal(increase)
+          desc.ProvisionedThroughput.LastIncreaseDateTime.should.be.above(increase)
+
+          increase = desc.ProvisionedThroughput.LastIncreaseDateTime
 
           throughput = {ReadCapacityUnits: 2, WriteCapacityUnits: 2}
           request(opts({TableName: helpers.testHashTable, ProvisionedThroughput: throughput}), function(err, res) {
@@ -263,7 +277,7 @@ describe('updateTable', function() {
 
               var desc = res.body.Table
               desc.ProvisionedThroughput.LastIncreaseDateTime.should.equal(increase)
-              desc.ProvisionedThroughput.LastDecreaseDateTime.should.equal(decrease)
+              desc.ProvisionedThroughput.LastDecreaseDateTime.should.be.above(decrease)
               desc.ProvisionedThroughput.NumberOfDecreasesToday.should.equal(1)
               desc.ProvisionedThroughput.ReadCapacityUnits.should.equal(2)
               desc.ProvisionedThroughput.WriteCapacityUnits.should.equal(2)

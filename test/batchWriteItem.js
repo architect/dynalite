@@ -137,36 +137,59 @@ describe('batchWriteItem', function() {
 
     it('should return ValidationException for empty list in RequestItems', function(done) {
       assertValidation({RequestItems: {a: []}},
-        'The batch write request list for a table cannot be null or empty: a', done)
+        new RegExp('2 validation errors detected: ' +
+          'Value \'{.+}\' at \'requestItems\' failed to satisfy constraint: ' +
+          'Map keys must satisfy constraint: ' +
+          '\\[Member must have length less than or equal to 255, ' +
+          'Member must have length greater than or equal to 3, ' +
+          'Member must satisfy regular expression pattern: \\[a-zA-Z0-9_.-\\]\\+\\]; ' +
+          'Value \'{.+}\' at \'requestItems\' failed to satisfy constraint: ' +
+          'Map value must satisfy constraint: ' +
+          '\\[Member must have length less than or equal to 25, ' +
+          'Member must have length greater than or equal to 1\\]'), done)
     })
 
     it('should return ValidationException for empty item in RequestItems', function(done) {
-      assertValidation({RequestItems: {a: [{}]}},
+      assertValidation({RequestItems: {abc: [{}]}},
         'Supplied AttributeValue has more than one datatypes set, ' +
         'must contain exactly one of the supported datatypes', done)
     })
 
-    it('should return ValidationException for short table name', function(done) {
+    it('should return ValidationException for short table name and missing requests', function(done) {
       assertValidation({RequestItems: {a: []}, ReturnConsumedCapacity: 'hi', ReturnItemCollectionMetrics: 'hi'},
-        '2 validation errors detected: ' +
-        'Value \'hi\' at \'returnConsumedCapacity\' failed to satisfy constraint: ' +
-        'Member must satisfy enum value set: [INDEXES, TOTAL, NONE]; ' +
-        'Value \'hi\' at \'returnItemCollectionMetrics\' failed to satisfy constraint: ' +
-        'Member must satisfy enum value set: [SIZE, NONE]', done)
+        new RegExp('4 validation errors detected: ' +
+          'Value \'hi\' at \'returnConsumedCapacity\' failed to satisfy constraint: ' +
+          'Member must satisfy enum value set: \\[INDEXES, TOTAL, NONE\\]; ' +
+          'Value \'hi\' at \'returnItemCollectionMetrics\' failed to satisfy constraint: ' +
+          'Member must satisfy enum value set: \\[SIZE, NONE\\]; ' +
+          'Value \'{.+}\' at \'requestItems\' failed to satisfy constraint: ' +
+          'Map keys must satisfy constraint: ' +
+          '\\[Member must have length less than or equal to 255, ' +
+          'Member must have length greater than or equal to 3, ' +
+          'Member must satisfy regular expression pattern: \\[a-zA-Z0-9_.-\\]\\+\\]; ' +
+          'Value \'{.+}\' at \'requestItems\' failed to satisfy constraint: ' +
+          'Map value must satisfy constraint: ' +
+          '\\[Member must have length less than or equal to 25, ' +
+          'Member must have length greater than or equal to 1\\]'), done)
     })
 
     it('should return ValidationException for incorrect attributes', function(done) {
       assertValidation({RequestItems: {'aa;': [{PutRequest: {}, DeleteRequest: {}}]},
         ReturnConsumedCapacity: 'hi', ReturnItemCollectionMetrics: 'hi'},
-        '4 validation errors detected: ' +
-        'Value \'hi\' at \'returnConsumedCapacity\' failed to satisfy constraint: ' +
-        'Member must satisfy enum value set: [INDEXES, TOTAL, NONE]; ' +
-        'Value \'hi\' at \'returnItemCollectionMetrics\' failed to satisfy constraint: ' +
-        'Member must satisfy enum value set: [SIZE, NONE]; ' +
-        'Value null at \'requestItems.aa;.member.1.member.deleteRequest.key\' failed to satisfy constraint: ' +
-        'Member must not be null; ' +
-        'Value null at \'requestItems.aa;.member.1.member.putRequest.item\' failed to satisfy constraint: ' +
-        'Member must not be null', done)
+        new RegExp('5 validation errors detected: ' +
+          'Value \'hi\' at \'returnConsumedCapacity\' failed to satisfy constraint: ' +
+          'Member must satisfy enum value set: \\[INDEXES, TOTAL, NONE\\]; ' +
+          'Value \'hi\' at \'returnItemCollectionMetrics\' failed to satisfy constraint: ' +
+          'Member must satisfy enum value set: \\[SIZE, NONE\\]; ' +
+          'Value \'{.+}\' at \'requestItems\' ' +
+          'failed to satisfy constraint: Map keys must satisfy constraint: ' +
+          '\\[Member must have length less than or equal to 255, ' +
+          'Member must have length greater than or equal to 3, ' +
+          'Member must satisfy regular expression pattern: \\[a-zA-Z0-9_.-\\]\\+\\]; ' +
+          'Value null at \'requestItems.aa;.member.1.member.deleteRequest.key\' failed to satisfy constraint: ' +
+          'Member must not be null; ' +
+          'Value null at \'requestItems.aa;.member.1.member.putRequest.item\' failed to satisfy constraint: ' +
+          'Member must not be null'), done)
     })
 
     it('should return ValidationException when putting more than 25 items', function(done) {
@@ -175,7 +198,11 @@ describe('batchWriteItem', function() {
         requests.push(i % 2 ? {DeleteRequest: {Key: {a: {S: String(i)}}}} : {PutRequest: {Item: {a: {S: String(i)}}}})
       }
       assertValidation({RequestItems: {abc: requests}},
-        'Too many items requested for the BatchWriteItem call', done)
+        new RegExp('1 validation error detected: ' +
+          'Value \'{.+}\' at \'requestItems\' failed to satisfy constraint: ' +
+          'Map value must satisfy constraint: ' +
+          '\\[Member must have length less than or equal to 25, ' +
+          'Member must have length greater than or equal to 1\\]'), done)
     })
 
     it('should return ResourceNotFoundException when fetching exactly 25 items and table does not exist', function(done) {
@@ -201,8 +228,15 @@ describe('batchWriteItem', function() {
       assertValidation(batchReq, 'Provided list of item keys contains duplicates', done)
     })
 
-    it('should return ResourceNotFoundException for short table name', function(done) {
-      assertNotFound({RequestItems: {a: [{PutRequest: {Item: {a: {S: 'a'}}}}]}}, 'Requested resource not found', done)
+    it('should return ValidationException for short table name', function(done) {
+      assertValidation({RequestItems: {a: [{PutRequest: {Item: {a: {S: 'a'}}}}]}},
+        new RegExp('1 validation error detected: ' +
+          'Value \'{.+}\' at \'requestItems\' ' +
+          'failed to satisfy constraint: ' +
+          'Map keys must satisfy constraint: ' +
+          '\\[Member must have length less than or equal to 255, ' +
+          'Member must have length greater than or equal to 3, ' +
+          'Member must satisfy regular expression pattern: \\[a-zA-Z0-9_.-\\]\\+\\]'), done)
     })
 
     it('should return ValidationException for empty key type', function(done) {
@@ -482,10 +516,9 @@ describe('batchWriteItem', function() {
         'Size of hashkey has exceeded the maximum size limit of2048 bytes', done)
     })
 
-    // TODO: This returns a 200...?
-    it.skip('should return ValidationException if range key is too big', function(done) {
+    it('should return ValidationException if range key is too big', function(done) {
       var batchReq = {RequestItems: {}}, keyStr = (helpers.randomString() + new Array(1024).join('a')).slice(0, 1025)
-      batchReq.RequestItems[helpers.testHashTable] = [{PutRequest: {Item: {a: {S: 'a'}, b: {S: keyStr}}}}]
+      batchReq.RequestItems[helpers.testRangeTable] = [{PutRequest: {Item: {a: {S: 'a'}, b: {S: keyStr}}}}]
       assertValidation(batchReq,
         'One or more parameter values were invalid: ' +
         'Aggregated size of all range keys has exceeded the size limit of 1024 bytes', done)

@@ -229,20 +229,19 @@ describe('createTable', function() {
         'Member must have length greater than or equal to 1', done)
     })
 
-    // TODO: Need to create toString methods for things like KeySchemaElement, etc
-    it.skip('should return ValidationException for key element names', function(done) {
+    it('should return ValidationException for key element names', function(done) {
       assertValidation({TableName: 'abc', AttributeDefinitions: [],
         KeySchema: [{KeyType: 'HASH'}, {AttributeName: 'a'}, {KeyType: 'Woop', AttributeName: 'a'}],
         ProvisionedThroughput: {ReadCapacityUnits: 1000000000001, WriteCapacityUnits: 1000000000001}},
-        '4 validation errors detected: ' +
-        'Value \'[com.amazonaws.dynamodb.v20120810.KeySchemaElement@21b90f, com.amazonaws.dynamodb.v20120810.KeySchemaElement@62, com.amazonaws.dynamodb.v20120810.KeySchemaElement@293b3b]\' at \'keySchema\' failed to satisfy constraint: ' +
-        'Member must have length less than or equal to 2; ' +
-        'Value null at \'keySchema.1.member.attributeName\' failed to satisfy constraint: ' +
-        'Member must not be null; ' +
-        'Value null at \'keySchema.2.member.keyType\' failed to satisfy constraint: ' +
-        'Member must not be null; ' +
-        'Value \'Woop\' at \'keySchema.3.member.keyType\' failed to satisfy constraint: ' +
-        'Member must satisfy enum value set: [HASH, RANGE]', done)
+        new RegExp('4 validation errors detected: ' +
+          'Value \'\\[.+\\]\' at \'keySchema\' failed to satisfy constraint: ' +
+          'Member must have length less than or equal to 2; ' +
+          'Value null at \'keySchema.1.member.attributeName\' failed to satisfy constraint: ' +
+          'Member must not be null; ' +
+          'Value null at \'keySchema.2.member.keyType\' failed to satisfy constraint: ' +
+          'Member must not be null; ' +
+          'Value \'Woop\' at \'keySchema.3.member.keyType\' failed to satisfy constraint: ' +
+          'Member must satisfy enum value set: \\[HASH, RANGE\\]'), done)
     })
 
     it('should return ValidationException for high ProvisionedThroughput.ReadCapacityUnits and neg', function(done) {

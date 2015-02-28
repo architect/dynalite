@@ -175,6 +175,11 @@ describe('deleteItem', function() {
         'The parameter cannot be converted to a numeric value: b', done)
     })
 
+    it('should return ValidationException if ComparisonOperator and Exists are used together', function(done) {
+      assertValidation({TableName: 'aaa', Key: {}, Expected: {a: { Exists: true, ComparisonOperator: 'LT'}}},
+        'One or more parameter values were invalid: Exists and ComparisonOperator cannot be used together for Attribute: a', done)
+    })
+
   })
 
   describe('functionality', function() {

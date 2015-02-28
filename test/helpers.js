@@ -49,6 +49,7 @@ before(function(done) {
   dynaliteServer.listen(port, function(err) {
     if (err) return done(err)
     createTestTables(done)
+    //done()
   })
 })
 

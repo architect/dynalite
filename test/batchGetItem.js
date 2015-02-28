@@ -86,27 +86,52 @@ describe('batchGetItem', function() {
 
     it('should return ValidationException for short table name with no keys', function(done) {
       assertValidation({RequestItems: {a: {}}, ReturnConsumedCapacity: 'hi', ReturnItemCollectionMetrics: 'hi'},
-        '2 validation errors detected: ' +
-        'Value \'hi\' at \'returnConsumedCapacity\' failed to satisfy constraint: ' +
-        'Member must satisfy enum value set: [INDEXES, TOTAL, NONE]; ' +
-        'Value null at \'requestItems.a.member.keys\' failed to satisfy constraint: ' +
-        'Member must not be null', done)
+        new RegExp('3 validation errors detected: ' +
+          'Value \'hi\' at \'returnConsumedCapacity\' failed to satisfy constraint: ' +
+          'Member must satisfy enum value set: \\[INDEXES, TOTAL, NONE\\]; ' +
+          'Value \'{.+}\' at \'requestItems\' ' +
+          'failed to satisfy constraint: Map keys must satisfy constraint: ' +
+          '\\[Member must have length less than or equal to 255, ' +
+          'Member must have length greater than or equal to 3, ' +
+          'Member must satisfy regular expression pattern: \\[a-zA-Z0-9_.-\\]\\+\\]; ' +
+          'Value null at \'requestItems.a.member.keys\' failed to satisfy constraint: ' +
+          'Member must not be null'), done)
     })
 
     it('should return ValidationException for empty keys', function(done) {
       assertValidation({RequestItems: {a: {Keys: []}}},
-        '1 validation error detected: ' +
-        'Value \'[]\' at \'requestItems.a.member.keys\' failed to satisfy constraint: ' +
-        'Member must have length greater than or equal to 1', done)
+        new RegExp('2 validation errors detected: ' +
+          'Value \'{.+}\' at \'requestItems\' ' +
+          'failed to satisfy constraint: Map keys must satisfy constraint: ' +
+          '\\[Member must have length less than or equal to 255, ' +
+          'Member must have length greater than or equal to 3, ' +
+          'Member must satisfy regular expression pattern: \\[a-zA-Z0-9_.-\\]\\+\\]; ' +
+          'Value \'\\[\\]\' at \'requestItems.a.member.keys\' failed to satisfy constraint: ' +
+          'Member must have length greater than or equal to 1'), done)
     })
 
     it('should return ValidationException for incorrect attributes', function(done) {
       assertValidation({RequestItems: {'aa;': {}}, ReturnConsumedCapacity: 'hi'},
-        '2 validation errors detected: ' +
-        'Value \'hi\' at \'returnConsumedCapacity\' failed to satisfy constraint: ' +
-        'Member must satisfy enum value set: [INDEXES, TOTAL, NONE]; ' +
-        'Value null at \'requestItems.aa;.member.keys\' failed to satisfy constraint: ' +
-        'Member must not be null', done)
+        new RegExp('3 validation errors detected: ' +
+          'Value \'hi\' at \'returnConsumedCapacity\' failed to satisfy constraint: ' +
+          'Member must satisfy enum value set: \\[INDEXES, TOTAL, NONE\\]; ' +
+          'Value \'{.+}\' at \'requestItems\' ' +
+          'failed to satisfy constraint: Map keys must satisfy constraint: ' +
+          '\\[Member must have length less than or equal to 255, ' +
+          'Member must have length greater than or equal to 3, ' +
+          'Member must satisfy regular expression pattern: \\[a-zA-Z0-9_.-\\]\\+\\]; ' +
+          'Value null at \'requestItems.aa;.member.keys\' failed to satisfy constraint: ' +
+          'Member must not be null'), done)
+    })
+
+    it('should return ValidationException for short table name with keys', function(done) {
+      assertValidation({RequestItems: {a: {Keys: [{a: {S: 'a'}}]}}},
+        new RegExp('1 validation error detected: ' +
+          'Value \'{.+}\' at \'requestItems\' ' +
+          'failed to satisfy constraint: Map keys must satisfy constraint: ' +
+          '\\[Member must have length less than or equal to 255, ' +
+          'Member must have length greater than or equal to 3, ' +
+          'Member must satisfy regular expression pattern: \\[a-zA-Z0-9_.-\\]\\+\\]'), done)
     })
 
     it('should return ValidationException when fetching more than 100 keys', function(done) {
@@ -115,7 +140,9 @@ describe('batchGetItem', function() {
         keys.push({a: {S: String(i)}})
       }
       assertValidation({RequestItems: {abc: {Keys: keys}}},
-        /^1 validation error detected: Value '.*' at 'requestItems.abc.member.keys' failed to satisfy constraint: Member must have length less than or equal to 100$/, done)
+        new RegExp('1 validation error detected: ' +
+          'Value \'\\[.+\\]\' at \'requestItems.abc.member.keys\' failed to satisfy constraint: ' +
+          'Member must have length less than or equal to 100'), done)
     })
 
     it('should return ValidationException when fetching more than 100 keys over multiple tables', function(done) {
@@ -149,10 +176,6 @@ describe('batchGetItem', function() {
           batchReq = {RequestItems: {}}
       batchReq.RequestItems[helpers.testHashTable] = {Keys: [key, key2, key]}
       assertValidation(batchReq, 'Provided list of item keys contains duplicates', done)
-    })
-
-    it('should return ResourceNotFoundException for short table name with keys', function(done) {
-      assertNotFound({RequestItems: {a: {Keys: [{a: {S: 'a'}}]}}}, 'Requested resource not found', done)
     })
 
     it('should return ValidationException for empty key type', function(done) {
