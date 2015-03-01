@@ -481,7 +481,8 @@ function matchesFilter(val, filter, conditionalOperator) {
       case 'BETWEEN':
         if (!attrVal || compType != attrType ||
           (attrType == 'N' && (!Big(attrVal).gte(compVal) || !Big(attrVal).lte(compVals[1].N))) ||
-          (attrType != 'N' && (attrVal < compVal || attrVal > compVals[1][compType]))) return false
+          (attrType != 'N' && (toLexiStr(attrVal, attrType) < toLexiStr(compVal, attrType) ||
+            toLexiStr(attrVal, attrType) > toLexiStr(compVals[1][compType], attrType)))) return false
     }
     return true
   })

@@ -2015,11 +2015,11 @@ describe('scan', function() {
     })
 
     it('should scan by BETWEEN on type B', function(done) {
-      var item = {a: {S: helpers.randomString()}, b: {B: new Buffer('abc').toString('base64')}, c: {S: helpers.randomString()}},
-          item2 = {a: {S: helpers.randomString()}, b: {B: new Buffer('abd').toString('base64')}, c: item.c},
-          item3 = {a: {S: helpers.randomString()}, b: {B: new Buffer('abd\x00').toString('base64')}, c: item.c},
-          item4 = {a: {S: helpers.randomString()}, b: {B: new Buffer('abe').toString('base64')}, c: item.c},
-          item5 = {a: {S: helpers.randomString()}, b: {B: new Buffer('abe\x00').toString('base64')}, c: item.c},
+      var item = {a: {S: helpers.randomString()}, b: {B: new Buffer('ce', 'hex').toString('base64')}, c: {S: helpers.randomString()}},
+          item2 = {a: {S: helpers.randomString()}, b: {B: new Buffer('d0', 'hex').toString('base64')}, c: item.c},
+          item3 = {a: {S: helpers.randomString()}, b: {B: new Buffer('cf', 'hex').toString('base64')}, c: item.c},
+          item4 = {a: {S: helpers.randomString()}, b: {B: new Buffer('d000', 'hex').toString('base64')}, c: item.c},
+          item5 = {a: {S: helpers.randomString()}, b: {B: new Buffer('cfff', 'hex').toString('base64')}, c: item.c},
           batchReq = {RequestItems: {}}
       batchReq.RequestItems[helpers.testHashTable] = [
         {PutRequest: {Item: item}},
@@ -2032,13 +2032,13 @@ describe('scan', function() {
         if (err) return done(err)
         res.statusCode.should.equal(200)
         request(opts({TableName: helpers.testHashTable, ScanFilter: {
-          b: {ComparisonOperator: 'BETWEEN', AttributeValueList: [item2.b, item4.b]},
+          b: {ComparisonOperator: 'BETWEEN', AttributeValueList: [item5.b, item4.b]},
           c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
         }}), function(err, res) {
           if (err) return done(err)
           res.body.Items.should.containEql(item2)
-          res.body.Items.should.containEql(item3)
           res.body.Items.should.containEql(item4)
+          res.body.Items.should.containEql(item5)
           res.body.Items.should.have.length(3)
           res.body.Count.should.equal(3)
           done()
