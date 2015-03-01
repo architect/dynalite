@@ -185,7 +185,8 @@ describe('query', function() {
 
     it('should return ValidationException for incorrect attributes', function(done) {
       assertValidation({TableName: 'abc;', ReturnConsumedCapacity: 'hi', AttributesToGet: [],
-        IndexName: 'abc;', Select: 'hi', Limit: -1, KeyConditions: {a: {}, b: {ComparisonOperator: ''}}},
+        IndexName: 'abc;', Select: 'hi', Limit: -1, KeyConditions: {a: {}, b: {ComparisonOperator: ''}},
+        QueryFilter: {}},
         '8 validation errors detected: ' +
         'Value \'-1\' at \'limit\' failed to satisfy constraint: ' +
         'Member must have value greater than or equal to 1; ' +
@@ -226,7 +227,23 @@ describe('query', function() {
         'One or more parameter values were invalid: Invalid number of argument(s) for the EQ ComparisonOperator', done)
     })
 
-    it('should return ValidationException for bad key type', function(done) {
+    it('should check KeyConditions before QueryFilter', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        KeyConditions: {a: {ComparisonOperator: 'EQ'}},
+        QueryFilter: {a: {ComparisonOperator: 'EQ', AttributeValueList: [{}]}}
+      }, 'One or more parameter values were invalid: Invalid number of argument(s) for the EQ ComparisonOperator', done)
+    })
+
+    it('should return ValidationException for incorrect number of filter arguments on QueryFilter', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        KeyConditions: {a: {ComparisonOperator: 'NULL'}},
+        QueryFilter: {a: {ComparisonOperator: 'EQ'}},
+      }, 'One or more parameter values were invalid: Invalid number of argument(s) for the EQ ComparisonOperator', done)
+    })
+
+    it('should return ValidationException for empty key type', function(done) {
       assertValidation({
         TableName: 'abc',
         KeyConditions: {
@@ -235,6 +252,14 @@ describe('query', function() {
           c: {ComparisonOperator: 'NULL'},
         }},
         'Supplied AttributeValue is empty, must contain exactly one of the supported datatypes', done)
+    })
+
+    it('should return ValidationException for empty key type in QueryFilter', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        KeyConditions: {a: {ComparisonOperator: 'NULL'}},
+        QueryFilter: {a: {ComparisonOperator: 'EQ', AttributeValueList: [{}]}}
+      }, 'Supplied AttributeValue is empty, must contain exactly one of the supported datatypes', done)
     })
 
     it('should return ValidationException for bad key type', function(done) {
@@ -248,6 +273,14 @@ describe('query', function() {
         'Supplied AttributeValue is empty, must contain exactly one of the supported datatypes', done)
     })
 
+    it('should return ValidationException for bad key type in QueryFilter', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        KeyConditions: {a: {ComparisonOperator: 'NULL'}},
+        QueryFilter: {a: {ComparisonOperator: 'EQ', AttributeValueList: [{a: ''}]}}
+      }, 'Supplied AttributeValue is empty, must contain exactly one of the supported datatypes', done)
+    })
+
     it('should return ValidationException for empty key', function(done) {
       assertValidation({
         TableName: 'abc',
@@ -259,7 +292,15 @@ describe('query', function() {
         'One or more parameter values were invalid: An AttributeValue may not contain an empty string', done)
     })
 
-    it('should return empty response if key has incorrect numeric type', function(done) {
+    it('should return ValidationException for empty key in QueryFilter', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        KeyConditions: {a: {ComparisonOperator: 'NULL'}},
+        QueryFilter: {a: {ComparisonOperator: 'EQ', AttributeValueList: [{S: ''}]}}
+      }, 'One or more parameter values were invalid: An AttributeValue may not contain an empty string', done)
+    })
+
+    it('should return ValidationException if key has incorrect numeric type', function(done) {
       assertValidation({
         TableName: 'abc',
         KeyConditions: {
@@ -268,6 +309,14 @@ describe('query', function() {
           c: {ComparisonOperator: 'NULL'},
         }},
         'The parameter cannot be converted to a numeric value: b', done)
+    })
+
+    it('should return ValidationException if key has incorrect numeric type in QueryFilter', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        KeyConditions: {a: {ComparisonOperator: 'NULL'}},
+        QueryFilter: {a: {ComparisonOperator: 'EQ', AttributeValueList: [{N: 'b'}]}}
+      }, 'The parameter cannot be converted to a numeric value: b', done)
     })
 
     it('should return ValidationException for too many filter args', function(done) {
@@ -281,6 +330,14 @@ describe('query', function() {
         'One or more parameter values were invalid: Invalid number of argument(s) for the EQ ComparisonOperator', done)
     })
 
+    it('should return ValidationException for too many filter args in QueryFilter', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        KeyConditions: {a: {ComparisonOperator: 'NULL'}},
+        QueryFilter: {a: {ComparisonOperator: 'EQ', AttributeValueList: [{S: 'a'}, {S: 'a'}]}}
+      }, 'One or more parameter values were invalid: Invalid number of argument(s) for the EQ ComparisonOperator', done)
+    })
+
     it('should return ValidationException for 1 arg to NULL', function(done) {
       assertValidation({
         TableName: 'abc',
@@ -288,10 +345,26 @@ describe('query', function() {
         'One or more parameter values were invalid: Invalid number of argument(s) for the NULL ComparisonOperator', done)
     })
 
+    it('should return ValidationException for 1 arg to NULL in QueryFilter', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        KeyConditions: {a: {ComparisonOperator: 'NULL'}},
+        QueryFilter: {a: {ComparisonOperator: 'NULL', AttributeValueList: [{S: 'a'}]}}},
+        'One or more parameter values were invalid: Invalid number of argument(s) for the NULL ComparisonOperator', done)
+    })
+
     it('should return ValidationException for 1 arg to NOT_NULL', function(done) {
       assertValidation({
         TableName: 'abc',
         KeyConditions: {a: {ComparisonOperator: 'NOT_NULL', AttributeValueList: [{S: 'a'}]}}},
+        'One or more parameter values were invalid: Invalid number of argument(s) for the NOT_NULL ComparisonOperator', done)
+    })
+
+    it('should return ValidationException for 1 arg to NOT_NULL in QueryFilter', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        KeyConditions: {a: {ComparisonOperator: 'NULL'}},
+        QueryFilter: {a: {ComparisonOperator: 'NOT_NULL', AttributeValueList: [{S: 'a'}]}}},
         'One or more parameter values were invalid: Invalid number of argument(s) for the NOT_NULL ComparisonOperator', done)
     })
 
@@ -426,6 +499,51 @@ describe('query', function() {
         TableName: 'abc',
         KeyConditions: {a: {ComparisonOperator: 'BETWEEN', AttributeValueList: [{S: 'a'}, {S: 'a'}, {S: 'a'}]}}},
         'One or more parameter values were invalid: Invalid number of argument(s) for the BETWEEN ComparisonOperator', done)
+    })
+
+    it('should return ValidationException for LE on type SS', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        KeyConditions: {a: {ComparisonOperator: 'LE', AttributeValueList: [{SS: ['a']}]}}},
+        'One or more parameter values were invalid: ComparisonOperator LE is not valid for SS AttributeValue type', done)
+    })
+
+    it('should return ValidationException for LE on type SS in QueryFilter', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        KeyConditions: {a: {ComparisonOperator: 'NULL'}},
+        QueryFilter: {a: {ComparisonOperator: 'LE', AttributeValueList: [{SS: ['a']}]}}},
+        'One or more parameter values were invalid: ComparisonOperator LE is not valid for SS AttributeValue type', done)
+    })
+
+    it('should return ValidationException for LE on type NS', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        KeyConditions: {a: {ComparisonOperator: 'LE', AttributeValueList: [{NS: ['1']}]}}},
+        'One or more parameter values were invalid: ComparisonOperator LE is not valid for NS AttributeValue type', done)
+    })
+
+    it('should return ValidationException for LE on type NS in QueryFilter', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        KeyConditions: {a: {ComparisonOperator: 'NULL'}},
+        QueryFilter: {a: {ComparisonOperator: 'LE', AttributeValueList: [{NS: ['1']}]}}},
+        'One or more parameter values were invalid: ComparisonOperator LE is not valid for NS AttributeValue type', done)
+    })
+
+    it('should return ValidationException for LE on type BS', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        KeyConditions: {a: {ComparisonOperator: 'LE', AttributeValueList: [{BS: ['abcd']}]}}},
+        'One or more parameter values were invalid: ComparisonOperator LE is not valid for BS AttributeValue type', done)
+    })
+
+    it('should return ValidationException for LE on type BS in QueryFilter', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        KeyConditions: {a: {ComparisonOperator: 'NULL'}},
+        QueryFilter: {a: {ComparisonOperator: 'LE', AttributeValueList: [{BS: ['abcd']}]}}},
+        'One or more parameter values were invalid: ComparisonOperator LE is not valid for BS AttributeValue type', done)
     })
 
     it('should return ValidationException for too many conditions', function(done) {
@@ -639,6 +757,42 @@ describe('query', function() {
           b: {ComparisonOperator: 'EQ', AttributeValueList: [{S: helpers.randomString()}]},
         },
       }, 'Query key condition not supported', done)
+    })
+
+    it('should return ValidationException if querying hash table with primary key in QueryFilter', function(done) {
+      assertValidation({
+        TableName: helpers.testHashTable,
+        KeyConditions: {
+          a: {ComparisonOperator: 'EQ', AttributeValueList: [{S: helpers.randomString()}]},
+        },
+        QueryFilter: {
+          a: {ComparisonOperator: 'EQ', AttributeValueList: [{S: helpers.randomString()}]},
+        },
+      }, 'QueryFilter can only contain non-primary key attributes: Primary key attribute: a', done)
+    })
+
+    it('should return ValidationException if querying range table with hash key in QueryFilter', function(done) {
+      assertValidation({
+        TableName: helpers.testRangeTable,
+        KeyConditions: {
+          a: {ComparisonOperator: 'EQ', AttributeValueList: [{S: helpers.randomString()}]},
+        },
+        QueryFilter: {
+          a: {ComparisonOperator: 'EQ', AttributeValueList: [{S: helpers.randomString()}]},
+        },
+      }, 'QueryFilter can only contain non-primary key attributes: Primary key attribute: a', done)
+    })
+
+    it('should return ValidationException if querying range table with range key in QueryFilter', function(done) {
+      assertValidation({
+        TableName: helpers.testRangeTable,
+        KeyConditions: {
+          a: {ComparisonOperator: 'EQ', AttributeValueList: [{S: helpers.randomString()}]},
+        },
+        QueryFilter: {
+          b: {ComparisonOperator: 'EQ', AttributeValueList: [{S: helpers.randomString()}]},
+        },
+      }, 'QueryFilter can only contain non-primary key attributes: Primary key attribute: b', done)
     })
 
     // Weird - only checks this *after* it finds the table
@@ -1086,56 +1240,6 @@ describe('query', function() {
       })
     })
 
-    it('should fail with messing params in query filter', function(done) {
-      var item = {a: {S: helpers.randomString()}, b: {S: 'b1'}, d: {S: '1'}},
-          item2 = {a: item.a, b: {S: 'b2'}},
-          item3 = {a: item.a, b: {S: 'b3'}, d: {S: 'd3'}, e: {S: 'e3'}},
-          batchReq = {RequestItems: {}}
-      batchReq.RequestItems[helpers.testRangeTable] = [
-        {PutRequest: {Item: item}},
-        {PutRequest: {Item: item2}},
-        {PutRequest: {Item: item3}},
-      ]
-      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
-        if (err) return done(err)
-        res.statusCode.should.equal(200)
-        request(opts({TableName: helpers.testRangeTable, KeyConditions: {
-          a: {ComparisonOperator: 'EQ', AttributeValueList: [item.a]},
-        }, QueryFilter: {
-          e: {ComparisonOperator: 'EQ'},
-        }}), function(err, res) {
-          if (err) return done(err)
-          res.statusCode.should.equal(400)
-          res.body.message.should.equal('One or more parameter values were invalid: Invalid number of argument(s) for the EQ ComparisonOperator')
-          done()
-        })
-      })
-    })
-    it('should fail with primary key attributes in query filter', function(done) {
-      var item = {a: {S: helpers.randomString()}, b: {S: 'b1'}, d: {S: '1'}},
-          item2 = {a: item.a, b: {S: 'b2'}},
-          item3 = {a: item.a, b: {S: 'b3'}, d: {S: 'd3'}, e: {S: 'e3'}},
-          batchReq = {RequestItems: {}}
-      batchReq.RequestItems[helpers.testRangeTable] = [
-        {PutRequest: {Item: item}},
-        {PutRequest: {Item: item2}},
-        {PutRequest: {Item: item3}},
-      ]
-      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
-        if (err) return done(err)
-        res.statusCode.should.equal(200)
-        request(opts({TableName: helpers.testRangeTable, KeyConditions: {
-          a: {ComparisonOperator: 'EQ', AttributeValueList: [item.a]},
-        }, QueryFilter: {
-          a: {ComparisonOperator: 'EQ', AttributeValueList: [item.a]},
-        }}), function(err, res) {
-          if (err) return done(err)
-          res.statusCode.should.equal(400)
-          res.body.message.should.equal('QueryFilter can only contain non-primary key attributes: Primary key attribute: a')
-          done()
-        })
-      })
-    })
     it('should only return projected attributes by default for secondary indexes', function(done) {
       var item = {a: {S: helpers.randomString()}, b: {S: 'b1'}, c: {S: 'c1'}, d: {S: 'd1'}},
           item2 = {a: item.a, b: {S: 'b2'}},
@@ -1250,6 +1354,37 @@ describe('query', function() {
       })
     })
 
+    it('should only return Limit items if requested and QueryFilter', function(done) {
+      var item = {a: {S: helpers.randomString()}, b: {S: '2'}, c: {S: 'c'}},
+          item2 = {a: item.a, b: {S: '1'}, c: {S: 'c'}},
+          item3 = {a: item.a, b: {S: '3'}, c: {S: 'c'}, d: {S: 'd'}},
+          item4 = {a: item.a, b: {S: '4'}, c: {S: 'c'}},
+          item5 = {a: item.a, b: {S: '5'}, c: {S: 'c'}},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testRangeTable] = [
+        {PutRequest: {Item: item}},
+        {PutRequest: {Item: item2}},
+        {PutRequest: {Item: item3}},
+        {PutRequest: {Item: item4}},
+        {PutRequest: {Item: item5}},
+      ]
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        request(opts({TableName: helpers.testRangeTable, KeyConditions: {
+          a: {ComparisonOperator: 'EQ', AttributeValueList: [item.a]},
+          b: {ComparisonOperator: 'GE', AttributeValueList: [item.b]},
+        }, QueryFilter: {
+          d: {ComparisonOperator: 'EQ', AttributeValueList: [item3.d]},
+        }, Limit: 2}), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.should.eql({Count: 1, ScannedCount: 2, Items: [item3], LastEvaluatedKey: {a: item3.a, b: item3.b}})
+          done()
+        })
+      })
+    })
+
     it('should return LastEvaluatedKey even if only Count is selected', function(done) {
       var item = {a: {S: helpers.randomString()}, b: {S: '2'}, c: {S: 'c'}},
           item2 = {a: item.a, b: {S: '1'}, c: {S: 'c'}},
@@ -1274,6 +1409,37 @@ describe('query', function() {
           if (err) return done(err)
           res.statusCode.should.equal(200)
           res.body.should.eql({Count: 2, ScannedCount: 2, LastEvaluatedKey: {a: item3.a, b: item3.b}})
+          done()
+        })
+      })
+    })
+
+    it('should return LastEvaluatedKey even if only Count is selected and QueryFilter', function(done) {
+      var item = {a: {S: helpers.randomString()}, b: {S: '2'}, c: {S: 'c'}},
+          item2 = {a: item.a, b: {S: '1'}, c: {S: 'c'}},
+          item3 = {a: item.a, b: {S: '3'}, c: {S: 'c'}, d: {S: 'd'}},
+          item4 = {a: item.a, b: {S: '4'}, c: {S: 'c'}},
+          item5 = {a: item.a, b: {S: '5'}, c: {S: 'c'}},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testRangeTable] = [
+        {PutRequest: {Item: item}},
+        {PutRequest: {Item: item2}},
+        {PutRequest: {Item: item3}},
+        {PutRequest: {Item: item4}},
+        {PutRequest: {Item: item5}},
+      ]
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        request(opts({TableName: helpers.testRangeTable, KeyConditions: {
+          a: {ComparisonOperator: 'EQ', AttributeValueList: [item.a]},
+          b: {ComparisonOperator: 'GE', AttributeValueList: [item.b]},
+        }, QueryFilter: {
+          d: {ComparisonOperator: 'EQ', AttributeValueList: [item3.d]},
+        }, Limit: 2, Select: 'COUNT'}), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.should.eql({Count: 1, ScannedCount: 2, LastEvaluatedKey: {a: item3.a, b: item3.b}})
           done()
         })
       })
