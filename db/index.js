@@ -188,7 +188,8 @@ function checkKeySize(keyPiece, type, isHash) {
 //
 function toLexiStr(keyPiece, type) {
   if (keyPiece == null) return ''
-  if (type != 'N') return keyPiece
+  if (type == 'S') return keyPiece
+  if (type == 'B') return new Buffer(keyPiece, "base64").toString("hex");
   var bigNum = Big(keyPiece), digits,
       exp = !bigNum.c[0] ? 0 : bigNum.s == -1 ? 125 - bigNum.e : 130 + bigNum.e
   if (bigNum.s == -1) {
@@ -294,7 +295,7 @@ function itemCompare(rangeKey, table) {
 function checkConditional(data, existingItem) {
   var expected = data.Expected
   if (!expected) return
-
+  
   existingItem = existingItem || {}
 
   if (!matchesFilter(existingItem, expected, data.ConditionalOperator)) {
@@ -395,6 +396,12 @@ function matchesFilter(val, filter, conditionalOperator) {
       if (filter[attr].Value && !valueEquals(filter[attr].Value, val[attr])) return false
       return true
     }
+	
+	//support non-attribute list mechanism used by conditional update expressions
+	if(compVal == null && filter[attr].Value !== undefined) {
+        compType = Object.keys(filter[attr].Value)[0];
+        compVal = filter[attr].Value[compType];
+    }
 
     switch (comp) {
       case 'EQ':
@@ -406,22 +413,26 @@ function matchesFilter(val, filter, conditionalOperator) {
       case 'LE':
         if (compType != attrType ||
           (attrType == 'N' && !Big(attrVal).lte(compVal)) ||
-          (attrType != 'N' && attrVal > compVal)) return false
+          (attrType == 'S' && attrVal > compVal) ||
+		  (attrType == 'B' && new Buffer(attrVal, "base64").toString("hex") > new Buffer(compVal,"base64").toString("hex"))) return false
         break
       case 'LT':
         if (compType != attrType ||
           (attrType == 'N' && !Big(attrVal).lt(compVal)) ||
-          (attrType != 'N' && attrVal >= compVal)) return false
+          (attrType == 'S' && attrVal >= compVal) ||
+		  (attrType == 'B' && new Buffer(attrVal, "base64").toString("hex") >= new Buffer(compVal,"base64").toString("hex"))) return false
         break
       case 'GE':
         if (compType != attrType ||
           (attrType == 'N' && !Big(attrVal).gte(compVal)) ||
-          (attrType != 'N' && attrVal < compVal)) return false
+          (attrType == 'S' && attrVal < compVal) ||
+		  (attrType == 'B' && new Buffer(attrVal, "base64").toString("hex") < new Buffer(compVal,"base64").toString("hex"))) return false
         break
       case 'GT':
         if (compType != attrType ||
           (attrType == 'N' && !Big(attrVal).gt(compVal)) ||
-          (attrType != 'N' && attrVal <= compVal)) return false
+          (attrType == 'S' && attrVal <= compVal) ||
+		  (attrType == 'B' && new Buffer(attrVal, "base64").toString("hex") <= new Buffer(compVal,"base64").toString("hex"))) return false
         break
       case 'NOT_NULL':
         if (!attrVal) return false
