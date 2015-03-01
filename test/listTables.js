@@ -100,7 +100,7 @@ describe('listTables', function() {
         if (err) return done(err)
         res.statusCode.should.equal(200)
         res.body.TableNames.should.be.an.instanceOf(Array)
-        res.headers['x-amzn-requestid'].length.should.equal(52)
+        res.headers['x-amzn-requestid'].should.match(/^[0-9A-Z]{52}$/)
         /* jshint -W030 */
         res.headers['x-amz-crc32'].should.not.be.empty
         res.headers['content-type'].should.equal('application/json')
@@ -114,11 +114,23 @@ describe('listTables', function() {
         if (err) return done(err)
         res.statusCode.should.equal(200)
         res.body.TableNames.should.be.an.instanceOf(Array)
-        res.headers['x-amzn-requestid'].length.should.equal(52)
+        res.headers['x-amzn-requestid'].should.match(/^[0-9A-Z]{52}$/)
         /* jshint -W030 */
         res.headers['x-amz-crc32'].should.not.be.empty
         res.headers['content-type'].should.equal('application/x-amz-json-1.0')
         res.headers['content-length'].should.equal(String(Buffer.byteLength(JSON.stringify(res.body), 'utf8')))
+        done()
+      })
+    })
+
+    it('should return 200 and CORS if Origin specified', function(done) {
+      var requestOpts = opts({})
+      requestOpts.headers['Origin'] = 'whatever'
+      request(requestOpts, function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        res.headers['access-control-allow-origin'].should.equal('*')
+        res.body.TableNames.should.be.an.instanceOf(Array)
         done()
       })
     })

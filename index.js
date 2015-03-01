@@ -64,6 +64,23 @@ function httpHandler(store, req, res) {
     // All responses after this point have a RequestId
     res.setHeader('x-amzn-RequestId', rand52CharId())
 
+    if (req.headers.origin) {
+      res.setHeader('Access-Control-Allow-Origin', '*')
+
+      if (req.method == 'OPTIONS') {
+        if (req.headers['access-control-request-headers'])
+          res.setHeader('Access-Control-Allow-Headers', req.headers['access-control-request-headers'])
+
+        if (req.headers['access-control-request-method'])
+          res.setHeader('Access-Control-Allow-Methods', req.headers['access-control-request-method'])
+
+        res.setHeader('Access-Control-Max-Age', 172800)
+        res.setHeader('Content-Length', 0)
+        req.removeAllListeners()
+        return res.end()
+      }
+    }
+
     var contentType = req.headers['content-type']
 
     if (req.method != 'POST' ||

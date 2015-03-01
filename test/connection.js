@@ -34,7 +34,7 @@ describe('dynalite connections', function() {
             res.headers['content-length'].should.equal('272')
           }
         }
-        res.headers['x-amzn-requestid'].length.should.equal(52)
+        res.headers['x-amzn-requestid'].should.match(/^[0-9A-Z]{52}$/)
         done()
       }
     }
@@ -67,6 +67,10 @@ describe('dynalite connections', function() {
       })
     })
 
+    it('should return 404 if OPTIONS with no auth', function(done) {
+      request({method: 'OPTIONS', noSign: true}, assert404(done))
+    })
+
     it('should return 404 if a GET', function(done) {
       request({method: 'GET', noSign: true}, assert404(done))
     })
@@ -87,6 +91,7 @@ describe('dynalite connections', function() {
       request({body: 'hi', headers: {'content-type': 'whatever'}, noSign: true}, assert404(done))
     })
 
+
   })
 
   describe('JSON', function() {
@@ -97,7 +102,7 @@ describe('dynalite connections', function() {
         if (err) return done(err)
         res.statusCode.should.equal(400)
         res.body.should.eql(body)
-        res.headers['x-amzn-requestid'].length.should.equal(52)
+        res.headers['x-amzn-requestid'].should.match(/^[0-9A-Z]{52}$/)
         res.headers['x-amz-crc32'].should.equal(String(crc32))
         res.headers['content-type'].should.equal(contentType)
         res.headers['content-length'].should.equal(String(Buffer.byteLength(JSON.stringify(res.body), 'utf8')))
@@ -133,6 +138,22 @@ describe('dynalite connections', function() {
       }, 1828866742, contentType, done)
     }
 
+    function assertCors(headers, done) {
+      return function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        res.headers['x-amzn-requestid'].should.match(/^[0-9A-Z]{52}$/)
+        res.headers['access-control-allow-origin'].should.equal('*')
+        Object.keys(headers || {}).forEach(function(header) {
+          res.headers[header].should.equal(headers[header])
+        })
+        res.headers['access-control-max-age'].should.equal('172800')
+        res.headers['content-length'].should.equal('0')
+        res.body.should.eql('')
+        done()
+      }
+    }
+
     it('should return SerializationException if body is application/json but not JSON', function(done) {
       request({body: 'hi', headers: {'content-type': 'application/json'}, noSign: true},
               assertSerialization(done))
@@ -145,6 +166,14 @@ describe('dynalite connections', function() {
 
     it('should return UnknownOperationException if no target', function(done) {
       request({noSign: true}, assertUnknownOp(done))
+    })
+
+    it('should return UnknownOperationException and set CORS if using Origin', function(done) {
+      request({headers: {origin: 'whatever'}}, function(err, res) {
+        if (err) return done(err)
+        res.headers['access-control-allow-origin'].should.equal('*')
+        assertUnknownOp(done)(err, res)
+      })
     })
 
     it('should return UnknownOperationException if body is application/json', function(done) {
@@ -179,6 +208,29 @@ describe('dynalite connections', function() {
               assertIncomplete(done))
     })
 
+    it('should set CORS if OPTIONS and Origin', function(done) {
+      request({method: 'OPTIONS', headers: {origin: 'whatever'}}, assertCors(null, done))
+    })
+
+    it('should set CORS if OPTIONS and Origin and Headers', function(done) {
+      request({method: 'OPTIONS', headers: {
+        origin: 'whatever',
+        'access-control-request-headers': 'a, b, c',
+      }}, assertCors({
+        'access-control-allow-headers': 'a, b, c',
+      }, done))
+    })
+
+    it('should set CORS if OPTIONS and Origin and Headers and Method', function(done) {
+      request({method: 'OPTIONS', headers: {
+        origin: 'whatever',
+        'access-control-request-headers': 'a, b, c',
+        'access-control-request-method': 'd',
+      }}, assertCors({
+        'access-control-allow-headers': 'a, b, c',
+        'access-control-allow-methods': 'd',
+      }, done))
+    })
   })
 
 })
