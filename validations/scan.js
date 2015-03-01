@@ -147,11 +147,9 @@ exports.custom = function(data) {
     }
   }
 
-  if (data.ExclusiveStartKey) {
-    for (key in data.ExclusiveStartKey) {
-      msg = validateAttributeValue(data.ExclusiveStartKey[key])
-      if (msg) return 'The provided starting key is invalid: ' + msg
-    }
+  for (key in data.ExclusiveStartKey) {
+    msg = validateAttributeValue(data.ExclusiveStartKey[key])
+    if (msg) return 'The provided starting key is invalid: ' + msg
   }
 
   if (data.AttributesToGet) {

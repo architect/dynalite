@@ -189,7 +189,7 @@ module.exports = function query(store, data, cb) {
       if (data.Limit && (items.length > data.Limit || lastItem)) {
         items.splice(data.Limit)
         result.Count = items.length
-        result.ScannedCount = items.length
+        result.ScannedCount = scannedCount || items.length
         if (result.Count) {
           result.LastEvaluatedKey = table.KeySchema.concat(keySchema).reduce(function(key, schemaPiece) {
             key[schemaPiece.AttributeName] = items[items.length - 1][schemaPiece.AttributeName]

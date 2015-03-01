@@ -28,6 +28,16 @@ exports.types = {
       }
     }
   },
+  ReturnConsumedCapacity: {
+    type: 'String',
+    enum: ['INDEXES', 'TOTAL', 'NONE']
+  },
+  AttributesToGet: {
+    type: 'List',
+    lengthGreaterThanOrEqual: 1,
+    lengthLessThanOrEqual: 255,
+    children: 'String',
+  },
   QueryFilter: {
     type: 'Map',
     children: {
@@ -63,16 +73,6 @@ exports.types = {
         }
       }
     }
-  },
-  ReturnConsumedCapacity: {
-    type: 'String',
-    enum: ['INDEXES', 'TOTAL', 'NONE']
-  },
-  AttributesToGet: {
-    type: 'List',
-    lengthGreaterThanOrEqual: 1,
-    lengthLessThanOrEqual: 255,
-    children: 'String',
   },
   Select: {
     type: 'String',
@@ -134,7 +134,7 @@ exports.types = {
 exports.custom = function(data) {
   if (!data.KeyConditions)
     return 'Conditions must not be null'
-  var conditionKeys = Object.keys(data.KeyConditions)
+  var conditionKeys = Object.keys(data.KeyConditions), key, comparisonOperator, attrValList
 
   var msg = '', i
   var lengths = {
@@ -152,41 +152,70 @@ exports.custom = function(data) {
     IN: [1],
     BETWEEN: 2,
   }
-  for (var key in data.KeyConditions) {
-    var comparisonOperator = data.KeyConditions[key].ComparisonOperator
-    var attrValList = data.KeyConditions[key].AttributeValueList || []
+  var types = {
+    EQ: ['S', 'N', 'B', 'SS', 'NS', 'BS'],
+    NE: ['S', 'N', 'B', 'SS', 'NS', 'BS'],
+    LE: ['S', 'N', 'B'],
+    LT: ['S', 'N', 'B'],
+    GE: ['S', 'N', 'B'],
+    GT: ['S', 'N', 'B'],
+    CONTAINS: ['S', 'N', 'B'],
+    NOT_CONTAINS: ['S', 'N', 'B'],
+    BEGINS_WITH: ['S', 'B'],
+    IN: ['S', 'N', 'B'],
+    BETWEEN: ['S', 'N', 'B'],
+  }
+  for (key in data.KeyConditions) {
+    comparisonOperator = data.KeyConditions[key].ComparisonOperator
+    attrValList = data.KeyConditions[key].AttributeValueList || []
     for (i = 0; i < attrValList.length; i++) {
       msg = validateAttributeValue(attrValList[i])
       if (msg) return msg
     }
+
     if ((typeof lengths[comparisonOperator] == 'number' && attrValList.length != lengths[comparisonOperator]) ||
         (attrValList.length < lengths[comparisonOperator][0] || attrValList.length > lengths[comparisonOperator][1]))
       return 'One or more parameter values were invalid: Invalid number of argument(s) for the ' +
         comparisonOperator + ' ComparisonOperator'
+
+    if (types[comparisonOperator]) {
+      for (i = 0; i < attrValList.length; i++) {
+        if (!~types[comparisonOperator].indexOf(Object.keys(attrValList[i])[0]))
+          return 'One or more parameter values were invalid: ComparisonOperator ' + comparisonOperator +
+            ' is not valid for ' + Object.keys(attrValList[i])[0] + ' AttributeValue type'
+      }
+    }
   }
 
   if (conditionKeys.length != 1 && conditionKeys.length != 2) {
     return 'Conditions can be of length 1 or 2 only'
   }
 
-  for (var key in data.QueryFilter) {
-    var comparisonOperator = data.QueryFilter[key].ComparisonOperator
-    var attrValList = data.QueryFilter[key].AttributeValueList || []
+  for (key in data.QueryFilter) {
+    comparisonOperator = data.QueryFilter[key].ComparisonOperator
+    attrValList = data.QueryFilter[key].AttributeValueList || []
     for (i = 0; i < attrValList.length; i++) {
       msg = validateAttributeValue(attrValList[i])
       if (msg) return msg
     }
+
     if ((typeof lengths[comparisonOperator] == 'number' && attrValList.length != lengths[comparisonOperator]) ||
         (attrValList.length < lengths[comparisonOperator][0] || attrValList.length > lengths[comparisonOperator][1]))
       return 'One or more parameter values were invalid: Invalid number of argument(s) for the ' +
         comparisonOperator + ' ComparisonOperator'
+
+    if (types[comparisonOperator]) {
+      for (i = 0; i < attrValList.length; i++) {
+        if (!~types[comparisonOperator].indexOf(Object.keys(attrValList[i])[0]))
+          return 'One or more parameter values were invalid: ComparisonOperator ' + comparisonOperator +
+            ' is not valid for ' + Object.keys(attrValList[i])[0] + ' AttributeValue type'
+      }
+    }
   }
 
-  if (data.ExclusiveStartKey) {
-    for (key in data.ExclusiveStartKey) {
-      msg = validateAttributeValue(data.ExclusiveStartKey[key])
-      if (msg) return 'The provided starting key is invalid: ' + msg
-    }
+  for (key in data.ExclusiveStartKey) {
+    msg = validateAttributeValue(data.ExclusiveStartKey[key])
+    if (msg) return 'The provided starting key is invalid: ' + msg
   }
 
   if (data.AttributesToGet) {

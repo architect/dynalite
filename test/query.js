@@ -186,14 +186,18 @@ describe('query', function() {
     it('should return ValidationException for incorrect attributes', function(done) {
       assertValidation({TableName: 'abc;', ReturnConsumedCapacity: 'hi', AttributesToGet: [],
         IndexName: 'abc;', Select: 'hi', Limit: -1, KeyConditions: {a: {}, b: {ComparisonOperator: ''}},
-        QueryFilter: {}},
-        '8 validation errors detected: ' +
+        QueryFilter: {a: {}, b: {ComparisonOperator: ''}}},
+        '10 validation errors detected: ' +
         'Value \'-1\' at \'limit\' failed to satisfy constraint: ' +
         'Member must have value greater than or equal to 1; ' +
         'Value \'hi\' at \'returnConsumedCapacity\' failed to satisfy constraint: ' +
         'Member must satisfy enum value set: [INDEXES, TOTAL, NONE]; ' +
         'Value \'[]\' at \'attributesToGet\' failed to satisfy constraint: ' +
         'Member must have length greater than or equal to 1; ' +
+        'Value \'\' at \'queryFilter.b.member.comparisonOperator\' failed to satisfy constraint: ' +
+        'Member must satisfy enum value set: [IN, NULL, BETWEEN, LT, NOT_CONTAINS, EQ, GT, NOT_NULL, NE, LE, BEGINS_WITH, GE, CONTAINS]; ' +
+        'Value null at \'queryFilter.a.member.comparisonOperator\' failed to satisfy constraint: ' +
+        'Member must not be null; ' +
         'Value \'hi\' at \'select\' failed to satisfy constraint: ' +
         'Member must satisfy enum value set: [SPECIFIC_ATTRIBUTES, COUNT, ALL_ATTRIBUTES, ALL_PROJECTED_ATTRIBUTES]; ' +
         'Value \'\' at \'keyConditions.b.member.comparisonOperator\' failed to satisfy constraint: ' +
