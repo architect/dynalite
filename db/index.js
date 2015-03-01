@@ -188,6 +188,7 @@ function checkKeySize(keyPiece, type, isHash) {
 //
 function toLexiStr(keyPiece, type) {
   if (keyPiece == null) return ''
+  if (type == 'B') return new Buffer(keyPiece, 'base64').toString('hex')
   if (type != 'N') return keyPiece
   var bigNum = Big(keyPiece), digits,
       exp = !bigNum.c[0] ? 0 : bigNum.s == -1 ? 125 - bigNum.e : 130 + bigNum.e
@@ -406,22 +407,22 @@ function matchesFilter(val, filter, conditionalOperator) {
       case 'LE':
         if (compType != attrType ||
           (attrType == 'N' && !Big(attrVal).lte(compVal)) ||
-          (attrType != 'N' && attrVal > compVal)) return false
+          (attrType != 'N' && toLexiStr(attrVal, attrType) > toLexiStr(compVal, attrType))) return false
         break
       case 'LT':
         if (compType != attrType ||
           (attrType == 'N' && !Big(attrVal).lt(compVal)) ||
-          (attrType != 'N' && attrVal >= compVal)) return false
+          (attrType != 'N' && toLexiStr(attrVal, attrType) >= toLexiStr(compVal, attrType))) return false
         break
       case 'GE':
         if (compType != attrType ||
           (attrType == 'N' && !Big(attrVal).gte(compVal)) ||
-          (attrType != 'N' && attrVal < compVal)) return false
+          (attrType != 'N' && toLexiStr(attrVal, attrType) < toLexiStr(compVal, attrType))) return false
         break
       case 'GT':
         if (compType != attrType ||
           (attrType == 'N' && !Big(attrVal).gt(compVal)) ||
-          (attrType != 'N' && attrVal <= compVal)) return false
+          (attrType != 'N' && toLexiStr(attrVal, attrType) <= toLexiStr(compVal, attrType))) return false
         break
       case 'NOT_NULL':
         if (!attrVal) return false

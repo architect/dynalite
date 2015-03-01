@@ -1394,6 +1394,49 @@ describe('query', function() {
       })
     })
 
+    it('should return items in order for binary', function(done) {
+      var item = {a: {S: helpers.randomString()}, b: {B: '1Py5xA=='}},
+          item2 = {a: item.a, b: {B: 'JA=='}},
+          item3 = {a: item.a, b: {B: '2w=='}},
+          item4 = {a: item.a, b: {B: 'cAeRhZE='}},
+          item5 = {a: item.a, b: {B: '6piVtA=='}},
+          item6 = {a: item.a, b: {B: 'MjA0'}},
+          item7 = {a: item.a, b: {B: '1g=='}},
+          item8 = {a: item.a, b: {B: 'ER/jLQ=='}},
+          item9 = {a: item.a, b: {B: 'T7MzEUw='}},
+          item10 = {a: item.a, b: {B: '9FkiOH0='}},
+          item11 = {a: item.a, b: {B: 'Iv/a'}},
+          item12 = {a: item.a, b: {B: '9V0='}},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testRangeBTable] = [
+        {PutRequest: {Item: item}},
+        {PutRequest: {Item: item2}},
+        {PutRequest: {Item: item3}},
+        {PutRequest: {Item: item4}},
+        {PutRequest: {Item: item5}},
+        {PutRequest: {Item: item6}},
+        {PutRequest: {Item: item7}},
+        {PutRequest: {Item: item8}},
+        {PutRequest: {Item: item9}},
+        {PutRequest: {Item: item10}},
+        {PutRequest: {Item: item11}},
+        {PutRequest: {Item: item12}},
+      ]
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        request(opts({TableName: helpers.testRangeBTable, KeyConditions: {
+          a: {ComparisonOperator: 'EQ', AttributeValueList: [item.a]},
+        }}), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.should.eql({Count: 12, ScannedCount: 12, Items: [item8, item11, item2, item6, item9, item4,
+            item, item7, item3, item5, item10, item12]})
+          done()
+        })
+      })
+    })
+
     it('should return items in reverse order for strings', function(done) {
       var item = {a: {S: helpers.randomString()}, b: {S: '1'}},
           item2 = {a: item.a, b: {S: '2'}},
@@ -1501,6 +1544,71 @@ describe('query', function() {
           if (err) return done(err)
           res.statusCode.should.equal(200)
           res.body.should.eql({Count: 3, ScannedCount: 3, Items: [item2, item3, item4], LastEvaluatedKey: {a: item4.a, b: item4.b}})
+          done()
+        })
+      })
+    })
+
+    it('should return items in reverse order for binary', function(done) {
+      var item = {a: {S: helpers.randomString()}, b: {B: '1Py5xA=='}},
+          item2 = {a: item.a, b: {B: 'JA=='}},
+          item3 = {a: item.a, b: {B: '2w=='}},
+          item4 = {a: item.a, b: {B: 'cAeRhZE='}},
+          item5 = {a: item.a, b: {B: '6piVtA=='}},
+          item6 = {a: item.a, b: {B: 'MjA0'}},
+          item7 = {a: item.a, b: {B: '1g=='}},
+          item8 = {a: item.a, b: {B: 'ER/jLQ=='}},
+          item9 = {a: item.a, b: {B: 'T7MzEUw='}},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testRangeBTable] = [
+        {PutRequest: {Item: item}},
+        {PutRequest: {Item: item2}},
+        {PutRequest: {Item: item3}},
+        {PutRequest: {Item: item4}},
+        {PutRequest: {Item: item5}},
+        {PutRequest: {Item: item6}},
+        {PutRequest: {Item: item7}},
+        {PutRequest: {Item: item8}},
+        {PutRequest: {Item: item9}},
+      ]
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        request(opts({TableName: helpers.testRangeBTable, KeyConditions: {
+          a: {ComparisonOperator: 'EQ', AttributeValueList: [item.a]},
+        }, ScanIndexForward: false}), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.should.eql({Count: 9, ScannedCount: 9, Items: [item5, item3, item7, item, item4, item9,
+            item6, item2, item8]})
+          done()
+        })
+      })
+    })
+
+    it('should return items in reverse order with Limit for binary', function(done) {
+      var item = {a: {S: helpers.randomString()}, b: {B: '1Py5xA=='}},
+          item2 = {a: item.a, b: {B: 'JA=='}},
+          item3 = {a: item.a, b: {B: '2w=='}},
+          item4 = {a: item.a, b: {B: 'cAeRhZE='}},
+          item5 = {a: item.a, b: {B: '6piVtA=='}},
+          batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testRangeBTable] = [
+        {PutRequest: {Item: item}},
+        {PutRequest: {Item: item2}},
+        {PutRequest: {Item: item3}},
+        {PutRequest: {Item: item4}},
+        {PutRequest: {Item: item5}},
+      ]
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        request(opts({TableName: helpers.testRangeBTable, KeyConditions: {
+          a: {ComparisonOperator: 'EQ', AttributeValueList: [item.a]},
+        }, ScanIndexForward: false, Limit: 3}), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.should.eql({Count: 3, ScannedCount: 3, Items: [item5, item3, item], LastEvaluatedKey: {a: item.a, b: item.b}})
           done()
         })
       })

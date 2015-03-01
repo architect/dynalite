@@ -36,11 +36,13 @@ exports.testHashTable = randomName()
 exports.testHashNTable = randomName()
 exports.testRangeTable = randomName()
 exports.testRangeNTable = randomName()
+exports.testRangeBTable = randomName()
 // For testing:
 //exports.testHashTable = '__dynalite_test_1'
 //exports.testHashNTable = '__dynalite_test_2'
 //exports.testRangeTable = '__dynalite_test_3'
 //exports.testRangeNTable = '__dynalite_test_4'
+//exports.testRangeBTable = '__dynalite_test_5'
 
 var dynaliteServer = dynalite({path: process.env.DYNALITE_PATH})
 
@@ -150,6 +152,11 @@ function createTestTables(done) {
   }, {
     TableName: exports.testRangeNTable,
     AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}, {AttributeName: 'b', AttributeType: 'N'}],
+    KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}, {KeyType: 'RANGE', AttributeName: 'b'}],
+    ProvisionedThroughput: {ReadCapacityUnits: 2, WriteCapacityUnits: 2},
+  }, {
+    TableName: exports.testRangeBTable,
+    AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}, {AttributeName: 'b', AttributeType: 'B'}],
     KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}, {KeyType: 'RANGE', AttributeName: 'b'}],
     ProvisionedThroughput: {ReadCapacityUnits: 2, WriteCapacityUnits: 2},
   }]
