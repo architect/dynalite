@@ -12,7 +12,7 @@ module.exports = function query(store, data, cb) {
     var i, keySchema, key, comparisonOperator, hashKey, rangeKey, indexAttrs, type,
         tableHashKey = table.KeySchema[0].AttributeName, tableHashType, tableHashVal,
         opts = {}, vals, itemDb = store.getItemDb(data.TableName),
-        size = 0, capacitySize = 0, count = 0, lastItem, em, scannedCount
+        size = 0, capacitySize = 0, count = 0, scannedCount = 0, lastItem, em
 
     if (data.IndexName) {
       for (i = 0; i < (table.LocalSecondaryIndexes || []).length; i++) {
@@ -159,14 +159,15 @@ module.exports = function query(store, data, cb) {
       return true
     })
 
-    if(data.QueryFilter) {
-      for(i =0; i < keySchema.length; i++) {
-          if(data.QueryFilter[keySchema[i].AttributeName])
-            return cb(db.validationError('QueryFilter can only contain non-primary key attributes: Primary key attribute: '+keySchema[i].AttributeName))
+    if (data.QueryFilter) {
+      for (i = 0; i < keySchema.length; i++) {
+        if (data.QueryFilter[keySchema[i].AttributeName])
+          return cb(db.validationError('QueryFilter can only contain non-primary key attributes: ' +
+            'Primary key attribute: ' + keySchema[i].AttributeName))
       }
 
       vals = vals.filter(function(val) {
-        scannedCount = (scannedCount || 0) + 1
+        scannedCount++
         return db.matchesFilter(val, data.QueryFilter)
       })
     }

@@ -1,6 +1,5 @@
 var helpers = require('./helpers'),
-    should = require('should'),
-    db = require('../db')
+    should = require('should')
 
 var target = 'Scan',
     request = helpers.request,

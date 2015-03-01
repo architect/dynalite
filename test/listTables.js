@@ -125,7 +125,7 @@ describe('listTables', function() {
 
     it('should return 200 and CORS if Origin specified', function(done) {
       var requestOpts = opts({})
-      requestOpts.headers['Origin'] = 'whatever'
+      requestOpts.headers.Origin = 'whatever'
       request(requestOpts, function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
