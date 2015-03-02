@@ -390,14 +390,20 @@ function validateAttributeConditions(data) {
     for (var key in data.Expected) {
       var condition = data.Expected[key]
 
+      if ('AttributeValueList' in condition && 'Value' in condition)
+        return 'One or more parameter values were invalid: ' +
+          'Value and AttributeValueList cannot be used together for Attribute: ' + key
+
       if ('ComparisonOperator' in condition) {
         if ('Exists' in condition)
           return 'One or more parameter values were invalid: ' +
             'Exists and ComparisonOperator cannot be used together for Attribute: ' + key
-        if ('AttributeValueList' in condition &&
-            'Value' in condition)
+
+        if (condition.ComparisonOperator != 'NULL' && condition.ComparisonOperator != 'NOT_NULL' &&
+            !('AttributeValueList' in condition) && !('Value' in condition))
           return 'One or more parameter values were invalid: ' +
-            'Value and AttributeValueList cannot be used together for Attribute: ' + key
+            'Value or AttributeValueList must be used with ComparisonOperator: ' + condition.ComparisonOperator +
+            ' for Attribute: ' + key
 
         var values = condition.AttributeValueList ?
           condition.AttributeValueList.length : condition.Value ? 1 : 0
@@ -426,7 +432,8 @@ function validateAttributeConditions(data) {
             if (values === 2) validAttrCount = true
             break
         }
-        if (!validAttrCount) return 'One or more parameter values were invalid: ' +
+        if (!validAttrCount)
+          return 'One or more parameter values were invalid: ' +
             'Invalid number of argument(s) for the ' + condition.ComparisonOperator + ' ComparisonOperator'
       } else if ('AttributeValueList' in condition) {
           return 'One or more parameter values were invalid: ' +

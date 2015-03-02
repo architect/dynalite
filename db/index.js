@@ -365,13 +365,6 @@ function capacityUnits(item, isRead, isConsistent) {
   return size / (!isRead || isConsistent ? 1 : 2)
 }
 
-function valueEquals(val1, val2) {
-  if (!val1 || !val2) return false
-  var key1 = Object.keys(val1)[0], key2 = Object.keys(val2)[0]
-  if (key1 != key2) return false
-  return valsEqual(val1[key1], val2[key2])
-}
-
 function valsEqual(val1, val2) {
   if (Array.isArray(val1) && Array.isArray(val2)) {
     if (val1.length != val2.length) return false
@@ -383,19 +376,13 @@ function valsEqual(val1, val2) {
 
 function matchesFilter(val, filter, conditionalOperator) {
   var results = Object.keys(filter).map(function(attr) {
-    var comp = filter[attr].ComparisonOperator,
-        compVals = filter[attr].AttributeValueList,
+    var comp = filter[attr].Exists != null ? (filter[attr].Exists ? 'NOT_NULL' : 'NULL') :
+          filter[attr].ComparisonOperator || 'EQ',
+        compVals = filter[attr].AttributeValueList || (filter[attr].Value ? [filter[attr].Value] : null),
         compType = compVals ? Object.keys(compVals[0])[0] : null,
         compVal = compVals ? compVals[0][compType] : null,
         attrType = val[attr] ? Object.keys(val[attr])[0] : null,
-        attrVal = val[attr] ? val[attr][attrType] : null,
-        legacy = !('ComparisonOperator' in filter[attr])
-
-    if (legacy) {
-      if (filter[attr].Exists === false && attrVal != null) return false
-      if (filter[attr].Value && !valueEquals(filter[attr].Value, val[attr])) return false
-      return true
-    }
+        attrVal = val[attr] ? val[attr][attrType] : null
 
     switch (comp) {
       case 'EQ':

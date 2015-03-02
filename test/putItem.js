@@ -332,6 +332,11 @@ describe('putItem', function() {
         'Item size has exceeded the maximum allowed size', done)
     })
 
+    it('should return ValidationException if ComparisonOperator used alone', function(done) {
+      assertValidation({TableName: 'aaa', Item: {}, Expected: {a: {ComparisonOperator: 'LT'}}},
+        'One or more parameter values were invalid: Value or AttributeValueList must be used with ComparisonOperator: LT for Attribute: a', done)
+    })
+
     it('should return ValidationException if ComparisonOperator and Exists are used together', function(done) {
       assertValidation({TableName: 'aaa', Item: {}, Expected: {a: { Exists: true, ComparisonOperator: 'LT'}}},
         'One or more parameter values were invalid: Exists and ComparisonOperator cannot be used together for Attribute: a', done)
@@ -348,6 +353,11 @@ describe('putItem', function() {
     })
 
     it('should return ValidationException if AttributeValueList used without ComparisonOperator', function(done) {
+      assertValidation({TableName: 'aaa', Item: {}, Expected: {a: {AttributeValueList: [{S:'a'}]}}},
+        'One or more parameter values were invalid: AttributeValueList can only be used with a ComparisonOperator for Attribute: a', done)
+    })
+
+    it('should return ValidationException if AttributeValueList used with Exists', function(done) {
       assertValidation({TableName: 'aaa', Item: {}, Expected: {a: { Exists: true, AttributeValueList: [{S:'a'}]}}},
         'One or more parameter values were invalid: AttributeValueList can only be used with a ComparisonOperator for Attribute: a', done)
     })
@@ -395,6 +405,15 @@ describe('putItem', function() {
       } }
       assertValidation({TableName: 'aaa', Item: {}, Expected: expected},
         'One or more parameter values were invalid: Invalid number of argument(s) for the NULL ComparisonOperator', done)
+    })
+
+    it('should return ValidationException if Value provides incorrect number of attributes: BETWEEN', function(done) {
+      var expected = { a: {
+        Value: {S:'a'},
+        ComparisonOperator: 'BETWEEN'
+      } }
+      assertValidation({TableName: 'aaa', Item: {}, Expected: expected},
+        'One or more parameter values were invalid: Invalid number of argument(s) for the BETWEEN ComparisonOperator', done)
     })
 
     it('should return ResourceNotFoundException if item is just small enough with small attribute', function(done) {
@@ -773,6 +792,27 @@ describe('putItem', function() {
       })
     })
 
+    it('should succeed if conditional key is same (legacy plus ComparisonOperator)', function(done) {
+      var item = {a: {S: helpers.randomString()}}
+      request(opts({TableName: helpers.testHashTable, Item: item}), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        request(opts({
+          TableName: helpers.testHashTable,
+          Item: item,
+          Expected: {a: {
+            Value: item.a,
+            ComparisonOperator: 'EQ'
+          }},
+        }), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.should.eql({})
+          done()
+        })
+      })
+    })
+
     it('should succeed if expecting non-existant value to not exist (legacy)', function(done) {
       var item = {a: {S: helpers.randomString()}}
       request(opts({TableName: helpers.testHashTable, Item: item}), function(err, res) {
@@ -895,7 +935,7 @@ describe('putItem', function() {
         request(opts({
           TableName: helpers.testHashTable,
           Item: item,
-          Expected: {a: {Value: item.a}, b: {Exists: false}, c: {Value: item.c}},
+          Expected: {a: {Value: item.a}, b: {Exists: false}, c: {Value: item.c, ComparisonOperator: 'GE'}},
         }), function(err, res) {
           if (err) return done(err)
           res.statusCode.should.equal(200)
@@ -922,7 +962,7 @@ describe('putItem', function() {
               ComparisonOperator: 'NULL'
             },
             c: {
-              ComparisonOperator: 'EQ',
+              ComparisonOperator: 'GE',
               AttributeValueList: [item.c]
             }
           }
@@ -984,10 +1024,10 @@ describe('putItem', function() {
             a: {
               ComparisonOperator: 'EQ',
               AttributeValueList: [item.a]
-            }, 
+            },
             b: {
               ComparisonOperator: 'NULL'
-            }, 
+            },
             c: {
               ComparisonOperator: 'EQ',
               AttributeValueList: [{S: helpers.randomString()}]
