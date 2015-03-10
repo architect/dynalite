@@ -1,4 +1,6 @@
 var http = require('http'),
+    https = require('https'),
+    fs = require('fs'),
     crypto = require('crypto'),
     crc32 = require('buffer-crc32'),
     validations = require('./validations'),
@@ -15,7 +17,17 @@ var validApis = ['DynamoDB_20111205', 'DynamoDB_20120810'],
 module.exports = dynalite
 
 function dynalite(options) {
-  return http.createServer(httpHandler.bind(null, db.create(options)))
+  options = options || {}
+  var requestHandler = httpHandler.bind(null, db.create(options))
+
+  if (options.ssl) {
+    options.key = options.key || fs.readFileSync(__dirname + '/key.pem')
+    options.cert = options.cert || fs.readFileSync(__dirname + '/cert.pem')
+    options.ca = options.ca || fs.readFileSync(__dirname + '/ca.pem')
+    return https.createServer(options, requestHandler)
+  }
+
+  return http.createServer(requestHandler)
 }
 
 validOperations.forEach(function(action) {

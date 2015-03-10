@@ -1,4 +1,7 @@
-var request = require('./helpers').request
+var https = require('https'),
+    once = require('once'),
+    dynalite = require('..'),
+    request = require('./helpers').request
 
 describe('dynalite connections', function() {
 
@@ -91,6 +94,24 @@ describe('dynalite connections', function() {
       request({body: 'hi', headers: {'content-type': 'whatever'}, noSign: true}, assert404(done))
     })
 
+    it('should connect to SSL', function(done) {
+      var port = 10000 + Math.round(Math.random() * 10000), dynaliteServer = dynalite({ssl: true})
+
+      dynaliteServer.listen(port, function(err) {
+        if (err) return done(err)
+
+        done = once(done)
+
+        https.request({host: 'localhost', port: port, rejectUnauthorized : false}, function(res) {
+          res.on('error', done)
+          res.on('data', function() {})
+          res.on('end', function() {
+            res.statusCode.should.equal(404)
+            dynaliteServer.close(done)
+          })
+        }).on('error', done).end()
+      })
+    })
 
   })
 

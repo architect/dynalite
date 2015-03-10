@@ -3,7 +3,7 @@ dynalite
 
 [![Build Status](https://secure.travis-ci.org/mhart/dynalite.png?branch=master)](http://travis-ci.org/mhart/dynalite)
 
-A mock implementation of Amazon's DynamoDB, focussed on correctness and performance, and built on LevelDB
+An implementation of Amazon's DynamoDB, focussed on correctness and performance, and built on LevelDB
 (well, [@rvagg](https://github.com/rvagg)'s awesome [LevelUP](https://github.com/rvagg/node-levelup) to be precise).
 
 This project aims to match the live DynamoDB instances as closely as possible
@@ -23,12 +23,13 @@ $ dynalite --help
 
 Usage: dynalite [--port <port>] [--path <path>] [options]
 
-A mock DynamoDB http server, optionally backed by LevelDB
+A DynamoDB http server, optionally backed by LevelDB
 
 Options:
 --help                Display this help message and exit
 --port <port>         The port to listen on (default: 4567)
 --path <path>         The path to use for the LevelDB store (in-memory by default)
+--ssl                 Enable SSL for the web server (default: false)
 --createTableMs <ms>  Amount of time tables stay in CREATING state (default: 500)
 --deleteTableMs <ms>  Amount of time tables stay in DELETING state (default: 500)
 --updateTableMs <ms>  Amount of time tables stay in UPDATING state (default: 500)

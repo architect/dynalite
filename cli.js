@@ -7,12 +7,13 @@ if (argv.help) {
     '',
     'Usage: dynalite [--port <port>] [--path <path>] [options]',
     '',
-    'A mock DynamoDB http server, optionally backed by LevelDB',
+    'A DynamoDB http server, optionally backed by LevelDB',
     '',
     'Options:',
     '--help                Display this help message and exit',
     '--port <port>         The port to listen on (default: 4567)',
     '--path <path>         The path to use for the LevelDB store (in-memory by default)',
+    '--ssl                 Enable SSL for the web server (default: false)',
     '--createTableMs <ms>  Amount of time tables stay in CREATING state (default: 500)',
     '--deleteTableMs <ms>  Amount of time tables stay in DELETING state (default: 500)',
     '--updateTableMs <ms>  Amount of time tables stay in UPDATING state (default: 500)',
@@ -21,4 +22,7 @@ if (argv.help) {
   ].join('\n'))
 }
 
-require('./index.js')(argv).listen(argv.port || 4567)
+var server = require('./index.js')(argv).listen(argv.port || 4567, function() {
+  var address = server.address(), protocol = argv.ssl ? 'https' : 'http'
+  console.log('Listening at %s://%s:%s', protocol, address.address, address.port)
+})
