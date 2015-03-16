@@ -119,71 +119,61 @@ function httpHandler(store, req, res) {
       }
     }
 
-    // DynamoDB doesn't seem to care about the HTTP path, so no checking needed for that
-
     var target = (req.headers['x-amz-target'] || '').split('.')
 
     if (target.length != 2 || !~validApis.indexOf(target[0]) || !~validOperations.indexOf(target[1]))
       return sendData(req, res, {__type: 'com.amazon.coral.service#UnknownOperationException'}, 400)
 
-    var action = validations.toLowerFirst(target[1])
+    var authHeader = req.headers.authorization
+    var query = url.parse(req.url, true).query
+    var authQuery = 'X-Amz-Algorithm' in query
 
-    var auth = req.headers.authorization,
-        hasAuth = !!auth,
-        hasAuthParams = false,
-        authParams = {},
-        authPrefix = 'X-Amz-',
-        headers = ['Credential', 'Signature', 'SignedHeaders'],
-        authDate
+    if (authHeader && authQuery)
+      return sendData(req, res, {
+        __type: 'com.amazon.coral.service#InvalidSignatureException',
+        message: 'Found both \'X-Amz-Algorithm\' as a query-string param and \'Authorization\' as HTTP header.',
+      }, 400)
 
-
-    // validate authorization from query string when not in the request headers.
-    if(!hasAuth){
-      var urlObject = url.parse(req.url, true)
-      var urlParams = urlObject.query
-      hasAuthParams = headers.every(function(header){
-        var headerName = authPrefix+header
-        if (typeof urlParams[headerName] === "undefined") {
-          return false
-        }
-        authParams[header] = urlParams[headerName]
-        return true
-      })
-      authDate = urlParams[authPrefix+'Date']
-    }else{
-      hasAuthParams = (auth.trim().slice(0, 5) === 'AWS4-')
-    }
-
-    if (!hasAuthParams)
+    if ((!authHeader && !authQuery) || (authHeader && (authHeader.trim().slice(0, 5) != 'AWS4-')))
       return sendData(req, res, {
         __type: 'com.amazon.coral.service#MissingAuthenticationTokenException',
         message: 'Request is missing Authentication Token',
       }, 400)
 
-    if(hasAuth){
-      authParams = auth.split(' ').slice(1).join('').split(',').reduce(function(obj, x) {
-            var keyVal = x.trim().split('=')
-            obj[keyVal[0]] = keyVal[1]
-            return obj
-          }, {})
-    }
-    authDate = authDate || req.headers['x-amz-date'] || req.headers.date
+    var msg = '', params
 
-    var msg = ''
-    // TODO: Go through key-vals first
-    // "'Credential' not a valid key=value pair (missing equal-sign) in Authorization header: 'AWS4-HMAC-SHA256 \
-    // Signature=b,    Credential,    SignedHeaders'."
-    headers.forEach(function(header) {
-      if (!authParams[header])
-        // TODO: SignedHeaders *is* allowed to be an empty string at this point
-        msg += 'Authorization header requires \'' + header + '\' parameter. '
-    })
-    if (!authDate)
-      msg += 'Authorization header requires existence of either a \'X-Amz-Date\' or a \'Date\' header. '
+    if (authHeader) {
+      // TODO: Go through key-vals first
+      // "'Credential' not a valid key=value pair (missing equal-sign) in Authorization header: 'AWS4-HMAC-SHA256 \
+      // Signature=b,    Credential,    SignedHeaders'."
+      params = ['Credential', 'Signature', 'SignedHeaders']
+      var authParams = authHeader.split(' ').slice(1).reduce(function(obj, x) {
+        var keyVal = x.trim().split('=')
+        obj[keyVal[0]] = keyVal[1].replace(/,$/, '')
+        return obj
+      }, {})
+      params.forEach(function(param) {
+        if (!authParams[param])
+          // TODO: SignedHeaders *is* allowed to be an empty string at this point
+          msg += 'Authorization header requires \'' + param + '\' parameter. '
+      })
+      if (!req.headers['x-amz-date'] && !req.headers.date)
+        msg += 'Authorization header requires existence of either a \'X-Amz-Date\' or a \'Date\' header. '
+      if (msg) msg += 'Authorization=' + authHeader
+
+    } else {
+      params = ['X-Amz-Algorithm', 'X-Amz-Credential', 'X-Amz-Signature', 'X-Amz-SignedHeaders', 'X-Amz-Date']
+      params.forEach(function(param) {
+        if (!query[param])
+          msg += 'AWS query-string parameters must include \'' + param + '\'. '
+      })
+      if (msg) msg += 'Re-examine the query-string parameters.'
+    }
+
     if (msg) {
       return sendData(req, res, {
         __type: 'com.amazon.coral.service#IncompleteSignatureException',
-        message: msg + 'Authorization=' + auth,
+        message: msg,
       }, 400)
     }
     // THEN check Date format and expiration
@@ -232,6 +222,7 @@ function httpHandler(store, req, res) {
     if (!body)
       return sendData(req, res, {__type: 'com.amazon.coral.service#SerializationException'}, 400)
 
+    var action = validations.toLowerFirst(target[1])
     var actionValidation = actionValidations[action]
     try {
       data = validations.checkTypes(data, actionValidation.types)

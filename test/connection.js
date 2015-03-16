@@ -141,22 +141,25 @@ describe('dynalite connections', function() {
                         contentType, done)
     }
 
-    function assertMissing(contentType, done) {
+    function assertMissing(done) {
       return assertBody({
         __type: 'com.amazon.coral.service#MissingAuthenticationTokenException',
         message: 'Request is missing Authentication Token',
-      }, 2088342776, contentType, done)
+      }, 2088342776, done)
     }
 
-    function assertIncomplete(contentType, done) {
+    function assertInvalid(done) {
+      return assertBody({
+        __type: 'com.amazon.coral.service#InvalidSignatureException',
+        message: 'Found both \'X-Amz-Algorithm\' as a query-string param and \'Authorization\' as HTTP header.'
+      }, 2139606068, done)
+    }
+
+    function assertIncomplete(msg, crc32, done) {
       return assertBody({
         __type: 'com.amazon.coral.service#IncompleteSignatureException',
-        message: 'Authorization header requires \'Credential\' parameter. ' +
-                 'Authorization header requires \'Signature\' parameter. ' +
-                 'Authorization header requires \'SignedHeaders\' parameter. ' +
-                 'Authorization header requires existence of either a \'X-Amz-Date\' or ' +
-                 'a \'Date\' header. Authorization=AWS4-'
-      }, 1828866742, contentType, done)
+        message: msg,
+      }, crc32, done)
     }
 
     function assertCors(headers, done) {
@@ -224,9 +227,73 @@ describe('dynalite connections', function() {
               assertMissing(done))
     })
 
+    it('should return MissingAuthenticationTokenException if incomplete Authorization header and X-Amz-Algorithm query', function(done) {
+      request({
+        path: '/?X-Amz-Algorith',
+        headers: {'x-amz-target': 'DynamoDB_20120810.ListTables', 'Authorization': 'X'},
+        noSign: true
+      }, assertMissing(done))
+    })
+
+    it('should return MissingAuthenticationTokenException if all query params except X-Amz-Algorithm', function(done) {
+      request({
+        path: '/?X-Amz-Credential=a&X-Amz-Signature=b&X-Amz-SignedHeaders=c&X-Amz-Date=d',
+        headers: {'x-amz-target': 'DynamoDB_20120810.ListTables'},
+        noSign: true
+      }, assertMissing(done))
+    })
+
+    it('should return InvalidSignatureException if both Authorization header and X-Amz-Algorithm query', function(done) {
+      request({
+        path: '/?X-Amz-Algorithm',
+        headers: {'x-amz-target': 'DynamoDB_20120810.ListTables', 'Authorization': 'X'},
+        noSign: true
+      }, assertInvalid(done))
+    })
+
     it('should return IncompleteSignatureException if Authorization header is "AWS4-"', function(done) {
-      request({headers: {'x-amz-target': 'DynamoDB_20120810.ListTables', 'Authorization': 'AWS4-'}, noSign: true},
-              assertIncomplete(done))
+      request({
+        headers: {'x-amz-target': 'DynamoDB_20120810.ListTables', 'Authorization': 'AWS4-'},
+        noSign: true,
+      }, assertIncomplete('Authorization header requires \'Credential\' parameter. ' +
+        'Authorization header requires \'Signature\' parameter. ' +
+        'Authorization header requires \'SignedHeaders\' parameter. ' +
+        'Authorization header requires existence of either a \'X-Amz-Date\' or ' +
+        'a \'Date\' header. Authorization=AWS4-', 1828866742, done))
+    })
+
+    it('should return IncompleteSignatureException if Authorization header is "AWS4- Signature=b Credential=a"', function(done) {
+      request({
+        headers: {
+          'x-amz-target': 'DynamoDB_20120810.ListTables',
+          'Authorization': 'AWS4- Signature=b Credential=a',
+          'Date': 'a',
+        },
+        noSign: true,
+      }, assertIncomplete('Authorization header requires \'SignedHeaders\' parameter. ' +
+        'Authorization=AWS4- Signature=b Credential=a', 15336762, done))
+    })
+
+    it('should return IncompleteSignatureException if empty X-Amz-Algorithm query', function(done) {
+      request({
+        path: '/?X-Amz-Algorithm',
+        headers: {'x-amz-target': 'DynamoDB_20120810.ListTables'},
+        noSign: true,
+      }, assertIncomplete('AWS query-string parameters must include \'X-Amz-Algorithm\'. ' +
+        'AWS query-string parameters must include \'X-Amz-Credential\'. ' +
+        'AWS query-string parameters must include \'X-Amz-Signature\'. ' +
+        'AWS query-string parameters must include \'X-Amz-SignedHeaders\'. ' +
+        'AWS query-string parameters must include \'X-Amz-Date\'. ' +
+        'Re-examine the query-string parameters.', 2900502663, done))
+    })
+
+    it('should return IncompleteSignatureException if missing X-Amz-SignedHeaders query', function(done) {
+      request({
+        path: '/?X-Amz-Algorithm=a&X-Amz-Credential=b&X-Amz-Signature=c&X-Amz-Date=d',
+        headers: {'x-amz-target': 'DynamoDB_20120810.ListTables'},
+        noSign: true,
+      }, assertIncomplete('AWS query-string parameters must include \'X-Amz-SignedHeaders\'. ' +
+        'Re-examine the query-string parameters.', 3712057481, done))
     })
 
     it('should set CORS if OPTIONS and Origin', function(done) {
@@ -251,102 +318,6 @@ describe('dynalite connections', function() {
         'access-control-allow-headers': 'a, b, c',
         'access-control-allow-methods': 'd',
       }, done))
-    })
-  })
-
-  describe('GetParameter', function() {
-
-    function assertSuccessQuery(done) {
-      return function(err, res) {
-        if (err) return done(err)
-        res.statusCode.should.equal(200)
-        checkHeader(res)
-        res.body.TableNames.forEach(function(table){
-          table.should.startWith('__dynalite_test_')
-        })
-        done()
-      }
-    }
-
-    function assertErrorQuery(body, done) {
-      return function(err, res) {
-        if (err) return done(err)
-        res.statusCode.should.equal(400)
-        res.body.should.eql(body)
-        checkHeader(res)
-        done()
-      }
-    }
-
-    function checkHeader(res){
-      res.headers['x-amzn-requestid'].length.should.equal(52)
-      res.headers['content-type'].should.equal('application/x-amz-json-1.0')
-      res.headers['content-length'].should.equal(String(Buffer.byteLength(JSON.stringify(res.body), 'utf8')))
-    }
-
-    function ISODateString(d){
-      function pad(n){return n<10 ? '0'+n : n}
-      return d.getUTCFullYear()+
-        + pad(d.getUTCMonth()+1)+
-        + pad(d.getUTCDate())+'T'
-        + pad(d.getUTCHours())+
-        + pad(d.getUTCMinutes())+
-        + pad(d.getUTCSeconds())+'Z'
-    }
-
-    beforeEach(function(done){
-      queryHeaders = {
-          'Content-Length': 2,
-          'Content-Type': 'application/x-amz-json-1.0',
-          'x-amz-target': 'DynamoDB_20120810.ListTables',
-          'X-Amz-Content-Sha256': 'foobar'
-      };
-      requestParams = {
-        headers: queryHeaders,
-        method: 'POST',
-        body: '{}',
-        noSign: true
-      }
-      queryParams = [
-        'X-Amz-Credential=foobar%2F20150101%2ue-east-1%2Fdynamodb%2Faws4_request',
-        'X-Amz-Signature=foobar',
-        'X-Amz-SignedHeaders=host%3Bx-amz-target',
-        'X-Amz-Date=20150101T100000Z'
-      ]
-      done();
-    })
-
-    it('should be successfully authorized with required parameters', function(done) {
-      requestParams.path = '/?' + queryParams.join('&')
-      request(requestParams, assertSuccessQuery(done))
-    })
-
-    it('should return MissingAuthenticationTokenException if no Credential parameter', function(done) {
-      delete queryParams[0]
-      requestParams.path = '/?' + queryParams.join('&')
-      request(requestParams, assertErrorQuery({__type: 'com.amazon.coral.service#MissingAuthenticationTokenException',
-        message: 'Request is missing Authentication Token'}, done))
-    })
-
-    it('should return MissingAuthenticationTokenException if no Signature parameter', function(done) {
-      delete queryParams[1]
-      requestParams.path = '/?' + queryParams.join('&')
-      request(requestParams, assertErrorQuery({__type: 'com.amazon.coral.service#MissingAuthenticationTokenException',
-        message: 'Request is missing Authentication Token'}, done))
-    })
-
-    it('should return MissingAuthenticationTokenException if no SignedHeaders parameter', function(done) {
-      delete queryParams[2]
-      requestParams.path = '/?' + queryParams.join('&')
-      request(requestParams, assertErrorQuery({__type: 'com.amazon.coral.service#MissingAuthenticationTokenException',
-        message: 'Request is missing Authentication Token'}, done))
-    })
-
-    it('should return IncompleteSignatureException if no Date parameter', function(done) {
-      delete queryParams[3]
-      requestParams.path = '/?' + queryParams.join('&')
-      request(requestParams, assertErrorQuery({__type: 'com.amazon.coral.service#IncompleteSignatureException',
-        message: "Authorization header requires existence of either a 'X-Amz-Date' or a 'Date' header. Authorization=undefined"}, done))
     })
   })
 
