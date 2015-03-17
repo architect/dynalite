@@ -162,6 +162,18 @@ describe('listTables', function() {
       })
     })
 
+    it('should return 200 if using query string signing', function(done) {
+      var requestOpts = opts({})
+      requestOpts.signQuery = true
+      request(requestOpts, function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        res.body.TableNames.should.be.an.instanceOf(Array)
+        Object.keys(requestOpts.headers).sort().should.eql(['Content-Type', 'Host', 'X-Amz-Target'])
+        done()
+      })
+    })
+
     it('should return list with new table in it', function(done) {
       var name = randomName(), table = {
         TableName: name,
