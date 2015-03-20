@@ -147,9 +147,9 @@ function httpHandler(store, req, res) {
       // "'Credential' not a valid key=value pair (missing equal-sign) in Authorization header: 'AWS4-HMAC-SHA256 \
       // Signature=b,    Credential,    SignedHeaders'."
       params = ['Credential', 'Signature', 'SignedHeaders']
-      var authParams = authHeader.split(' ').slice(1).reduce(function(obj, x) {
+      var authParams = authHeader.split(/,| /).slice(1).filter(Boolean).reduce(function(obj, x) {
         var keyVal = x.trim().split('=')
-        obj[keyVal[0]] = keyVal[1].replace(/,$/, '')
+        obj[keyVal[0]] = keyVal[1]
         return obj
       }, {})
       params.forEach(function(param) {

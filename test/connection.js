@@ -274,6 +274,30 @@ describe('dynalite connections', function() {
         'Authorization=AWS4- Signature=b Credential=a', 15336762, done))
     })
 
+    it('should return IncompleteSignatureException if Authorization header is "AWS4- Signature=b,Credential=a"', function(done) {
+      request({
+        headers: {
+          'x-amz-target': 'DynamoDB_20120810.ListTables',
+          'Authorization': 'AWS4- Signature=b,Credential=a',
+          'Date': 'a',
+        },
+        noSign: true,
+      }, assertIncomplete('Authorization header requires \'SignedHeaders\' parameter. ' +
+        'Authorization=AWS4- Signature=b,Credential=a', 1159703774, done))
+    })
+
+    it('should return IncompleteSignatureException if Authorization header is "AWS4- Signature=b, Credential=a"', function(done) {
+      request({
+        headers: {
+          'x-amz-target': 'DynamoDB_20120810.ListTables',
+          'Authorization': 'AWS4- Signature=b, Credential=a',
+          'Date': 'a',
+        },
+        noSign: true,
+      }, assertIncomplete('Authorization header requires \'SignedHeaders\' parameter. ' +
+        'Authorization=AWS4- Signature=b, Credential=a', 164353342, done))
+    })
+
     it('should return IncompleteSignatureException if empty X-Amz-Algorithm query', function(done) {
       request({
         path: '/?X-Amz-Algorithm',
