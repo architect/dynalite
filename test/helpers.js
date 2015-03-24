@@ -321,6 +321,7 @@ function assertType(target, property, type, done) {
   switch(type) {
     case 'Boolean':
       msgs = [
+        ['23', '\'23\' can not be converted to an Boolean'],
         [23, 'class java.lang.Short can not be converted to an Boolean'],
         [-2147483648, 'class java.lang.Integer can not be converted to an Boolean'],
         [2147483648, 'class java.lang.Long can not be converted to an Boolean'],
@@ -373,6 +374,7 @@ function assertType(target, property, type, done) {
       break
     case 'List':
       msgs = [
+        ['23', 'Expected list or null'],
         [true, 'Expected list or null'],
         [23, 'Expected list or null'],
         [-2147483648, 'Expected list or null'],
@@ -383,6 +385,7 @@ function assertType(target, property, type, done) {
       break
     case 'Map':
       msgs = [
+        ['23', 'Expected map or null'],
         [true, 'Expected map or null'],
         [23, 'Expected map or null'],
         [-2147483648, 'Expected map or null'],
@@ -393,6 +396,7 @@ function assertType(target, property, type, done) {
       break
     case 'Structure':
       msgs = [
+        ['23', 'Expected null'],
         [true, 'Expected null'],
         [23, 'Expected null'],
         [-2147483648, 'Expected null'],
@@ -401,6 +405,30 @@ function assertType(target, property, type, done) {
         [[], 'Start of list found where not expected'],
       ]
       break
+    case 'AttrStructure':
+      async.forEach([
+        [property, 'Structure'],
+        [property + '.S', 'String'],
+        [property + '.N', 'String'],
+        [property + '.B', 'Blob'],
+        [property + '.BOOL', 'Boolean'],
+        [property + '.NULL', 'Boolean'],
+        [property + '.SS', 'List'],
+        [property + '.SS.0', 'String'],
+        [property + '.NS', 'List'],
+        [property + '.NS.0', 'String'],
+        [property + '.BS', 'List'],
+        [property + '.BS.0', 'Blob'],
+        [property + '.L', 'List'],
+        [property + '.L.0', 'Structure'],
+        [property + '.L.0.BS', 'List'],
+        [property + '.L.0.BS.0', 'Blob'],
+        [property + '.M', 'Map'],
+        [property + '.M.a', 'Structure'],
+        [property + '.M.a.BS', 'List'],
+        [property + '.M.a.BS.0', 'Blob'],
+      ], function(test, cb) { assertType(target, test[0], test[1], cb) }, done)
+      return
     default:
       throw new Error('Unknown type: ' + type)
   }

@@ -21,20 +21,8 @@ describe('getItem', function() {
       assertType('Key', 'Map', done)
     })
 
-    it('should return SerializationException when Key.Attr is not a struct', function(done) {
-      assertType('Key.Attr', 'Structure', done)
-    })
-
-    it('should return SerializationException when Key.Attr.S is not a string', function(done) {
-      assertType('Key.Attr.S', 'String', done)
-    })
-
-    it('should return SerializationException when Key.Attr.B is not a blob', function(done) {
-      assertType('Key.Attr.B', 'Blob', done)
-    })
-
-    it('should return SerializationException when Key.Attr.N is not a string', function(done) {
-      assertType('Key.Attr.N', 'String', done)
+    it('should return SerializationException when Key.Attr is not an attr struct', function(done) {
+      assertType('Key.Attr', 'AttrStructure', done)
     })
 
     it('should return SerializationException when AttributesToGet is not a list', function(done) {

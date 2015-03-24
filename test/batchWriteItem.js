@@ -34,20 +34,8 @@ describe('batchWriteItem', function() {
       assertType('RequestItems.Attr.0.DeleteRequest.Key', 'Map', done)
     })
 
-    it('should return SerializationException when RequestItems.Attr.0.DeleteRequest.Key.Attr is not a struct', function(done) {
-      assertType('RequestItems.Attr.0.DeleteRequest.Key.Attr', 'Structure', done)
-    })
-
-    it('should return SerializationException when RequestItems.Attr.0.DeleteRequest.Key.Attr.S is not a string', function(done) {
-      assertType('RequestItems.Attr.0.DeleteRequest.Key.Attr.S', 'String', done)
-    })
-
-    it('should return SerializationException when RequestItems.Attr.0.DeleteRequest.Key.Attr.B is not a blob', function(done) {
-      assertType('RequestItems.Attr.0.DeleteRequest.Key.Attr.B', 'Blob', done)
-    })
-
-    it('should return SerializationException when RequestItems.Attr.0.DeleteRequest.Key.Attr.N is not a string', function(done) {
-      assertType('RequestItems.Attr.0.DeleteRequest.Key.Attr.N', 'String', done)
+    it('should return SerializationException when RequestItems.Attr.0.DeleteRequest.Key.Attr is not an attr struct', function(done) {
+      assertType('RequestItems.Attr.0.DeleteRequest.Key.Attr', 'AttrStructure', done)
     })
 
     it('should return SerializationException when RequestItems.Attr.0.PutRequest is not a struct', function(done) {
@@ -58,44 +46,8 @@ describe('batchWriteItem', function() {
       assertType('RequestItems.Attr.0.PutRequest.Item', 'Map', done)
     })
 
-    it('should return SerializationException when RequestItems.Attr.0.PutRequest.Item.Attr is not a struct', function(done) {
-      assertType('RequestItems.Attr.0.PutRequest.Item.Attr', 'Structure', done)
-    })
-
-    it('should return SerializationException when RequestItems.Attr.0.PutRequest.Item.Attr.S is not a string', function(done) {
-      assertType('RequestItems.Attr.0.PutRequest.Item.Attr.S', 'String', done)
-    })
-
-    it('should return SerializationException when RequestItems.Attr.0.PutRequest.Item.Attr.B is not a blob', function(done) {
-      assertType('RequestItems.Attr.0.PutRequest.Item.Attr.B', 'Blob', done)
-    })
-
-    it('should return SerializationException when RequestItems.Attr.0.PutRequest.Item.Attr.N is not a string', function(done) {
-      assertType('RequestItems.Attr.0.PutRequest.Item.Attr.N', 'String', done)
-    })
-
-    it('should return SerializationException when RequestItems.Attr.0.PutRequest.Item.Attr.SS is not a list', function(done) {
-      assertType('RequestItems.Attr.0.PutRequest.Item.Attr.SS', 'List', done)
-    })
-
-    it('should return SerializationException when RequestItems.Attr.0.PutRequest.Item.Attr.SS.0 is not a string', function(done) {
-      assertType('RequestItems.Attr.0.PutRequest.Item.Attr.SS.0', 'String', done)
-    })
-
-    it('should return SerializationException when RequestItems.Attr.0.PutRequest.Item.Attr.NS is not a list', function(done) {
-      assertType('RequestItems.Attr.0.PutRequest.Item.Attr.NS', 'List', done)
-    })
-
-    it('should return SerializationException when RequestItems.Attr.0.PutRequest.Item.Attr.NS.0 is not a string', function(done) {
-      assertType('RequestItems.Attr.0.PutRequest.Item.Attr.NS.0', 'String', done)
-    })
-
-    it('should return SerializationException when RequestItems.Attr.0.PutRequest.Item.Attr.BS is not a list', function(done) {
-      assertType('RequestItems.Attr.0.PutRequest.Item.Attr.BS', 'List', done)
-    })
-
-    it('should return SerializationException when RequestItems.Attr.0.PutRequest.Item.Attr.BS.0 is not a blob', function(done) {
-      assertType('RequestItems.Attr.0.PutRequest.Item.Attr.BS.0', 'Blob', done)
+    it('should return SerializationException when RequestItems.Attr.0.PutRequest.Item.Attr is not an attr struct', function(done) {
+      assertType('RequestItems.Attr.0.PutRequest.Item.Attr', 'AttrStructure', done)
     })
 
     it('should return SerializationException when ReturnConsumedCapacity is not a string', function(done) {

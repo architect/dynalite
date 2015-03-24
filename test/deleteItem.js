@@ -19,20 +19,8 @@ describe('deleteItem', function() {
       assertType('Key', 'Map', done)
     })
 
-    it('should return SerializationException when Key.Attr is not a struct', function(done) {
-      assertType('Key.Attr', 'Structure', done)
-    })
-
-    it('should return SerializationException when Key.Attr.S is not a string', function(done) {
-      assertType('Key.Attr.S', 'String', done)
-    })
-
-    it('should return SerializationException when Key.Attr.B is not a blob', function(done) {
-      assertType('Key.Attr.B', 'Blob', done)
-    })
-
-    it('should return SerializationException when Key.Attr.N is not a string', function(done) {
-      assertType('Key.Attr.N', 'String', done)
+    it('should return SerializationException when Key.Attr is not an attr struct', function(done) {
+      assertType('Key.Attr', 'AttrStructure', done)
     })
 
     it('should return SerializationException when Expected is not a map', function(done) {
@@ -47,44 +35,8 @@ describe('deleteItem', function() {
       assertType('Expected.Attr.Exists', 'Boolean', done)
     })
 
-    it('should return SerializationException when Expected.Attr.Value is not a struct', function(done) {
-      assertType('Expected.Attr.Value', 'Structure', done)
-    })
-
-    it('should return SerializationException when Expected.Attr.Value.S is not a string', function(done) {
-      assertType('Expected.Attr.Value.S', 'String', done)
-    })
-
-    it('should return SerializationException when Expected.Attr.Value.B is not a blob', function(done) {
-      assertType('Expected.Attr.Value.B', 'Blob', done)
-    })
-
-    it('should return SerializationException when Expected.Attr.Value.N is not a string', function(done) {
-      assertType('Expected.Attr.Value.N', 'String', done)
-    })
-
-    it('should return SerializationException when Expected.Attr.Value.SS is not a list', function(done) {
-      assertType('Expected.Attr.Value.SS', 'List', done)
-    })
-
-    it('should return SerializationException when Expected.Attr.Value.SS.0 is not a string', function(done) {
-      assertType('Expected.Attr.Value.SS.0', 'String', done)
-    })
-
-    it('should return SerializationException when Expected.Attr.Value.NS is not a list', function(done) {
-      assertType('Expected.Attr.Value.NS', 'List', done)
-    })
-
-    it('should return SerializationException when Expected.Attr.Value.NS.0 is not a string', function(done) {
-      assertType('Expected.Attr.Value.NS.0', 'String', done)
-    })
-
-    it('should return SerializationException when Expected.Attr.Value.BS is not a list', function(done) {
-      assertType('Expected.Attr.Value.BS', 'List', done)
-    })
-
-    it('should return SerializationException when Expected.Attr.Value.BS.0 is not a blob', function(done) {
-      assertType('Expected.Attr.Value.BS.0', 'Blob', done)
+    it('should return SerializationException when Expected.Attr.Value is not an attr struct', function(done) {
+      assertType('Expected.Attr.Value', 'AttrStructure', done)
     })
 
     it('should return SerializationException when ReturnConsumedCapacity is not a string', function(done) {

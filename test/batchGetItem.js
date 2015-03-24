@@ -29,20 +29,8 @@ describe('batchGetItem', function() {
       assertType('RequestItems.Attr.Keys.0', 'Map', done)
     })
 
-    it('should return SerializationException when RequestItems.Attr.Keys.0.Attr is not a struct', function(done) {
-      assertType('RequestItems.Attr.Keys.0.Attr', 'Structure', done)
-    })
-
-    it('should return SerializationException when RequestItems.Attr.Keys.0.Attr.S is not a string', function(done) {
-      assertType('RequestItems.Attr.Keys.0.Attr.S', 'String', done)
-    })
-
-    it('should return SerializationException when RequestItems.Attr.Keys.0.Attr.B is not a blob', function(done) {
-      assertType('RequestItems.Attr.Keys.0.Attr.B', 'Blob', done)
-    })
-
-    it('should return SerializationException when RequestItems.Attr.Keys.0.Attr.N is not a string', function(done) {
-      assertType('RequestItems.Attr.Keys.0.Attr.N', 'String', done)
+    it('should return SerializationException when RequestItems.Attr.Keys.0.Attr is not an attr struct', function(done) {
+      assertType('RequestItems.Attr.Keys.0.Attr', 'AttrStructure', done)
     })
 
     it('should return SerializationException when RequestItems.Attr.AttributesToGet is not a list', function(done) {
