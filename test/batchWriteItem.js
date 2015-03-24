@@ -211,6 +211,11 @@ describe('batchWriteItem', function() {
         'One or more parameter values were invalid: An AttributeValue may not contain a null or empty binary type.', done)
     })
 
+    it('should return ValidationException for false null', function(done) {
+      assertValidation({RequestItems: {abc: [{PutRequest: {Item: {a: {NULL: false}}}}]}},
+        'One or more parameter values were invalid: Null attribute value types must have the value of true', done)
+    })
+
     // Somehow allows set types for keys
     it('should return ValidationException for empty set key', function(done) {
       assertValidation({RequestItems: {abc: [{PutRequest: {Item: {a: {SS: []}}}}]}},

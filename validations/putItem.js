@@ -17,26 +17,7 @@ exports.types = {
   Item: {
     type: 'Map',
     notNull: true,
-    children: {
-      type: 'Structure',
-      children: {
-        S: 'String',
-        B: 'Blob',
-        N: 'String',
-        BS: {
-          type: 'List',
-          children: 'Blob',
-        },
-        NS: {
-          type: 'List',
-          children: 'String',
-        },
-        SS: {
-          type: 'List',
-          children: 'String',
-        }
-      }
-    }
+    children: 'AttrStructure',
   },
   ConditionalOperator: {
     type: 'String',
@@ -49,52 +30,14 @@ exports.types = {
       children: {
         AttributeValueList: {
           type: 'List',
-          children: {
-            type: 'Structure',
-            children: {
-              S: 'String',
-              B: 'Blob',
-              N: 'String',
-              BS: {
-                type: 'List',
-                children: 'Blob',
-              },
-              NS: {
-                type: 'List',
-                children: 'String',
-              },
-              SS: {
-                type: 'List',
-                children: 'String',
-              }
-            }
-          }
+          children: 'AttrStructure',
         },
         ComparisonOperator: {
           type: 'String',
           enum: ['IN', 'NULL', 'BETWEEN', 'LT', 'NOT_CONTAINS', 'EQ', 'GT', 'NOT_NULL', 'NE', 'LE', 'BEGINS_WITH', 'GE', 'CONTAINS']
         },
         Exists: 'Boolean',
-        Value: {
-          type: 'Structure',
-          children: {
-            S: 'String',
-            B: 'Blob',
-            N: 'String',
-            BS: {
-              type: 'List',
-              children: 'Blob',
-            },
-            NS: {
-              type: 'List',
-              children: 'String',
-            },
-            SS: {
-              type: 'List',
-              children: 'String',
-            }
-          }
-        }
+        Value: 'AttrStructure',
       }
     }
   },

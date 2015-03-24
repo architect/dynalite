@@ -38,8 +38,42 @@ function checkTypes(data, types) {
 
   function checkType(val, type) {
     if (val == null) return
-    var actualType = type.type || type
-    switch (actualType) {
+    var children = type.children
+    if (typeof children == 'string') children = {type: children}
+    if (type.type) type = type.type
+
+    if (type == 'AttrStructure') {
+      type = 'Structure'
+      children = {
+        S: 'String',
+        B: 'Blob',
+        N: 'String',
+        BOOL: 'Boolean',
+        NULL: 'Boolean',
+        BS: {
+          type: 'List',
+          children: 'Blob',
+        },
+        NS: {
+          type: 'List',
+          children: 'String',
+        },
+        SS: {
+          type: 'List',
+          children: 'String',
+        },
+        L: {
+          type: 'List',
+          children: 'AttrStructure',
+        },
+        M: {
+          type: 'Map',
+          children: 'AttrStructure',
+        },
+      }
+    }
+
+    switch (type) {
       case 'Boolean':
         switch (typeof val) {
           case 'number':
@@ -66,12 +100,12 @@ function checkTypes(data, types) {
       case 'Double':
         switch (typeof val) {
           case 'boolean':
-            throw typeError('class java.lang.Boolean can not be converted to an ' + actualType)
+            throw typeError('class java.lang.Boolean can not be converted to an ' + type)
           case 'number':
-            if (actualType != 'Double') val = Math.floor(val)
+            if (type != 'Double') val = Math.floor(val)
             break
           case 'string':
-            throw typeError('class java.lang.String can not be converted to an ' + actualType)
+            throw typeError('class java.lang.String can not be converted to an ' + type)
           case 'object':
             if (Array.isArray(val)) throw typeError('Start of list found where not expected')
             throw typeError('Start of structure or map found where not expected.')
@@ -119,7 +153,7 @@ function checkTypes(data, types) {
           case 'object':
             if (!Array.isArray(val)) throw typeError('Start of structure or map found where not expected.')
         }
-        return val.map(function(child) { return checkType(child, type.children) })
+        return val.map(function(child) { return checkType(child, children) })
       case 'Map':
         switch (typeof val) {
           case 'boolean':
@@ -130,7 +164,7 @@ function checkTypes(data, types) {
             if (Array.isArray(val)) throw typeError('Start of list found where not expected')
         }
         return Object.keys(val).reduce(function(newVal, key) {
-          newVal[key] = checkType(val[key], type.children)
+          newVal[key] = checkType(val[key], children)
           return newVal
         }, {})
       case 'Structure':
@@ -142,9 +176,9 @@ function checkTypes(data, types) {
           case 'object':
             if (Array.isArray(val)) throw typeError('Start of list found where not expected')
         }
-        return checkTypes(val, type.children)
+        return checkTypes(val, children)
       default:
-        throw new Error('Unknown type: ' + actualType)
+        throw new Error('Unknown type: ' + type)
     }
   }
 }
@@ -314,6 +348,9 @@ function validateAttributeValue(value) {
 
     if (type == 'S' && !value[type])
       return 'One or more parameter values were invalid: An AttributeValue may not contain an empty string'
+
+    if (type == 'NULL' && !value[type])
+      return 'One or more parameter values were invalid: Null attribute value types must have the value of true'
 
     if (type == 'SS' && !value[type].length)
       return 'One or more parameter values were invalid: An string set  may not be empty'

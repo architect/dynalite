@@ -21,26 +21,7 @@ exports.types = {
   Key: {
     type: 'Map',
     notNull: true,
-    children: {
-      type: 'Structure',
-      children: {
-        S: 'String',
-        B: 'Blob',
-        N: 'String',
-        BS: {
-          type: 'List',
-          children: 'Blob',
-        },
-        NS: {
-          type: 'List',
-          children: 'String',
-        },
-        SS: {
-          type: 'List',
-          children: 'String',
-        }
-      }
-    }
+    children: 'AttrStructure',
   },
   ConsistentRead: 'Boolean',
 }

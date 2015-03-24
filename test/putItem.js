@@ -158,6 +158,11 @@ describe('putItem', function() {
         'One or more parameter values were invalid: An AttributeValue may not contain a null or empty binary type.', done)
     })
 
+    it('should return ValidationException for false null', function(done) {
+      assertValidation({TableName: 'abc', Item: {a: {NULL: false}}},
+        'One or more parameter values were invalid: Null attribute value types must have the value of true', done)
+    })
+
     // Somehow allows set types for keys
     it('should return ValidationException for empty set key', function(done) {
       assertValidation({TableName: 'abc', Item: {a: {SS: []}}},
@@ -560,7 +565,40 @@ describe('putItem', function() {
     })
 
     it('should put multi attribute item', function(done) {
-      var item = {a: {S: helpers.randomString()}, b: {N: '-000056.789'}, c: {B: 'Yg=='}}
+      var item = {
+        a: {S: helpers.randomString()},
+        b: {N: '-56.789'},
+        c: {B: 'Yg=='},
+        d: {BOOL: false},
+        e: {NULL: true},
+        f: {SS: ['a']},
+        g: {NS: ['-56.789']},
+        h: {BS: ['Yg==']},
+        i: {L: [
+          {S: 'a'},
+          {N: '-56.789'},
+          {B: 'Yg=='},
+          {BOOL: true},
+          {NULL: true},
+          {SS: ['a']},
+          {NS: ['-56.789']},
+          {BS: ['Yg==']},
+          {L: []},
+          {M: {}},
+        ]},
+        j: {M: {
+          a: {S: 'a'},
+          b: {N: '-56.789'},
+          c: {B: 'Yg=='},
+          d: {BOOL: true},
+          e: {NULL: true},
+          f: {SS: ['a']},
+          g: {NS: ['-56.789']},
+          h: {BS: ['Yg==']},
+          i: {L: []},
+          j: {M: {a: {M: {}}, b: {L: []}}},
+        }}
+      }
       request(opts({TableName: helpers.testHashTable, Item: item}), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
@@ -568,7 +606,6 @@ describe('putItem', function() {
         request(helpers.opts('GetItem', {TableName: helpers.testHashTable, Key: {a: item.a}, ConsistentRead: true}), function(err, res) {
           if (err) return done(err)
           res.statusCode.should.equal(200)
-          item.b = {N: '-56.789'}
           res.body.should.eql({Item: item})
           done()
         })

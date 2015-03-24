@@ -4,12 +4,7 @@ var http = require('http'),
     once = require('once'),
     dynalite = require('..')
 
-var port = 10000 + Math.round(Math.random() * 10000),
-    requestOpts = process.env.REMOTE ?
-      {host: 'dynamodb.us-east-1.amazonaws.com', method: 'POST'} : {host: 'localhost', port: port, method: 'POST'}
-
-// Make http limits more reasonable
-http.globalAgent.maxSockets = 1000
+http.globalAgent.maxSockets = Infinity
 
 exports.version = 'DynamoDB_20120810'
 exports.prefix = '__dynalite_test_'
@@ -43,6 +38,11 @@ exports.testRangeBTable = randomName()
 //exports.testRangeTable = '__dynalite_test_3'
 //exports.testRangeNTable = '__dynalite_test_4'
 //exports.testRangeBTable = '__dynalite_test_5'
+
+var port = 10000 + Math.round(Math.random() * 10000),
+    requestOpts = process.env.REMOTE ?
+      {host: 'dynamodb.us-east-1.amazonaws.com', method: 'POST'} :
+      {host: '127.0.0.1', port: port, method: 'POST'}
 
 var dynaliteServer = dynalite({path: process.env.DYNALITE_PATH})
 
@@ -84,10 +84,14 @@ function request(opts, cb) {
       try { res.body = JSON.parse(res.body) } catch (e) {}
       if (res.body.__type == 'com.amazon.coral.availability#ThrottlingException' ||
           res.body.__type == 'com.amazonaws.dynamodb.v20120810#LimitExceededException')
-        return setTimeout(request, 1000, opts, cb)
+        return setTimeout(request, Math.floor(Math.random() * 1000), opts, cb)
       cb(null, res)
     })
-  }).on('error', cb).end(opts.body)
+  }).on('error', function(err) {
+    if (err && ~['ECONNRESET', 'EMFILE'].indexOf(err.code))
+      return setTimeout(request, Math.floor(Math.random() * 100), opts, cb)
+    cb(err)
+  }).end(opts.body)
 }
 
 function opts(target, data) {

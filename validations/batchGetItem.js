@@ -24,26 +24,7 @@ exports.types = {
           lengthLessThanOrEqual: 100,
           children: {
             type: 'Map',
-            children: {
-              type: 'Structure',
-              children: {
-                S: 'String',
-                B: 'Blob',
-                N: 'String',
-                BS: {
-                  type: 'List',
-                  children: 'Blob',
-                },
-                NS: {
-                  type: 'List',
-                  children: 'String',
-                },
-                SS: {
-                  type: 'List',
-                  children: 'String',
-                }
-              }
-            }
+            children: 'AttrStructure',
           }
         },
         AttributesToGet: {

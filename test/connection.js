@@ -102,7 +102,7 @@ describe('dynalite connections', function() {
 
         done = once(done)
 
-        https.request({host: 'localhost', port: port, rejectUnauthorized : false}, function(res) {
+        https.request({host: '127.0.0.1', port: port, rejectUnauthorized : false}, function(res) {
           res.on('error', done)
           res.on('data', function() {})
           res.on('end', function() {
