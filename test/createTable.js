@@ -1144,6 +1144,7 @@ describe('createTable', function() {
         table.TableSizeBytes = 0
         table.TableStatus = 'CREATING'
         desc.should.eql(table)
+        helpers.deleteWhenActive(table.TableName)
         done()
       })
     })
@@ -1163,6 +1164,7 @@ describe('createTable', function() {
         helpers.waitUntilActive(table.TableName, function(err, res) {
           if (err) return done(err)
           res.body.Table.TableStatus.should.equal('ACTIVE')
+          helpers.deleteWhenActive(table.TableName)
           done()
         })
       })
@@ -1219,6 +1221,7 @@ describe('createTable', function() {
         ;delete desc.LocalSecondaryIndexes
         ;delete table.LocalSecondaryIndexes
         desc.should.eql(table)
+        helpers.deleteWhenActive(table.TableName)
         done()
       })
     })
@@ -1288,6 +1291,7 @@ describe('createTable', function() {
             index.IndexStatus = 'ACTIVE'
             res.body.Table.GlobalSecondaryIndexes.should.containEql(index)
           })
+          helpers.deleteWhenActive(table.TableName)
           done()
         })
       })

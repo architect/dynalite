@@ -13,6 +13,7 @@ exports.opts = opts
 exports.waitUntilActive = waitUntilActive
 exports.waitUntilDeleted = waitUntilDeleted
 exports.waitUntilIndexesActive = waitUntilIndexesActive
+exports.deleteWhenActive = deleteWhenActive
 exports.createAndWait = createAndWait
 exports.clearTable = clearTable
 exports.replaceTable = replaceTable
@@ -225,6 +226,14 @@ function waitUntilIndexesActive(name, done) {
     else if (res.body.Table.GlobalSecondaryIndexes.every(function(index) { return index.IndexStatus == 'ACTIVE' }))
       return done(null, res)
     setTimeout(waitUntilIndexesActive, 1000, name, done)
+  })
+}
+
+function deleteWhenActive(name, done) {
+  if (!done) done = function() { }
+  waitUntilActive(name, function(err) {
+    if (err) return done(err)
+    request(opts('DeleteTable', {TableName: name}), done)
   })
 }
 

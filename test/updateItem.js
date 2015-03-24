@@ -273,6 +273,7 @@ describe('updateItem', function() {
         if (err) return done(err)
         assertNotFound({TableName: table.TableName, Key: {a: {S: 'a'}}},
           'Requested resource not found', done)
+        helpers.deleteWhenActive(table.TableName)
       })
     })
 

@@ -239,13 +239,14 @@ describe('updateTable', function() {
         desc.ItemCount.should.be.above(-1)
         desc.KeySchema.should.eql([{AttributeName: 'a', KeyType: 'HASH'}])
         desc.ProvisionedThroughput.LastIncreaseDateTime.should.be.above(increase - 5)
-        desc.ProvisionedThroughput.NumberOfDecreasesToday.should.equal(0)
+        desc.ProvisionedThroughput.NumberOfDecreasesToday.should.be.above(-1)
         desc.ProvisionedThroughput.ReadCapacityUnits.should.equal(oldRate)
         desc.ProvisionedThroughput.WriteCapacityUnits.should.equal(oldRate)
         desc.TableName.should.equal(helpers.testHashTable)
         desc.TableSizeBytes.should.be.above(-1)
         desc.TableStatus.should.equal('UPDATING')
 
+        var numDecreases = desc.ProvisionedThroughput.NumberOfDecreasesToday
         increase = desc.ProvisionedThroughput.LastIncreaseDateTime
 
         helpers.waitUntilActive(helpers.testHashTable, function(err, res) {
@@ -266,7 +267,7 @@ describe('updateTable', function() {
             var desc = res.body.TableDescription
             desc.ProvisionedThroughput.LastIncreaseDateTime.should.equal(increase)
             desc.ProvisionedThroughput.LastDecreaseDateTime.should.be.above(decrease - 5)
-            desc.ProvisionedThroughput.NumberOfDecreasesToday.should.equal(0)
+            desc.ProvisionedThroughput.NumberOfDecreasesToday.should.equal(numDecreases)
             desc.ProvisionedThroughput.ReadCapacityUnits.should.equal(newRate)
             desc.ProvisionedThroughput.WriteCapacityUnits.should.equal(newRate)
             desc.TableStatus.should.equal('UPDATING')
@@ -279,7 +280,7 @@ describe('updateTable', function() {
               var desc = res.body.Table
               desc.ProvisionedThroughput.LastIncreaseDateTime.should.equal(increase)
               desc.ProvisionedThroughput.LastDecreaseDateTime.should.be.above(decrease)
-              desc.ProvisionedThroughput.NumberOfDecreasesToday.should.equal(1)
+              desc.ProvisionedThroughput.NumberOfDecreasesToday.should.equal(numDecreases + 1)
               desc.ProvisionedThroughput.ReadCapacityUnits.should.equal(oldRate)
               desc.ProvisionedThroughput.WriteCapacityUnits.should.equal(oldRate)
 

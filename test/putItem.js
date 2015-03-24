@@ -512,6 +512,7 @@ describe('putItem', function() {
         res.statusCode.should.equal(200)
         assertNotFound({TableName: table.TableName, Item: {a: {S: 'a'}}},
           'Requested resource not found', done)
+        helpers.deleteWhenActive(table.TableName)
       })
     })
   })

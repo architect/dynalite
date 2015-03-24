@@ -494,6 +494,7 @@ describe('batchWriteItem', function() {
         var batchReq = {RequestItems: {}}
         batchReq.RequestItems[table.TableName] = [{PutRequest: {Item: {a: {S: 'a'}}}}]
         assertNotFound(batchReq, 'Requested resource not found', done)
+        helpers.deleteWhenActive(table.TableName)
       })
     })
 

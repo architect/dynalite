@@ -189,6 +189,7 @@ describe('listTables', function() {
           res.statusCode.should.equal(200)
           res.body.TableNames.should.containEql(name)
           done()
+          helpers.deleteWhenActive(name)
         })
       })
     })
@@ -251,7 +252,11 @@ describe('listTables', function() {
               done()
             })
           },
-        ], done)
+        ], function(err) {
+          helpers.deleteWhenActive(names[0])
+          helpers.deleteWhenActive(names[1])
+          done(err)
+        })
 
       })
     })

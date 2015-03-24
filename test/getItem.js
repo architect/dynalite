@@ -286,6 +286,7 @@ describe('getItem', function() {
         if (err) return done(err)
         assertNotFound({TableName: table.TableName, Key: {a: {S: 'a'}}},
           'Requested resource not found', done)
+        helpers.deleteWhenActive(table.TableName)
       })
     })
 
@@ -314,7 +315,7 @@ describe('getItem', function() {
     })
 
     it('should return ConsumedCapacity if specified', function(done) {
-      request(opts({TableName: helpers.testHashTable, Key: {a: {S: 'a'}}, ReturnConsumedCapacity: 'TOTAL'}), function(err, res) {
+      request(opts({TableName: helpers.testHashTable, Key: {a: {S: helpers.randomString()}}, ReturnConsumedCapacity: 'TOTAL'}), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
         res.body.should.eql({ConsumedCapacity: {CapacityUnits: 0.5, TableName: helpers.testHashTable}})
@@ -323,7 +324,7 @@ describe('getItem', function() {
     })
 
     it('should return ConsumedCapacity if specified and consistent read is double', function(done) {
-      request(opts({TableName: helpers.testHashTable, Key: {a: {S: 'a'}}, ReturnConsumedCapacity: 'TOTAL', ConsistentRead: 0.5}), function(err, res) {
+      request(opts({TableName: helpers.testHashTable, Key: {a: {S: helpers.randomString()}}, ReturnConsumedCapacity: 'TOTAL', ConsistentRead: 0.5}), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
         res.body.should.eql({ConsumedCapacity: {CapacityUnits: 0.5, TableName: helpers.testHashTable}})
@@ -332,7 +333,7 @@ describe('getItem', function() {
     })
 
     it('should return full ConsumedCapacity if specified', function(done) {
-      request(opts({TableName: helpers.testHashTable, Key: {a: {S: 'a'}}, ReturnConsumedCapacity: 'TOTAL', ConsistentRead: true}), function(err, res) {
+      request(opts({TableName: helpers.testHashTable, Key: {a: {S: helpers.randomString()}}, ReturnConsumedCapacity: 'TOTAL', ConsistentRead: true}), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
         res.body.should.eql({ConsumedCapacity: {CapacityUnits: 1, TableName: helpers.testHashTable}})
@@ -341,7 +342,7 @@ describe('getItem', function() {
     })
 
     it('should return full ConsumedCapacity if specified and double', function(done) {
-      request(opts({TableName: helpers.testHashTable, Key: {a: {S: 'a'}}, ReturnConsumedCapacity: 'TOTAL', ConsistentRead: -1.1}), function(err, res) {
+      request(opts({TableName: helpers.testHashTable, Key: {a: {S: helpers.randomString()}}, ReturnConsumedCapacity: 'TOTAL', ConsistentRead: -1.1}), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
         res.body.should.eql({ConsumedCapacity: {CapacityUnits: 1, TableName: helpers.testHashTable}})

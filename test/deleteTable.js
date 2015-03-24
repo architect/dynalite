@@ -54,20 +54,6 @@ describe('deleteTable', function() {
       assertNotFound({TableName: name}, 'Requested resource not found: Table: ' + name + ' not found', done)
     })
 
-    it('should return ResourceInUseException if table is being created', function(done) {
-      var table = {
-        TableName: randomName(),
-        AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}],
-        KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}],
-        ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
-      }
-      request(helpers.opts('CreateTable', table), function(err) {
-        if (err) return done(err)
-        assertInUse({TableName: table.TableName},
-          'Attempt to change a resource which is still in use: Table is being created: ' + table.TableName, done)
-      })
-    })
-
   })
 
   describe('functionality', function() {
@@ -90,20 +76,25 @@ describe('deleteTable', function() {
         if (err) return done(err)
         res.statusCode.should.equal(200)
 
-        helpers.waitUntilActive(table.TableName, function(err) {
+        assertInUse({TableName: table.TableName}, 'Attempt to change a resource which is still in use: ' +
+            'Table is being created: ' + table.TableName, function(err) {
           if (err) return done(err)
 
-          request(opts(table), function(err, res) {
+          helpers.waitUntilActive(table.TableName, function(err) {
             if (err) return done(err)
-            res.statusCode.should.equal(200)
 
-            res.body.TableDescription.TableStatus.should.equal('DELETING')
-            should.not.exist(res.body.TableDescription.GlobalSecondaryIndexes)
-
-            helpers.waitUntilDeleted(table.TableName, function(err, res) {
+            request(opts(table), function(err, res) {
               if (err) return done(err)
-              res.body.__type.should.equal('com.amazonaws.dynamodb.v20120810#ResourceNotFoundException')
-              done()
+              res.statusCode.should.equal(200)
+
+              res.body.TableDescription.TableStatus.should.equal('DELETING')
+              should.not.exist(res.body.TableDescription.GlobalSecondaryIndexes)
+
+              helpers.waitUntilDeleted(table.TableName, function(err, res) {
+                if (err) return done(err)
+                res.body.__type.should.equal('com.amazonaws.dynamodb.v20120810#ResourceNotFoundException')
+                done()
+              })
             })
           })
         })

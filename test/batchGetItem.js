@@ -379,8 +379,8 @@ describe('batchGetItem', function() {
         if (err) return done(err)
         var batchReq = {RequestItems: {}}
         batchReq.RequestItems[table.TableName] = {Keys: [{a: {S: 'a'}}]}
-        assertNotFound(batchReq,
-          'Requested resource not found', done)
+        assertNotFound(batchReq, 'Requested resource not found', done)
+        helpers.deleteWhenActive(table.TableName)
       })
     })
 
