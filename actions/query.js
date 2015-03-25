@@ -76,7 +76,7 @@ module.exports = function query(store, data, cb) {
 
     for (i = 0; i < keySchema.length; i++) {
       if (!data.KeyConditions[keySchema[i].AttributeName])
-        return cb(db.validationError('Query condition missed key schema element ' + keySchema[i].AttributeName))
+        return cb(db.validationError('Query condition missed key schema element: ' + keySchema[i].AttributeName))
       if (Object.keys(data.KeyConditions).length <= 1) break
     }
 

@@ -183,11 +183,11 @@ describe('query', function() {
         'One or more parameter values were invalid: Invalid number of argument(s) for the EQ ComparisonOperator', done)
     })
 
-    it('should check KeyConditions before QueryFilter', function(done) {
+    it('should check QueryFilter before KeyConditions', function(done) {
       assertValidation({
         TableName: 'abc',
-        KeyConditions: {a: {ComparisonOperator: 'EQ'}},
-        QueryFilter: {a: {ComparisonOperator: 'EQ', AttributeValueList: [{}]}}
+        KeyConditions: {a: {ComparisonOperator: 'EQ', AttributeValueList: [{}]}},
+        QueryFilter: {a: {ComparisonOperator: 'EQ'}}
       }, 'One or more parameter values were invalid: Invalid number of argument(s) for the EQ ComparisonOperator', done)
     })
 
@@ -826,7 +826,7 @@ describe('query', function() {
       assertValidation({
         TableName: helpers.testRangeTable,
         KeyConditions: {c: {ComparisonOperator: 'NULL'}}},
-        'Query condition missed key schema element a', done)
+        'Query condition missed key schema element: a', done)
     })
 
     it('should return ValidationException for missing index name', function(done) {
@@ -836,7 +836,7 @@ describe('query', function() {
           a: {ComparisonOperator: 'EQ', AttributeValueList: [{S: 'a'}]},
           c: {ComparisonOperator: 'NULL'},
         }},
-        'Query condition missed key schema element b', done)
+        'Query condition missed key schema element: b', done)
     })
 
     it('should return ValidationException for querying global index with incorrect schema', function(done) {
@@ -846,7 +846,7 @@ describe('query', function() {
         KeyConditions: {
           a: {ComparisonOperator: 'EQ', AttributeValueList: [{S: 'a'}]},
         }},
-        'Query condition missed key schema element c', done)
+        'Query condition missed key schema element: c', done)
     })
 
     it('should return ValidationException for non-existent index name', function(done) {
@@ -868,7 +868,7 @@ describe('query', function() {
           a: {ComparisonOperator: 'EQ', AttributeValueList: [{S: 'a'}]},
           c: {ComparisonOperator: 'NULL'},
         }},
-        'Query condition missed key schema element d', done)
+        'Query condition missed key schema element: d', done)
     })
 
     it('should return ValidationException for incorrect comparison operator on index', function(done) {

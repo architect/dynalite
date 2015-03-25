@@ -108,6 +108,28 @@ exports.custom = function(data) {
     IN: ['S', 'N', 'B'],
     BETWEEN: ['S', 'N', 'B'],
   }
+  for (key in data.QueryFilter) {
+    comparisonOperator = data.QueryFilter[key].ComparisonOperator
+    attrValList = data.QueryFilter[key].AttributeValueList || []
+    for (i = 0; i < attrValList.length; i++) {
+      msg = validateAttributeValue(attrValList[i])
+      if (msg) return msg
+    }
+
+    if ((typeof lengths[comparisonOperator] == 'number' && attrValList.length != lengths[comparisonOperator]) ||
+        (attrValList.length < lengths[comparisonOperator][0] || attrValList.length > lengths[comparisonOperator][1]))
+      return 'One or more parameter values were invalid: Invalid number of argument(s) for the ' +
+        comparisonOperator + ' ComparisonOperator'
+
+    if (types[comparisonOperator]) {
+      for (i = 0; i < attrValList.length; i++) {
+        if (!~types[comparisonOperator].indexOf(Object.keys(attrValList[i])[0]))
+          return 'One or more parameter values were invalid: ComparisonOperator ' + comparisonOperator +
+            ' is not valid for ' + Object.keys(attrValList[i])[0] + ' AttributeValue type'
+      }
+    }
+  }
+
   for (key in data.KeyConditions) {
     comparisonOperator = data.KeyConditions[key].ComparisonOperator
     attrValList = data.KeyConditions[key].AttributeValueList || []
@@ -132,28 +154,6 @@ exports.custom = function(data) {
 
   if (conditionKeys.length != 1 && conditionKeys.length != 2) {
     return 'Conditions can be of length 1 or 2 only'
-  }
-
-  for (key in data.QueryFilter) {
-    comparisonOperator = data.QueryFilter[key].ComparisonOperator
-    attrValList = data.QueryFilter[key].AttributeValueList || []
-    for (i = 0; i < attrValList.length; i++) {
-      msg = validateAttributeValue(attrValList[i])
-      if (msg) return msg
-    }
-
-    if ((typeof lengths[comparisonOperator] == 'number' && attrValList.length != lengths[comparisonOperator]) ||
-        (attrValList.length < lengths[comparisonOperator][0] || attrValList.length > lengths[comparisonOperator][1]))
-      return 'One or more parameter values were invalid: Invalid number of argument(s) for the ' +
-        comparisonOperator + ' ComparisonOperator'
-
-    if (types[comparisonOperator]) {
-      for (i = 0; i < attrValList.length; i++) {
-        if (!~types[comparisonOperator].indexOf(Object.keys(attrValList[i])[0]))
-          return 'One or more parameter values were invalid: ComparisonOperator ' + comparisonOperator +
-            ' is not valid for ' + Object.keys(attrValList[i])[0] + ' AttributeValue type'
-      }
-    }
   }
 
   for (key in data.ExclusiveStartKey) {
