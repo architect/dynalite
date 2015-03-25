@@ -18,14 +18,18 @@ module.exports = function batchWriteItem(store, data, cb) {
     }
     var res = {UnprocessedItems: {}}, tableUnits = {}
 
-    if (data.ReturnConsumedCapacity == 'TOTAL') {
+    if (~['TOTAL', 'INDEXES'].indexOf(data.ReturnConsumedCapacity)) {
       responses[1].forEach(function(action) {
         var table = action.ConsumedCapacity.TableName
         if (!tableUnits[table]) tableUnits[table] = 0
         tableUnits[table] += action.ConsumedCapacity.CapacityUnits
       })
       res.ConsumedCapacity = Object.keys(tableUnits).map(function(table) {
-        return {CapacityUnits: tableUnits[table], TableName: table}
+        return {
+          CapacityUnits: tableUnits[table],
+          TableName: table,
+          Table: data.ReturnConsumedCapacity == 'INDEXES' ? {CapacityUnits: tableUnits[table]} : undefined
+        }
       })
     }
 

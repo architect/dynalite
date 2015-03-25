@@ -39,7 +39,7 @@ module.exports = function scan(store, data, cb) {
       size += db.itemSize(val, true)
 
       // TODO: Combine this with above
-      if (data.ReturnConsumedCapacity == 'TOTAL')
+      if (~['TOTAL', 'INDEXES'].indexOf(data.ReturnConsumedCapacity))
         capacitySize += db.itemSize(val)
 
       lastItem = val
@@ -68,10 +68,14 @@ module.exports = function scan(store, data, cb) {
           return key
         }, {})
       }
-      if (data.ReturnConsumedCapacity == 'TOTAL')
-        result.ConsumedCapacity = {CapacityUnits: Math.ceil(capacitySize / 1024 / 4) * 0.5, TableName: data.TableName}
+      if (~['TOTAL', 'INDEXES'].indexOf(data.ReturnConsumedCapacity))
+        result.ConsumedCapacity = {
+          CapacityUnits: Math.ceil(capacitySize / 1024 / 4) * 0.5,
+          TableName: data.TableName,
+          Table: data.ReturnConsumedCapacity == 'INDEXES' ?
+            {CapacityUnits: Math.ceil(capacitySize / 1024 / 4) * 0.5} : undefined,
+        }
       cb(null, result)
     })
   })
 }
-

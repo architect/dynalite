@@ -489,7 +489,14 @@ describe('batchGetItem', function() {
           res.body.ConsumedCapacity.should.containEql({CapacityUnits: 0.5, TableName: helpers.testHashNTable})
           res.body.Responses[helpers.testHashTable].should.have.length(2)
           res.body.Responses[helpers.testHashNTable].should.have.length(0)
-          done()
+          batchReq.ReturnConsumedCapacity = 'INDEXES'
+          request(opts(batchReq), function(err, res) {
+            if (err) return done(err)
+            res.statusCode.should.equal(200)
+            res.body.ConsumedCapacity.should.containEql({CapacityUnits: 1.5, Table: {CapacityUnits: 1.5}, TableName: helpers.testHashTable})
+            res.body.ConsumedCapacity.should.containEql({CapacityUnits: 0.5, Table: {CapacityUnits: 0.5}, TableName: helpers.testHashNTable})
+            done()
+          })
         })
       })
     })
@@ -513,7 +520,14 @@ describe('batchGetItem', function() {
           res.body.ConsumedCapacity.should.containEql({CapacityUnits: 0.5, TableName: helpers.testHashNTable})
           res.body.Responses[helpers.testHashTable].should.have.length(2)
           res.body.Responses[helpers.testHashNTable].should.have.length(0)
-          done()
+          batchReq.ReturnConsumedCapacity = 'INDEXES'
+          request(opts(batchReq), function(err, res) {
+            if (err) return done(err)
+            res.statusCode.should.equal(200)
+            res.body.ConsumedCapacity.should.containEql({CapacityUnits: 2, Table: {CapacityUnits: 2}, TableName: helpers.testHashTable})
+            res.body.ConsumedCapacity.should.containEql({CapacityUnits: 0.5, Table: {CapacityUnits: 0.5}, TableName: helpers.testHashNTable})
+            done()
+          })
         })
       })
     })
@@ -537,7 +551,14 @@ describe('batchGetItem', function() {
           res.body.ConsumedCapacity.should.containEql({CapacityUnits: 1, TableName: helpers.testHashNTable})
           res.body.Responses[helpers.testHashTable].should.have.length(2)
           res.body.Responses[helpers.testHashNTable].should.have.length(0)
-          done()
+          batchReq.ReturnConsumedCapacity = 'INDEXES'
+          request(opts(batchReq), function(err, res) {
+            if (err) return done(err)
+            res.statusCode.should.equal(200)
+            res.body.ConsumedCapacity.should.containEql({CapacityUnits: 3, Table: {CapacityUnits: 3}, TableName: helpers.testHashTable})
+            res.body.ConsumedCapacity.should.containEql({CapacityUnits: 1, Table: {CapacityUnits: 1}, TableName: helpers.testHashNTable})
+            done()
+          })
         })
       })
     })
@@ -561,12 +582,19 @@ describe('batchGetItem', function() {
           res.body.ConsumedCapacity.should.containEql({CapacityUnits: 1, TableName: helpers.testHashNTable})
           res.body.Responses[helpers.testHashTable].should.have.length(2)
           res.body.Responses[helpers.testHashNTable].should.have.length(0)
-          done()
+          batchReq.ReturnConsumedCapacity = 'INDEXES'
+          request(opts(batchReq), function(err, res) {
+            if (err) return done(err)
+            res.statusCode.should.equal(200)
+            res.body.ConsumedCapacity.should.containEql({CapacityUnits: 4, Table: {CapacityUnits: 4}, TableName: helpers.testHashTable})
+            res.body.ConsumedCapacity.should.containEql({CapacityUnits: 1, Table: {CapacityUnits: 1}, TableName: helpers.testHashNTable})
+            done()
+          })
         })
       })
     })
 
-    // TODO: Need high capacity to run this
+    // TODO: Need high capacity to run this (~100 runs quickly)
     it.skip('should return all items if just under limit', function(done) {
       this.timeout(200000)
 
@@ -595,7 +623,7 @@ describe('batchGetItem', function() {
       })
     })
 
-    // TODO: Need high capacity to run this
+    // TODO: Need high capacity to run this (~100 runs quickly)
     it.skip('should return an unprocessed item if just over limit', function(done) {
       this.timeout(200000)
 
@@ -633,7 +661,7 @@ describe('batchGetItem', function() {
     })
 
 
-    // TODO: Need high capacity to run this
+    // TODO: Need high capacity to run this (~100 runs quickly)
     it.skip('should return many unprocessed items if very over the limit', function(done) {
       this.timeout(200000)
 

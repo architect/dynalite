@@ -1220,16 +1220,38 @@ describe('query', function() {
       request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        request(opts({TableName: helpers.testRangeTable, IndexName: 'index2', KeyConditions: {
-          a: {ComparisonOperator: 'EQ', AttributeValueList: [item.a]},
-        }, ReturnConsumedCapacity: 'TOTAL'}), function(err, res) {
+        var req = {TableName: helpers.testRangeTable, IndexName: 'index2',
+          KeyConditions: {a: {ComparisonOperator: 'EQ', AttributeValueList: [item.a]}},
+          ReturnConsumedCapacity: 'TOTAL'}
+        request(opts(req), function(err, res) {
           if (err) return done(err)
           res.statusCode.should.equal(200)
           delete item3.e
           delete item3.f
           delete item4.e
-          res.body.should.eql({Count: 3, ScannedCount: 3, Items: [item, item3, item4], ConsumedCapacity: {CapacityUnits: 0.5, TableName: helpers.testRangeTable}})
-          done()
+          res.body.should.eql({
+            Count: 3,
+            ScannedCount: 3,
+            Items: [item, item3, item4],
+            ConsumedCapacity: {CapacityUnits: 0.5, TableName: helpers.testRangeTable}
+          })
+          req.ReturnConsumedCapacity = 'INDEXES'
+          request(opts(req), function(err, res) {
+            if (err) return done(err)
+            res.statusCode.should.equal(200)
+            res.body.should.eql({
+              Count: 3,
+              ScannedCount: 3,
+              Items: [item, item3, item4],
+              ConsumedCapacity: {
+                CapacityUnits: 0.5,
+                TableName: helpers.testRangeTable,
+                Table: {CapacityUnits: 0},
+                LocalSecondaryIndexes: {index2: {CapacityUnits: 0.5}},
+              },
+            })
+            done()
+          })
         })
       })
     })
@@ -1249,13 +1271,35 @@ describe('query', function() {
       request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        request(opts({TableName: helpers.testRangeTable, IndexName: 'index2', KeyConditions: {
-          a: {ComparisonOperator: 'EQ', AttributeValueList: [item.a]},
-        }, Select: 'ALL_ATTRIBUTES', ReturnConsumedCapacity: 'TOTAL'}), function(err, res) {
+        var req = {TableName: helpers.testRangeTable, IndexName: 'index2',
+          KeyConditions: {a: {ComparisonOperator: 'EQ', AttributeValueList: [item.a]}},
+          Select: 'ALL_ATTRIBUTES', ReturnConsumedCapacity: 'TOTAL'}
+        request(opts(req), function(err, res) {
           if (err) return done(err)
           res.statusCode.should.equal(200)
-          res.body.should.eql({Count: 3, ScannedCount: 3, Items: [item, item3, item4], ConsumedCapacity: {CapacityUnits: 2, TableName: helpers.testRangeTable}})
-          done()
+          res.body.should.eql({
+            Count: 3,
+            ScannedCount: 3,
+            Items: [item, item3, item4],
+            ConsumedCapacity: {CapacityUnits: 2, TableName: helpers.testRangeTable},
+          })
+          req.ReturnConsumedCapacity = 'INDEXES'
+          request(opts(req), function(err, res) {
+            if (err) return done(err)
+            res.statusCode.should.equal(200)
+            res.body.should.eql({
+              Count: 3,
+              ScannedCount: 3,
+              Items: [item, item3, item4],
+              ConsumedCapacity: {
+                CapacityUnits: 2,
+                TableName: helpers.testRangeTable,
+                Table: {CapacityUnits: 1.5},
+                LocalSecondaryIndexes: {index2: {CapacityUnits: 0.5}},
+              },
+            })
+            done()
+          })
         })
       })
     })
@@ -1527,13 +1571,37 @@ describe('query', function() {
       request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        request(opts({TableName: helpers.testRangeTable, IndexName: 'index1', KeyConditions: {
-          a: {ComparisonOperator: 'EQ', AttributeValueList: [item.a]},
-        }}), function(err, res) {
+        var req = {TableName: helpers.testRangeTable, IndexName: 'index1',
+          KeyConditions: {a: {ComparisonOperator: 'EQ', AttributeValueList: [item.a]}}, ReturnConsumedCapacity: 'TOTAL'}
+        request(opts(req), function(err, res) {
           if (err) return done(err)
           res.statusCode.should.equal(200)
-          res.body.should.eql({Count: 9, ScannedCount: 9, Items: [item, item3, item2, item8, item9, item4, item6, item7, item5]})
-          done()
+          res.body.should.eql({
+            Count: 9,
+            ScannedCount: 9,
+            Items: [item, item3, item2, item8, item9, item4, item6, item7, item5],
+            ConsumedCapacity: {
+              CapacityUnits: 0.5,
+              TableName: helpers.testRangeTable,
+            },
+          })
+          req.ReturnConsumedCapacity = 'INDEXES'
+          request(opts(req), function(err, res) {
+            if (err) return done(err)
+            res.statusCode.should.equal(200)
+            res.body.should.eql({
+              Count: 9,
+              ScannedCount: 9,
+              Items: [item, item3, item2, item8, item9, item4, item6, item7, item5],
+              ConsumedCapacity: {
+                CapacityUnits: 0.5,
+                TableName: helpers.testRangeTable,
+                Table: {CapacityUnits: 0},
+                LocalSecondaryIndexes: {index1: {CapacityUnits: 0.5}},
+              },
+            })
+            done()
+          })
         })
       })
     })
@@ -1844,9 +1912,10 @@ describe('query', function() {
       request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        request(opts({TableName: helpers.testRangeTable, KeyConditions: {
-          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
-        }, IndexName: 'index3', Limit: 4}), function(err, res) {
+        var req = {TableName: helpers.testRangeTable,
+          KeyConditions: {c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]}},
+          IndexName: 'index3', Limit: 4, ReturnConsumedCapacity: 'TOTAL'}
+        request(opts(req), function(err, res) {
           if (err) return done(err)
           res.statusCode.should.equal(200)
           res.body.should.eql({
@@ -1854,8 +1923,26 @@ describe('query', function() {
             ScannedCount: 4,
             Items: [item2, item, item3, item7],
             LastEvaluatedKey: {a: item7.a, b: item7.b, c: item7.c},
+            ConsumedCapacity: {CapacityUnits: 0.5, TableName: helpers.testRangeTable},
           })
-          done()
+          req.ReturnConsumedCapacity = 'INDEXES'
+          request(opts(req), function(err, res) {
+            if (err) return done(err)
+            res.statusCode.should.equal(200)
+            res.body.should.eql({
+              Count: 4,
+              ScannedCount: 4,
+              Items: [item2, item, item3, item7],
+              LastEvaluatedKey: {a: item7.a, b: item7.b, c: item7.c},
+              ConsumedCapacity: {
+                CapacityUnits: 0.5,
+                TableName: helpers.testRangeTable,
+                Table: {CapacityUnits: 0},
+                GlobalSecondaryIndexes: {index3: {CapacityUnits: 0.5}},
+              },
+            })
+            done()
+          })
         })
       })
     })
@@ -1881,9 +1968,10 @@ describe('query', function() {
       request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        request(opts({TableName: helpers.testRangeTable, KeyConditions: {
-          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
-        }, IndexName: 'index3', ScanIndexForward: false, Limit: 4}), function(err, res) {
+        var req = {TableName: helpers.testRangeTable,
+          KeyConditions: { c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]}},
+          IndexName: 'index3', ScanIndexForward: false, Limit: 4, ReturnConsumedCapacity: 'INDEXES'}
+        request(opts(req), function(err, res) {
           if (err) return done(err)
           res.statusCode.should.equal(200)
           res.body.should.eql({
@@ -1891,6 +1979,12 @@ describe('query', function() {
             ScannedCount: 4,
             Items: [item4, item6, item7, item3],
             LastEvaluatedKey: {a: item3.a, b: item3.b, c: item3.c},
+            ConsumedCapacity: {
+              CapacityUnits: 0.5,
+              TableName: helpers.testRangeTable,
+              Table: {CapacityUnits: 0},
+              GlobalSecondaryIndexes: {index3: {CapacityUnits: 0.5}},
+            },
           })
           done()
         })
@@ -1921,7 +2015,7 @@ describe('query', function() {
         request(opts({TableName: helpers.testRangeTable, KeyConditions: {
           c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
           d: {ComparisonOperator: 'LT', AttributeValueList: [item.d]},
-        }, IndexName: 'index4', Limit: 3}), function(err, res) {
+        }, IndexName: 'index4', Limit: 3, ReturnConsumedCapacity: 'INDEXES'}), function(err, res) {
           if (err) return done(err)
           res.statusCode.should.equal(200)
           delete item2.f
@@ -1932,6 +2026,12 @@ describe('query', function() {
             ScannedCount: 3,
             Items: [item2, item3, item4],
             LastEvaluatedKey: {a: item4.a, b: item4.b, c: item4.c, d: item4.d},
+            ConsumedCapacity: {
+              CapacityUnits: 0.5,
+              TableName: helpers.testRangeTable,
+              Table: {CapacityUnits: 0},
+              GlobalSecondaryIndexes: {index4: {CapacityUnits: 0.5}},
+            },
           })
           done()
         })
@@ -1962,7 +2062,7 @@ describe('query', function() {
         request(opts({TableName: helpers.testRangeTable, KeyConditions: {
           c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
           d: {ComparisonOperator: 'LT', AttributeValueList: [item.d]},
-        }, IndexName: 'index4', ScanIndexForward: false, Limit: 3}), function(err, res) {
+        }, IndexName: 'index4', ScanIndexForward: false, Limit: 3, ReturnConsumedCapacity: 'INDEXES'}), function(err, res) {
           if (err) return done(err)
           res.statusCode.should.equal(200)
           res.body.should.eql({
@@ -1970,6 +2070,12 @@ describe('query', function() {
             ScannedCount: 3,
             Items: [item6, item4, item3],
             LastEvaluatedKey: {a: item3.a, b: item3.b, c: item3.c, d: item3.d},
+            ConsumedCapacity: {
+              CapacityUnits: 0.5,
+              TableName: helpers.testRangeTable,
+              Table: {CapacityUnits: 0},
+              GlobalSecondaryIndexes: {index4: {CapacityUnits: 0.5}},
+            },
           })
           done()
         })
@@ -2000,7 +2106,7 @@ describe('query', function() {
         delete item3.d
         request(opts({TableName: helpers.testRangeTable, KeyConditions: {
           c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
-        }, IndexName: 'index3', Limit: 2, ExclusiveStartKey: item3}), function(err, res) {
+        }, IndexName: 'index3', Limit: 2, ExclusiveStartKey: item3, ReturnConsumedCapacity: 'INDEXES'}), function(err, res) {
           if (err) return done(err)
           res.statusCode.should.equal(200)
           res.body.should.eql({
@@ -2008,6 +2114,12 @@ describe('query', function() {
             ScannedCount: 2,
             Items: [item7, item6],
             LastEvaluatedKey: {a: item6.a, b: item6.b, c: item6.c},
+            ConsumedCapacity: {
+              CapacityUnits: 0.5,
+              TableName: helpers.testRangeTable,
+              Table: {CapacityUnits: 0},
+              GlobalSecondaryIndexes: {index3: {CapacityUnits: 0.5}},
+            },
           })
           done()
         })
@@ -2038,7 +2150,7 @@ describe('query', function() {
         delete item7.d
         request(opts({TableName: helpers.testRangeTable, KeyConditions: {
           c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
-        }, IndexName: 'index3', ScanIndexForward: false, Limit: 2, ExclusiveStartKey: item7}), function(err, res) {
+        }, IndexName: 'index3', ScanIndexForward: false, Limit: 2, ExclusiveStartKey: item7, ReturnConsumedCapacity: 'INDEXES'}), function(err, res) {
           if (err) return done(err)
           res.statusCode.should.equal(200)
           res.body.should.eql({
@@ -2046,6 +2158,12 @@ describe('query', function() {
             ScannedCount: 2,
             Items: [item3, item],
             LastEvaluatedKey: {a: item.a, b: item.b, c: item.c},
+            ConsumedCapacity: {
+              CapacityUnits: 0.5,
+              TableName: helpers.testRangeTable,
+              Table: {CapacityUnits: 0},
+              GlobalSecondaryIndexes: {index3: {CapacityUnits: 0.5}},
+            },
           })
           done()
         })
@@ -2079,7 +2197,7 @@ describe('query', function() {
         request(opts({TableName: helpers.testRangeTable, KeyConditions: {
           c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
           d: {ComparisonOperator: 'LT', AttributeValueList: [item.d]},
-        }, IndexName: 'index4', Limit: 1, ExclusiveStartKey: item3}), function(err, res) {
+        }, IndexName: 'index4', Limit: 1, ExclusiveStartKey: item3, ReturnConsumedCapacity: 'INDEXES'}), function(err, res) {
           if (err) return done(err)
           res.statusCode.should.equal(200)
           res.body.should.eql({
@@ -2087,6 +2205,12 @@ describe('query', function() {
             ScannedCount: 1,
             Items: [item4],
             LastEvaluatedKey: {a: item4.a, b: item4.b, c: item4.c, d: item4.d},
+            ConsumedCapacity: {
+              CapacityUnits: 0.5,
+              TableName: helpers.testRangeTable,
+              Table: {CapacityUnits: 0},
+              GlobalSecondaryIndexes: {index4: {CapacityUnits: 0.5}},
+            },
           })
           done()
         })
@@ -2120,7 +2244,7 @@ describe('query', function() {
         request(opts({TableName: helpers.testRangeTable, KeyConditions: {
           c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
           d: {ComparisonOperator: 'LT', AttributeValueList: [item.d]},
-        }, IndexName: 'index4', Limit: 1, ScanIndexForward: false, ExclusiveStartKey: item4}), function(err, res) {
+        }, IndexName: 'index4', Limit: 1, ScanIndexForward: false, ExclusiveStartKey: item4, ReturnConsumedCapacity: 'INDEXES'}), function(err, res) {
           if (err) return done(err)
           res.statusCode.should.equal(200)
           res.body.should.eql({
@@ -2128,6 +2252,12 @@ describe('query', function() {
             ScannedCount: 1,
             Items: [item3],
             LastEvaluatedKey: {a: item3.a, b: item3.b, c: item3.c, d: item3.d},
+            ConsumedCapacity: {
+              CapacityUnits: 0.5,
+              TableName: helpers.testRangeTable,
+              Table: {CapacityUnits: 0},
+              GlobalSecondaryIndexes: {index4: {CapacityUnits: 0.5}},
+            },
           })
           done()
         })

@@ -24,8 +24,13 @@ module.exports = function getItem(store, data, cb) {
         }
       }
 
-      if (data.ReturnConsumedCapacity == 'TOTAL')
-        returnObj.ConsumedCapacity = {CapacityUnits: db.capacityUnits(item, true, data.ConsistentRead), TableName: data.TableName}
+      if (~['TOTAL', 'INDEXES'].indexOf(data.ReturnConsumedCapacity))
+        returnObj.ConsumedCapacity =  {
+          CapacityUnits: db.capacityUnits(item, true, data.ConsistentRead),
+          TableName: data.TableName,
+          Table: data.ReturnConsumedCapacity == 'INDEXES' ?
+            {CapacityUnits: db.capacityUnits(item, true, data.ConsistentRead)} : undefined
+        }
 
       cb(null, returnObj)
     })

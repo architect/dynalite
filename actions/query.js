@@ -9,7 +9,7 @@ module.exports = function query(store, data, cb) {
   store.getTable(data.TableName, function(err, table) {
     if (err) return cb(err)
 
-    var i, keySchema, key, comparisonOperator, hashKey, rangeKey, indexAttrs, type,
+    var i, keySchema, key, comparisonOperator, hashKey, rangeKey, indexAttrs, type, isLocal,
         tableHashKey = table.KeySchema[0].AttributeName, tableHashType, tableHashVal,
         opts = {}, vals, itemDb = store.getItemDb(data.TableName),
         size = 0, capacitySize = 0, count = 0, scannedCount = 0, lastItem, em
@@ -20,6 +20,7 @@ module.exports = function query(store, data, cb) {
           keySchema = table.LocalSecondaryIndexes[i].KeySchema
           if (table.LocalSecondaryIndexes[i].Projection.ProjectionType == 'INCLUDE')
             indexAttrs = table.LocalSecondaryIndexes[i].Projection.NonKeyAttributes
+          isLocal = true
           break
         }
       }
@@ -34,6 +35,7 @@ module.exports = function query(store, data, cb) {
           keySchema = table.GlobalSecondaryIndexes[i].KeySchema
           if (table.GlobalSecondaryIndexes[i].Projection.ProjectionType == 'INCLUDE')
             indexAttrs = table.GlobalSecondaryIndexes[i].Projection.NonKeyAttributes
+          isLocal = false
           break
         }
       }
@@ -153,7 +155,7 @@ module.exports = function query(store, data, cb) {
       count++
 
       // TODO: Combine this with above
-      if (data.ReturnConsumedCapacity == 'TOTAL')
+      if (~['TOTAL', 'INDEXES'].indexOf(data.ReturnConsumedCapacity))
         capacitySize += db.itemSize(val)
 
       return true
@@ -182,7 +184,8 @@ module.exports = function query(store, data, cb) {
     }
 
     vals.join(function(items) {
-      var result = {Count: items.length, ScannedCount: scannedCount || items.length}
+      var result = {Count: items.length, ScannedCount: scannedCount || items.length},
+        capacityUnits, tableUnits, indexUnits, indexAttr
 
       // TODO: Check size?
       // TODO: Does this only happen when we're not doing a COUNT?
@@ -198,10 +201,23 @@ module.exports = function query(store, data, cb) {
         }
       }
       if (data.Select != 'COUNT') result.Items = items
-      if (data.ReturnConsumedCapacity == 'TOTAL')
-        result.ConsumedCapacity = {CapacityUnits: Math.ceil(capacitySize / 1024 / 4) * 0.5, TableName: data.TableName}
-      if (result.ConsumedCapacity && indexAttrs && data.Select == 'ALL_ATTRIBUTES')
-        result.ConsumedCapacity.CapacityUnits *= 4
+      if (~['TOTAL', 'INDEXES'].indexOf(data.ReturnConsumedCapacity)) {
+        capacityUnits = Math.ceil(capacitySize / 1024 / 4) * 0.5
+        tableUnits = data.IndexName ? 0 : capacityUnits
+        indexUnits = data.IndexName ? capacityUnits : 0
+        if (indexAttrs && data.Select == 'ALL_ATTRIBUTES')
+          tableUnits = indexUnits * 3
+        result.ConsumedCapacity = {
+          CapacityUnits: tableUnits + indexUnits,
+          TableName: data.TableName,
+        }
+        if (data.ReturnConsumedCapacity == 'INDEXES') {
+          result.ConsumedCapacity.Table = {CapacityUnits: tableUnits}
+          indexAttr = isLocal ? 'LocalSecondaryIndexes' : 'GlobalSecondaryIndexes'
+          result.ConsumedCapacity[indexAttr] = {}
+          result.ConsumedCapacity[indexAttr][data.IndexName] = {CapacityUnits: indexUnits}
+        }
+      }
       cb(null, result)
     })
   })

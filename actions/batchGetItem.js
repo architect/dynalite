@@ -45,9 +45,13 @@ module.exports = function batchGetItem(store, data, cb) {
       }).filter(function(x) { return x })
     }
 
-    if (data.ReturnConsumedCapacity == 'TOTAL') {
+    if (~['TOTAL', 'INDEXES'].indexOf(data.ReturnConsumedCapacity)) {
       res.ConsumedCapacity = Object.keys(tableResponses).map(function(table) {
-        return {CapacityUnits: capacities[table], TableName: table}
+        return {
+          CapacityUnits: capacities[table],
+          TableName: table,
+          Table: data.ReturnConsumedCapacity == 'INDEXES' ? {CapacityUnits: capacities[table]} : undefined
+        }
       })
     }
 

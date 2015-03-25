@@ -767,20 +767,6 @@ describe('scan', function() {
       })
     })
 
-    // Upper bound seems to be at least greater than 1000000!!!
-    it('should allow scans at least for 100000 args to IN', function(done) {
-      this.timeout(100000)
-      var attrValList = [], i
-      for (i = 0; i < 100000; i++) attrValList.push({S: 'a'})
-      request(opts({TableName: helpers.testHashTable, ScanFilter: {
-        a: {ComparisonOperator: 'IN', AttributeValueList: attrValList}
-      }}), function(err, res) {
-        if (err) return done(err)
-        res.statusCode.should.equal(200)
-        done()
-      })
-    })
-
     it('should scan by a non-id property (type N)', function(done) {
       var item = {a: {S: helpers.randomString()}, b: {N: helpers.randomString()}},
           item2 = {a: {S: helpers.randomString()}, b: item.b},
@@ -1104,6 +1090,7 @@ describe('scan', function() {
           c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
         }}), function(err, res) {
           if (err) return done(err)
+          res.statusCode.should.equal(200)
           res.body.Items.should.containEql(item)
           res.body.Items.should.containEql(item2)
           res.body.Items.should.containEql(item3)
@@ -1137,6 +1124,7 @@ describe('scan', function() {
           c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
         }}), function(err, res) {
           if (err) return done(err)
+          res.statusCode.should.equal(200)
           res.body.Items.should.containEql(item)
           res.body.Items.should.containEql(item2)
           res.body.Items.should.containEql(item3)
@@ -1170,6 +1158,7 @@ describe('scan', function() {
           c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
         }}), function(err, res) {
           if (err) return done(err)
+          res.statusCode.should.equal(200)
           res.body.Items.should.containEql(item)
           res.body.Items.should.containEql(item3)
           res.body.Items.should.containEql(item5)
@@ -1202,6 +1191,7 @@ describe('scan', function() {
           c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
         }}), function(err, res) {
           if (err) return done(err)
+          res.statusCode.should.equal(200)
           res.body.Items.should.containEql(item)
           res.body.Items.should.containEql(item2)
           res.body.Items.should.containEql(item3)
@@ -1235,6 +1225,7 @@ describe('scan', function() {
           c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
         }}), function(err, res) {
           if (err) return done(err)
+          res.statusCode.should.equal(200)
           res.body.Items.should.containEql(item2)
           res.body.Items.should.containEql(item3)
           res.body.Items.should.containEql(item5)
@@ -1267,6 +1258,7 @@ describe('scan', function() {
           c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
         }}), function(err, res) {
           if (err) return done(err)
+          res.statusCode.should.equal(200)
           res.body.Items.should.containEql(item2)
           res.body.Items.should.containEql(item3)
           res.body.Items.should.containEql(item5)
@@ -1299,6 +1291,7 @@ describe('scan', function() {
           c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
         }}), function(err, res) {
           if (err) return done(err)
+          res.statusCode.should.equal(200)
           res.body.Items.should.containEql(item)
           res.body.Items.should.containEql(item3)
           res.body.Items.should.containEql(item5)
@@ -1331,6 +1324,7 @@ describe('scan', function() {
           c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
         }}), function(err, res) {
           if (err) return done(err)
+          res.statusCode.should.equal(200)
           res.body.Items.should.containEql(item)
           res.body.Items.should.containEql(item2)
           res.body.Items.should.containEql(item3)
@@ -1364,6 +1358,7 @@ describe('scan', function() {
           c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
         }}), function(err, res) {
           if (err) return done(err)
+          res.statusCode.should.equal(200)
           res.body.Items.should.containEql(item)
           res.body.Items.should.containEql(item2)
           res.body.Items.should.containEql(item4)
@@ -1396,6 +1391,7 @@ describe('scan', function() {
           c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
         }}), function(err, res) {
           if (err) return done(err)
+          res.statusCode.should.equal(200)
           res.body.Items.should.containEql(item2)
           res.body.Items.should.containEql(item3)
           res.body.Items.should.containEql(item4)
@@ -1429,6 +1425,7 @@ describe('scan', function() {
           c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
         }}), function(err, res) {
           if (err) return done(err)
+          res.statusCode.should.equal(200)
           res.body.Items.should.containEql(item)
           res.body.Items.should.containEql(item2)
           res.body.Items.should.containEql(item4)
@@ -1461,6 +1458,7 @@ describe('scan', function() {
           c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
         }}), function(err, res) {
           if (err) return done(err)
+          res.statusCode.should.equal(200)
           res.body.Items.should.containEql(item)
           res.body.Items.should.containEql(item4)
           res.body.Items.should.have.length(2)
@@ -1492,6 +1490,7 @@ describe('scan', function() {
           c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
         }}), function(err, res) {
           if (err) return done(err)
+          res.statusCode.should.equal(200)
           res.body.Items.should.containEql(item2)
           res.body.Items.should.containEql(item4)
           res.body.Items.should.containEql(item5)
@@ -1520,6 +1519,7 @@ describe('scan', function() {
           c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
         }}), function(err, res) {
           if (err) return done(err)
+          res.statusCode.should.equal(200)
           res.body.Items.should.containEql(item)
           res.body.Items.should.containEql(item2)
           res.body.Items.should.have.length(2)
@@ -1547,6 +1547,7 @@ describe('scan', function() {
           c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
         }}), function(err, res) {
           if (err) return done(err)
+          res.statusCode.should.equal(200)
           res.body.Items.should.containEql(item)
           res.body.Items.should.containEql(item2)
           res.body.Items.should.have.length(2)
@@ -1580,6 +1581,7 @@ describe('scan', function() {
           c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
         }}), function(err, res) {
           if (err) return done(err)
+          res.statusCode.should.equal(200)
           res.body.Items.should.containEql(item)
           res.body.Items.should.containEql(item2)
           res.body.Items.should.containEql(item5)
@@ -1612,6 +1614,7 @@ describe('scan', function() {
           c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
         }}), function(err, res) {
           if (err) return done(err)
+          res.statusCode.should.equal(200)
           res.body.Items.should.have.lengthOf(1)
           res.body.Items[0].a.should.eql(item2.a)
           res.body.Count.should.equal(1)
@@ -1644,6 +1647,7 @@ describe('scan', function() {
           c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
         }}), function(err, res) {
           if (err) return done(err)
+          res.statusCode.should.equal(200)
           res.body.Items.should.containEql(item3)
           res.body.Items.should.containEql(item4)
           res.body.Items.should.containEql(item5)
@@ -1678,6 +1682,7 @@ describe('scan', function() {
           c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
         }}), function(err, res) {
           if (err) return done(err)
+          res.statusCode.should.equal(200)
           res.body.Items.should.containEql(item3)
           res.body.Items.should.containEql(item4)
           res.body.Items.should.containEql(item6)
@@ -1710,6 +1715,7 @@ describe('scan', function() {
           c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
         }}), function(err, res) {
           if (err) return done(err)
+          res.statusCode.should.equal(200)
           res.body.Items.should.containEql(item)
           res.body.Items.should.containEql(item3)
           res.body.Items.should.containEql(item4)
@@ -1745,6 +1751,7 @@ describe('scan', function() {
           c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
         }}), function(err, res) {
           if (err) return done(err)
+          res.statusCode.should.equal(200)
           res.body.Items.should.containEql(item)
           res.body.Items.should.containEql(item2)
           res.body.Items.should.containEql(item6)
@@ -1777,6 +1784,7 @@ describe('scan', function() {
           c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
         }}), function(err, res) {
           if (err) return done(err)
+          res.statusCode.should.equal(200)
           res.body.Items.should.containEql(item)
           res.body.Items.should.containEql(item5)
           res.body.Items.should.have.length(2)
@@ -1808,6 +1816,7 @@ describe('scan', function() {
           c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
         }}), function(err, res) {
           if (err) return done(err)
+          res.statusCode.should.equal(200)
           res.body.Items.should.containEql(item3)
           res.body.Items.should.containEql(item5)
           res.body.Items.should.have.length(2)
@@ -1839,6 +1848,7 @@ describe('scan', function() {
           c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
         }}), function(err, res) {
           if (err) return done(err)
+          res.statusCode.should.equal(200)
           res.body.Items.should.containEql(item)
           res.body.Items.should.containEql(item5)
           res.body.Items.should.have.length(2)
@@ -1870,6 +1880,7 @@ describe('scan', function() {
           c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
         }}), function(err, res) {
           if (err) return done(err)
+          res.statusCode.should.equal(200)
           res.body.Items.should.containEql(item4)
           res.body.Items.should.containEql(item5)
           res.body.Items.should.have.length(2)
@@ -1901,6 +1912,7 @@ describe('scan', function() {
           c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
         }}), function(err, res) {
           if (err) return done(err)
+          res.statusCode.should.equal(200)
           res.body.Items.should.containEql(item3)
           res.body.Items.should.containEql(item5)
           res.body.Items.should.have.length(2)
@@ -1932,6 +1944,7 @@ describe('scan', function() {
           c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
         }}), function(err, res) {
           if (err) return done(err)
+          res.statusCode.should.equal(200)
           res.body.Items.should.containEql(item2)
           res.body.Items.should.containEql(item3)
           res.body.Items.should.containEql(item4)
@@ -1964,6 +1977,7 @@ describe('scan', function() {
           c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
         }}), function(err, res) {
           if (err) return done(err)
+          res.statusCode.should.equal(200)
           res.body.Items.should.containEql(item2)
           res.body.Items.should.containEql(item3)
           res.body.Items.should.containEql(item4)
@@ -1996,6 +2010,7 @@ describe('scan', function() {
           c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
         }}), function(err, res) {
           if (err) return done(err)
+          res.statusCode.should.equal(200)
           res.body.Items.should.containEql(item2)
           res.body.Items.should.containEql(item4)
           res.body.Items.should.containEql(item5)
@@ -2120,13 +2135,18 @@ describe('scan', function() {
         if (err) return done(err)
         res.statusCode.should.equal(200)
 
-        request(opts({TableName: helpers.testHashTable, Limit: 3}), function(err, res) {
+        request(opts({TableName: helpers.testHashTable, Limit: 3, ReturnConsumedCapacity: 'INDEXES'}), function(err, res) {
           if (err) return done(err)
           res.statusCode.should.equal(200)
           res.body.ScannedCount.should.equal(3)
           /* jshint -W030 */
           res.body.LastEvaluatedKey.a.S.should.not.be.empty
           Object.keys(res.body.LastEvaluatedKey).should.have.length(1)
+          res.body.ConsumedCapacity.should.eql({
+            CapacityUnits: 0.5,
+            Table: {CapacityUnits: 0.5},
+            TableName: helpers.testHashTable
+          })
           done()
         })
       })
@@ -2396,7 +2416,7 @@ describe('scan', function() {
       })
     })
 
-    // TODO: Need high capacity to run this
+    // TODO: Need high capacity to run this (~100 runs quickly)
     it.skip('should return all if just under limit', function(done) {
       this.timeout(200000)
 
@@ -2447,7 +2467,7 @@ describe('scan', function() {
       })
     })
 
-    // TODO: Need high capacity to run this
+    // TODO: Need high capacity to run this (~100 runs quickly)
     it.skip('should return one less than all if just over limit', function(done) {
       this.timeout(100000)
 
@@ -2497,6 +2517,21 @@ describe('scan', function() {
         })
       })
     })
+
+    // Upper bound seems to vary – tends to return a 500 above 30000 args
+    it('should allow scans at least for 27500 args to IN', function(done) {
+      this.timeout(100000)
+      var attrValList = [], i
+      for (i = 0; i < 27500; i++) attrValList.push({S: 'a'})
+      request(opts({TableName: helpers.testHashTable, ScanFilter: {
+        a: {ComparisonOperator: 'IN', AttributeValueList: attrValList}
+      }}), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        done()
+      })
+    })
+
   })
 
 })

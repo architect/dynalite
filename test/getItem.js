@@ -315,11 +315,18 @@ describe('getItem', function() {
     })
 
     it('should return ConsumedCapacity if specified', function(done) {
-      request(opts({TableName: helpers.testHashTable, Key: {a: {S: helpers.randomString()}}, ReturnConsumedCapacity: 'TOTAL'}), function(err, res) {
+      var req = {TableName: helpers.testHashTable, Key: {a: {S: helpers.randomString()}}, ReturnConsumedCapacity: 'TOTAL'}
+      request(opts(req), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
         res.body.should.eql({ConsumedCapacity: {CapacityUnits: 0.5, TableName: helpers.testHashTable}})
-        done()
+        req.ReturnConsumedCapacity = 'INDEXES'
+        request(opts(req), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.should.eql({ConsumedCapacity: {CapacityUnits: 0.5, Table: {CapacityUnits: 0.5}, TableName: helpers.testHashTable}})
+          done()
+        })
       })
     })
 
@@ -333,11 +340,18 @@ describe('getItem', function() {
     })
 
     it('should return full ConsumedCapacity if specified', function(done) {
-      request(opts({TableName: helpers.testHashTable, Key: {a: {S: helpers.randomString()}}, ReturnConsumedCapacity: 'TOTAL', ConsistentRead: true}), function(err, res) {
+      var req = {TableName: helpers.testHashTable, Key: {a: {S: helpers.randomString()}}, ReturnConsumedCapacity: 'TOTAL', ConsistentRead: true}
+      request(opts(req), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
         res.body.should.eql({ConsumedCapacity: {CapacityUnits: 1, TableName: helpers.testHashTable}})
-        done()
+        req.ReturnConsumedCapacity = 'INDEXES'
+        request(opts(req), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.should.eql({ConsumedCapacity: {CapacityUnits: 1, Table: {CapacityUnits: 1}, TableName: helpers.testHashTable}})
+          done()
+        })
       })
     })
 

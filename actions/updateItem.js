@@ -94,10 +94,12 @@ module.exports = function updateItem(store, data, cb) {
           }
         }
 
-        if (data.ReturnConsumedCapacity == 'TOTAL')
-          returnObj.ConsumedCapacity = {
+        if (~['TOTAL', 'INDEXES'].indexOf(data.ReturnConsumedCapacity))
+          returnObj.ConsumedCapacity =  {
             CapacityUnits: Math.max(db.capacityUnits(oldItem), db.capacityUnits(item)),
             TableName: data.TableName,
+            Table: data.ReturnConsumedCapacity == 'INDEXES' ?
+              {CapacityUnits: Math.max(db.capacityUnits(oldItem), db.capacityUnits(item))} : undefined
           }
 
         itemDb.put(key, item, function(err) {

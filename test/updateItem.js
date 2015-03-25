@@ -696,23 +696,37 @@ describe('updateItem', function() {
 
     it('should return ConsumedCapacity for creating small item', function(done) {
       var key = {a: {S: helpers.randomString()}}, b = new Array(1010 - key.a.S.length).join('b'),
-        updates = {b: {Value: {S: b}}, c: {Value: {N: '12.3456'}}, d: {Value: {B: 'AQI='}}, e: {Value: {BS: ['AQI=', 'Ag==', 'AQ==']}}}
-      request(opts({TableName: helpers.testHashTable, Key: key, AttributeUpdates: updates, ReturnConsumedCapacity: 'TOTAL'}), function(err, res) {
+        updates = {b: {Value: {S: b}}, c: {Value: {N: '12.3456'}}, d: {Value: {B: 'AQI='}}, e: {Value: {BS: ['AQI=', 'Ag==', 'AQ==']}}},
+        req = {TableName: helpers.testHashTable, Key: key, AttributeUpdates: updates, ReturnConsumedCapacity: 'TOTAL'}
+      request(opts(req), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
         res.body.should.eql({ConsumedCapacity: {CapacityUnits: 1, TableName: helpers.testHashTable}})
-        done()
+        req.ReturnConsumedCapacity = 'INDEXES'
+        request(opts(req), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.should.eql({ConsumedCapacity: {CapacityUnits: 1, Table: {CapacityUnits: 1}, TableName: helpers.testHashTable}})
+          done()
+        })
       })
     })
 
     it('should return ConsumedCapacity for creating larger item', function(done) {
       var key = {a: {S: helpers.randomString()}}, b = new Array(1012 - key.a.S.length).join('b'),
-        updates = {b: {Value: {S: b}}, c: {Value: {N: '12.3456'}}, d: {Value: {B: 'AQI='}}, e: {Value: {BS: ['AQI=', 'Ag==']}}}
-      request(opts({TableName: helpers.testHashTable, Key: key, AttributeUpdates: updates, ReturnConsumedCapacity: 'TOTAL'}), function(err, res) {
+        updates = {b: {Value: {S: b}}, c: {Value: {N: '12.3456'}}, d: {Value: {B: 'AQI='}}, e: {Value: {BS: ['AQI=', 'Ag==']}}},
+        req = {TableName: helpers.testHashTable, Key: key, AttributeUpdates: updates, ReturnConsumedCapacity: 'TOTAL'}
+      request(opts(req), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
         res.body.should.eql({ConsumedCapacity: {CapacityUnits: 2, TableName: helpers.testHashTable}})
-        done()
+        req.ReturnConsumedCapacity = 'INDEXES'
+        request(opts(req), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.should.eql({ConsumedCapacity: {CapacityUnits: 2, Table: {CapacityUnits: 2}, TableName: helpers.testHashTable}})
+          done()
+        })
       })
     })
 

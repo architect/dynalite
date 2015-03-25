@@ -21,10 +21,12 @@ module.exports = function putItem(store, data, cb) {
         if (existingItem && data.ReturnValues == 'ALL_OLD')
           returnObj.Attributes = existingItem
 
-        if (data.ReturnConsumedCapacity == 'TOTAL')
-          returnObj.ConsumedCapacity = {
+        if (~['TOTAL', 'INDEXES'].indexOf(data.ReturnConsumedCapacity))
+          returnObj.ConsumedCapacity =  {
             CapacityUnits: Math.max(db.capacityUnits(existingItem), db.capacityUnits(data.Item)),
             TableName: data.TableName,
+            Table: data.ReturnConsumedCapacity == 'INDEXES' ?
+              {CapacityUnits: Math.max(db.capacityUnits(existingItem), db.capacityUnits(data.Item))} : undefined
           }
 
         itemDb.put(key, data.Item, function(err) {
