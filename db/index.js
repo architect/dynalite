@@ -412,10 +412,10 @@ function matchesFilter(val, filter, conditionalOperator) {
           (attrType != 'N' && toLexiStr(attrVal, attrType) <= toLexiStr(compVal, attrType))) return false
         break
       case 'NOT_NULL':
-        if (!attrVal) return false
+        if (attrVal === null) return false
         break
       case 'NULL':
-        if (attrVal) return false
+        if (attrVal !== null) return false
         break
       case 'CONTAINS':
         if (compType == 'S') {

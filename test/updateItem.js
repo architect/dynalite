@@ -425,6 +425,28 @@ describe('updateItem', function() {
   })
 
   describe('functionality', function() {
+    it('should update when boolean value expect matches', function(done) {
+      var item = {a: {S: helpers.randomString()},
+                  active: {BOOL: false}}
+      request(helpers.opts('PutItem', {TableName: helpers.testHashTable, Item: item}), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        res.body.should.eql({})
+        request(opts({TableName: helpers.testHashTable,
+                      Key: {a: item.a},
+                      ConsistentRead: true,
+                      Expected: {active: {Value: {BOOL: false},
+                                          Exists: true}},
+                      AttributeUpdates: {active: {Action: "PUT",
+                                                  Value: {BOOL: true}}}}),
+          function(err, res) {
+            if (err) return done(err)
+            res.statusCode.should.equal(200)
+            done()
+          }
+        )
+      })
+    })
 
     it('should return ConditionalCheckFailedException if expecting non-existent key to exist', function(done) {
       assertConditional({
