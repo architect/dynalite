@@ -27,15 +27,16 @@ function create(options) {
   if (options.deleteTableMs == null) options.deleteTableMs = 500
   if (options.updateTableMs == null) options.updateTableMs = 500
 
-  var db = sublevel(levelup(options.path)),
-      tableDb = db.sublevel('table', {valueEncoding: 'json'}),
+  var db = levelup(options.path),
+      sublevelDb = sublevel(db),
+      tableDb = sublevelDb.sublevel('table', {valueEncoding: 'json'}),
       itemDbs = []
 
   tableDb.lock = new Lock()
 
   function getItemDb(name) {
     if (!itemDbs[name]) {
-      itemDbs[name] = db.sublevel('item-' + name, {valueEncoding: 'json'})
+      itemDbs[name] = sublevelDb.sublevel('item-' + name, {valueEncoding: 'json'})
       itemDbs[name].lock = new Lock()
     }
     return itemDbs[name]
@@ -77,6 +78,7 @@ function create(options) {
     createTableMs: options.createTableMs,
     deleteTableMs: options.deleteTableMs,
     updateTableMs: options.updateTableMs,
+    db: db,
     tableDb: tableDb,
     getItemDb: getItemDb,
     deleteItemDb: deleteItemDb,

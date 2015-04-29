@@ -19,16 +19,27 @@ module.exports = dynalite
 
 function dynalite(options) {
   options = options || {}
-  var requestHandler = httpHandler.bind(null, db.create(options))
+  var server, store = db.create(options), requestHandler = httpHandler.bind(null, store)
 
   if (options.ssl) {
     options.key = options.key || fs.readFileSync(__dirname + '/key.pem')
     options.cert = options.cert || fs.readFileSync(__dirname + '/cert.pem')
     options.ca = options.ca || fs.readFileSync(__dirname + '/ca.pem')
-    return https.createServer(options, requestHandler)
+    server = https.createServer(options, requestHandler)
+  } else {
+    server = http.createServer(requestHandler)
   }
 
-  return http.createServer(requestHandler)
+  // Ensure we close DB when we're closing the server too
+  var httpServerClose = server.close
+  server.close = function(cb) {
+    store.db.close(function(err) {
+      if (err) return cb(err)
+      httpServerClose.call(server, cb)
+    })
+  }
+
+  return server
 }
 
 validOperations.forEach(function(action) {
