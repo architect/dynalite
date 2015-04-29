@@ -74,6 +74,13 @@ function create(options) {
     })
   }
 
+  function recreate() {
+    var store = this, newStore = create(options)
+    Object.keys(newStore).forEach(function(key) {
+      store[key] = newStore[key]
+    })
+  }
+
   return {
     createTableMs: options.createTableMs,
     deleteTableMs: options.deleteTableMs,
@@ -83,6 +90,7 @@ function create(options) {
     getItemDb: getItemDb,
     deleteItemDb: deleteItemDb,
     getTable: getTable,
+    recreate: recreate,
   }
 }
 

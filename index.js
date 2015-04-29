@@ -31,10 +31,15 @@ function dynalite(options) {
   }
 
   // Ensure we close DB when we're closing the server too
-  var httpServerClose = server.close
+  var httpServerClose = server.close, httpServerListen = server.listen
   server.close = function(cb) {
     store.db.close(function(err) {
       if (err) return cb(err)
+      // Recreate the store if the user wants to listen again
+      server.listen = function() {
+        store.recreate()
+        httpServerListen.apply(server, arguments)
+      }
       httpServerClose.call(server, cb)
     })
   }
