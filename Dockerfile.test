@@ -1,0 +1,16 @@
+FROM mhart/alpine-node:0.10
+
+WORKDIR /src
+
+RUN apk-install make gcc g++ python
+
+ADD ./package.json /build/package.json
+RUN cd /build && npm install
+
+# Bundle app source
+ADD . .
+
+# Move npm modules over
+RUN mv /build/node_modules ./
+
+CMD ["npm", "test"]
