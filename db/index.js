@@ -74,9 +74,9 @@ function create(options) {
   }
 
   function recreate() {
-    var store = this, newStore = create(options)
+    var self = this, newStore = create(options)
     Object.keys(newStore).forEach(function(key) {
-      store[key] = newStore[key]
+      self[key] = newStore[key]
     })
   }
 
@@ -175,7 +175,7 @@ function validateItem(dataItem, table) {
 
 function checkKeySize(keyPiece, type, isHash) {
   // Numbers are always fine
-  if (type == 'N') return
+  if (type == 'N') return null
   if (type == 'B') keyPiece = new Buffer(keyPiece, 'base64')
   if (isHash && keyPiece.length > 2048)
     return validationError('One or more parameter values were invalid: ' +
@@ -199,11 +199,11 @@ function toLexiStr(keyPiece, type) {
   if (keyPiece == null) return ''
   if (type == 'B') return new Buffer(keyPiece, 'base64').toString('hex')
   if (type != 'N') return keyPiece
-  var bigNum = Big(keyPiece), digits,
+  var bigNum = new Big(keyPiece), digits,
       exp = !bigNum.c[0] ? 0 : bigNum.s == -1 ? 125 - bigNum.e : 130 + bigNum.e
   if (bigNum.s == -1) {
     bigNum.e = 0
-    digits = Big(10).plus(bigNum).toFixed().replace(/\./, '')
+    digits = new Big(10).plus(bigNum).toFixed().replace(/\./, '')
   } else {
     digits = bigNum.c.join('')
   }
@@ -262,7 +262,7 @@ function numToBuffer(num) {
     } else if ((mantissaIndex + appendZero) % 2 === 0) {
       byteArray[byteArrayIndex] = mantissa[mantissaIndex] * 10
     } else {
-      byteArray[byteArrayIndex] = byteArray[byteArrayIndex] + mantissa[mantissaIndex]
+      byteArray[byteArrayIndex] += mantissa[mantissaIndex]
     }
     if (((mantissaIndex + appendZero) % 2) || (mantissaIndex == mantissa.length - 1)) {
       if (scale == -1)
@@ -303,7 +303,7 @@ function itemCompare(rangeKey, table) {
 
 function checkConditional(data, existingItem) {
   var expected = data.Expected
-  if (!expected) return
+  if (!expected) return null
 
   existingItem = existingItem || {}
 
@@ -337,7 +337,6 @@ function conditionalError(msg) {
 function itemSize(item, skipAttr) {
   var size = 0, attr, type, val
   for (attr in item) {
-    /* jshint -W083 */
     type = Object.keys(item[attr])[0]
     val = item[attr][type]
     size += skipAttr ? 2 : attr.length
@@ -349,18 +348,18 @@ function itemSize(item, skipAttr) {
         size += new Buffer(val, 'base64').length
         break
       case 'N':
-        val = Big(val)
+        val = new Big(val)
         size += Math.ceil(val.c.length / 2) + (val.e % 2 ? 1 : 2)
         break
       case 'SS':
-        size += val.reduce(function(sum, x) { return sum + x.length }, skipAttr ? val.length : 0)
+        size += val.reduce(function(sum, x) { return sum + x.length }, skipAttr ? val.length : 0) // eslint-disable-line no-loop-func
         break
       case 'BS':
-        size += val.reduce(function(sum, x) { return sum + new Buffer(x, 'base64').length }, skipAttr ? val.length : 0)
+        size += val.reduce(function(sum, x) { return sum + new Buffer(x, 'base64').length }, skipAttr ? val.length : 0) // eslint-disable-line no-loop-func
         break
       case 'NS':
-        size += val.reduce(function(sum, x) {
-          x = Big(x)
+        size += val.reduce(function(sum, x) { // eslint-disable-line no-loop-func
+          x = new Big(x)
           return sum + Math.ceil(x.c.length / 2) + (x.e % 2 ? 1 : 2)
         }, skipAttr ? val.length : 0)
         break
@@ -402,22 +401,22 @@ function matchesFilter(val, filter, conditionalOperator) {
         break
       case 'LE':
         if (compType != attrType ||
-          (attrType == 'N' && !Big(attrVal).lte(compVal)) ||
+          (attrType == 'N' && !new Big(attrVal).lte(compVal)) ||
           (attrType != 'N' && toLexiStr(attrVal, attrType) > toLexiStr(compVal, attrType))) return false
         break
       case 'LT':
         if (compType != attrType ||
-          (attrType == 'N' && !Big(attrVal).lt(compVal)) ||
+          (attrType == 'N' && !new Big(attrVal).lt(compVal)) ||
           (attrType != 'N' && toLexiStr(attrVal, attrType) >= toLexiStr(compVal, attrType))) return false
         break
       case 'GE':
         if (compType != attrType ||
-          (attrType == 'N' && !Big(attrVal).gte(compVal)) ||
+          (attrType == 'N' && !new Big(attrVal).gte(compVal)) ||
           (attrType != 'N' && toLexiStr(attrVal, attrType) < toLexiStr(compVal, attrType))) return false
         break
       case 'GT':
         if (compType != attrType ||
-          (attrType == 'N' && !Big(attrVal).gt(compVal)) ||
+          (attrType == 'N' && !new Big(attrVal).gt(compVal)) ||
           (attrType != 'N' && toLexiStr(attrVal, attrType) <= toLexiStr(compVal, attrType))) return false
         break
       case 'NOT_NULL':
@@ -476,7 +475,7 @@ function matchesFilter(val, filter, conditionalOperator) {
         break
       case 'BETWEEN':
         if (!attrVal || compType != attrType ||
-          (attrType == 'N' && (!Big(attrVal).gte(compVal) || !Big(attrVal).lte(compVals[1].N))) ||
+          (attrType == 'N' && (!new Big(attrVal).gte(compVal) || !new Big(attrVal).lte(compVals[1].N))) ||
           (attrType != 'N' && (toLexiStr(attrVal, attrType) < toLexiStr(compVal, attrType) ||
             toLexiStr(attrVal, attrType) > toLexiStr(compVals[1][compType], attrType)))) return false
     }

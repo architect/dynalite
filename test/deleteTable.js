@@ -69,7 +69,7 @@ describe('deleteTable', function() {
           IndexName: 'abc',
           KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}],
           ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
-          Projection: {ProjectionType: 'KEYS_ONLY'}
+          Projection: {ProjectionType: 'KEYS_ONLY'},
         }]
       }
       request(helpers.opts('CreateTable', table), function(err, res) {

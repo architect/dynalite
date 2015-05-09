@@ -15,10 +15,9 @@ module.exports = function batchGetItem(store, data, cb) {
     for (table in tableResponses) {
       // Order is pretty random
       // Assign keys before we shuffle
-      /* jshint -W083 */
-      tableResponses[table].forEach(function(tableRes, ix) { tableRes._key = data.RequestItems[table].Keys[ix] })
+      tableResponses[table].forEach(function(tableRes, ix) { tableRes._key = data.RequestItems[table].Keys[ix] }) // eslint-disable-line no-loop-func
       shuffle(tableResponses[table])
-      res.Responses[table] = tableResponses[table].map(function(tableRes) {
+      res.Responses[table] = tableResponses[table].map(function(tableRes) { // eslint-disable-line no-loop-func
         if (tableRes.Item) {
           // TODO: This is totally inefficient - should fix this
           var newSize = totalSize + db.itemSize(tableRes.Item)
@@ -33,7 +32,7 @@ module.exports = function batchGetItem(store, data, cb) {
             if (!capacities[table]) capacities[table] = 0
             capacities[table] += 1
             res.UnprocessedKeys[table].Keys.push(tableRes._key)
-            return
+            return null
           }
           totalSize = newSize
         }
@@ -42,7 +41,7 @@ module.exports = function batchGetItem(store, data, cb) {
           capacities[table] += tableRes.ConsumedCapacity.CapacityUnits
         }
         return tableRes.Item
-      }).filter(function(x) { return x })
+      }).filter(Boolean)
     }
 
     if (~['TOTAL', 'INDEXES'].indexOf(data.ReturnConsumedCapacity)) {
@@ -50,7 +49,7 @@ module.exports = function batchGetItem(store, data, cb) {
         return {
           CapacityUnits: capacities[table],
           TableName: table,
-          Table: data.ReturnConsumedCapacity == 'INDEXES' ? {CapacityUnits: capacities[table]} : undefined
+          Table: data.ReturnConsumedCapacity == 'INDEXES' ? {CapacityUnits: capacities[table]} : undefined,
         }
       })
     }

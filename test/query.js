@@ -1497,7 +1497,7 @@ describe('query', function() {
 
                 // TODO: Technically there shouldn't be a LastEvaluatedKey here,
                 //       but the logic is very complicated, so for now, just leave it
-                //res.body.should.eql({Count: 2, Items: otherHashItems})
+                // res.body.should.eql({Count: 2, Items: otherHashItems})
 
                 res.body.Count.should.equal(2)
                 res.body.ScannedCount.should.equal(2)
@@ -1969,7 +1969,7 @@ describe('query', function() {
         if (err) return done(err)
         res.statusCode.should.equal(200)
         var req = {TableName: helpers.testRangeTable,
-          KeyConditions: { c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]}},
+          KeyConditions: {c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]}},
           IndexName: 'index3', ScanIndexForward: false, Limit: 4, ReturnConsumedCapacity: 'INDEXES'}
         request(opts(req), function(err, res) {
           if (err) return done(err)

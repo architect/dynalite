@@ -398,7 +398,7 @@ describe('createTable', function() {
       assertValidation({TableName: 'abc',
         AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}, {AttributeName: 'b', AttributeType: 'S'}],
         KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}, {KeyType: 'RANGE', AttributeName: 'b'}],
-        LocalSecondaryIndexes: [{},{},{},{},{},{},{},{},{}],
+        LocalSecondaryIndexes: [{}, {}, {}, {}, {}, {}, {}, {}, {}],
         ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},
         '10 validation errors detected: ' +
         'Value null at \'localSecondaryIndexes.1.member.projection\' failed to satisfy constraint: ' +
@@ -462,11 +462,11 @@ describe('createTable', function() {
         LocalSecondaryIndexes: [{
           IndexName: 'abc',
           KeySchema: [{AttributeName: 'c', KeyType: 'RANGE'}, {AttributeName: 'd', KeyType: 'RANGE'}],
-          Projection: {}
+          Projection: {},
         }, {
           IndexName: 'abc',
           KeySchema: [{AttributeName: 'e', KeyType: 'RANGE'}],
-          Projection: {}
+          Projection: {},
         }],
         ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},
         'One or more parameter values were invalid: ' +
@@ -537,7 +537,7 @@ describe('createTable', function() {
         LocalSecondaryIndexes: [{
           IndexName: 'abc',
           KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'c', KeyType: 'RANGE'}],
-          Projection: {}
+          Projection: {},
         }],
         ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},
         'One or more parameter values were invalid: ' +
@@ -561,7 +561,7 @@ describe('createTable', function() {
         LocalSecondaryIndexes: [{
           IndexName: 'abc',
           KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
-          Projection: {NonKeyAttributes: [], ProjectionType: 'abc'}
+          Projection: {NonKeyAttributes: [], ProjectionType: 'abc'},
         }],
         ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},
         '2 validation errors detected: ' +
@@ -578,7 +578,7 @@ describe('createTable', function() {
         LocalSecondaryIndexes: [{
           IndexName: 'abc',
           KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
-          Projection: {NonKeyAttributes: ['a']}
+          Projection: {NonKeyAttributes: ['a']},
         }],
         ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},
         'One or more parameter values were invalid: Unknown ProjectionType: null', done)
@@ -591,7 +591,7 @@ describe('createTable', function() {
         LocalSecondaryIndexes: [{
           IndexName: 'abc',
           KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
-          Projection: {ProjectionType: 'ALL', NonKeyAttributes: ['a']}
+          Projection: {ProjectionType: 'ALL', NonKeyAttributes: ['a']},
         }],
         ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},
         'One or more parameter values were invalid: ' +
@@ -605,7 +605,7 @@ describe('createTable', function() {
         LocalSecondaryIndexes: [{
           IndexName: 'abc',
           KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
-          Projection: {ProjectionType: 'KEYS_ONLY', NonKeyAttributes: ['a']}
+          Projection: {ProjectionType: 'KEYS_ONLY', NonKeyAttributes: ['a']},
         }],
         ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},
         'One or more parameter values were invalid: ' +
@@ -619,11 +619,11 @@ describe('createTable', function() {
         LocalSecondaryIndexes: [{
           IndexName: 'abc',
           KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
-          Projection: {ProjectionType: 'ALL'}
+          Projection: {ProjectionType: 'ALL'},
         }, {
           IndexName: 'abc',
           KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
-          Projection: {ProjectionType: 'ALL'}
+          Projection: {ProjectionType: 'ALL'},
         }],
         ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},
         'One or more parameter values were invalid: Duplicate index name: abc', done)
@@ -636,27 +636,27 @@ describe('createTable', function() {
         LocalSecondaryIndexes: [{
           IndexName: 'abc',
           KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
-          Projection: {ProjectionType: 'ALL'}
+          Projection: {ProjectionType: 'ALL'},
         }, {
           IndexName: 'abd',
           KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
-          Projection: {ProjectionType: 'ALL'}
+          Projection: {ProjectionType: 'ALL'},
         }, {
           IndexName: 'abe',
           KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
-          Projection: {ProjectionType: 'ALL'}
+          Projection: {ProjectionType: 'ALL'},
         }, {
           IndexName: 'abf',
           KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
-          Projection: {ProjectionType: 'ALL'}
+          Projection: {ProjectionType: 'ALL'},
         }, {
           IndexName: 'abg',
           KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
-          Projection: {ProjectionType: 'ALL'}
+          Projection: {ProjectionType: 'ALL'},
         }, {
           IndexName: 'abh',
           KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
-          Projection: {ProjectionType: 'ALL'}
+          Projection: {ProjectionType: 'ALL'},
         }, {}],
         ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},
         '3 validation errors detected: ' +
@@ -675,27 +675,27 @@ describe('createTable', function() {
         LocalSecondaryIndexes: [{
           IndexName: 'abc',
           KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
-          Projection: {ProjectionType: 'ALL'}
+          Projection: {ProjectionType: 'ALL'},
         }, {
           IndexName: 'abd',
           KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
-          Projection: {ProjectionType: 'ALL'}
+          Projection: {ProjectionType: 'ALL'},
         }, {
           IndexName: 'abe',
           KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
-          Projection: {ProjectionType: 'ALL'}
+          Projection: {ProjectionType: 'ALL'},
         }, {
           IndexName: 'abf',
           KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
-          Projection: {ProjectionType: 'ALL'}
+          Projection: {ProjectionType: 'ALL'},
         }, {
           IndexName: 'abg',
           KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
-          Projection: {ProjectionType: 'ALL'}
+          Projection: {ProjectionType: 'ALL'},
         }, {
           IndexName: 'abh',
           KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
-          Projection: {ProjectionType: 'ALL'}
+          Projection: {ProjectionType: 'ALL'},
         }],
         ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},
         'One or more parameter values were invalid: LocalSecondaryIndex count exceeds the per-table limit of 5', done)
@@ -715,7 +715,7 @@ describe('createTable', function() {
       assertValidation({TableName: 'abc',
         AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}, {AttributeName: 'b', AttributeType: 'S'}],
         KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}, {KeyType: 'RANGE', AttributeName: 'b'}],
-        GlobalSecondaryIndexes: [{},{},{},{},{},{},{},{},{}],
+        GlobalSecondaryIndexes: [{}, {}, {}, {}, {}, {}, {}, {}, {}],
         ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},
         '10 validation errors detected: ' +
         'Value null at \'globalSecondaryIndexes.1.member.projection\' failed to satisfy constraint: ' +
@@ -794,7 +794,7 @@ describe('createTable', function() {
           IndexName: 'abc',
           KeySchema: [{AttributeName: 'e', KeyType: 'RANGE'}],
           ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
-          Projection: {}
+          Projection: {},
         }],
         ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},
         'One or more parameter values were invalid: ' +
@@ -810,7 +810,7 @@ describe('createTable', function() {
           IndexName: 'abc',
           KeySchema: [{AttributeName: 'a', KeyType: 'RANGE'}],
           ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
-          Projection: {}
+          Projection: {},
         }],
         ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},
         'Invalid KeySchema: The first KeySchemaElement is not a HASH key type', done)
@@ -824,7 +824,7 @@ describe('createTable', function() {
           IndexName: 'abc',
           KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'a', KeyType: 'HASH'}],
           ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
-          Projection: {}
+          Projection: {},
         }],
         ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},
         'Both the Hash Key and the Range Key element in the KeySchema have the same name', done)
@@ -838,7 +838,7 @@ describe('createTable', function() {
           IndexName: 'abc',
           KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'HASH'}],
           ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
-          Projection: {}
+          Projection: {},
         }],
         ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},
         'Invalid KeySchema: The second KeySchemaElement is not a RANGE key type', done)
@@ -852,7 +852,7 @@ describe('createTable', function() {
           IndexName: 'abc',
           KeySchema: [{AttributeName: 'b', KeyType: 'HASH'}],
           ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
-          Projection: {}
+          Projection: {},
         }],
         ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},
         'One or more parameter values were invalid: Unknown ProjectionType: null', done)
@@ -866,7 +866,7 @@ describe('createTable', function() {
           IndexName: 'abc',
           KeySchema: [{AttributeName: 'b', KeyType: 'HASH'}, {AttributeName: 'a', KeyType: 'RANGE'}],
           ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
-          Projection: {}
+          Projection: {},
         }],
         ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},
         'One or more parameter values were invalid: Unknown ProjectionType: null', done)
@@ -880,7 +880,7 @@ describe('createTable', function() {
           IndexName: 'abc',
           KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'a', KeyType: 'RANGE'}],
           ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
-          Projection: {}
+          Projection: {},
         }],
         ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},
         'Both the Hash Key and the Range Key element in the KeySchema have the same name', done)
@@ -894,7 +894,7 @@ describe('createTable', function() {
           IndexName: 'abc',
           KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'c', KeyType: 'RANGE'}],
           ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
-          Projection: {}
+          Projection: {},
         }],
         ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},
         'One or more parameter values were invalid: ' +
@@ -910,7 +910,7 @@ describe('createTable', function() {
           IndexName: 'abc',
           KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
           ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
-          Projection: {}
+          Projection: {},
         }],
         ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},
         'One or more parameter values were invalid: Unknown ProjectionType: null', done)
@@ -924,7 +924,7 @@ describe('createTable', function() {
           IndexName: 'abc',
           KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
           ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
-          Projection: {NonKeyAttributes: [], ProjectionType: 'abc'}
+          Projection: {NonKeyAttributes: [], ProjectionType: 'abc'},
         }],
         ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},
         '2 validation errors detected: ' +
@@ -942,7 +942,7 @@ describe('createTable', function() {
           IndexName: 'abc',
           KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
           ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
-          Projection: {NonKeyAttributes: ['a']}
+          Projection: {NonKeyAttributes: ['a']},
         }],
         ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},
         'One or more parameter values were invalid: Unknown ProjectionType: null', done)
@@ -956,7 +956,7 @@ describe('createTable', function() {
           IndexName: 'abc',
           KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
           ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
-          Projection: {ProjectionType: 'ALL', NonKeyAttributes: ['a']}
+          Projection: {ProjectionType: 'ALL', NonKeyAttributes: ['a']},
         }],
         ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},
         'One or more parameter values were invalid: ' +
@@ -971,7 +971,7 @@ describe('createTable', function() {
           IndexName: 'abc',
           KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
           ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
-          Projection: {ProjectionType: 'KEYS_ONLY', NonKeyAttributes: ['a']}
+          Projection: {ProjectionType: 'KEYS_ONLY', NonKeyAttributes: ['a']},
         }],
         ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},
         'One or more parameter values were invalid: ' +
@@ -986,12 +986,12 @@ describe('createTable', function() {
           IndexName: 'abc',
           KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
           ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
-          Projection: {ProjectionType: 'ALL'}
+          Projection: {ProjectionType: 'ALL'},
         }, {
           IndexName: 'abc',
           KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
           ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
-          Projection: {ProjectionType: 'ALL'}
+          Projection: {ProjectionType: 'ALL'},
         }],
         ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},
         'One or more parameter values were invalid: Duplicate index name: abc', done)
@@ -1005,32 +1005,32 @@ describe('createTable', function() {
           IndexName: 'abc',
           KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
           ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
-          Projection: {ProjectionType: 'ALL'}
+          Projection: {ProjectionType: 'ALL'},
         }, {
           IndexName: 'abd',
           KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
           ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
-          Projection: {ProjectionType: 'ALL'}
+          Projection: {ProjectionType: 'ALL'},
         }, {
           IndexName: 'abe',
           KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
           ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
-          Projection: {ProjectionType: 'ALL'}
+          Projection: {ProjectionType: 'ALL'},
         }, {
           IndexName: 'abf',
           KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
           ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
-          Projection: {ProjectionType: 'ALL'}
+          Projection: {ProjectionType: 'ALL'},
         }, {
           IndexName: 'abg',
           KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
           ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
-          Projection: {ProjectionType: 'ALL'}
+          Projection: {ProjectionType: 'ALL'},
         }, {
           IndexName: 'abh',
           KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
           ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
-          Projection: {ProjectionType: 'ALL'}
+          Projection: {ProjectionType: 'ALL'},
         }, {}],
         ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},
         '4 validation errors detected: ' +
@@ -1052,32 +1052,32 @@ describe('createTable', function() {
           IndexName: 'abc',
           KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
           ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
-          Projection: {ProjectionType: 'ALL'}
+          Projection: {ProjectionType: 'ALL'},
         }, {
           IndexName: 'abd',
           KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
           ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
-          Projection: {ProjectionType: 'ALL'}
+          Projection: {ProjectionType: 'ALL'},
         }, {
           IndexName: 'abe',
           KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
           ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
-          Projection: {ProjectionType: 'ALL'}
+          Projection: {ProjectionType: 'ALL'},
         }, {
           IndexName: 'abf',
           KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
           ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
-          Projection: {ProjectionType: 'ALL'}
+          Projection: {ProjectionType: 'ALL'},
         }, {
           IndexName: 'abg',
           KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
           ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
-          Projection: {ProjectionType: 'ALL'}
+          Projection: {ProjectionType: 'ALL'},
         }, {
           IndexName: 'abh',
           KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
           ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
-          Projection: {ProjectionType: 'ALL'}
+          Projection: {ProjectionType: 'ALL'},
         }],
         ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},
         'One or more parameter values were invalid: GlobalSecondaryIndex count exceeds the per-table limit of 5', done)
@@ -1090,13 +1090,13 @@ describe('createTable', function() {
         LocalSecondaryIndexes: [{
           IndexName: 'abc',
           KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
-          Projection: {ProjectionType: 'ALL'}
+          Projection: {ProjectionType: 'ALL'},
         }],
         GlobalSecondaryIndexes: [{
           IndexName: 'abc',
           KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
           ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
-          Projection: {ProjectionType: 'ALL'}
+          Projection: {ProjectionType: 'ALL'},
         }],
         ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},
         'One or more parameter values were invalid: Duplicate index name: abc', done)
@@ -1109,13 +1109,13 @@ describe('createTable', function() {
         LocalSecondaryIndexes: [{
           IndexName: 'abc',
           KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
-          Projection: {ProjectionType: 'ALL'}
+          Projection: {ProjectionType: 'ALL'},
         }],
         GlobalSecondaryIndexes: [{
           IndexName: 'abc',
           KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
           ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
-          Projection: {ProjectionType: 'ALL'}
+          Projection: {ProjectionType: 'ALL'},
         }],
         ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},
         'One or more parameter values were invalid: Duplicate index name: abc', done)
@@ -1138,7 +1138,7 @@ describe('createTable', function() {
         should.exist(res.body.TableDescription)
         var desc = res.body.TableDescription
         desc.CreationDateTime.should.be.above(createdAt - 5)
-        ;delete desc.CreationDateTime
+        delete desc.CreationDateTime
         table.ItemCount = 0
         table.ProvisionedThroughput.NumberOfDecreasesToday = 0
         table.TableSizeBytes = 0
@@ -1180,25 +1180,25 @@ describe('createTable', function() {
         LocalSecondaryIndexes: [{
           IndexName: 'abc',
           KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
-          Projection: {ProjectionType: 'ALL'}
+          Projection: {ProjectionType: 'ALL'},
         }, {
           IndexName: 'abd',
           KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
-          Projection: {ProjectionType: 'ALL'}
+          Projection: {ProjectionType: 'ALL'},
         }, {
           IndexName: 'abe',
           KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
-          Projection: {ProjectionType: 'ALL'}
+          Projection: {ProjectionType: 'ALL'},
         }, {
           IndexName: 'abf',
           KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
-          Projection: {ProjectionType: 'ALL'}
+          Projection: {ProjectionType: 'ALL'},
         }, {
           IndexName: 'abg',
           KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
-          Projection: {ProjectionType: 'ALL'}
+          Projection: {ProjectionType: 'ALL'},
         }],
-        ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}
+        ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
       }, createdAt = Date.now() / 1000
       request(opts(table), function(err, res) {
         if (err) return done(err)
@@ -1206,7 +1206,7 @@ describe('createTable', function() {
         should.exist(res.body.TableDescription)
         var desc = res.body.TableDescription
         desc.CreationDateTime.should.be.above(createdAt - 5)
-        ;delete desc.CreationDateTime
+        delete desc.CreationDateTime
         table.ItemCount = 0
         table.ProvisionedThroughput.NumberOfDecreasesToday = 0
         table.TableSizeBytes = 0
@@ -1218,8 +1218,8 @@ describe('createTable', function() {
           desc.LocalSecondaryIndexes.should.containEql(index)
         })
         desc.LocalSecondaryIndexes.length.should.equal(table.LocalSecondaryIndexes.length)
-        ;delete desc.LocalSecondaryIndexes
-        ;delete table.LocalSecondaryIndexes
+        delete desc.LocalSecondaryIndexes
+        delete table.LocalSecondaryIndexes
         desc.should.eql(table)
         helpers.deleteWhenActive(table.TableName)
         done()
@@ -1236,29 +1236,29 @@ describe('createTable', function() {
           IndexName: 'abc',
           KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
           ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
-          Projection: {ProjectionType: 'ALL'}
+          Projection: {ProjectionType: 'ALL'},
         }, {
           IndexName: 'abd',
           KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
           ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
-          Projection: {ProjectionType: 'ALL'}
+          Projection: {ProjectionType: 'ALL'},
         }, {
           IndexName: 'abe',
           KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
           ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
-          Projection: {ProjectionType: 'ALL'}
+          Projection: {ProjectionType: 'ALL'},
         }, {
           IndexName: 'abf',
           KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
           ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
-          Projection: {ProjectionType: 'ALL'}
+          Projection: {ProjectionType: 'ALL'},
         }, {
           IndexName: 'abg',
           KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
           ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
-          Projection: {ProjectionType: 'ALL'}
+          Projection: {ProjectionType: 'ALL'},
         }],
-        ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}
+        ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
       }, createdAt = Date.now() / 1000, globalIndexes = table.GlobalSecondaryIndexes
       request(opts(table), function(err, res) {
         if (err) return done(err)
@@ -1266,7 +1266,7 @@ describe('createTable', function() {
         should.exist(res.body.TableDescription)
         var desc = res.body.TableDescription
         desc.CreationDateTime.should.be.above(createdAt - 5)
-        ;delete desc.CreationDateTime
+        delete desc.CreationDateTime
         table.ItemCount = 0
         table.ProvisionedThroughput.NumberOfDecreasesToday = 0
         table.TableSizeBytes = 0
@@ -1280,8 +1280,8 @@ describe('createTable', function() {
           desc.GlobalSecondaryIndexes.should.containEql(index)
         })
         desc.GlobalSecondaryIndexes.length.should.equal(globalIndexes.length)
-        ;delete desc.GlobalSecondaryIndexes
-        ;delete table.GlobalSecondaryIndexes
+        delete desc.GlobalSecondaryIndexes
+        delete table.GlobalSecondaryIndexes
         desc.should.eql(table)
 
         // Ensure that the indexes become active too

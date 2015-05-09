@@ -22,11 +22,11 @@ module.exports = function deleteItem(store, data, cb) {
           returnObj.Attributes = existingItem
 
         if (~['TOTAL', 'INDEXES'].indexOf(data.ReturnConsumedCapacity))
-          returnObj.ConsumedCapacity =  {
+          returnObj.ConsumedCapacity = {
             CapacityUnits: db.capacityUnits(existingItem),
             TableName: data.TableName,
             Table: data.ReturnConsumedCapacity == 'INDEXES' ?
-              {CapacityUnits: db.capacityUnits(existingItem)} : undefined
+              {CapacityUnits: db.capacityUnits(existingItem)} : undefined,
           }
 
         itemDb.del(key, function(err) {

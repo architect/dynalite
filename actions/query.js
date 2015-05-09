@@ -113,7 +113,7 @@ module.exports = function query(store, data, cb) {
       db.lazy(itemDb.createValueStream(), cb)
         .filter(function(val) { return db.matchesFilter(val, data.KeyConditions) })
         .join(function(items) {
-          var compareFn = db.itemCompare(rangeKey, table), i
+          var compareFn = db.itemCompare(rangeKey, table)
           if (data.IndexName)
             items.sort(compareFn)
           if (data.ScanIndexForward === false)
@@ -123,9 +123,8 @@ module.exports = function query(store, data, cb) {
               if (data.ScanIndexForward === false) {
                 if (compareFn(data.ExclusiveStartKey, items[i]) > 0)
                   break
-              } else {
-                if (compareFn(data.ExclusiveStartKey, items[i]) < 0)
-                  break
+              } else if (compareFn(data.ExclusiveStartKey, items[i]) < 0) {
+                break
               }
             }
             items = items.slice(i)

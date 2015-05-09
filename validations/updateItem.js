@@ -4,7 +4,7 @@ var validateAttributeValue = require('./index').validateAttributeValue,
 exports.types = {
   ReturnConsumedCapacity: {
     type: 'String',
-    enum: ['INDEXES', 'TOTAL', 'NONE']
+    enum: ['INDEXES', 'TOTAL', 'NONE'],
   },
   TableName: {
     type: 'String',
@@ -15,11 +15,11 @@ exports.types = {
   },
   ReturnItemCollectionMetrics: {
     type: 'String',
-    enum: ['SIZE', 'NONE']
+    enum: ['SIZE', 'NONE'],
   },
   ReturnValues: {
     type: 'String',
-    enum: ['ALL_NEW', 'UPDATED_OLD', 'ALL_OLD', 'NONE', 'UPDATED_NEW']
+    enum: ['ALL_NEW', 'UPDATED_OLD', 'ALL_OLD', 'NONE', 'UPDATED_NEW'],
   },
   Key: {
     type: 'Map',
@@ -28,7 +28,7 @@ exports.types = {
   },
   ConditionalOperator: {
     type: 'String',
-    enum: ['OR', 'AND']
+    enum: ['OR', 'AND'],
   },
   Expected: {
     type: 'Map',
@@ -41,12 +41,12 @@ exports.types = {
         },
         ComparisonOperator: {
           type: 'String',
-          enum: ['IN', 'NULL', 'BETWEEN', 'LT', 'NOT_CONTAINS', 'EQ', 'GT', 'NOT_NULL', 'NE', 'LE', 'BEGINS_WITH', 'GE', 'CONTAINS']
+          enum: ['IN', 'NULL', 'BETWEEN', 'LT', 'NOT_CONTAINS', 'EQ', 'GT', 'NOT_NULL', 'NE', 'LE', 'BEGINS_WITH', 'GE', 'CONTAINS'],
         },
         Exists: 'Boolean',
         Value: 'AttrStructure',
-      }
-    }
+      },
+    },
   },
   AttributeUpdates: {
     type: 'Map',
@@ -55,8 +55,8 @@ exports.types = {
       children: {
         Action: 'String',
         Value: 'AttrStructure',
-      }
-    }
+      },
+    },
   },
 }
 

@@ -271,80 +271,80 @@ describe('putItem', function() {
     })
 
     it('should return ValidationException if ComparisonOperator and Exists are used together', function(done) {
-      assertValidation({TableName: 'aaa', Item: {}, Expected: {a: { Exists: true, ComparisonOperator: 'LT'}}},
+      assertValidation({TableName: 'aaa', Item: {}, Expected: {a: {Exists: true, ComparisonOperator: 'LT'}}},
         'One or more parameter values were invalid: Exists and ComparisonOperator cannot be used together for Attribute: a', done)
     })
 
     it('should return ValidationException if AttributeValueList and Value are used together', function(done) {
-      var expected = { a: {
-        AttributeValueList: [ { S: 'a' } ],
-        Value: { S: 'a' },
-        ComparisonOperator: 'LT'
-      } }
+      var expected = {a: {
+        AttributeValueList: [{S: 'a'}],
+        Value: {S: 'a'},
+        ComparisonOperator: 'LT',
+      }}
       assertValidation({TableName: 'aaa', Item: {}, Expected: expected},
         'One or more parameter values were invalid: Value and AttributeValueList cannot be used together for Attribute: a', done)
     })
 
     it('should return ValidationException if AttributeValueList used without ComparisonOperator', function(done) {
-      assertValidation({TableName: 'aaa', Item: {}, Expected: {a: {AttributeValueList: [{S:'a'}]}}},
+      assertValidation({TableName: 'aaa', Item: {}, Expected: {a: {AttributeValueList: [{S: 'a'}]}}},
         'One or more parameter values were invalid: AttributeValueList can only be used with a ComparisonOperator for Attribute: a', done)
     })
 
     it('should return ValidationException if AttributeValueList used with Exists', function(done) {
-      assertValidation({TableName: 'aaa', Item: {}, Expected: {a: { Exists: true, AttributeValueList: [{S:'a'}]}}},
+      assertValidation({TableName: 'aaa', Item: {}, Expected: {a: {Exists: true, AttributeValueList: [{S: 'a'}]}}},
         'One or more parameter values were invalid: AttributeValueList can only be used with a ComparisonOperator for Attribute: a', done)
     })
 
     it('should return ValidationException if AttributeValueList is incorrect length: EQ', function(done) {
-      var expected = { a: {
+      var expected = {a: {
         AttributeValueList: [ ],
-        ComparisonOperator: 'EQ'
-      } }
+        ComparisonOperator: 'EQ',
+      }}
       assertValidation({TableName: 'aaa', Item: {}, Expected: expected},
         'One or more parameter values were invalid: Invalid number of argument(s) for the EQ ComparisonOperator', done)
     })
 
     it('should return ValidationException if AttributeValueList is incorrect length: NULL', function(done) {
-      var expected = { a: {
-        AttributeValueList: [{S:'a'}],
-        ComparisonOperator: 'NULL'
-      } }
+      var expected = {a: {
+        AttributeValueList: [{S: 'a'}],
+        ComparisonOperator: 'NULL',
+      }}
       assertValidation({TableName: 'aaa', Item: {}, Expected: expected},
         'One or more parameter values were invalid: Invalid number of argument(s) for the NULL ComparisonOperator', done)
     })
 
     it('should return ValidationException if AttributeValueList is incorrect length: IN', function(done) {
-      var expected = { a: {
+      var expected = {a: {
         AttributeValueList: [],
-        ComparisonOperator: 'IN'
-      } }
+        ComparisonOperator: 'IN',
+      }}
       assertValidation({TableName: 'aaa', Item: {}, Expected: expected},
         'One or more parameter values were invalid: Invalid number of argument(s) for the IN ComparisonOperator', done)
     })
 
     it('should return ValidationException if AttributeValueList is incorrect length: BETWEEN', function(done) {
-      var expected = { a: {
-        AttributeValueList: [{N:'1'},{N:'10'},{N:'12'}],
-        ComparisonOperator: 'BETWEEN'
-      } }
+      var expected = {a: {
+        AttributeValueList: [{N: '1'}, {N: '10'}, {N: '12'}],
+        ComparisonOperator: 'BETWEEN',
+      }}
       assertValidation({TableName: 'aaa', Item: {}, Expected: expected},
         'One or more parameter values were invalid: Invalid number of argument(s) for the BETWEEN ComparisonOperator', done)
     })
 
     it('should return ValidationException if Value provides incorrect number of attributes: NULL', function(done) {
-      var expected = { a: {
-        Value: {S:'a'},
-        ComparisonOperator: 'NULL'
-      } }
+      var expected = {a: {
+        Value: {S: 'a'},
+        ComparisonOperator: 'NULL',
+      }}
       assertValidation({TableName: 'aaa', Item: {}, Expected: expected},
         'One or more parameter values were invalid: Invalid number of argument(s) for the NULL ComparisonOperator', done)
     })
 
     it('should return ValidationException if Value provides incorrect number of attributes: BETWEEN', function(done) {
-      var expected = { a: {
-        Value: {S:'a'},
-        ComparisonOperator: 'BETWEEN'
-      } }
+      var expected = {a: {
+        Value: {S: 'a'},
+        ComparisonOperator: 'BETWEEN',
+      }}
       assertValidation({TableName: 'aaa', Item: {}, Expected: expected},
         'One or more parameter values were invalid: Invalid number of argument(s) for the BETWEEN ComparisonOperator', done)
     })
@@ -598,7 +598,7 @@ describe('putItem', function() {
           h: {BS: ['Yg==']},
           i: {L: []},
           j: {M: {a: {M: {}}, b: {L: []}}},
-        }}
+        }},
       }
       request(opts({TableName: helpers.testHashTable, Item: item}), function(err, res) {
         if (err) return done(err)
@@ -747,7 +747,7 @@ describe('putItem', function() {
           Item: item,
           Expected: {a: {
             AttributeValueList: [item.a],
-            ComparisonOperator: 'EQ'
+            ComparisonOperator: 'EQ',
           }},
         }), function(err, res) {
           if (err) return done(err)
@@ -922,14 +922,14 @@ describe('putItem', function() {
           Expected: {
             a: {
               ComparisonOperator: 'EQ',
-              AttributeValueList: [item.a]
+              AttributeValueList: [item.a],
             },
             b: {
-              ComparisonOperator: 'NULL'
+              ComparisonOperator: 'NULL',
             },
             c: {
               ComparisonOperator: 'GE',
-              AttributeValueList: [item.c]
+              AttributeValueList: [item.c],
             }
           }
         }), function(err, res) {
@@ -965,12 +965,12 @@ describe('putItem', function() {
           Expected: {
             a: {
               AttributeValueList: [item.a],
-              ComparisonOperator: 'EQ'
+              ComparisonOperator: 'EQ',
             }, b: {
-              ComparisonOperator: 'NULL'
+              ComparisonOperator: 'NULL',
             }, c: {
               AttributeValueList: [{S: helpers.randomString()}],
-              ComparisonOperator: 'EQ'
+              ComparisonOperator: 'EQ',
             }
           }
         }, done)
@@ -989,14 +989,14 @@ describe('putItem', function() {
           Expected: {
             a: {
               ComparisonOperator: 'EQ',
-              AttributeValueList: [item.a]
+              AttributeValueList: [item.a],
             },
             b: {
-              ComparisonOperator: 'NULL'
+              ComparisonOperator: 'NULL',
             },
             c: {
               ComparisonOperator: 'EQ',
-              AttributeValueList: [{S: helpers.randomString()}]
+              AttributeValueList: [{S: helpers.randomString()}],
             }
           }
         }), function(err, res) {
@@ -1018,7 +1018,7 @@ describe('putItem', function() {
           Item: item,
           Expected: {a: {
             ComparisonOperator: 'EQ',
-            AttributeValueList: [item.a]
+            AttributeValueList: [item.a],
           }},
         }), function(err, res) {
           if (err) return done(err)
@@ -1039,7 +1039,7 @@ describe('putItem', function() {
           Item: item,
           Expected: {a: {
             ComparisonOperator: 'EQ',
-            AttributeValueList: [{S: helpers.randomString()}]
+            AttributeValueList: [{S: helpers.randomString()}],
           }}
         }, done)
       })
@@ -1055,7 +1055,7 @@ describe('putItem', function() {
           Item: item,
           Expected: {a: {
             ComparisonOperator: 'NE',
-            AttributeValueList: [{S: helpers.randomString()}]
+            AttributeValueList: [{S: helpers.randomString()}],
           }},
         }), function(err, res) {
           if (err) return done(err)
@@ -1076,7 +1076,7 @@ describe('putItem', function() {
           Item: item,
           Expected: {a: {
             ComparisonOperator: 'NE',
-            AttributeValueList: [item.a]
+            AttributeValueList: [item.a],
           }}
         }, done)
       })
@@ -1092,7 +1092,7 @@ describe('putItem', function() {
           Item: item,
           Expected: {a: {
             ComparisonOperator: 'LE',
-            AttributeValueList: [{S: 'c'}]
+            AttributeValueList: [{S: 'c'}],
           }},
         }), function(err, res) {
           if (err) return done(err)
@@ -1113,7 +1113,7 @@ describe('putItem', function() {
           Item: item,
           Expected: {a: {
             ComparisonOperator: 'LE',
-            AttributeValueList: [{S: 'c'}]
+            AttributeValueList: [{S: 'c'}],
           }}
         }, done)
       })
@@ -1129,7 +1129,7 @@ describe('putItem', function() {
           Item: item,
           Expected: {a: {
             ComparisonOperator: 'LT',
-            AttributeValueList: [{S: 'c'}]
+            AttributeValueList: [{S: 'c'}],
           }},
         }), function(err, res) {
           if (err) return done(err)
@@ -1150,7 +1150,7 @@ describe('putItem', function() {
           Item: item,
           Expected: {a: {
             ComparisonOperator: 'LT',
-            AttributeValueList: [{S: 'c'}]
+            AttributeValueList: [{S: 'c'}],
           }}
         }, done)
       })
@@ -1166,7 +1166,7 @@ describe('putItem', function() {
           Item: item,
           Expected: {a: {
             ComparisonOperator: 'GE',
-            AttributeValueList: [{S: 'a'}]
+            AttributeValueList: [{S: 'a'}],
           }},
         }), function(err, res) {
           if (err) return done(err)
@@ -1187,7 +1187,7 @@ describe('putItem', function() {
           Item: item,
           Expected: {a: {
             ComparisonOperator: 'GE',
-            AttributeValueList: [{S: 'c'}]
+            AttributeValueList: [{S: 'c'}],
           }}
         }, done)
       })
@@ -1203,7 +1203,7 @@ describe('putItem', function() {
           Item: item,
           Expected: {a: {
             ComparisonOperator: 'GT',
-            AttributeValueList: [{S: 'a'}]
+            AttributeValueList: [{S: 'a'}],
           }},
         }), function(err, res) {
           if (err) return done(err)
@@ -1224,7 +1224,7 @@ describe('putItem', function() {
           Item: item,
           Expected: {a: {
             ComparisonOperator: 'GT',
-            AttributeValueList: [{S: 'c'}]
+            AttributeValueList: [{S: 'c'}],
           }}
         }, done)
       })
@@ -1240,7 +1240,7 @@ describe('putItem', function() {
           Item: item,
           Expected: {a: {
             ComparisonOperator: 'CONTAINS',
-            AttributeValueList: [{S: 'ell'}]
+            AttributeValueList: [{S: 'ell'}],
           }},
         }), function(err, res) {
           if (err) return done(err)
@@ -1261,7 +1261,7 @@ describe('putItem', function() {
           Item: item,
           Expected: {a: {
             ComparisonOperator: 'CONTAINS',
-            AttributeValueList: [{S: 'goodbye'}]
+            AttributeValueList: [{S: 'goodbye'}],
           }}
         }, done)
       })
@@ -1277,7 +1277,7 @@ describe('putItem', function() {
           Item: item,
           Expected: {a: {
             ComparisonOperator: 'BEGINS_WITH',
-            AttributeValueList: [{S: 'he'}]
+            AttributeValueList: [{S: 'he'}],
           }},
         }), function(err, res) {
           if (err) return done(err)
@@ -1298,7 +1298,7 @@ describe('putItem', function() {
           Item: item,
           Expected: {a: {
             ComparisonOperator: 'BEGINS_WITH',
-            AttributeValueList: [{S: 'goodbye'}]
+            AttributeValueList: [{S: 'goodbye'}],
           }}
         }, done)
       })
@@ -1314,7 +1314,7 @@ describe('putItem', function() {
           Item: item,
           Expected: {a: {
             ComparisonOperator: 'NOT_CONTAINS',
-            AttributeValueList: [{S: 'goodbye'}]
+            AttributeValueList: [{S: 'goodbye'}],
           }},
         }), function(err, res) {
           if (err) return done(err)
@@ -1335,7 +1335,7 @@ describe('putItem', function() {
           Item: item,
           Expected: {a: {
             ComparisonOperator: 'NOT_CONTAINS',
-            AttributeValueList: [{S: 'ell'}]
+            AttributeValueList: [{S: 'ell'}],
           }}
         }, done)
       })
@@ -1350,7 +1350,7 @@ describe('putItem', function() {
           TableName: helpers.testHashTable,
           Item: item,
           Expected: {a: {
-            ComparisonOperator: 'NOT_NULL'
+            ComparisonOperator: 'NOT_NULL',
           }},
         }), function(err, res) {
           if (err) return done(err)
@@ -1370,7 +1370,7 @@ describe('putItem', function() {
           TableName: helpers.testHashTable,
           Item: item,
           Expected: {b: {
-            ComparisonOperator: 'NOT_NULL'
+            ComparisonOperator: 'NOT_NULL',
           }}
         }, done)
       })
@@ -1385,7 +1385,7 @@ describe('putItem', function() {
           TableName: helpers.testHashTable,
           Item: item,
           Expected: {b: {
-            ComparisonOperator: 'NULL'
+            ComparisonOperator: 'NULL',
           }},
         }), function(err, res) {
           if (err) return done(err)
@@ -1405,7 +1405,7 @@ describe('putItem', function() {
           TableName: helpers.testHashTable,
           Item: item,
           Expected: {a: {
-            ComparisonOperator: 'NULL'
+            ComparisonOperator: 'NULL',
           }}
         }, done)
       })
@@ -1421,7 +1421,7 @@ describe('putItem', function() {
           Item: item,
           Expected: {a: {
             ComparisonOperator: 'IN',
-            AttributeValueList: [{S: 'c'},{S: 'b'}]
+            AttributeValueList: [{S: 'c'}, {S: 'b'}],
           }},
         }), function(err, res) {
           if (err) return done(err)
@@ -1442,7 +1442,7 @@ describe('putItem', function() {
           Item: item,
           Expected: {a: {
             ComparisonOperator: 'IN',
-            AttributeValueList: [{S: 'c'}]
+            AttributeValueList: [{S: 'c'}],
           }}
         }, done)
       })
@@ -1458,7 +1458,7 @@ describe('putItem', function() {
           Item: item,
           Expected: {a: {
             ComparisonOperator: 'BETWEEN',
-            AttributeValueList: [{S: 'a'},{S: 'c'}]
+            AttributeValueList: [{S: 'a'}, {S: 'c'}],
           }},
         }), function(err, res) {
           if (err) return done(err)
@@ -1479,7 +1479,7 @@ describe('putItem', function() {
           Item: item,
           Expected: {a: {
             ComparisonOperator: 'BETWEEN',
-            AttributeValueList: [{S: 'c'},{S: 'd'}]
+            AttributeValueList: [{S: 'c'}, {S: 'd'}],
           }}
         }, done)
       })

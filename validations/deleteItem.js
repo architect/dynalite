@@ -15,11 +15,11 @@ exports.types = {
   },
   ReturnValues: {
     type: 'String',
-    enum: ['ALL_NEW', 'UPDATED_OLD', 'ALL_OLD', 'NONE', 'UPDATED_NEW']
+    enum: ['ALL_NEW', 'UPDATED_OLD', 'ALL_OLD', 'NONE', 'UPDATED_NEW'],
   },
   ReturnItemCollectionMetrics: {
     type: 'String',
-    enum: ['SIZE', 'NONE']
+    enum: ['SIZE', 'NONE'],
   },
   Key: {
     type: 'Map',
@@ -28,7 +28,7 @@ exports.types = {
   },
   ConditionalOperator: {
     type: 'String',
-    enum: ['OR', 'AND']
+    enum: ['OR', 'AND'],
   },
   Expected: {
     type: 'Map',
@@ -41,12 +41,12 @@ exports.types = {
         },
         ComparisonOperator: {
           type: 'String',
-          enum: ['IN', 'NULL', 'BETWEEN', 'LT', 'NOT_CONTAINS', 'EQ', 'GT', 'NOT_NULL', 'NE', 'LE', 'BEGINS_WITH', 'GE', 'CONTAINS']
+          enum: ['IN', 'NULL', 'BETWEEN', 'LT', 'NOT_CONTAINS', 'EQ', 'GT', 'NOT_NULL', 'NE', 'LE', 'BEGINS_WITH', 'GE', 'CONTAINS'],
         },
         Exists: 'Boolean',
         Value: 'AttrStructure',
-      }
-    }
+      },
+    },
   },
 }
 

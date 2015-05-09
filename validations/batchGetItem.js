@@ -25,7 +25,7 @@ exports.types = {
           children: {
             type: 'Map',
             children: 'AttrStructure',
-          }
+          },
         },
         AttributesToGet: {
           type: 'List',
@@ -34,8 +34,8 @@ exports.types = {
           children: 'String',
         },
         ConsistentRead: 'Boolean',
-      }
-    }
+      },
+    },
   },
 }
 

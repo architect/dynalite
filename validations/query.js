@@ -11,7 +11,7 @@ exports.types = {
   },
   ReturnConsumedCapacity: {
     type: 'String',
-    enum: ['INDEXES', 'TOTAL', 'NONE']
+    enum: ['INDEXES', 'TOTAL', 'NONE'],
   },
   AttributesToGet: {
     type: 'List',
@@ -31,14 +31,14 @@ exports.types = {
         ComparisonOperator: {
           type: 'String',
           notNull: true,
-          enum: ['IN', 'NULL', 'BETWEEN', 'LT', 'NOT_CONTAINS', 'EQ', 'GT', 'NOT_NULL', 'NE', 'LE', 'BEGINS_WITH', 'GE', 'CONTAINS']
-        }
-      }
-    }
+          enum: ['IN', 'NULL', 'BETWEEN', 'LT', 'NOT_CONTAINS', 'EQ', 'GT', 'NOT_NULL', 'NE', 'LE', 'BEGINS_WITH', 'GE', 'CONTAINS'],
+        },
+      },
+    },
   },
   Select: {
     type: 'String',
-    enum: ['SPECIFIC_ATTRIBUTES', 'COUNT', 'ALL_ATTRIBUTES', 'ALL_PROJECTED_ATTRIBUTES']
+    enum: ['SPECIFIC_ATTRIBUTES', 'COUNT', 'ALL_ATTRIBUTES', 'ALL_PROJECTED_ATTRIBUTES'],
   },
   KeyConditions: {
     type: 'Map',
@@ -52,10 +52,10 @@ exports.types = {
         ComparisonOperator: {
           type: 'String',
           notNull: true,
-          enum: ['IN', 'NULL', 'BETWEEN', 'LT', 'NOT_CONTAINS', 'EQ', 'GT', 'NOT_NULL', 'NE', 'LE', 'BEGINS_WITH', 'GE', 'CONTAINS']
-        }
-      }
-    }
+          enum: ['IN', 'NULL', 'BETWEEN', 'LT', 'NOT_CONTAINS', 'EQ', 'GT', 'NOT_NULL', 'NE', 'LE', 'BEGINS_WITH', 'GE', 'CONTAINS'],
+        },
+      },
+    },
   },
   TableName: {
     type: 'String',

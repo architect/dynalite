@@ -4,11 +4,11 @@ var db = require('../db'),
 exports.types = {
   ReturnConsumedCapacity: {
     type: 'String',
-    enum: ['INDEXES', 'TOTAL', 'NONE']
+    enum: ['INDEXES', 'TOTAL', 'NONE'],
   },
   ReturnItemCollectionMetrics: {
     type: 'String',
-    enum: ['SIZE', 'NONE']
+    enum: ['SIZE', 'NONE'],
   },
   RequestItems: {
     type: 'Map',
@@ -35,8 +35,8 @@ exports.types = {
                 type: 'Map',
                 notNull: true,
                 children: 'AttrStructure',
-              }
-            }
+              },
+            },
           },
           PutRequest: {
             type: 'Structure',
@@ -46,19 +46,18 @@ exports.types = {
                 notNull: true,
                 children: 'AttrStructure',
               },
-            }
-          }
+            },
+          },
         },
-      }
-    }
+      },
+    },
   },
 }
 
 exports.custom = function(data) {
   var table, i, request, key, msg
   for (table in data.RequestItems) {
-    /* jshint -W083 */
-    if (data.RequestItems[table].some(function(item) { return !Object.keys(item).length }))
+    if (data.RequestItems[table].some(function(item) { return !Object.keys(item).length })) // eslint-disable-line no-loop-func
       return 'Supplied AttributeValue has more than one datatypes set, ' +
         'must contain exactly one of the supported datatypes'
     for (i = 0; i < data.RequestItems[table].length; i++) {

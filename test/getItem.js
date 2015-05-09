@@ -201,7 +201,7 @@ describe('getItem', function() {
         'Number underflow. Attempting to store a number with magnitude smaller than supported range', done)
     })
 
-     it('should return ValidationException if key has incorrect numeric type in set', function(done) {
+    it('should return ValidationException if key has incorrect numeric type in set', function(done) {
       assertValidation({TableName: 'abc', Key: {a: {NS: ['1', 'b', 'a']}}},
         'The parameter cannot be converted to a numeric value: b', done)
     })

@@ -1,6 +1,7 @@
 var http = require('http'),
     https = require('https'),
     fs = require('fs'),
+    path = require('path'),
     url = require('url'),
     crypto = require('crypto'),
     crc32 = require('buffer-crc32'),
@@ -22,9 +23,9 @@ function dynalite(options) {
   var server, store = db.create(options), requestHandler = httpHandler.bind(null, store)
 
   if (options.ssl) {
-    options.key = options.key || fs.readFileSync(__dirname + '/key.pem')
-    options.cert = options.cert || fs.readFileSync(__dirname + '/cert.pem')
-    options.ca = options.ca || fs.readFileSync(__dirname + '/ca.pem')
+    options.key = options.key || fs.readFileSync(path.join(__dirname, 'key.pem'))
+    options.cert = options.cert || fs.readFileSync(path.join(__dirname, 'cert.pem'))
+    options.ca = options.ca || fs.readFileSync(path.join(__dirname, 'ca.pem'))
     server = https.createServer(options, requestHandler)
   } else {
     server = http.createServer(requestHandler)
@@ -68,8 +69,8 @@ function sendData(req, res, data, statusCode) {
   res.setHeader('Content-Type', res.contentType)
   res.setHeader('Content-Length', Buffer.byteLength(body, 'utf8'))
   // AWS doesn't send a 'Connection' header but seems to use keep-alive behaviour
-  //res.setHeader('Connection', '')
-  //res.shouldKeepAlive = false
+  // res.setHeader('Connection', '')
+  // res.shouldKeepAlive = false
   res.end(body)
 }
 

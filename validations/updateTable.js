@@ -67,7 +67,7 @@ exports.types = {
                 NonKeyAttributes: {
                   type: 'List',
                   lengthGreaterThanOrEqual: 1,
-                  children: 'String'
+                  children: 'String',
                 },
               },
             },

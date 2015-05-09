@@ -45,7 +45,8 @@ module.exports = function updateTable(store, data, cb) {
 
           // Shouldn't need to lock/fetch as nothing should have changed
           updates.forEach(function(update) {
-            var dataThroughput = update.dataThroughput, tableThroughput = update.tableThroughput
+            dataThroughput = update.dataThroughput
+            tableThroughput = update.tableThroughput
 
             update.setStatus('ACTIVE')
 

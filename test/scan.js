@@ -758,8 +758,7 @@ describe('scan', function() {
         }}), function(err, res) {
           if (err) return done(err)
           res.statusCode.should.equal(200)
-          /* jshint -W030 */
-          res.body.Items.should.be.empty
+          res.body.Items.should.be.empty // eslint-disable-line no-unused-expressions
           res.body.Count.should.equal(0)
           res.body.ScannedCount.should.be.above(0)
           done()
@@ -2139,8 +2138,7 @@ describe('scan', function() {
           if (err) return done(err)
           res.statusCode.should.equal(200)
           res.body.ScannedCount.should.equal(3)
-          /* jshint -W030 */
-          res.body.LastEvaluatedKey.a.S.should.not.be.empty
+          res.body.LastEvaluatedKey.a.S.should.not.be.empty // eslint-disable-line no-unused-expressions
           Object.keys(res.body.LastEvaluatedKey).should.have.length(1)
           res.body.ConsumedCapacity.should.eql({
             CapacityUnits: 0.5,
@@ -2168,8 +2166,7 @@ describe('scan', function() {
           if (err) return done(err)
           res.statusCode.should.equal(200)
           res.body.ScannedCount.should.equal(3)
-          /* jshint -W030 */
-          res.body.LastEvaluatedKey.a.S.should.not.be.empty
+          res.body.LastEvaluatedKey.a.S.should.not.be.empty // eslint-disable-line no-unused-expressions
           Object.keys(res.body.LastEvaluatedKey).should.have.length(1)
           done()
         })
@@ -2202,20 +2199,17 @@ describe('scan', function() {
             if (err) return done(err)
             res.statusCode.should.equal(200)
             res.body.Count.should.equal(4)
-            /* jshint -W030 */
-            res.body.LastEvaluatedKey.a.S.should.not.be.empty
+            res.body.LastEvaluatedKey.a.S.should.not.be.empty // eslint-disable-line no-unused-expressions
             request(opts({TableName: helpers.testHashTable, ScanFilter: scanFilter, Limit: lastIx + 1}), function(err, res) {
               if (err) return done(err)
               res.statusCode.should.equal(200)
               res.body.Count.should.equal(5)
-              /* jshint -W030 */
-              res.body.LastEvaluatedKey.a.S.should.not.be.empty
+              res.body.LastEvaluatedKey.a.S.should.not.be.empty // eslint-disable-line no-unused-expressions
               request(opts({TableName: helpers.testHashTable, ScanFilter: scanFilter, Limit: totalItems}), function(err, res) {
                 if (err) return done(err)
                 res.statusCode.should.equal(200)
                 res.body.Count.should.equal(5)
-                /* jshint -W030 */
-                res.body.LastEvaluatedKey.a.S.should.not.be.empty
+                res.body.LastEvaluatedKey.a.S.should.not.be.empty  // eslint-disable-line no-unused-expressions
                 request(opts({TableName: helpers.testHashTable, ScanFilter: scanFilter, Limit: totalItems + 1}), function(err, res) {
                   if (err) return done(err)
                   res.statusCode.should.equal(200)

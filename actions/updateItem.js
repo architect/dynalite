@@ -52,15 +52,14 @@ module.exports = function updateItem(store, data, cb) {
               if (item[attr] && !item[attr].N)
                 return cb(db.validationError('Type mismatch for attribute to update'))
               if (!item[attr]) item[attr] = {N: '0'}
-              item[attr].N = Big(item[attr].N).plus(data.AttributeUpdates[attr].Value.N).toFixed()
+              item[attr].N = new Big(item[attr].N).plus(data.AttributeUpdates[attr].Value.N).toFixed()
             } else {
               type = Object.keys(data.AttributeUpdates[attr].Value)[0]
               if (item[attr] && !item[attr][type])
                 return cb(db.validationError('Type mismatch for attribute to update'))
               if (!item[attr]) item[attr] = {}
               if (!item[attr][type]) item[attr][type] = []
-              /* jshint -W083 */
-              item[attr][type] = item[attr][type].concat(data.AttributeUpdates[attr].Value[type].filter(function(a) {
+              item[attr][type] = item[attr][type].concat(data.AttributeUpdates[attr].Value[type].filter(function(a) { // eslint-disable-line no-loop-func
                 return !~item[attr][type].indexOf(a)
               }))
             }
@@ -70,7 +69,7 @@ module.exports = function updateItem(store, data, cb) {
               if (item[attr] && !item[attr][type])
                 return cb(db.validationError('Type mismatch for attribute to update'))
               if (item[attr] && item[attr][type]) {
-                item[attr][type] = item[attr][type].filter(function(val) {
+                item[attr][type] = item[attr][type].filter(function(val) { // eslint-disable-line no-loop-func
                   return !~data.AttributeUpdates[attr].Value[type].indexOf(val)
                 })
                 if (!item[attr][type].length) delete item[attr]
@@ -88,18 +87,17 @@ module.exports = function updateItem(store, data, cb) {
           returnObj.Attributes = item
         } else if (data.ReturnValues == 'UPDATED_NEW') {
           returnObj.Attributes = {}
-          /* jshint -W088 */
           for (attr in data.AttributeUpdates) {
             if (item[attr]) returnObj.Attributes[attr] = item[attr]
           }
         }
 
         if (~['TOTAL', 'INDEXES'].indexOf(data.ReturnConsumedCapacity))
-          returnObj.ConsumedCapacity =  {
+          returnObj.ConsumedCapacity = {
             CapacityUnits: Math.max(db.capacityUnits(oldItem), db.capacityUnits(item)),
             TableName: data.TableName,
             Table: data.ReturnConsumedCapacity == 'INDEXES' ?
-              {CapacityUnits: Math.max(db.capacityUnits(oldItem), db.capacityUnits(item))} : undefined
+              {CapacityUnits: Math.max(db.capacityUnits(oldItem), db.capacityUnits(item))} : undefined,
           }
 
         itemDb.put(key, item, function(err) {

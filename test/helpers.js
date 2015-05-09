@@ -34,11 +34,11 @@ exports.testRangeTable = randomName()
 exports.testRangeNTable = randomName()
 exports.testRangeBTable = randomName()
 // For testing:
-//exports.testHashTable = '__dynalite_test_1'
-//exports.testHashNTable = '__dynalite_test_2'
-//exports.testRangeTable = '__dynalite_test_3'
-//exports.testRangeNTable = '__dynalite_test_4'
-//exports.testRangeBTable = '__dynalite_test_5'
+// exports.testHashTable = '__dynalite_test_1'
+// exports.testHashNTable = '__dynalite_test_2'
+// exports.testRangeTable = '__dynalite_test_3'
+// exports.testRangeNTable = '__dynalite_test_4'
+// exports.testRangeBTable = '__dynalite_test_5'
 
 var port = 10000 + Math.round(Math.random() * 10000),
     requestOpts = process.env.REMOTE ?
@@ -52,7 +52,7 @@ before(function(done) {
   dynaliteServer.listen(port, function(err) {
     if (err) return done(err)
     createTestTables(done)
-    //done()
+    // done()
   })
 })
 
@@ -75,14 +75,14 @@ function request(opts, cb) {
     aws4.sign(opts)
     opts.noSign = true // don't sign twice if calling recursively
   }
-  //console.log(opts)
+  // console.log(opts)
   http.request(opts, function(res) {
     res.setEncoding('utf8')
     res.on('error', cb)
     res.body = ''
     res.on('data', function(chunk) { res.body += chunk })
     res.on('end', function() {
-      try { res.body = JSON.parse(res.body) } catch (e) {}
+      try { res.body = JSON.parse(res.body) } catch (e) {} // eslint-disable-line no-empty
       if (res.body.__type == 'com.amazon.coral.availability#ThrottlingException' ||
           res.body.__type == 'com.amazonaws.dynamodb.v20120810#LimitExceededException')
         return setTimeout(request, Math.floor(Math.random() * 1000), opts, cb)
@@ -331,7 +331,7 @@ function assertSerialization(target, data, msg, done) {
 
 function assertType(target, property, type, done) {
   var msgs = [], pieces = property.split('.')
-  switch(type) {
+  switch (type) {
     case 'Boolean':
       msgs = [
         ['23', '\'23\' can not be converted to an Boolean'],
@@ -339,7 +339,7 @@ function assertType(target, property, type, done) {
         [-2147483648, 'class java.lang.Integer can not be converted to an Boolean'],
         [2147483648, 'class java.lang.Long can not be converted to an Boolean'],
         // For some reason, doubles are fine
-        //[34.56, 'class java.lang.Double can not be converted to an Boolean'],
+        // [34.56, 'class java.lang.Double can not be converted to an Boolean'],
         [[], 'Start of list found where not expected'],
         [{}, 'Start of structure or map found where not expected.'],
       ]

@@ -252,7 +252,8 @@ describe('updateTable', function() {
         helpers.waitUntilActive(helpers.testHashTable, function(err, res) {
           if (err) return done(err)
 
-          var desc = res.body.Table, decrease = Date.now() / 1000
+          var decrease = Date.now() / 1000
+          desc = res.body.Table
           desc.ProvisionedThroughput.ReadCapacityUnits.should.equal(newRate)
           desc.ProvisionedThroughput.WriteCapacityUnits.should.equal(newRate)
           desc.ProvisionedThroughput.LastIncreaseDateTime.should.be.above(increase)
@@ -264,7 +265,7 @@ describe('updateTable', function() {
             if (err) return done(err)
             res.statusCode.should.equal(200)
 
-            var desc = res.body.TableDescription
+            desc = res.body.TableDescription
             desc.ProvisionedThroughput.LastIncreaseDateTime.should.equal(increase)
             desc.ProvisionedThroughput.LastDecreaseDateTime.should.be.above(decrease - 5)
             desc.ProvisionedThroughput.NumberOfDecreasesToday.should.equal(numDecreases)
@@ -277,7 +278,7 @@ describe('updateTable', function() {
             helpers.waitUntilActive(helpers.testHashTable, function(err, res) {
               if (err) return done(err)
 
-              var desc = res.body.Table
+              desc = res.body.Table
               desc.ProvisionedThroughput.LastIncreaseDateTime.should.equal(increase)
               desc.ProvisionedThroughput.LastDecreaseDateTime.should.be.above(decrease)
               desc.ProvisionedThroughput.NumberOfDecreasesToday.should.equal(numDecreases + 1)

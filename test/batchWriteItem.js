@@ -704,16 +704,16 @@ describe('batchWriteItem', function() {
 
         batchReq.RequestItems[name] = items
         request(opts(batchReq), function(err, res) {
-          //if (err) return cb(err)
+          // if (err) return cb(err)
           if (err) {
-            //console.log('Caught err: ' + err)
+            // console.log('Caught err: ' + err)
             return cb()
           }
           if (/ProvisionedThroughputExceededException$/.test(res.body.__type)) {
-            //console.log('ProvisionedThroughputExceededException$')
+            // console.log('ProvisionedThroughputExceededException$')
             return cb()
           } else if (res.body.__type) {
-            //return cb(new Error(JSON.stringify(res.body)))
+            // return cb(new Error(JSON.stringify(res.body)))
             return cb()
           }
           res.statusCode.should.equal(200)

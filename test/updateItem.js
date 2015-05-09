@@ -440,6 +440,7 @@ describe('updateItem', function() {
         res.statusCode.should.equal(200)
         res.body.should.eql({})
         request(helpers.opts('GetItem', {TableName: helpers.testHashTable, Key: key, ConsistentRead: true}), function(err, res) {
+          if (err) return done(err)
           res.statusCode.should.equal(200)
           res.body.should.eql({Item: key})
           done()
@@ -464,6 +465,7 @@ describe('updateItem', function() {
         res.statusCode.should.equal(200)
         updates.b.Value.S = 'b'
         request(opts({TableName: helpers.testHashTable, Key: key, AttributeUpdates: updates, ReturnValues: 'ALL_OLD'}), function(err, res) {
+          if (err) return done(err)
           res.statusCode.should.equal(200)
           res.body.should.eql({Attributes: {a: key.a, b: {S: 'a'}}})
           done()
@@ -478,6 +480,7 @@ describe('updateItem', function() {
         res.statusCode.should.equal(200)
         updates.b.Value.S = 'b'
         request(opts({TableName: helpers.testHashTable, Key: key, AttributeUpdates: updates, ReturnValues: 'UPDATED_OLD'}), function(err, res) {
+          if (err) return done(err)
           res.statusCode.should.equal(200)
           res.body.should.eql({Attributes: {b: {S: 'a'}, c: {S: 'a'}}})
           done()
@@ -492,6 +495,7 @@ describe('updateItem', function() {
         res.statusCode.should.equal(200)
         updates.b.Value.S = 'b'
         request(opts({TableName: helpers.testHashTable, Key: key, AttributeUpdates: updates, ReturnValues: 'ALL_NEW'}), function(err, res) {
+          if (err) return done(err)
           res.statusCode.should.equal(200)
           res.body.should.eql({Attributes: {a: key.a, b: {S: 'b'}}})
           done()
@@ -506,6 +510,7 @@ describe('updateItem', function() {
         res.statusCode.should.equal(200)
         updates.b.Value.S = 'b'
         request(opts({TableName: helpers.testHashTable, Key: key, AttributeUpdates: updates, ReturnValues: 'UPDATED_NEW'}), function(err, res) {
+          if (err) return done(err)
           res.statusCode.should.equal(200)
           res.body.should.eql({Attributes: {b: {S: 'b'}, c: {S: 'a'}}})
           done()
@@ -525,6 +530,7 @@ describe('updateItem', function() {
         res.statusCode.should.equal(200)
         res.body.should.eql({Attributes: {d: {N: '5'}, e: {SS: ['a', 'b']}}})
         request(helpers.opts('GetItem', {TableName: helpers.testHashTable, Key: key, ConsistentRead: true}), function(err, res) {
+          if (err) return done(err)
           res.statusCode.should.equal(200)
           res.body.should.eql({Item: {a: key.a, d: {N: '5'}, e: {SS: ['a', 'b']}}})
           done()
@@ -539,9 +545,11 @@ describe('updateItem', function() {
         res.statusCode.should.equal(200)
         updates.b = {Action: 'DELETE'}
         request(opts({TableName: helpers.testHashTable, Key: key, AttributeUpdates: updates, ReturnValues: 'UPDATED_NEW'}), function(err, res) {
+          if (err) return done(err)
           res.statusCode.should.equal(200)
           res.body.should.eql({Attributes: {c: {S: 'a'}}})
           request(helpers.opts('GetItem', {TableName: helpers.testHashTable, Key: key, ConsistentRead: true}), function(err, res) {
+            if (err) return done(err)
             res.statusCode.should.equal(200)
             res.body.should.eql({Item: {a: key.a, c: {S: 'a'}}})
             done()
@@ -557,20 +565,24 @@ describe('updateItem', function() {
         res.statusCode.should.equal(200)
         updates.b = {Action: 'DELETE', Value: {NS: ['1', '4']}}
         request(opts({TableName: helpers.testHashTable, Key: key, AttributeUpdates: updates, ReturnValues: 'UPDATED_NEW'}), function(err, res) {
+          if (err) return done(err)
           res.statusCode.should.equal(200)
           res.body.Attributes.b.NS.should.containEql('2')
           res.body.Attributes.b.NS.should.containEql('3')
           res.body.Attributes.c.should.eql({S: 'a'})
           request(helpers.opts('GetItem', {TableName: helpers.testHashTable, Key: key, ConsistentRead: true}), function(err, res) {
+            if (err) return done(err)
             res.statusCode.should.equal(200)
             res.body.Item.b.NS.should.containEql('2')
             res.body.Item.b.NS.should.containEql('3')
             res.body.Item.c.should.eql({S: 'a'})
             updates.b = {Action: 'DELETE', Value: {NS: ['2', '3']}}
             request(opts({TableName: helpers.testHashTable, Key: key, AttributeUpdates: updates, ReturnValues: 'UPDATED_NEW'}), function(err, res) {
+              if (err) return done(err)
               res.statusCode.should.equal(200)
               res.body.Attributes.should.eql({c: {S: 'a'}})
               request(helpers.opts('GetItem', {TableName: helpers.testHashTable, Key: key, ConsistentRead: true}), function(err, res) {
+                if (err) return done(err)
                 res.statusCode.should.equal(200)
                 res.body.Item.should.eql({a: key.a, c: {S: 'a'}})
                 done()
@@ -588,9 +600,11 @@ describe('updateItem', function() {
         res.statusCode.should.equal(200)
         updates.b = {Action: 'ADD', Value: {N: '3'}}
         request(opts({TableName: helpers.testHashTable, Key: key, AttributeUpdates: updates, ReturnValues: 'UPDATED_NEW'}), function(err, res) {
+          if (err) return done(err)
           res.statusCode.should.equal(200)
           res.body.should.eql({Attributes: {b: {N: '4'}}})
           request(helpers.opts('GetItem', {TableName: helpers.testHashTable, Key: key, ConsistentRead: true}), function(err, res) {
+            if (err) return done(err)
             res.statusCode.should.equal(200)
             res.body.should.eql({Item: {a: key.a, b: {N: '4'}}})
             done()
@@ -606,9 +620,11 @@ describe('updateItem', function() {
         res.statusCode.should.equal(200)
         updates.b = {Action: 'ADD', Value: {SS: ['c', 'd']}}
         request(opts({TableName: helpers.testHashTable, Key: key, AttributeUpdates: updates, ReturnValues: 'UPDATED_NEW'}), function(err, res) {
+          if (err) return done(err)
           res.statusCode.should.equal(200)
           res.body.should.eql({Attributes: {b: {SS: ['a', 'b', 'c', 'd']}}})
           request(helpers.opts('GetItem', {TableName: helpers.testHashTable, Key: key, ConsistentRead: true}), function(err, res) {
+            if (err) return done(err)
             res.statusCode.should.equal(200)
             res.body.should.eql({Item: {a: key.a, b: {SS: ['a', 'b', 'c', 'd']}}})
             done()
@@ -624,6 +640,7 @@ describe('updateItem', function() {
         res.statusCode.should.equal(200)
         updates.b = {Action: 'ADD', Value: {SS: ['b', 'c', 'd']}}
         request(opts({TableName: helpers.testHashTable, Key: key, AttributeUpdates: updates, ReturnValues: 'UPDATED_NEW'}), function(err, res) {
+          if (err) return done(err)
           res.statusCode.should.equal(200)
           res.body.Attributes.b.SS.should.have.lengthOf(4)
           res.body.Attributes.b.SS.should.containEql('a')
@@ -631,6 +648,7 @@ describe('updateItem', function() {
           res.body.Attributes.b.SS.should.containEql('c')
           res.body.Attributes.b.SS.should.containEql('d')
           request(helpers.opts('GetItem', {TableName: helpers.testHashTable, Key: key, ConsistentRead: true}), function(err, res) {
+            if (err) return done(err)
             res.statusCode.should.equal(200)
             res.body.Item.b.SS.should.have.lengthOf(4)
             res.body.Item.b.SS.should.containEql('a')
@@ -650,6 +668,7 @@ describe('updateItem', function() {
         res.statusCode.should.equal(200)
         updates.b = {Action: 'ADD', Value: {NS: ['2', '3', '4']}}
         request(opts({TableName: helpers.testHashTable, Key: key, AttributeUpdates: updates, ReturnValues: 'UPDATED_NEW'}), function(err, res) {
+          if (err) return done(err)
           res.statusCode.should.equal(200)
           res.body.Attributes.b.NS.should.have.lengthOf(4)
           res.body.Attributes.b.NS.should.containEql('1')
@@ -657,6 +676,7 @@ describe('updateItem', function() {
           res.body.Attributes.b.NS.should.containEql('3')
           res.body.Attributes.b.NS.should.containEql('4')
           request(helpers.opts('GetItem', {TableName: helpers.testHashTable, Key: key, ConsistentRead: true}), function(err, res) {
+            if (err) return done(err)
             res.statusCode.should.equal(200)
             res.body.Item.b.NS.should.have.lengthOf(4)
             res.body.Item.b.NS.should.containEql('1')
@@ -676,12 +696,14 @@ describe('updateItem', function() {
         res.statusCode.should.equal(200)
         updates.b = {Action: 'ADD', Value: {BS: ['Ag==', 'AQ==']}}
         request(opts({TableName: helpers.testHashTable, Key: key, AttributeUpdates: updates, ReturnValues: 'UPDATED_NEW'}), function(err, res) {
+          if (err) return done(err)
           res.statusCode.should.equal(200)
           res.body.Attributes.b.BS.should.have.lengthOf(3)
           res.body.Attributes.b.BS.should.containEql('AQI=')
           res.body.Attributes.b.BS.should.containEql('Ag==')
           res.body.Attributes.b.BS.should.containEql('AQ==')
           request(helpers.opts('GetItem', {TableName: helpers.testHashTable, Key: key, ConsistentRead: true}), function(err, res) {
+            if (err) return done(err)
             res.statusCode.should.equal(200)
             res.body.Item.b.BS.should.have.lengthOf(3)
             res.body.Item.b.BS.should.containEql('AQI=')

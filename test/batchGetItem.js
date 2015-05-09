@@ -272,7 +272,7 @@ describe('batchGetItem', function() {
         'Number underflow. Attempting to store a number with magnitude smaller than supported range', done)
     })
 
-     it('should return ValidationException if key has incorrect numeric type in set', function(done) {
+    it('should return ValidationException if key has incorrect numeric type in set', function(done) {
       assertValidation({RequestItems: {abc: {Keys: [{a: {NS: ['1', 'b', 'a']}}]}}},
         'The parameter cannot be converted to a numeric value: b', done)
     })
@@ -685,7 +685,7 @@ describe('batchGetItem', function() {
           res.body.UnprocessedKeys[helpers.testHashTable].Keys.length.should.be.above(0)
           res.body.Responses[helpers.testHashTable].length.should.be.above(0)
 
-          var totalLength, i, totalCapacity
+          var totalLength, totalCapacity
 
           totalLength = res.body.Responses[helpers.testHashTable].length +
             res.body.UnprocessedKeys[helpers.testHashTable].Keys.length

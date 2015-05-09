@@ -37,7 +37,7 @@ function checkTypes(data, types) {
   }
 
   function checkType(val, type) {
-    if (val == null) return
+    if (val == null) return null
     var children = type.children
     if (typeof children == 'string') children = {type: children}
     if (type.type) type = type.type
@@ -84,7 +84,7 @@ function checkTypes(data, types) {
             val = Math.abs(val) >= 1
             break
           case 'string':
-            //"\'HELLOWTF\' can not be converted to an Boolean"
+            // "\'HELLOWTF\' can not be converted to an Boolean"
             // seems to convert to uppercase
             // 'true'/'false'/'1'/'0'/'no'/'yes' seem to convert fine
             val = val.toUpperCase()
@@ -183,6 +183,8 @@ function checkTypes(data, types) {
   }
 }
 
+var validateFns = {}
+
 function checkValidations(data, validations, custom) {
   var attr, msg, errors = []
   function validationError(msg) {
@@ -206,7 +208,7 @@ function checkValidations(data, validations, custom) {
   }
 
   function checkNonRequireds(data, types, parent) {
-    for (var attr in types) {
+    for (attr in types) {
       checkNonRequired(attr, data[attr], types[attr], parent)
     }
   }
@@ -227,9 +229,8 @@ function checkValidations(data, validations, custom) {
           }
           continue
         } else if (validations.type == 'Map') {
-          /* jshint -W083 */
           // TODO: Always reverse?
-          Object.keys(data).reverse().forEach(function(key) {
+          Object.keys(data).reverse().forEach(function(key) { // eslint-disable-line no-loop-func
             checkNonRequired('member', data[key], validations.children,
               (parent ? parent + '.' : '') + toLowerFirst(attr) + '.' + key)
           })
@@ -251,7 +252,6 @@ function checkValidations(data, validations, custom) {
   }
 }
 
-var validateFns = {}
 validateFns.notNull = function(parent, key, val, data, errors) {
   validate(data != null, 'Member must not be null', data, parent, key, errors)
 }
@@ -321,7 +321,7 @@ function validate(predicate, msg, data, parent, key, errors) {
 }
 
 function validateTableName(key, val) {
-  if (val == null) return
+  if (val == null) return null
   if (val.length < 3 || val.length > 255)
     return key + ' must be at least 3 characters long and at most 255 characters long'
 }
@@ -336,8 +336,6 @@ function validateAttributeValue(value) {
     return 'Supplied AttributeValue is empty, must contain exactly one of the supported datatypes'
 
   for (var type in value) {
-    /* jshint -W083 */
-
     if (type == 'N') {
       msg = checkNum(type, value)
       if (msg) return msg
@@ -358,13 +356,13 @@ function validateAttributeValue(value) {
     if ((type == 'NS' || type == 'BS') && !value[type].length)
       return 'One or more parameter values were invalid: An AttributeValue may not contain an empty set.'
 
-    if (type == 'SS' && value[type].some(function(x) { return !x }))
+    if (type == 'SS' && value[type].some(function(x) { return !x })) // eslint-disable-line no-loop-func
       return 'One or more parameter values were invalid: An string set may not have a empty string as a member'
 
-    if (type == 'BS' && value[type].some(function(x) { return !x }))
+    if (type == 'BS' && value[type].some(function(x) { return !x })) // eslint-disable-line no-loop-func
       return 'One or more parameter values were invalid: Binary sets may not contain null or empty values'
 
-    if (type == 'NS' && value[type].some(function(x) { return !x }))
+    if (type == 'NS' && value[type].some(function(x) { return !x })) // eslint-disable-line no-loop-func
       return 'The parameter cannot be converted to a numeric value'
 
     if (type == 'NS') {
@@ -394,7 +392,7 @@ function checkNum(attr, obj) {
 
   var bigNum
   try {
-    bigNum = Big(obj[attr])
+    bigNum = new Big(obj[attr])
   } catch (e) {
     return 'The parameter cannot be converted to a numeric value: ' + obj[attr]
   }
@@ -446,7 +444,7 @@ function validateAttributeConditions(data) {
           condition.AttributeValueList.length : condition.Value ? 1 : 0
         var validAttrCount = false
 
-        switch(condition.ComparisonOperator) {
+        switch (condition.ComparisonOperator) {
           case 'EQ':
           case 'NE':
           case 'LE':
@@ -473,14 +471,14 @@ function validateAttributeConditions(data) {
           return 'One or more parameter values were invalid: ' +
             'Invalid number of argument(s) for the ' + condition.ComparisonOperator + ' ComparisonOperator'
       } else if ('AttributeValueList' in condition) {
-          return 'One or more parameter values were invalid: ' +
-            'AttributeValueList can only be used with a ComparisonOperator for Attribute: ' + key
+        return 'One or more parameter values were invalid: ' +
+          'AttributeValueList can only be used with a ComparisonOperator for Attribute: ' + key
       } else {
         var exists = condition.Exists == null || condition.Exists
         if (exists && condition.Value == null)
           return 'One or more parameter values were invalid: ' +
-            'Value must be provided when Exists is ' + 
-            (condition.Exists == null ? 'null' : condition.Exists) + 
+            'Value must be provided when Exists is ' +
+            (condition.Exists == null ? 'null' : condition.Exists) +
             ' for Attribute: ' + key
         else if (!exists && condition.Value != null)
           return 'One or more parameter values were invalid: ' +

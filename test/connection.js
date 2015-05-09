@@ -10,7 +10,7 @@ describe('dynalite connections', function() {
     function assert404(done) {
       return function(err, res) {
         // Sometimes DynamoDB returns weird/bad HTTP responses
-        if (err && err.code == 'HPE_INVALID_CONSTANT') return
+        if (err && err.code == 'HPE_INVALID_CONSTANT') return done()
         if (err) return done(err)
         // For some reason, sometimes this happens:
         if (res.statusCode == 200) {
@@ -63,7 +63,7 @@ describe('dynalite connections', function() {
         body[i] = 'a'
 
       request({body: body.join(''), noSign: true}, function(err, res) {
-        if (err && err.code == 'HPE_INVALID_CONSTANT') return
+        if (err && err.code == 'HPE_INVALID_CONSTANT') return done()
         if (err) return done(err)
         res.statusCode.should.equal(404)
         done()
@@ -102,7 +102,7 @@ describe('dynalite connections', function() {
 
         done = once(done)
 
-        https.request({host: '127.0.0.1', port: port, rejectUnauthorized : false}, function(res) {
+        https.request({host: '127.0.0.1', port: port, rejectUnauthorized: false}, function(res) {
           res.on('error', done)
           res.on('data', function() {})
           res.on('end', function() {
@@ -151,7 +151,7 @@ describe('dynalite connections', function() {
     function assertInvalid(done) {
       return assertBody({
         __type: 'com.amazon.coral.service#InvalidSignatureException',
-        message: 'Found both \'X-Amz-Algorithm\' as a query-string param and \'Authorization\' as HTTP header.'
+        message: 'Found both \'X-Amz-Algorithm\' as a query-string param and \'Authorization\' as HTTP header.',
       }, 2139606068, done)
     }
 
@@ -231,7 +231,7 @@ describe('dynalite connections', function() {
       request({
         path: '/?X-Amz-Algorith',
         headers: {'x-amz-target': 'DynamoDB_20120810.ListTables', 'Authorization': 'X'},
-        noSign: true
+        noSign: true,
       }, assertMissing(done))
     })
 
@@ -239,7 +239,7 @@ describe('dynalite connections', function() {
       request({
         path: '/?X-Amz-Credential=a&X-Amz-Signature=b&X-Amz-SignedHeaders=c&X-Amz-Date=d',
         headers: {'x-amz-target': 'DynamoDB_20120810.ListTables'},
-        noSign: true
+        noSign: true,
       }, assertMissing(done))
     })
 
@@ -247,7 +247,7 @@ describe('dynalite connections', function() {
       request({
         path: '/?X-Amz-Algorithm',
         headers: {'x-amz-target': 'DynamoDB_20120810.ListTables', 'Authorization': 'X'},
-        noSign: true
+        noSign: true,
       }, assertInvalid(done))
     })
 

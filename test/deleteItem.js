@@ -133,39 +133,39 @@ describe('deleteItem', function() {
     })
 
     it('should return ValidationException if ComparisonOperator and Exists are used together', function(done) {
-      assertValidation({TableName: 'aaa', Key: {}, Expected: {a: { Exists: true, ComparisonOperator: 'LT'}}},
+      assertValidation({TableName: 'aaa', Key: {}, Expected: {a: {Exists: true, ComparisonOperator: 'LT'}}},
         'One or more parameter values were invalid: Exists and ComparisonOperator cannot be used together for Attribute: a', done)
     })
 
     it('should return ValidationException if AttributeValueList is used alone', function(done) {
-      assertValidation({TableName: 'aaa', Key: {}, Expected: {a: { AttributeValueList: []}}},
+      assertValidation({TableName: 'aaa', Key: {}, Expected: {a: {AttributeValueList: []}}},
         'One or more parameter values were invalid: AttributeValueList can only be used with a ComparisonOperator for Attribute: a', done)
     })
 
     it('should return ValidationException if AttributeValueList and Exists are used together', function(done) {
-      assertValidation({TableName: 'aaa', Key: {}, Expected: {a: { Exists: true, AttributeValueList: []}}},
+      assertValidation({TableName: 'aaa', Key: {}, Expected: {a: {Exists: true, AttributeValueList: []}}},
         'One or more parameter values were invalid: AttributeValueList can only be used with a ComparisonOperator for Attribute: a', done)
     })
 
     it('should return ValidationException if AttributeValueList and Value are used together', function(done) {
-      assertValidation({TableName: 'aaa', Key: {}, Expected: {a: { Value: {S: 'a'}, AttributeValueList: []}}},
+      assertValidation({TableName: 'aaa', Key: {}, Expected: {a: {Value: {S: 'a'}, AttributeValueList: []}}},
         'One or more parameter values were invalid: Value and AttributeValueList cannot be used together for Attribute: a', done)
     })
 
     it('should return ValidationException if Value provides incorrect number of attributes: BETWEEN', function(done) {
-      var expected = { a: {
-        Value: {S:'a'},
-        ComparisonOperator: 'BETWEEN'
-      } }
+      var expected = {a: {
+        Value: {S: 'a'},
+        ComparisonOperator: 'BETWEEN',
+      }}
       assertValidation({TableName: 'aaa', Key: {}, Expected: expected},
         'One or more parameter values were invalid: Invalid number of argument(s) for the BETWEEN ComparisonOperator', done)
     })
 
     it('should return ValidationException if Value provides incorrect number of attributes: NULL', function(done) {
-      var expected = { a: {
-        Value: {S:'a'},
-        ComparisonOperator: 'NULL'
-      } }
+      var expected = {a: {
+        Value: {S: 'a'},
+        ComparisonOperator: 'NULL',
+      }}
       assertValidation({TableName: 'aaa', Key: {}, Expected: expected},
         'One or more parameter values were invalid: Invalid number of argument(s) for the NULL ComparisonOperator', done)
     })

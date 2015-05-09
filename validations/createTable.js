@@ -13,8 +13,8 @@ exports.types = {
           type: 'String',
           notNull: true,
           enum: ['B', 'N', 'S'],
-        }
-      }
+        },
+      },
     },
   },
   TableName: {
@@ -36,7 +36,7 @@ exports.types = {
         type: 'Long',
         notNull: true,
         greaterThanOrEqual: 1,
-      }
+      },
     },
   },
   KeySchema: {
@@ -55,8 +55,8 @@ exports.types = {
           type: 'String',
           notNull: true,
           enum: ['HASH', 'RANGE'],
-        }
-      }
+        },
+      },
     },
   },
   LocalSecondaryIndexes: {
@@ -75,9 +75,9 @@ exports.types = {
             NonKeyAttributes: {
               type: 'List',
               lengthGreaterThanOrEqual: 1,
-              children: 'String'
+              children: 'String',
             },
-          }
+          },
         },
         IndexName: {
           type: 'String',
@@ -101,11 +101,11 @@ exports.types = {
               KeyType: {
                 type: 'String',
                 notNull: true,
-              }
-            }
-          }
+              },
+            },
+          },
         },
-      }
+      },
     },
   },
   GlobalSecondaryIndexes: {
@@ -124,9 +124,9 @@ exports.types = {
             NonKeyAttributes: {
               type: 'List',
               lengthGreaterThanOrEqual: 1,
-              children: 'String'
+              children: 'String',
             },
-          }
+          },
         },
         IndexName: {
           type: 'String',
@@ -148,7 +148,7 @@ exports.types = {
               type: 'Long',
               notNull: true,
               greaterThanOrEqual: 1,
-            }
+            },
           },
         },
         KeySchema: {
@@ -166,11 +166,11 @@ exports.types = {
               KeyType: {
                 type: 'String',
                 notNull: true,
-              }
-            }
-          }
+              },
+            },
+          },
         },
-      }
+      },
     },
   },
 }
@@ -225,10 +225,9 @@ exports.custom = function(data) {
         'which is required when specifying a LocalSecondaryIndex'
 
     for (i = 0; i < data.LocalSecondaryIndexes.length; i++) {
-      /* jshint -W083 */
       indexName = data.LocalSecondaryIndexes[i].IndexName
-      indexKeys = data.LocalSecondaryIndexes[i].KeySchema.map(function(key) { return key.AttributeName }).reverse()
-      if (indexKeys.some(function(key) { return !~defns.indexOf(key) }))
+      indexKeys = data.LocalSecondaryIndexes[i].KeySchema.map(function(key) { return key.AttributeName }).reverse() // eslint-disable-line no-loop-func
+      if (indexKeys.some(function(key) { return !~defns.indexOf(key) })) // eslint-disable-line no-loop-func
         return 'One or more parameter values were invalid: ' +
           'Some index key attributes are not defined in AttributeDefinitions. ' +
           'Keys: [' + indexKeys.join(', ') + '], AttributeDefinitions: [' + defns.join(', ') + ']'
@@ -278,8 +277,8 @@ exports.custom = function(data) {
 
     for (i = 0; i < data.GlobalSecondaryIndexes.length; i++) {
       indexName = data.GlobalSecondaryIndexes[i].IndexName
-      indexKeys = data.GlobalSecondaryIndexes[i].KeySchema.map(function(key) { return key.AttributeName }).reverse()
-      if (indexKeys.some(function(key) { return !~defns.indexOf(key) }))
+      indexKeys = data.GlobalSecondaryIndexes[i].KeySchema.map(function(key) { return key.AttributeName }).reverse() // eslint-disable-line no-loop-func
+      if (indexKeys.some(function(key) { return !~defns.indexOf(key) })) // eslint-disable-line no-loop-func
         return 'One or more parameter values were invalid: ' +
           'Some index key attributes are not defined in AttributeDefinitions. ' +
           'Keys: [' + indexKeys.join(', ') + '], AttributeDefinitions: [' + defns.join(', ') + ']'

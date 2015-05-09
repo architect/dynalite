@@ -28,7 +28,7 @@ module.exports = function batchWriteItem(store, data, cb) {
         return {
           CapacityUnits: tableUnits[table],
           TableName: table,
-          Table: data.ReturnConsumedCapacity == 'INDEXES' ? {CapacityUnits: tableUnits[table]} : undefined
+          Table: data.ReturnConsumedCapacity == 'INDEXES' ? {CapacityUnits: tableUnits[table]} : undefined,
         }
       })
     }
