@@ -22,12 +22,11 @@ exports.matchesFilter = matchesFilter
 
 function create(options) {
   options = options || {}
-  options.path = options.path || memdown
   if (options.createTableMs == null) options.createTableMs = 500
   if (options.deleteTableMs == null) options.deleteTableMs = 500
   if (options.updateTableMs == null) options.updateTableMs = 500
 
-  var db = levelup(options.path),
+  var db = levelup(options.path || '/does/not/matter', options.path ? {} : {db: memdown}),
       sublevelDb = sublevel(db),
       tableDb = sublevelDb.sublevel('table', {valueEncoding: 'json'}),
       itemDbs = []
