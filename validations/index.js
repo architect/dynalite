@@ -199,7 +199,7 @@ function checkValidations(data, validations, custom) {
 
   for (attr in validations) {
     if (validations[attr].required && data[attr] == null) {
-      throw validationError('The paramater \'' + attr + '\' is required but was not present in the request')
+      throw validationError('The parameter \'' + attr + '\' is required but was not present in the request')
     }
     if (validations[attr].tableName) {
       msg = validateTableName(attr, data[attr])

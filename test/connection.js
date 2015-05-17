@@ -12,30 +12,25 @@ describe('dynalite connections', function() {
         // Sometimes DynamoDB returns weird/bad HTTP responses
         if (err && err.code == 'HPE_INVALID_CONSTANT') return done()
         if (err) return done(err)
-        // For some reason, sometimes this happens:
-        if (res.statusCode == 200) {
-          res.body.should.equal('<SCRIPT language=JavaScript>\n')
-        } else {
-          res.statusCode.should.equal(404)
-          try {
-            res.body.should.equal('<UnknownOperationException/>\n')
-            res.headers['x-amz-crc32'].should.equal('3552371480')
-            res.headers['content-length'].should.equal('29')
-          } catch (e) {
-            // Sometimes it's an HTML page instead of the above
-            res.body.should.equal(
-              '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" ' +
-              '"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">\n' +
-              '<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">\n' +
-              '<head>\n  ' +
-              '<title>Page Not Found</title>\n' +
-              '</head>\n' +
-              '<body>Page Not Found</body>\n' +
-              '</html>'
-            )
-            res.headers['x-amz-crc32'].should.equal('2548615100')
-            res.headers['content-length'].should.equal('272')
-          }
+        res.statusCode.should.equal(404)
+        try {
+          res.body.should.equal('<UnknownOperationException/>\n')
+          res.headers['x-amz-crc32'].should.equal('3552371480')
+          res.headers['content-length'].should.equal('29')
+        } catch (e) {
+          // Sometimes it's an HTML page instead of the above
+          res.body.should.equal(
+            '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" ' +
+            '"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">\n' +
+            '<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">\n' +
+            '<head>\n  ' +
+            '<title>Page Not Found</title>\n' +
+            '</head>\n' +
+            '<body>Page Not Found</body>\n' +
+            '</html>'
+          )
+          res.headers['x-amz-crc32'].should.equal('2548615100')
+          res.headers['content-length'].should.equal('272')
         }
         res.headers['x-amzn-requestid'].should.match(/^[0-9A-Z]{52}$/)
         done()
@@ -74,8 +69,16 @@ describe('dynalite connections', function() {
       request({method: 'OPTIONS', noSign: true}, assert404(done))
     })
 
-    it('should return 404 if a GET', function(done) {
-      request({method: 'GET', noSign: true}, assert404(done))
+    it('should return 200 if a GET', function(done) {
+      request({method: 'GET', noSign: true}, function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        res.body.should.equal('healthy: dynamodb.us-east-1.amazonaws.com ')
+        res.headers['x-amz-crc32'].should.equal('3128867991')
+        res.headers['content-length'].should.equal('42')
+        res.headers['x-amzn-requestid'].should.match(/^[0-9A-Z]{52}$/)
+        done()
+      })
     })
 
     it('should return 404 if a PUT', function(done) {
@@ -106,7 +109,7 @@ describe('dynalite connections', function() {
           res.on('error', done)
           res.on('data', function() {})
           res.on('end', function() {
-            res.statusCode.should.equal(404)
+            res.statusCode.should.equal(200)
             dynaliteServer.close(done)
           })
         }).on('error', done).end()

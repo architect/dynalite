@@ -134,8 +134,10 @@ exports.types = {
 
 exports.custom = function(data) {
 
-  if (!data.ProvisionedThroughput && (!data.GlobalSecondaryIndexUpdates || !data.GlobalSecondaryIndexUpdates.length))
-    return 'At least one of ProvisionedThroughput or GlobalSecondaryIndexUpdates is required'
+  if (!data.ProvisionedThroughput && !data.UpdateStreamEnabled &&
+      (!data.GlobalSecondaryIndexUpdates || !data.GlobalSecondaryIndexUpdates.length)) {
+    return 'At least one of ProvisionedThroughput, UpdateStreamEnabled or GlobalSecondaryIndexUpdates is required'
+  }
 
   if (data.ProvisionedThroughput) {
     if (data.ProvisionedThroughput.ReadCapacityUnits > 1000000000000)

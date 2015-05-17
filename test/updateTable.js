@@ -60,7 +60,7 @@ describe('updateTable', function() {
 
     it('should return ValidationException for no TableName', function(done) {
       assertValidation({},
-        'The paramater \'TableName\' is required but was not present in the request', done)
+        'The parameter \'TableName\' is required but was not present in the request', done)
     })
 
     it('should return ValidationException for empty TableName', function(done) {
@@ -132,7 +132,7 @@ describe('updateTable', function() {
 
     it('should return ValidationException for empty GlobalSecondaryIndexUpdates', function(done) {
       assertValidation({TableName: 'abc', GlobalSecondaryIndexUpdates: []},
-        'At least one of ProvisionedThroughput or GlobalSecondaryIndexUpdates is required', done)
+        'At least one of ProvisionedThroughput, UpdateStreamEnabled or GlobalSecondaryIndexUpdates is required', done)
     })
 
     it('should return ValidationException for empty Update', function(done) {

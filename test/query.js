@@ -164,7 +164,7 @@ describe('query', function() {
 
     it('should return ValidationException for null conditions', function(done) {
       assertValidation({TableName: 'abc'},
-        'Conditions must not be null', done)
+        'Either the KeyConditions or KeyConditionExpression parameter must be specified in the request.', done)
     })
 
     it('should return ValidationException for empty conditions', function(done) {

@@ -111,6 +111,14 @@ function httpHandler(store, req, res) {
       }
     }
 
+    if (req.method == 'GET') {
+      req.removeAllListeners()
+      res.statusCode = 200
+      res.setHeader('x-amz-crc32', 3128867991)
+      res.setHeader('Content-Length', 42)
+      return res.end('healthy: dynamodb.us-east-1.amazonaws.com ')
+    }
+
     var contentType = req.headers['content-type']
 
     if (req.method != 'POST' ||

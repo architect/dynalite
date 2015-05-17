@@ -75,8 +75,8 @@ exports.types = {
 }
 
 exports.custom = function(data) {
-  if (!data.KeyConditions)
-    return 'Conditions must not be null'
+  if (!data.KeyConditions && !data.KeyConditionExpression)
+    return 'Either the KeyConditions or KeyConditionExpression parameter must be specified in the request.'
   var conditionKeys = Object.keys(data.KeyConditions), key, comparisonOperator, attrValList
 
   var msg = '', i

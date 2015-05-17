@@ -19,7 +19,7 @@ describe('describeTable', function() {
 
     it('should return ValidationException for no TableName', function(done) {
       assertValidation({},
-        'The paramater \'TableName\' is required but was not present in the request', done)
+        'The parameter \'TableName\' is required but was not present in the request', done)
     })
 
     it('should return ValidationException for empty TableName', function(done) {

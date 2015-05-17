@@ -166,7 +166,7 @@ describe('createTable', function() {
 
     it('should return ValidationException for no TableName', function(done) {
       assertValidation({},
-        'The paramater \'TableName\' is required but was not present in the request', done)
+        'The parameter \'TableName\' is required but was not present in the request', done)
     })
 
     it('should return ValidationException for empty TableName', function(done) {
@@ -469,9 +469,9 @@ describe('createTable', function() {
           Projection: {},
         }],
         ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},
-        'One or more parameter values were invalid: ' +
-        'Some index key attributes are not defined in AttributeDefinitions. ' +
-        'Keys: [d, c], AttributeDefinitions: [b, a]', done)
+        new RegExp('One or more parameter values were invalid: ' +
+          'Some index key attributes are not defined in AttributeDefinitions. ' +
+          'Keys: \\[(c, d|d, c)\\], AttributeDefinitions: \\[(a, b|b, a)\\]'), done)
     })
 
     it('should return ValidationException for first key in LocalSecondaryIndex not being hash', function(done) {
@@ -540,9 +540,9 @@ describe('createTable', function() {
           Projection: {},
         }],
         ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},
-        'One or more parameter values were invalid: ' +
-        'Some index key attributes are not defined in AttributeDefinitions. ' +
-        'Keys: [c, a], AttributeDefinitions: [b, a]', done)
+        new RegExp('One or more parameter values were invalid: ' +
+          'Some index key attributes are not defined in AttributeDefinitions. ' +
+          'Keys: \\[(a, c|c, a)\\], AttributeDefinitions: \\[(a, b|b, a)\\]'), done)
     })
 
     it('should return ValidationException for empty Projection in LocalSecondaryIndex', function(done) {
@@ -776,9 +776,9 @@ describe('createTable', function() {
         KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}],
         GlobalSecondaryIndexes: [{IndexName: 'abc', KeySchema: [{AttributeName: 'c', KeyType: 'RANGE'}], Projection: {}, ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}}],
         ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},
-        'One or more parameter values were invalid: ' +
-        'Some index key attributes are not defined in AttributeDefinitions. ' +
-        'Keys: [c], AttributeDefinitions: [b, a]', done)
+        new RegExp('One or more parameter values were invalid: ' +
+          'Some index key attributes are not defined in AttributeDefinitions. ' +
+          'Keys: \\[c\\], AttributeDefinitions: \\[(a, b|b, a)\\]'), done)
     })
 
     it('should return ValidationException for missing attribute definitions in GlobalSecondaryIndex', function(done) {
@@ -797,9 +797,9 @@ describe('createTable', function() {
           Projection: {},
         }],
         ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},
-        'One or more parameter values were invalid: ' +
-        'Some index key attributes are not defined in AttributeDefinitions. ' +
-        'Keys: [d, c], AttributeDefinitions: [b, a]', done)
+        new RegExp('One or more parameter values were invalid: ' +
+          'Some index key attributes are not defined in AttributeDefinitions. ' +
+          'Keys: \\[(c, d|d, c)\\], AttributeDefinitions: \\[(a, b|b, a)\\]'), done)
     })
 
     it('should return ValidationException for first key in GlobalSecondaryIndex not being hash', function(done) {
@@ -897,9 +897,9 @@ describe('createTable', function() {
           Projection: {},
         }],
         ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},
-        'One or more parameter values were invalid: ' +
-        'Some index key attributes are not defined in AttributeDefinitions. ' +
-        'Keys: [c, a], AttributeDefinitions: [b, a]', done)
+        new RegExp('One or more parameter values were invalid: ' +
+          'Some index key attributes are not defined in AttributeDefinitions. ' +
+          'Keys: \\[(a, c|c, a)\\], AttributeDefinitions: \\[(a, b|b, a)\\]'), done)
     })
 
     it('should return ValidationException for empty Projection in GlobalSecondaryIndex', function(done) {

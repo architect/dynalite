@@ -182,8 +182,8 @@ exports.custom = function(data) {
   if (data.ProvisionedThroughput.WriteCapacityUnits > 1000000000000)
     return 'Given value ' + data.ProvisionedThroughput.WriteCapacityUnits + ' for WriteCapacityUnits is out of bounds'
 
-  var defns = data.AttributeDefinitions.map(function(key) { return key.AttributeName }).reverse()
-  var keys = data.KeySchema.map(function(key) { return key.AttributeName }).reverse()
+  var defns = data.AttributeDefinitions.map(function(key) { return key.AttributeName })
+  var keys = data.KeySchema.map(function(key) { return key.AttributeName })
 
   if (keys.length == 2) {
     if (keys.some(function(key) { return !~defns.indexOf(key) }) ||
@@ -226,7 +226,7 @@ exports.custom = function(data) {
 
     for (i = 0; i < data.LocalSecondaryIndexes.length; i++) {
       indexName = data.LocalSecondaryIndexes[i].IndexName
-      indexKeys = data.LocalSecondaryIndexes[i].KeySchema.map(function(key) { return key.AttributeName }).reverse() // eslint-disable-line no-loop-func
+      indexKeys = data.LocalSecondaryIndexes[i].KeySchema.map(function(key) { return key.AttributeName }) // eslint-disable-line no-loop-func
       if (indexKeys.some(function(key) { return !~defns.indexOf(key) })) // eslint-disable-line no-loop-func
         return 'One or more parameter values were invalid: ' +
           'Some index key attributes are not defined in AttributeDefinitions. ' +
@@ -277,7 +277,7 @@ exports.custom = function(data) {
 
     for (i = 0; i < data.GlobalSecondaryIndexes.length; i++) {
       indexName = data.GlobalSecondaryIndexes[i].IndexName
-      indexKeys = data.GlobalSecondaryIndexes[i].KeySchema.map(function(key) { return key.AttributeName }).reverse() // eslint-disable-line no-loop-func
+      indexKeys = data.GlobalSecondaryIndexes[i].KeySchema.map(function(key) { return key.AttributeName }) // eslint-disable-line no-loop-func
       if (indexKeys.some(function(key) { return !~defns.indexOf(key) })) // eslint-disable-line no-loop-func
         return 'One or more parameter values were invalid: ' +
           'Some index key attributes are not defined in AttributeDefinitions. ' +
