@@ -2140,11 +2140,6 @@ describe('scan', function() {
           res.body.ScannedCount.should.equal(3)
           res.body.LastEvaluatedKey.a.S.should.not.be.empty // eslint-disable-line no-unused-expressions
           Object.keys(res.body.LastEvaluatedKey).should.have.length(1)
-          res.body.ConsumedCapacity.should.eql({
-            CapacityUnits: 0.5,
-            Table: {CapacityUnits: 0.5},
-            TableName: helpers.testHashTable
-          })
           done()
         })
       })
