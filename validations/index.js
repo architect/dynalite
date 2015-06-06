@@ -380,6 +380,13 @@ function validateAttributeValue(value) {
 
     if (type == 'BS' && hasDuplicates(value[type]))
       return 'One or more parameter values were invalid: Input collection ' + valueStr(value[type]) + 'of type BS contains duplicates.'
+
+    if (type == 'M') {
+      for (var attr in value[type]) {
+        msg = validateAttributeValue(value[type][attr])
+        if (msg) return msg
+      }
+    }
   }
 
   if (types.length > 1)

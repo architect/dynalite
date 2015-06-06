@@ -153,6 +153,11 @@ describe('putItem', function() {
         'One or more parameter values were invalid: An AttributeValue may not contain an empty string', done)
     })
 
+    it('should return ValidationException for empty string in map', function(done) {
+      assertValidation({TableName: 'abc', Item: {a: {M: {b: {S: ''}}}}},
+        'One or more parameter values were invalid: An AttributeValue may not contain an empty string', done)
+    })
+
     it('should return ValidationException for empty binary', function(done) {
       assertValidation({TableName: 'abc', Item: {a: {B: ''}}},
         'One or more parameter values were invalid: An AttributeValue may not contain a null or empty binary type.', done)
