@@ -18,6 +18,7 @@ module.exports = function createTable(store, data, cb) {
         return cb(err)
       }
 
+      data.TableArn = 'arn:aws:dynamodb:' + tableDb.awsRegion + ':' + tableDb.awsAccountId + ':table/' + data.TableName
       data.CreationDateTime = Date.now() / 1000
       data.ItemCount = 0
       data.ProvisionedThroughput.NumberOfDecreasesToday = 0
@@ -25,12 +26,16 @@ module.exports = function createTable(store, data, cb) {
       data.TableStatus = 'CREATING'
       if (data.LocalSecondaryIndexes) {
         data.LocalSecondaryIndexes.forEach(function(index) {
+          index.IndexArn = 'arn:aws:dynamodb:' + tableDb.awsRegion + ':' + tableDb.awsAccountId + ':table/' +
+            data.TableName + '/index/' + index.IndexName
           index.IndexSizeBytes = 0
           index.ItemCount = 0
         })
       }
       if (data.GlobalSecondaryIndexes) {
         data.GlobalSecondaryIndexes.forEach(function(index) {
+          index.IndexArn = 'arn:aws:dynamodb:' + tableDb.awsRegion + ':' + tableDb.awsAccountId + ':table/' +
+            data.TableName + '/index/' + index.IndexName
           index.IndexSizeBytes = 0
           index.ItemCount = 0
           index.IndexStatus = 'CREATING'

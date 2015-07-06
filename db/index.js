@@ -33,6 +33,10 @@ function create(options) {
 
   tableDb.lock = new Lock()
 
+  // XXX: Is there a better way to get this?
+  tableDb.awsAccountId = (process.env.AWS_ACCOUNT_ID || '0000-0000-0000').replace(/[^\d]/g, '')
+  tableDb.awsRegion = process.env.AWS_REGION || process.env.AWS_DEFAULT_REGION || 'us-east-1'
+
   function getItemDb(name) {
     if (!itemDbs[name]) {
       itemDbs[name] = sublevelDb.sublevel('item-' + name, {valueEncoding: 'json'})

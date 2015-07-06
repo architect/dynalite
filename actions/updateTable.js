@@ -83,7 +83,7 @@ function getThroughputUpdates(data, table) {
       setStatus: function(status) { table.TableStatus = status },
     })
   }
-  if (data.GlobalSecondaryIndexUpdates) {
+  if (data.GlobalSecondaryIndexUpdates && table.GlobalSecondaryIndexes) {
     data.GlobalSecondaryIndexUpdates.forEach(function(update) {
       table.GlobalSecondaryIndexes.forEach(function(index) {
         if (update.Update && index.IndexName == update.Update.IndexName) {
