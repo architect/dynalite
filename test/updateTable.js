@@ -196,12 +196,17 @@ describe('updateTable', function() {
     })
 
     it('should return ValidationException if read and write are same', function(done) {
-      assertValidation({TableName: helpers.testHashTable,
-        ProvisionedThroughput: {ReadCapacityUnits: 2, WriteCapacityUnits: 2}},
-        'The provisioned throughput for the table will not change. The requested value equals the current value. ' +
-        'Current ReadCapacityUnits provisioned for the table: 2. Requested ReadCapacityUnits: 2. ' +
-        'Current WriteCapacityUnits provisioned for the table: 2. Requested WriteCapacityUnits: 2. ' +
-        'Refer to the Amazon DynamoDB Developer Guide for current limits and how to request higher limits.', done)
+      request(helpers.opts('DescribeTable', {TableName: helpers.testHashTable}), function(err, res) {
+        if (err) return err(done)
+        var readUnits = res.body.Table.ProvisionedThroughput.ReadCapacityUnits
+        var writeUnits = res.body.Table.ProvisionedThroughput.WriteCapacityUnits
+        assertValidation({TableName: helpers.testHashTable,
+          ProvisionedThroughput: {ReadCapacityUnits: readUnits, WriteCapacityUnits: writeUnits}},
+          'The provisioned throughput for the table will not change. The requested value equals the current value. ' +
+          'Current ReadCapacityUnits provisioned for the table: ' + readUnits + '. Requested ReadCapacityUnits: ' + readUnits + '. ' +
+          'Current WriteCapacityUnits provisioned for the table: ' + writeUnits + '. Requested WriteCapacityUnits: ' + writeUnits + '. ' +
+          'Refer to the Amazon DynamoDB Developer Guide for current limits and how to request higher limits.', done)
+      })
     })
 
     // TODO: never returns?
@@ -213,11 +218,7 @@ describe('updateTable', function() {
         {Delete: {IndexName: 'abf'}},
         {Delete: {IndexName: 'abg'}},
         {Delete: {IndexName: 'abh'}}
-      ]},
-        'One or more parameter values were invalid: ' +
-        'One of GlobalSecondaryIndexUpdate.Update, ' +
-        'GlobalSecondaryIndexUpdate.Create, ' +
-        'GlobalSecondaryIndexUpdate.Delete must not be null', done)
+      ]}, '', done)
     })
 
     // TODO: No more than four decreases in a single UTC calendar day

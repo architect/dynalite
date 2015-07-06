@@ -1139,6 +1139,9 @@ describe('createTable', function() {
         var desc = res.body.TableDescription
         desc.CreationDateTime.should.be.above(createdAt - 5)
         delete desc.CreationDateTime
+        desc.TableArn.should.match(new RegExp(
+          'arn:aws:dynamodb:' + helpers.awsRegion + ':\\d+:table/' + table.TableName))
+        delete desc.TableArn
         table.ItemCount = 0
         table.ProvisionedThroughput.NumberOfDecreasesToday = 0
         table.TableSizeBytes = 0
@@ -1207,6 +1210,14 @@ describe('createTable', function() {
         var desc = res.body.TableDescription
         desc.CreationDateTime.should.be.above(createdAt - 5)
         delete desc.CreationDateTime
+        desc.TableArn.should.match(new RegExp(
+          'arn:aws:dynamodb:' + helpers.awsRegion + ':\\d+:table/' + table.TableName))
+        delete desc.TableArn
+        desc.LocalSecondaryIndexes.forEach(function(index) {
+          index.IndexArn.should.match(new RegExp(
+            'arn:aws:dynamodb:' + helpers.awsRegion + ':\\d+:table/' + table.TableName + '/index/' + index.IndexName))
+          delete index.IndexArn
+        })
         table.ItemCount = 0
         table.ProvisionedThroughput.NumberOfDecreasesToday = 0
         table.TableSizeBytes = 0
@@ -1267,6 +1278,14 @@ describe('createTable', function() {
         var desc = res.body.TableDescription
         desc.CreationDateTime.should.be.above(createdAt - 5)
         delete desc.CreationDateTime
+        desc.TableArn.should.match(new RegExp(
+          'arn:aws:dynamodb:' + helpers.awsRegion + ':\\d+:table/' + table.TableName))
+        delete desc.TableArn
+        desc.GlobalSecondaryIndexes.forEach(function(index) {
+          index.IndexArn.should.match(new RegExp(
+            'arn:aws:dynamodb:' + helpers.awsRegion + ':\\d+:table/' + table.TableName + '/index/' + index.IndexName))
+          delete index.IndexArn
+        })
         table.ItemCount = 0
         table.ProvisionedThroughput.NumberOfDecreasesToday = 0
         table.TableSizeBytes = 0
@@ -1287,6 +1306,7 @@ describe('createTable', function() {
         // Ensure that the indexes become active too
         helpers.waitUntilIndexesActive(table.TableName, function(err, res) {
           if (err) return done(err)
+          res.body.Table.GlobalSecondaryIndexes.forEach(function(index) { delete index.IndexArn })
           globalIndexes.forEach(function(index) {
             index.IndexStatus = 'ACTIVE'
             res.body.Table.GlobalSecondaryIndexes.should.containEql(index)

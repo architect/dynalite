@@ -6,6 +6,7 @@ var http = require('http'),
 
 http.globalAgent.maxSockets = Infinity
 
+exports.awsRegion = process.env.AWS_REGION || process.env.AWS_DEFAULT_REGION || 'us-east-1'
 exports.version = 'DynamoDB_20120810'
 exports.prefix = '__dynalite_test_'
 exports.request = request
@@ -179,8 +180,7 @@ function deleteTestTables(done) {
 function createAndWait(table, done) {
   request(opts('CreateTable', table), function(err, res) {
     if (err) return done(err)
-    if (res.body.__type)
-      return done(new Error(res.body.__type + ': ' + res.body.message))
+    if (res.statusCode != 200) return done(new Error(res.statusCode + ': ' + JSON.stringify(res.body)))
     setTimeout(waitUntilActive, 1000, table.TableName, done)
   })
 }
@@ -188,10 +188,10 @@ function createAndWait(table, done) {
 function deleteAndWait(name, done) {
   request(opts('DeleteTable', {TableName: name}), function(err, res) {
     if (err) return done(err)
-    if (res.body.__type == 'com.amazonaws.dynamodb.v20120810#ResourceInUseException')
+    if (res.body && res.body.__type == 'com.amazonaws.dynamodb.v20120810#ResourceInUseException')
       return setTimeout(deleteAndWait, 1000, name, done)
-    else if (res.body.__type)
-      return done(new Error(res.body.__type + ': ' + res.body.message))
+    else if (res.statusCode != 200)
+      return done(new Error(res.statusCode + ': ' + JSON.stringify(res.body)))
     setTimeout(waitUntilDeleted, 1000, name, done)
   })
 }
@@ -199,9 +199,8 @@ function deleteAndWait(name, done) {
 function waitUntilActive(name, done) {
   request(opts('DescribeTable', {TableName: name}), function(err, res) {
     if (err) return done(err)
-    if (res.body.__type)
-      return done(new Error(res.body.__type + ': ' + res.body.message))
-    else if (res.body.Table.TableStatus == 'ACTIVE')
+    if (res.statusCode != 200) return done(new Error(res.statusCode + ': ' + JSON.stringify(res.body)))
+    if (res.body.Table.TableStatus == 'ACTIVE')
       return done(null, res)
     setTimeout(waitUntilActive, 1000, name, done)
   })
@@ -210,10 +209,10 @@ function waitUntilActive(name, done) {
 function waitUntilDeleted(name, done) {
   request(opts('DescribeTable', {TableName: name}), function(err, res) {
     if (err) return done(err)
-    if (res.body.__type == 'com.amazonaws.dynamodb.v20120810#ResourceNotFoundException')
+    if (res.body && res.body.__type == 'com.amazonaws.dynamodb.v20120810#ResourceNotFoundException')
       return done(null, res)
-    else if (res.body.__type)
-      return done(new Error(res.body.__type + ': ' + res.body.message))
+    else if (res.statusCode != 200)
+      return done(new Error(res.statusCode + ': ' + JSON.stringify(res.body)))
     setTimeout(waitUntilDeleted, 1000, name, done)
   })
 }
@@ -221,8 +220,8 @@ function waitUntilDeleted(name, done) {
 function waitUntilIndexesActive(name, done) {
   request(opts('DescribeTable', {TableName: name}), function(err, res) {
     if (err) return done(err)
-    if (res.body.__type)
-      return done(new Error(res.body.__type + ': ' + res.body.message))
+    if (res.statusCode != 200)
+      return done(new Error(res.statusCode + ': ' + JSON.stringify(res.body)))
     else if (res.body.Table.GlobalSecondaryIndexes.every(function(index) { return index.IndexStatus == 'ACTIVE' }))
       return done(null, res)
     setTimeout(waitUntilIndexesActive, 1000, name, done)
@@ -239,14 +238,14 @@ function deleteWhenActive(name, done) {
 
 function clearTable(name, keyNames, segments, done) {
   if (!done) { done = segments; segments = 2 }
+  if (!Array.isArray(keyNames)) keyNames = [keyNames]
 
   scanAndDelete(done)
 
   function scanAndDelete(cb) {
     async.times(segments, scanSegmentAndDelete, function(err, segmentsHadKeys) {
       if (err) return cb(err)
-      if (segmentsHadKeys.some(function(hadKeys) { return hadKeys }))
-        return scanAndDelete(cb)
+      if (segmentsHadKeys.some(Boolean)) return scanAndDelete(cb)
       cb()
     })
   }
@@ -254,6 +253,7 @@ function clearTable(name, keyNames, segments, done) {
   function scanSegmentAndDelete(n, cb) {
     request(opts('Scan', {TableName: name, AttributesToGet: keyNames, Segment: n, TotalSegments: segments}), function(err, res) {
       if (err) return cb(err)
+      if (res.statusCode != 200) return cb(new Error(res.statusCode + ': ' + JSON.stringify(res.body)))
       if (!res.body.ScannedCount) return cb(null, false)
 
       var keys = res.body.Items, batchDeletes
@@ -304,7 +304,7 @@ function batchWriteUntilDone(name, actions, cb) {
           console.log('ProvisionedThroughputExceededException')
           return setTimeout(cb, 2000)
         } else if (res.statusCode != 200) {
-          return cb(new Error(res.statusCode + ': ' + res.body.message))
+          return cb(new Error(res.statusCode + ': ' + JSON.stringify(res.body)))
         }
         cb()
       })

@@ -2413,7 +2413,7 @@ describe('scan', function() {
       for (i = 0; i < 25; i++)
         items.push({a: {S: ('0' + i).slice(-2)}})
 
-      helpers.replaceTable(helpers.testHashTable, ['a'], items, function(err) {
+      helpers.replaceTable(helpers.testHashTable, 'a', items, function(err) {
         if (err) return done(err)
 
         request(opts({TableName: helpers.testHashTable}), function(err, res) {
@@ -2440,7 +2440,7 @@ describe('scan', function() {
             }
           }
 
-          helpers.replaceTable(helpers.testHashTable, ['a'], items, 10, function(err) {
+          helpers.replaceTable(helpers.testHashTable, 'a', items, 10, function(err) {
             if (err) return done(err)
 
             request(opts({TableName: helpers.testHashTable, Select: 'COUNT', ReturnConsumedCapacity: 'TOTAL'}), function(err, res) {
@@ -2449,7 +2449,7 @@ describe('scan', function() {
               res.body.ScannedCount.should.equal(25)
               res.body.Count.should.equal(25)
               res.body.ConsumedCapacity.CapacityUnits.should.equal(128)
-              done()
+              helpers.clearTable(helpers.testHashTable, 'a', done)
             })
           })
         })
@@ -2464,7 +2464,7 @@ describe('scan', function() {
       for (i = 0; i < 25; i++)
         items.push({a: {S: ('0' + i).slice(-2)}})
 
-      helpers.replaceTable(helpers.testHashTable, ['a'], items, function(err) {
+      helpers.replaceTable(helpers.testHashTable, 'a', items, function(err) {
         if (err) return done(err)
 
         request(opts({TableName: helpers.testHashTable}), function(err, res) {
@@ -2491,7 +2491,7 @@ describe('scan', function() {
             }
           }
 
-          helpers.replaceTable(helpers.testHashTable, ['a'], items, 10, function(err) {
+          helpers.replaceTable(helpers.testHashTable, 'a', items, 10, function(err) {
             if (err) return done(err)
 
             request(opts({TableName: helpers.testHashTable, Select: 'COUNT', ReturnConsumedCapacity: 'TOTAL'}), function(err, res) {
@@ -2500,7 +2500,7 @@ describe('scan', function() {
               res.body.ScannedCount.should.equal(24)
               res.body.Count.should.equal(24)
               res.body.ConsumedCapacity.CapacityUnits.should.equal(127.5)
-              done()
+              helpers.clearTable(helpers.testHashTable, 'a', done)
             })
           })
         })

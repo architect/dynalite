@@ -618,7 +618,7 @@ describe('batchGetItem', function() {
           res.body.UnprocessedKeys.should.eql({})
           res.body.Responses[helpers.testHashTable].should.have.length(4)
           res.body.ConsumedCapacity.should.eql([{CapacityUnits: 357, TableName: helpers.testHashTable}])
-          done()
+          helpers.clearTable(helpers.testHashTable, 'a', done)
         })
       })
     })
@@ -655,7 +655,7 @@ describe('batchGetItem', function() {
             res.body.ConsumedCapacity.should.eql([{CapacityUnits: 258, TableName: helpers.testHashTable}])
           }
           res.body.Responses[helpers.testHashTable].should.have.length(3)
-          done()
+          helpers.clearTable(helpers.testHashTable, 'a', done)
         })
       })
     })
@@ -696,7 +696,7 @@ describe('batchGetItem', function() {
             totalCapacity += res.body.UnprocessedKeys[helpers.testHashTable].Keys[i].a.S < 3 ? 99 : 4
           totalCapacity.should.equal(385)
 
-          done()
+          helpers.clearTable(helpers.testHashTable, 'a', done)
         })
       })
     })
