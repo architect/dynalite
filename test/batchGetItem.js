@@ -403,9 +403,9 @@ describe('batchGetItem', function() {
     })
 
     it('should return only items that do exist', function(done) {
-      var item = {a: {S: helpers.randomString()}, b: {N: helpers.randomString()}},
+      var item = {a: {S: helpers.randomString()}, b: {N: helpers.randomNumber()}},
           item2 = {a: {S: helpers.randomString()}, b: item.b},
-          item3 = {a: {S: helpers.randomString()}, b: {N: helpers.randomString()}},
+          item3 = {a: {S: helpers.randomString()}, b: {N: helpers.randomNumber()}},
           batchReq = {RequestItems: {}}
       batchReq.RequestItems[helpers.testHashTable] = [
         {PutRequest: {Item: item}},
@@ -435,9 +435,9 @@ describe('batchGetItem', function() {
     })
 
     it('should return only requested attributes of items that do exist', function(done) {
-      var item = {a: {S: helpers.randomString()}, b: {N: helpers.randomString()}, c: {S: 'c'}},
+      var item = {a: {S: helpers.randomString()}, b: {N: helpers.randomNumber()}, c: {S: 'c'}},
           item2 = {a: {S: helpers.randomString()}, b: item.b},
-          item3 = {a: {S: helpers.randomString()}, b: {N: helpers.randomString()}},
+          item3 = {a: {S: helpers.randomString()}, b: {N: helpers.randomNumber()}},
           item4 = {a: {S: helpers.randomString()}},
           batchReq = {RequestItems: {}}
       batchReq.RequestItems[helpers.testHashTable] = [
@@ -481,7 +481,7 @@ describe('batchGetItem', function() {
         res.statusCode.should.equal(200)
         batchReq = {RequestItems: {}, ReturnConsumedCapacity: 'TOTAL'}
         batchReq.RequestItems[helpers.testHashTable] = {Keys: [{a: item.a}, {a: item2.a}, {a: {S: helpers.randomString()}}]}
-        batchReq.RequestItems[helpers.testHashNTable] = {Keys: [{a: {N: helpers.randomString()}}]}
+        batchReq.RequestItems[helpers.testHashNTable] = {Keys: [{a: {N: helpers.randomNumber()}}]}
         request(opts(batchReq), function(err, res) {
           if (err) return done(err)
           res.statusCode.should.equal(200)
@@ -512,7 +512,7 @@ describe('batchGetItem', function() {
         res.statusCode.should.equal(200)
         batchReq = {RequestItems: {}, ReturnConsumedCapacity: 'TOTAL'}
         batchReq.RequestItems[helpers.testHashTable] = {Keys: [{a: item.a}, {a: item2.a}, {a: {S: helpers.randomString()}}]}
-        batchReq.RequestItems[helpers.testHashNTable] = {Keys: [{a: {N: helpers.randomString()}}]}
+        batchReq.RequestItems[helpers.testHashNTable] = {Keys: [{a: {N: helpers.randomNumber()}}]}
         request(opts(batchReq), function(err, res) {
           if (err) return done(err)
           res.statusCode.should.equal(200)
@@ -543,7 +543,7 @@ describe('batchGetItem', function() {
         res.statusCode.should.equal(200)
         batchReq = {RequestItems: {}, ReturnConsumedCapacity: 'TOTAL'}
         batchReq.RequestItems[helpers.testHashTable] = {Keys: [{a: item.a}, {a: item2.a}, {a: {S: helpers.randomString()}}], ConsistentRead: true}
-        batchReq.RequestItems[helpers.testHashNTable] = {Keys: [{a: {N: helpers.randomString()}}], ConsistentRead: true}
+        batchReq.RequestItems[helpers.testHashNTable] = {Keys: [{a: {N: helpers.randomNumber()}}], ConsistentRead: true}
         request(opts(batchReq), function(err, res) {
           if (err) return done(err)
           res.statusCode.should.equal(200)
@@ -574,7 +574,7 @@ describe('batchGetItem', function() {
         res.statusCode.should.equal(200)
         batchReq = {RequestItems: {}, ReturnConsumedCapacity: 'TOTAL'}
         batchReq.RequestItems[helpers.testHashTable] = {Keys: [{a: item.a}, {a: item2.a}, {a: {S: helpers.randomString()}}], ConsistentRead: true}
-        batchReq.RequestItems[helpers.testHashNTable] = {Keys: [{a: {N: helpers.randomString()}}], ConsistentRead: true}
+        batchReq.RequestItems[helpers.testHashNTable] = {Keys: [{a: {N: helpers.randomNumber()}}], ConsistentRead: true}
         request(opts(batchReq), function(err, res) {
           if (err) return done(err)
           res.statusCode.should.equal(200)

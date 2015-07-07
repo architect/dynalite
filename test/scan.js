@@ -758,7 +758,7 @@ describe('scan', function() {
         }}), function(err, res) {
           if (err) return done(err)
           res.statusCode.should.equal(200)
-          res.body.Items.should.be.empty // eslint-disable-line no-unused-expressions
+          res.body.Items.should.eql([])
           res.body.Count.should.equal(0)
           res.body.ScannedCount.should.be.above(0)
           done()
@@ -767,9 +767,9 @@ describe('scan', function() {
     })
 
     it('should scan by a non-id property (type N)', function(done) {
-      var item = {a: {S: helpers.randomString()}, b: {N: helpers.randomString()}},
+      var item = {a: {S: helpers.randomString()}, b: {N: helpers.randomNumber()}},
           item2 = {a: {S: helpers.randomString()}, b: item.b},
-          item3 = {a: {S: helpers.randomString()}, b: {N: helpers.randomString()}},
+          item3 = {a: {S: helpers.randomString()}, b: {N: helpers.randomNumber()}},
           batchReq = {RequestItems: {}}
       batchReq.RequestItems[helpers.testHashTable] = [
         {PutRequest: {Item: item}},
@@ -794,9 +794,9 @@ describe('scan', function() {
     })
 
     it('should scan by multiple properties', function(done) {
-      var item = {a: {S: helpers.randomString()}, b: {N: helpers.randomString()}, c: {N: helpers.randomString()}},
+      var item = {a: {S: helpers.randomString()}, b: {N: helpers.randomNumber()}, c: {N: helpers.randomNumber()}},
           item2 = {a: {S: helpers.randomString()}, b: item.b, c: item.c},
-          item3 = {a: {S: helpers.randomString()}, b: item.b, c: {N: helpers.randomString()}},
+          item3 = {a: {S: helpers.randomString()}, b: item.b, c: {N: helpers.randomNumber()}},
           batchReq = {RequestItems: {}}
       batchReq.RequestItems[helpers.testHashTable] = [
         {PutRequest: {Item: item}},

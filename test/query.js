@@ -923,9 +923,9 @@ describe('query', function() {
     })
 
     it('should query a hash table with items', function(done) {
-      var item = {a: {S: helpers.randomString()}, b: {N: helpers.randomString()}},
+      var item = {a: {S: helpers.randomString()}, b: {N: helpers.randomNumber()}},
           item2 = {a: {S: helpers.randomString()}, b: item.b},
-          item3 = {a: {S: helpers.randomString()}, b: {N: helpers.randomString()}},
+          item3 = {a: {S: helpers.randomString()}, b: {N: helpers.randomNumber()}},
           batchReq = {RequestItems: {}}
       batchReq.RequestItems[helpers.testHashTable] = [
         {PutRequest: {Item: item}},
@@ -1458,17 +1458,11 @@ describe('query', function() {
       var item = {a: {S: helpers.randomString()}, b: {S: '1'}, c: {S: 'c'}},
           item2 = {a: item.a, b: {S: '2'}, c: {S: 'c'}},
           item3 = {a: {S: helpers.randomString()}, b: {S: '1'}, c: {S: 'c'}},
-          item4 = {a: item3.a, b: {S: '2'}, c: {S: 'c'}},
-          batchReq = {RequestItems: {}}
-      batchReq.RequestItems[helpers.testRangeTable] = [
-        {PutRequest: {Item: item}},
-        {PutRequest: {Item: item2}},
-        {PutRequest: {Item: item3}},
-        {PutRequest: {Item: item4}},
-      ]
-      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+          item4 = {a: item3.a, b: {S: '2'}, c: {S: 'c'}}
+
+      helpers.replaceTable(helpers.testRangeTable, ['a', 'b'], [item, item2, item3, item4], function(err) {
         if (err) return done(err)
-        res.statusCode.should.equal(200)
+
         request(helpers.opts('Scan', {TableName: helpers.testRangeTable}), function(err, res) {
           if (err) return done(err)
           res.statusCode.should.equal(200)
@@ -2260,6 +2254,130 @@ describe('query', function() {
             },
           })
           done()
+        })
+      })
+    })
+
+    // TODO: Need high capacity to run this (~100 runs quickly)
+    it.skip('should not return LastEvaluatedKey if just under limit', function(done) {
+      this.timeout(200000)
+
+      var i, items = [], id = helpers.randomString(), e = new Array(41646).join('e')
+      for (i = 0; i < 25; i++)
+        items.push({a: {S: id}, b: {S: ('0' + i).slice(-2)}, e: {S: e}})
+
+      helpers.replaceTable(helpers.testRangeTable, ['a', 'b'], items, function(err) {
+        if (err) return done(err)
+
+        request(opts({
+          TableName: helpers.testRangeTable,
+          KeyConditions: {a: {ComparisonOperator: 'EQ', AttributeValueList: [{S: id}]}},
+          Select: 'COUNT',
+          ReturnConsumedCapacity: 'TOTAL'
+        }), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.should.eql({
+            Count: 25,
+            ScannedCount: 25,
+            ConsumedCapacity: {CapacityUnits: 127.5, TableName: helpers.testRangeTable},
+          })
+          helpers.clearTable(helpers.testHashTable, 'a', done)
+        })
+      })
+    })
+
+    // TODO: Need high capacity to run this (~100 runs quickly)
+    it.skip('should return LastEvaluatedKey if just over limit', function(done) {
+      this.timeout(200000)
+
+      var i, items = [], id = helpers.randomString(), e = new Array(41646).join('e')
+      for (i = 0; i < 25; i++)
+        items.push({a: {S: id}, b: {S: ('0' + i).slice(-2)}, e: {S: e}})
+      items[24].e.S = new Array(41647).join('e')
+
+      helpers.replaceTable(helpers.testRangeTable, ['a', 'b'], items, function(err) {
+        if (err) return done(err)
+
+        request(opts({
+          TableName: helpers.testRangeTable,
+          KeyConditions: {a: {ComparisonOperator: 'EQ', AttributeValueList: [{S: id}]}},
+          Select: 'COUNT',
+          ReturnConsumedCapacity: 'TOTAL'
+        }), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.should.eql({
+            Count: 25,
+            ScannedCount: 25,
+            ConsumedCapacity: {CapacityUnits: 127.5, TableName: helpers.testRangeTable},
+            LastEvaluatedKey: {a: items[24].a, b: items[24].b}
+          })
+          helpers.clearTable(helpers.testHashTable, 'a', done)
+        })
+      })
+    })
+
+    // TODO: Need high capacity to run this (~100 runs quickly)
+    it.skip('should return all if just under limit', function(done) {
+      this.timeout(200000)
+
+      var i, items = [], id = helpers.randomString(), e = new Array(43373).join('e')
+      for (i = 0; i < 25; i++)
+        items.push({a: {S: id}, b: {S: ('0' + i).slice(-2)}, e: {S: e}})
+      items[23].e.S = new Array(43388).join('e')
+      items[24].e.S = new Array(45000).join('e')
+
+      helpers.replaceTable(helpers.testRangeTable, ['a', 'b'], items, function(err) {
+        if (err) return done(err)
+
+        request(opts({
+          TableName: helpers.testRangeTable,
+          KeyConditions: {a: {ComparisonOperator: 'EQ', AttributeValueList: [{S: id}]}},
+          Select: 'COUNT',
+          ReturnConsumedCapacity: 'TOTAL'
+        }), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.should.eql({
+            Count: 25,
+            ScannedCount: 25,
+            ConsumedCapacity: {CapacityUnits: 133, TableName: helpers.testRangeTable},
+            LastEvaluatedKey: {a: items[24].a, b: items[24].b}
+          })
+          helpers.clearTable(helpers.testHashTable, 'a', done)
+        })
+      })
+    })
+
+    // TODO: Need high capacity to run this (~100 runs quickly)
+    it.skip('should return one less than all if just over limit', function(done) {
+      this.timeout(200000)
+
+      var i, items = [], id = helpers.randomString(), e = new Array(43373).join('e')
+      for (i = 0; i < 25; i++)
+        items.push({a: {S: id}, b: {S: ('0' + i).slice(-2)}, e: {S: e}})
+      items[23].e.S = new Array(43389).join('e')
+      items[24].e.S = new Array(45000).join('e')
+
+      helpers.replaceTable(helpers.testRangeTable, ['a', 'b'], items, function(err) {
+        if (err) return done(err)
+
+        request(opts({
+          TableName: helpers.testRangeTable,
+          KeyConditions: {a: {ComparisonOperator: 'EQ', AttributeValueList: [{S: id}]}},
+          Select: 'COUNT',
+          ReturnConsumedCapacity: 'TOTAL'
+        }), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.should.eql({
+            Count: 24,
+            ScannedCount: 24,
+            ConsumedCapacity: {CapacityUnits: 127.5, TableName: helpers.testRangeTable},
+            LastEvaluatedKey: {a: items[23].a, b: items[23].b}
+          })
+          helpers.clearTable(helpers.testHashTable, 'a', done)
         })
       })
     })

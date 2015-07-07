@@ -28,6 +28,7 @@ exports.assertInUse = assertInUse
 exports.assertConditional = assertConditional
 exports.strDecrement = strDecrement
 exports.randomString = randomString
+exports.randomNumber = randomNumber
 exports.randomName = randomName
 exports.testHashTable = randomName()
 exports.testHashNTable = randomName()
@@ -107,6 +108,10 @@ function opts(target, data) {
 }
 
 function randomString() {
+  return ('AAAAAAAAA' + randomNumber()).slice(-10)
+}
+
+function randomNumber() {
   return String(Math.random() * 0x100000000)
 }
 

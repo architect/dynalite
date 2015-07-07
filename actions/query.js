@@ -12,7 +12,7 @@ module.exports = function query(store, data, cb) {
     var i, keySchema, key, comparisonOperator, hashKey, rangeKey, indexAttrs, type, isLocal,
         tableHashKey = table.KeySchema[0].AttributeName, tableHashType, tableHashVal,
         opts = {}, vals, itemDb = store.getItemDb(data.TableName),
-        size = 0, capacitySize = 0, count = 0, scannedCount = 0, lastItem, em
+        size = 0, capacitySize = 0, count = 0, scannedCount = 0, lastItem, em, limited = false
 
     if (data.IndexName) {
       for (i = 0; i < (table.LocalSecondaryIndexes || []).length; i++) {
@@ -148,7 +148,10 @@ module.exports = function query(store, data, cb) {
     })
 
     vals = vals.takeWhile(function(val) {
-      if (count >= data.Limit || size > 1042000) return false
+      if (count >= data.Limit || size > 1041375) {
+        limited = true
+        return false
+      }
 
       size += db.itemSize(val, true)
       count++
@@ -185,11 +188,8 @@ module.exports = function query(store, data, cb) {
     vals.join(function(items) {
       var result = {Count: items.length, ScannedCount: scannedCount || items.length},
         capacityUnits, tableUnits, indexUnits, indexAttr
-
-      // TODO: Check size?
-      // TODO: Does this only happen when we're not doing a COUNT?
-      if (data.Limit && (items.length > data.Limit || lastItem)) {
-        items.splice(data.Limit)
+      if (limited || (data.Limit && lastItem) || size > 1041575) {
+        if (data.Limit) items.splice(data.Limit)
         result.Count = items.length
         result.ScannedCount = scannedCount || items.length
         if (result.Count) {

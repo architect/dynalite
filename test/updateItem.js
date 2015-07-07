@@ -319,7 +319,7 @@ describe('updateItem', function() {
       assertValidation({
         TableName: helpers.testHashTable,
         Key: {a: {S: helpers.randomString()}},
-        AttributeUpdates: {a: {Action: 'DELETE', Value: {N: helpers.randomString()}}},
+        AttributeUpdates: {a: {Action: 'DELETE', Value: {N: helpers.randomNumber()}}},
       }, 'One or more parameter values were invalid: ' +
         'DELETE action with value is not supported for the type N', done)
     })
