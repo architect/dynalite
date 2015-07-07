@@ -592,7 +592,7 @@ describe('batchWriteItem', function() {
     it('should return ConsumedCapacity from each specified table when putting and deleting small item', function(done) {
       var a = helpers.randomString(), b = new Array(1010 - a.length).join('b'),
           item = {a: {S: a}, b: {S: b}, c: {N: '12.3456'}, d: {B: 'AQI='}, e: {BS: ['AQI=', 'Ag==', 'AQ==']}},
-          key2 = helpers.randomString(), key3 = helpers.randomString(),
+          key2 = helpers.randomString(), key3 = helpers.randomNumber(),
           batchReq = {RequestItems: {}, ReturnConsumedCapacity: 'TOTAL'}
       batchReq.RequestItems[helpers.testHashTable] = [{PutRequest: {Item: item}}, {PutRequest: {Item: {a: {S: key2}}}}]
       batchReq.RequestItems[helpers.testHashNTable] = [{PutRequest: {Item: {a: {N: key3}}}}]
@@ -631,7 +631,7 @@ describe('batchWriteItem', function() {
     it('should return ConsumedCapacity from each specified table when putting and deleting larger item', function(done) {
       var a = helpers.randomString(), b = new Array(1012 - a.length).join('b'),
           item = {a: {S: a}, b: {S: b}, c: {N: '12.3456'}, d: {B: 'AQI='}, e: {BS: ['AQI=', 'Ag==']}},
-          key2 = helpers.randomString(), key3 = helpers.randomString(),
+          key2 = helpers.randomString(), key3 = helpers.randomNumber(),
           batchReq = {RequestItems: {}, ReturnConsumedCapacity: 'TOTAL'}
       batchReq.RequestItems[helpers.testHashTable] = [{PutRequest: {Item: item}}, {PutRequest: {Item: {a: {S: key2}}}}]
       batchReq.RequestItems[helpers.testHashNTable] = [{PutRequest: {Item: {a: {N: key3}}}}]
