@@ -23,9 +23,9 @@ function dynalite(options) {
   var server, store = db.create(options), requestHandler = httpHandler.bind(null, store)
 
   if (options.ssl) {
-    options.key = options.key || fs.readFileSync(path.join(__dirname, 'key.pem'))
-    options.cert = options.cert || fs.readFileSync(path.join(__dirname, 'cert.pem'))
-    options.ca = options.ca || fs.readFileSync(path.join(__dirname, 'ca.pem'))
+    options.key = options.key || fs.readFileSync(path.join(__dirname, 'ssl', 'server-key.pem'))
+    options.cert = options.cert || fs.readFileSync(path.join(__dirname, 'ssl', 'server-crt.pem'))
+    options.ca = options.ca || fs.readFileSync(path.join(__dirname, 'ssl', 'ca-crt.pem'))
     server = https.createServer(options, requestHandler)
   } else {
     server = http.createServer(requestHandler)
