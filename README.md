@@ -51,6 +51,13 @@ dynaliteServer.listen(4567, function(err) {
 })
 ```
 
+Then force your AWS DynamoDB client to connect to Dynalite by specifying `endpoint` in DynamoDB constructor params, eg, in NodeJS: 
+
+```js 
+var db = new AWS.DynamoDB({'endpoint': 'http://:::4567'});
+```
+
+
 Installation
 ------------
 
