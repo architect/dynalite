@@ -22,6 +22,7 @@ describe('getItem', function() {
     })
 
     it('should return SerializationException when Key.Attr is not an attr struct', function(done) {
+      this.timeout(60000)
       assertType('Key.Attr', 'AttrStructure', done)
     })
 

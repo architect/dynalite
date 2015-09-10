@@ -21,6 +21,7 @@ describe('scan', function() {
     })
 
     it('should return SerializationException when ExclusiveStartKey.Attr is not an attr struct', function(done) {
+      this.timeout(60000)
       assertType('ExclusiveStartKey.Attr', 'AttrStructure', done)
     })
 
@@ -65,6 +66,7 @@ describe('scan', function() {
     })
 
     it('should return SerializationException when ScanFilter.Attr.AttributeValueList.0 is not an attr struct', function(done) {
+      this.timeout(60000)
       assertType('ScanFilter.Attr.AttributeValueList.0', 'AttrStructure', done)
     })
 

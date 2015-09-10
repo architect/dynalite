@@ -24,6 +24,7 @@ describe('putItem', function() {
     })
 
     it('should return SerializationException when Item.Attr is not an attr struct', function(done) {
+      this.timeout(60000)
       assertType('Item.Attr', 'AttrStructure', done)
     })
 
@@ -40,6 +41,7 @@ describe('putItem', function() {
     })
 
     it('should return SerializationException when Expected.Attr.Value is not an attr struct', function(done) {
+      this.timeout(60000)
       assertType('Expected.Attr.Value', 'AttrStructure', done)
     })
 

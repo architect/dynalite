@@ -20,6 +20,7 @@ describe('query', function() {
     })
 
     it('should return SerializationException when ExclusiveStartKey.Attr is not an attr struct', function(done) {
+      this.timeout(60000)
       assertType('ExclusiveStartKey.Attr', 'AttrStructure', done)
     })
 
@@ -68,6 +69,7 @@ describe('query', function() {
     })
 
     it('should return SerializationException when KeyConditions.Attr.AttributeValueList.0 is not an attr struct', function(done) {
+      this.timeout(60000)
       assertType('KeyConditions.Attr.AttributeValueList.0', 'AttrStructure', done)
     })
 
@@ -926,15 +928,9 @@ describe('query', function() {
       var item = {a: {S: helpers.randomString()}, b: {N: helpers.randomNumber()}},
           item2 = {a: {S: helpers.randomString()}, b: item.b},
           item3 = {a: {S: helpers.randomString()}, b: {N: helpers.randomNumber()}},
-          batchReq = {RequestItems: {}}
-      batchReq.RequestItems[helpers.testHashTable] = [
-        {PutRequest: {Item: item}},
-        {PutRequest: {Item: item2}},
-        {PutRequest: {Item: item3}},
-      ]
-      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+          items = [item, item2, item3]
+      helpers.batchBulkPut(helpers.testHashTable, items, function(err) {
         if (err) return done(err)
-        res.statusCode.should.equal(200)
         request(opts({TableName: helpers.testHashTable, KeyConditions: {
           a: {ComparisonOperator: 'EQ', AttributeValueList: [item2.a]},
         }}), function(err, res) {
@@ -950,15 +946,9 @@ describe('query', function() {
       var item = {a: {S: helpers.randomString()}, b: {S: '1'}},
           item2 = {a: item.a, b: {S: '2'}},
           item3 = {a: item.a, b: {S: '3'}},
-          batchReq = {RequestItems: {}}
-      batchReq.RequestItems[helpers.testRangeTable] = [
-        {PutRequest: {Item: item}},
-        {PutRequest: {Item: item2}},
-        {PutRequest: {Item: item3}},
-      ]
-      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+          items = [item, item2, item3]
+      helpers.batchBulkPut(helpers.testRangeTable, items, function(err) {
         if (err) return done(err)
-        res.statusCode.should.equal(200)
         request(opts({TableName: helpers.testRangeTable, KeyConditions: {
           a: {ComparisonOperator: 'EQ', AttributeValueList: [item.a]},
         }}), function(err, res) {
@@ -974,15 +964,9 @@ describe('query', function() {
       var item = {a: {S: helpers.randomString()}, b: {S: '1'}},
           item2 = {a: item.a, b: {S: '2'}},
           item3 = {a: item.a, b: {S: '3'}},
-          batchReq = {RequestItems: {}}
-      batchReq.RequestItems[helpers.testRangeTable] = [
-        {PutRequest: {Item: item}},
-        {PutRequest: {Item: item2}},
-        {PutRequest: {Item: item3}},
-      ]
-      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+          items = [item, item2, item3]
+      helpers.batchBulkPut(helpers.testRangeTable, items, function(err) {
         if (err) return done(err)
-        res.statusCode.should.equal(200)
         request(opts({TableName: helpers.testRangeTable, KeyConditions: {
           a: {ComparisonOperator: 'EQ', AttributeValueList: [item.a]},
           b: {ComparisonOperator: 'EQ', AttributeValueList: [item2.b]},
@@ -999,15 +983,9 @@ describe('query', function() {
       var item = {a: {S: helpers.randomString()}, b: {S: '1'}},
           item2 = {a: item.a, b: {S: '2'}},
           item3 = {a: item.a, b: {S: '3'}},
-          batchReq = {RequestItems: {}}
-      batchReq.RequestItems[helpers.testRangeTable] = [
-        {PutRequest: {Item: item}},
-        {PutRequest: {Item: item2}},
-        {PutRequest: {Item: item3}},
-      ]
-      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+          items = [item, item2, item3]
+      helpers.batchBulkPut(helpers.testRangeTable, items, function(err) {
         if (err) return done(err)
-        res.statusCode.should.equal(200)
         request(opts({TableName: helpers.testRangeTable, KeyConditions: {
           a: {ComparisonOperator: 'EQ', AttributeValueList: [item.a]},
           b: {ComparisonOperator: 'LE', AttributeValueList: [item2.b]},
@@ -1024,15 +1002,9 @@ describe('query', function() {
       var item = {a: {S: helpers.randomString()}, b: {S: '1'}},
           item2 = {a: item.a, b: {S: '2'}},
           item3 = {a: item.a, b: {S: '3'}},
-          batchReq = {RequestItems: {}}
-      batchReq.RequestItems[helpers.testRangeTable] = [
-        {PutRequest: {Item: item}},
-        {PutRequest: {Item: item2}},
-        {PutRequest: {Item: item3}},
-      ]
-      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+          items = [item, item2, item3]
+      helpers.batchBulkPut(helpers.testRangeTable, items, function(err) {
         if (err) return done(err)
-        res.statusCode.should.equal(200)
         request(opts({TableName: helpers.testRangeTable, KeyConditions: {
           a: {ComparisonOperator: 'EQ', AttributeValueList: [item.a]},
           b: {ComparisonOperator: 'LT', AttributeValueList: [item2.b]},
@@ -1049,15 +1021,9 @@ describe('query', function() {
       var item = {a: {S: helpers.randomString()}, b: {S: '1'}},
           item2 = {a: item.a, b: {S: '2'}},
           item3 = {a: item.a, b: {S: '3'}},
-          batchReq = {RequestItems: {}}
-      batchReq.RequestItems[helpers.testRangeTable] = [
-        {PutRequest: {Item: item}},
-        {PutRequest: {Item: item2}},
-        {PutRequest: {Item: item3}},
-      ]
-      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+          items = [item, item2, item3]
+      helpers.batchBulkPut(helpers.testRangeTable, items, function(err) {
         if (err) return done(err)
-        res.statusCode.should.equal(200)
         request(opts({TableName: helpers.testRangeTable, KeyConditions: {
           a: {ComparisonOperator: 'EQ', AttributeValueList: [item.a]},
           b: {ComparisonOperator: 'GE', AttributeValueList: [item2.b]},
@@ -1074,16 +1040,10 @@ describe('query', function() {
       var item = {a: {S: helpers.randomString()}, b: {S: '1'}},
           item2 = {a: item.a, b: {S: '2'}},
           item3 = {a: item.a, b: {S: '3'}},
-          batchReq = {RequestItems: {}}
-      batchReq.RequestItems[helpers.testRangeTable] = [
-        {PutRequest: {Item: item}},
-        {PutRequest: {Item: item2}},
-        {PutRequest: {Item: item3}},
-      ]
-      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+          items = [item, item2, item3]
+      helpers.batchBulkPut(helpers.testRangeTable, items, function(err) {
         if (err) return done(err)
-        res.statusCode.should.equal(200)
-        request(opts({TableName: helpers.testRangeTable, KeyConditions: {
+        request(opts({TableName: helpers.testRangeTable, ConsistentRead: true, KeyConditions: {
           a: {ComparisonOperator: 'EQ', AttributeValueList: [item.a]},
           b: {ComparisonOperator: 'GT', AttributeValueList: [item2.b]},
         }}), function(err, res) {
@@ -1099,16 +1059,10 @@ describe('query', function() {
       var item = {a: {S: helpers.randomString()}, b: {S: 'aaa'}},
           item2 = {a: item.a, b: {S: 'aab'}},
           item3 = {a: item.a, b: {S: 'abc'}},
-          batchReq = {RequestItems: {}}
-      batchReq.RequestItems[helpers.testRangeTable] = [
-        {PutRequest: {Item: item}},
-        {PutRequest: {Item: item2}},
-        {PutRequest: {Item: item3}},
-      ]
-      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+          items = [item, item2, item3]
+      helpers.batchBulkPut(helpers.testRangeTable, items, function(err) {
         if (err) return done(err)
-        res.statusCode.should.equal(200)
-        request(opts({TableName: helpers.testRangeTable, KeyConditions: {
+        request(opts({TableName: helpers.testRangeTable, ConsistentRead: true, KeyConditions: {
           a: {ComparisonOperator: 'EQ', AttributeValueList: [item.a]},
           b: {ComparisonOperator: 'BEGINS_WITH', AttributeValueList: [{S: 'aa'}]},
         }}), function(err, res) {
@@ -1126,18 +1080,10 @@ describe('query', function() {
           item3 = {a: item.a, b: {S: 'abc'}},
           item4 = {a: item.a, b: {S: 'ac'}},
           item5 = {a: item.a, b: {S: 'aca'}},
-          batchReq = {RequestItems: {}}
-      batchReq.RequestItems[helpers.testRangeTable] = [
-        {PutRequest: {Item: item}},
-        {PutRequest: {Item: item2}},
-        {PutRequest: {Item: item3}},
-        {PutRequest: {Item: item4}},
-        {PutRequest: {Item: item5}},
-      ]
-      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+          items = [item, item2, item3, item4, item5]
+      helpers.batchBulkPut(helpers.testRangeTable, items, function(err) {
         if (err) return done(err)
-        res.statusCode.should.equal(200)
-        request(opts({TableName: helpers.testRangeTable, KeyConditions: {
+        request(opts({TableName: helpers.testRangeTable, ConsistentRead: true, KeyConditions: {
           a: {ComparisonOperator: 'EQ', AttributeValueList: [item.a]},
           b: {ComparisonOperator: 'BETWEEN', AttributeValueList: [{S: 'ab'}, {S: 'ac'}]},
         }}), function(err, res) {
@@ -1153,16 +1099,10 @@ describe('query', function() {
       var item = {a: {S: helpers.randomString()}, b: {S: 'b1'}, d: {S: 'd1'}},
           item2 = {a: item.a, b: {S: 'b2'}},
           item3 = {a: item.a, b: {S: 'b3'}, d: {S: 'd3'}, e: {S: 'e3'}},
-          batchReq = {RequestItems: {}}
-      batchReq.RequestItems[helpers.testRangeTable] = [
-        {PutRequest: {Item: item}},
-        {PutRequest: {Item: item2}},
-        {PutRequest: {Item: item3}},
-      ]
-      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+          items = [item, item2, item3]
+      helpers.batchBulkPut(helpers.testRangeTable, items, function(err) {
         if (err) return done(err)
-        res.statusCode.should.equal(200)
-        request(opts({TableName: helpers.testRangeTable, KeyConditions: {
+        request(opts({TableName: helpers.testRangeTable, ConsistentRead: true, KeyConditions: {
           a: {ComparisonOperator: 'EQ', AttributeValueList: [item.a]},
         }, AttributesToGet: ['b', 'd']}), function(err, res) {
           if (err) return done(err)
@@ -1181,16 +1121,10 @@ describe('query', function() {
       var item = {a: {S: helpers.randomString()}, b: {S: 'b1'}, d: {S: '1'}},
           item2 = {a: item.a, b: {S: 'b2'}},
           item3 = {a: item.a, b: {S: 'b3'}, d: {S: 'd3'}, e: {S: 'e3'}},
-          batchReq = {RequestItems: {}}
-      batchReq.RequestItems[helpers.testRangeTable] = [
-        {PutRequest: {Item: item}},
-        {PutRequest: {Item: item2}},
-        {PutRequest: {Item: item3}},
-      ]
-      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+          items = [item, item2, item3]
+      helpers.batchBulkPut(helpers.testRangeTable, items, function(err) {
         if (err) return done(err)
-        res.statusCode.should.equal(200)
-        request(opts({TableName: helpers.testRangeTable, KeyConditions: {
+        request(opts({TableName: helpers.testRangeTable, ConsistentRead: true, KeyConditions: {
           a: {ComparisonOperator: 'EQ', AttributeValueList: [item.a]},
         }, QueryFilter: {
           e: {ComparisonOperator: 'NOT_NULL'},
@@ -1210,17 +1144,10 @@ describe('query', function() {
           item2 = {a: item.a, b: {S: 'b2'}},
           item3 = {a: item.a, b: {S: 'b3'}, d: {S: 'd3'}, e: {S: 'e3'}, f: {S: 'f3'}},
           item4 = {a: item.a, b: {S: 'b4'}, c: {S: 'c4'}, d: {S: 'd4'}, e: {S: 'e4'}},
-          batchReq = {RequestItems: {}}
-      batchReq.RequestItems[helpers.testRangeTable] = [
-        {PutRequest: {Item: item}},
-        {PutRequest: {Item: item2}},
-        {PutRequest: {Item: item3}},
-        {PutRequest: {Item: item4}},
-      ]
-      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+          items = [item, item2, item3, item4]
+      helpers.batchBulkPut(helpers.testRangeTable, items, function(err) {
         if (err) return done(err)
-        res.statusCode.should.equal(200)
-        var req = {TableName: helpers.testRangeTable, IndexName: 'index2',
+        var req = {TableName: helpers.testRangeTable, ConsistentRead: true, IndexName: 'index2',
           KeyConditions: {a: {ComparisonOperator: 'EQ', AttributeValueList: [item.a]}},
           ReturnConsumedCapacity: 'TOTAL'}
         request(opts(req), function(err, res) {
@@ -1233,7 +1160,7 @@ describe('query', function() {
             Count: 3,
             ScannedCount: 3,
             Items: [item, item3, item4],
-            ConsumedCapacity: {CapacityUnits: 0.5, TableName: helpers.testRangeTable}
+            ConsumedCapacity: {CapacityUnits: 1, TableName: helpers.testRangeTable}
           })
           req.ReturnConsumedCapacity = 'INDEXES'
           request(opts(req), function(err, res) {
@@ -1244,10 +1171,10 @@ describe('query', function() {
               ScannedCount: 3,
               Items: [item, item3, item4],
               ConsumedCapacity: {
-                CapacityUnits: 0.5,
+                CapacityUnits: 1,
                 TableName: helpers.testRangeTable,
                 Table: {CapacityUnits: 0},
-                LocalSecondaryIndexes: {index2: {CapacityUnits: 0.5}},
+                LocalSecondaryIndexes: {index2: {CapacityUnits: 1}},
               },
             })
             done()
@@ -1261,17 +1188,10 @@ describe('query', function() {
           item2 = {a: item.a, b: {S: 'b2'}},
           item3 = {a: item.a, b: {S: 'b3'}, d: {S: 'd3'}, e: {S: 'e3'}, f: {S: 'f3'}},
           item4 = {a: item.a, b: {S: 'b4'}, c: {S: 'c4'}, d: {S: 'd4'}, e: {S: 'e4'}},
-          batchReq = {RequestItems: {}}
-      batchReq.RequestItems[helpers.testRangeTable] = [
-        {PutRequest: {Item: item}},
-        {PutRequest: {Item: item2}},
-        {PutRequest: {Item: item3}},
-        {PutRequest: {Item: item4}},
-      ]
-      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+          items = [item, item2, item3, item4]
+      helpers.batchBulkPut(helpers.testRangeTable, items, function(err) {
         if (err) return done(err)
-        res.statusCode.should.equal(200)
-        var req = {TableName: helpers.testRangeTable, IndexName: 'index2',
+        var req = {TableName: helpers.testRangeTable, ConsistentRead: true, IndexName: 'index2',
           KeyConditions: {a: {ComparisonOperator: 'EQ', AttributeValueList: [item.a]}},
           Select: 'ALL_ATTRIBUTES', ReturnConsumedCapacity: 'TOTAL'}
         request(opts(req), function(err, res) {
@@ -1281,7 +1201,7 @@ describe('query', function() {
             Count: 3,
             ScannedCount: 3,
             Items: [item, item3, item4],
-            ConsumedCapacity: {CapacityUnits: 2, TableName: helpers.testRangeTable},
+            ConsumedCapacity: {CapacityUnits: 4, TableName: helpers.testRangeTable},
           })
           req.ReturnConsumedCapacity = 'INDEXES'
           request(opts(req), function(err, res) {
@@ -1292,10 +1212,10 @@ describe('query', function() {
               ScannedCount: 3,
               Items: [item, item3, item4],
               ConsumedCapacity: {
-                CapacityUnits: 2,
+                CapacityUnits: 4,
                 TableName: helpers.testRangeTable,
-                Table: {CapacityUnits: 1.5},
-                LocalSecondaryIndexes: {index2: {CapacityUnits: 0.5}},
+                Table: {CapacityUnits: 3},
+                LocalSecondaryIndexes: {index2: {CapacityUnits: 1}},
               },
             })
             done()
@@ -1310,18 +1230,10 @@ describe('query', function() {
           item3 = {a: item.a, b: {S: '3'}},
           item4 = {a: item.a, b: {S: '4'}},
           item5 = {a: item.a, b: {S: '5'}},
-          batchReq = {RequestItems: {}}
-      batchReq.RequestItems[helpers.testRangeTable] = [
-        {PutRequest: {Item: item}},
-        {PutRequest: {Item: item2}},
-        {PutRequest: {Item: item3}},
-        {PutRequest: {Item: item4}},
-        {PutRequest: {Item: item5}},
-      ]
-      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+          items = [item, item2, item3, item4, item5]
+      helpers.batchBulkPut(helpers.testRangeTable, items, function(err) {
         if (err) return done(err)
-        res.statusCode.should.equal(200)
-        request(opts({TableName: helpers.testRangeTable, KeyConditions: {
+        request(opts({TableName: helpers.testRangeTable, ConsistentRead: true, KeyConditions: {
           a: {ComparisonOperator: 'EQ', AttributeValueList: [item.a]},
           b: {ComparisonOperator: 'GE', AttributeValueList: [item.b]},
         }, Select: 'COUNT'}), function(err, res) {
@@ -1340,18 +1252,10 @@ describe('query', function() {
           item3 = {a: item.a, b: {S: '3'}, c: {S: 'c'}},
           item4 = {a: item.a, b: {S: '4'}, c: {S: 'c'}},
           item5 = {a: item.a, b: {S: '5'}, c: {S: 'c'}},
-          batchReq = {RequestItems: {}}
-      batchReq.RequestItems[helpers.testRangeTable] = [
-        {PutRequest: {Item: item}},
-        {PutRequest: {Item: item2}},
-        {PutRequest: {Item: item3}},
-        {PutRequest: {Item: item4}},
-        {PutRequest: {Item: item5}},
-      ]
-      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+          items = [item, item2, item3, item4, item5]
+      helpers.batchBulkPut(helpers.testRangeTable, items, function(err) {
         if (err) return done(err)
-        res.statusCode.should.equal(200)
-        request(opts({TableName: helpers.testRangeTable, KeyConditions: {
+        request(opts({TableName: helpers.testRangeTable, ConsistentRead: true, KeyConditions: {
           a: {ComparisonOperator: 'EQ', AttributeValueList: [item.a]},
           b: {ComparisonOperator: 'GE', AttributeValueList: [item.b]},
         }, Limit: 2}), function(err, res) {
@@ -1369,18 +1273,10 @@ describe('query', function() {
           item3 = {a: item.a, b: {S: '3'}, c: {S: 'c'}, d: {S: 'd'}},
           item4 = {a: item.a, b: {S: '4'}, c: {S: 'c'}},
           item5 = {a: item.a, b: {S: '5'}, c: {S: 'c'}},
-          batchReq = {RequestItems: {}}
-      batchReq.RequestItems[helpers.testRangeTable] = [
-        {PutRequest: {Item: item}},
-        {PutRequest: {Item: item2}},
-        {PutRequest: {Item: item3}},
-        {PutRequest: {Item: item4}},
-        {PutRequest: {Item: item5}},
-      ]
-      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+          items = [item, item2, item3, item4, item5]
+      helpers.batchBulkPut(helpers.testRangeTable, items, function(err) {
         if (err) return done(err)
-        res.statusCode.should.equal(200)
-        request(opts({TableName: helpers.testRangeTable, KeyConditions: {
+        request(opts({TableName: helpers.testRangeTable, ConsistentRead: true, KeyConditions: {
           a: {ComparisonOperator: 'EQ', AttributeValueList: [item.a]},
           b: {ComparisonOperator: 'GE', AttributeValueList: [item.b]},
         }, QueryFilter: {
@@ -1400,18 +1296,10 @@ describe('query', function() {
           item3 = {a: item.a, b: {S: '3'}, c: {S: 'c'}},
           item4 = {a: item.a, b: {S: '4'}, c: {S: 'c'}},
           item5 = {a: item.a, b: {S: '5'}, c: {S: 'c'}},
-          batchReq = {RequestItems: {}}
-      batchReq.RequestItems[helpers.testRangeTable] = [
-        {PutRequest: {Item: item}},
-        {PutRequest: {Item: item2}},
-        {PutRequest: {Item: item3}},
-        {PutRequest: {Item: item4}},
-        {PutRequest: {Item: item5}},
-      ]
-      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+          items = [item, item2, item3, item4, item5]
+      helpers.batchBulkPut(helpers.testRangeTable, items, function(err) {
         if (err) return done(err)
-        res.statusCode.should.equal(200)
-        request(opts({TableName: helpers.testRangeTable, KeyConditions: {
+        request(opts({TableName: helpers.testRangeTable, ConsistentRead: true, KeyConditions: {
           a: {ComparisonOperator: 'EQ', AttributeValueList: [item.a]},
           b: {ComparisonOperator: 'GE', AttributeValueList: [item.b]},
         }, Limit: 2, Select: 'COUNT'}), function(err, res) {
@@ -1429,18 +1317,10 @@ describe('query', function() {
           item3 = {a: item.a, b: {S: '3'}, c: {S: 'c'}, d: {S: 'd'}},
           item4 = {a: item.a, b: {S: '4'}, c: {S: 'c'}},
           item5 = {a: item.a, b: {S: '5'}, c: {S: 'c'}},
-          batchReq = {RequestItems: {}}
-      batchReq.RequestItems[helpers.testRangeTable] = [
-        {PutRequest: {Item: item}},
-        {PutRequest: {Item: item2}},
-        {PutRequest: {Item: item3}},
-        {PutRequest: {Item: item4}},
-        {PutRequest: {Item: item5}},
-      ]
-      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+          items = [item, item2, item3, item4, item5]
+      helpers.batchBulkPut(helpers.testRangeTable, items, function(err) {
         if (err) return done(err)
-        res.statusCode.should.equal(200)
-        request(opts({TableName: helpers.testRangeTable, KeyConditions: {
+        request(opts({TableName: helpers.testRangeTable, ConsistentRead: true, KeyConditions: {
           a: {ComparisonOperator: 'EQ', AttributeValueList: [item.a]},
           b: {ComparisonOperator: 'GE', AttributeValueList: [item.b]},
         }, QueryFilter: {
@@ -1471,19 +1351,19 @@ describe('query', function() {
               otherHashItem = lastHashItem.a.S == item.a.S ? item3 : item,
               otherHashItems = res.body.Items.filter(function(item) { return item.a.S == otherHashItem.a.S })
           otherHashItems.length.should.equal(2)
-          request(opts({TableName: helpers.testRangeTable, KeyConditions: {
+          request(opts({TableName: helpers.testRangeTable, ConsistentRead: true, KeyConditions: {
             a: {ComparisonOperator: 'EQ', AttributeValueList: [lastHashItem.a]},
           }}), function(err, res) {
             if (err) return done(err)
             res.statusCode.should.equal(200)
             res.body.should.eql({Count: lastHashItems.length, ScannedCount: lastHashItems.length, Items: lastHashItems})
-            request(opts({TableName: helpers.testRangeTable, KeyConditions: {
+            request(opts({TableName: helpers.testRangeTable, ConsistentRead: true, KeyConditions: {
               a: {ComparisonOperator: 'EQ', AttributeValueList: [lastHashItem.a]},
             }, Limit: lastHashItems.length}), function(err, res) {
               if (err) return done(err)
               res.statusCode.should.equal(200)
               res.body.should.eql({Count: lastHashItems.length, ScannedCount: lastHashItems.length, Items: lastHashItems, LastEvaluatedKey: {a: lastHashItem.a, b: lastHashItem.b}})
-              request(opts({TableName: helpers.testRangeTable, KeyConditions: {
+              request(opts({TableName: helpers.testRangeTable, ConsistentRead: true, KeyConditions: {
                 a: {ComparisonOperator: 'EQ', AttributeValueList: [otherHashItem.a]},
               }, Limit: 2}), function(err, res) {
                 if (err) return done(err)
@@ -1514,22 +1394,10 @@ describe('query', function() {
           item7 = {a: item.a, b: {S: 'ab'}},
           item8 = {a: item.a, b: {S: 'A'}},
           item9 = {a: item.a, b: {S: 'B'}},
-          batchReq = {RequestItems: {}}
-      batchReq.RequestItems[helpers.testRangeTable] = [
-        {PutRequest: {Item: item}},
-        {PutRequest: {Item: item2}},
-        {PutRequest: {Item: item3}},
-        {PutRequest: {Item: item4}},
-        {PutRequest: {Item: item5}},
-        {PutRequest: {Item: item6}},
-        {PutRequest: {Item: item7}},
-        {PutRequest: {Item: item8}},
-        {PutRequest: {Item: item9}},
-      ]
-      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+          items = [item, item2, item3, item4, item5, item6, item7, item8, item9]
+      helpers.batchBulkPut(helpers.testRangeTable, items, function(err) {
         if (err) return done(err)
-        res.statusCode.should.equal(200)
-        request(opts({TableName: helpers.testRangeTable, KeyConditions: {
+        request(opts({TableName: helpers.testRangeTable, ConsistentRead: true, KeyConditions: {
           a: {ComparisonOperator: 'EQ', AttributeValueList: [item.a]},
         }}), function(err, res) {
           if (err) return done(err)
@@ -1550,21 +1418,9 @@ describe('query', function() {
           item7 = {a: item.a, b: {S: '7'}, c: {S: 'ab'}},
           item8 = {a: item.a, b: {S: '8'}, c: {S: 'A'}},
           item9 = {a: item.a, b: {S: '9'}, c: {S: 'B'}},
-          batchReq = {RequestItems: {}}
-      batchReq.RequestItems[helpers.testRangeTable] = [
-        {PutRequest: {Item: item}},
-        {PutRequest: {Item: item2}},
-        {PutRequest: {Item: item3}},
-        {PutRequest: {Item: item4}},
-        {PutRequest: {Item: item5}},
-        {PutRequest: {Item: item6}},
-        {PutRequest: {Item: item7}},
-        {PutRequest: {Item: item8}},
-        {PutRequest: {Item: item9}},
-      ]
-      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+          items = [item, item2, item3, item4, item5, item6, item7, item8, item9]
+      helpers.batchBulkPut(helpers.testRangeTable, items, function(err) {
         if (err) return done(err)
-        res.statusCode.should.equal(200)
         var req = {TableName: helpers.testRangeTable, IndexName: 'index1',
           KeyConditions: {a: {ComparisonOperator: 'EQ', AttributeValueList: [item.a]}}, ReturnConsumedCapacity: 'TOTAL'}
         request(opts(req), function(err, res) {
@@ -1624,36 +1480,11 @@ describe('query', function() {
           item21 = {a: item.a, b: {N: '-9.9'}},
           item22 = {a: item.a, b: {N: '-10.1'}},
           item23 = {a: item.a, b: {N: '-99.1'}},
-          batchReq = {RequestItems: {}}
-      batchReq.RequestItems[helpers.testRangeNTable] = [
-        {PutRequest: {Item: item}},
-        {PutRequest: {Item: item2}},
-        {PutRequest: {Item: item3}},
-        {PutRequest: {Item: item4}},
-        {PutRequest: {Item: item5}},
-        {PutRequest: {Item: item6}},
-        {PutRequest: {Item: item7}},
-        {PutRequest: {Item: item8}},
-        {PutRequest: {Item: item9}},
-        {PutRequest: {Item: item10}},
-        {PutRequest: {Item: item11}},
-        {PutRequest: {Item: item12}},
-        {PutRequest: {Item: item13}},
-        {PutRequest: {Item: item14}},
-        {PutRequest: {Item: item15}},
-        {PutRequest: {Item: item16}},
-        {PutRequest: {Item: item17}},
-        {PutRequest: {Item: item18}},
-        {PutRequest: {Item: item19}},
-        {PutRequest: {Item: item20}},
-        {PutRequest: {Item: item21}},
-        {PutRequest: {Item: item22}},
-        {PutRequest: {Item: item23}},
-      ]
-      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+          items = [item, item2, item3, item4, item5, item6, item7, item8, item9, item10, item11, item12,
+            item13, item14, item15, item16, item17, item18, item19, item20, item21, item22, item23]
+      helpers.batchBulkPut(helpers.testRangeNTable, items, function(err) {
         if (err) return done(err)
-        res.statusCode.should.equal(200)
-        request(opts({TableName: helpers.testRangeNTable, KeyConditions: {
+        request(opts({TableName: helpers.testRangeNTable, ConsistentRead: true, KeyConditions: {
           a: {ComparisonOperator: 'EQ', AttributeValueList: [item.a]},
         }}), function(err, res) {
           if (err) return done(err)
@@ -1678,25 +1509,10 @@ describe('query', function() {
           item10 = {a: item.a, b: {B: '9FkiOH0='}},
           item11 = {a: item.a, b: {B: 'Iv/a'}},
           item12 = {a: item.a, b: {B: '9V0='}},
-          batchReq = {RequestItems: {}}
-      batchReq.RequestItems[helpers.testRangeBTable] = [
-        {PutRequest: {Item: item}},
-        {PutRequest: {Item: item2}},
-        {PutRequest: {Item: item3}},
-        {PutRequest: {Item: item4}},
-        {PutRequest: {Item: item5}},
-        {PutRequest: {Item: item6}},
-        {PutRequest: {Item: item7}},
-        {PutRequest: {Item: item8}},
-        {PutRequest: {Item: item9}},
-        {PutRequest: {Item: item10}},
-        {PutRequest: {Item: item11}},
-        {PutRequest: {Item: item12}},
-      ]
-      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+          items = [item, item2, item3, item4, item5, item6, item7, item8, item9, item10, item11, item12]
+      helpers.batchBulkPut(helpers.testRangeBTable, items, function(err) {
         if (err) return done(err)
-        res.statusCode.should.equal(200)
-        request(opts({TableName: helpers.testRangeBTable, KeyConditions: {
+        request(opts({TableName: helpers.testRangeBTable, ConsistentRead: true, KeyConditions: {
           a: {ComparisonOperator: 'EQ', AttributeValueList: [item.a]},
         }}), function(err, res) {
           if (err) return done(err)
@@ -1712,16 +1528,10 @@ describe('query', function() {
       var item = {a: {S: helpers.randomString()}, b: {S: '1'}},
           item2 = {a: item.a, b: {S: '2'}},
           item3 = {a: item.a, b: {S: '10'}},
-          batchReq = {RequestItems: {}}
-      batchReq.RequestItems[helpers.testRangeTable] = [
-        {PutRequest: {Item: item}},
-        {PutRequest: {Item: item2}},
-        {PutRequest: {Item: item3}},
-      ]
-      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+          items = [item, item2, item3]
+      helpers.batchBulkPut(helpers.testRangeTable, items, function(err) {
         if (err) return done(err)
-        res.statusCode.should.equal(200)
-        request(opts({TableName: helpers.testRangeTable, KeyConditions: {
+        request(opts({TableName: helpers.testRangeTable, ConsistentRead: true, KeyConditions: {
           a: {ComparisonOperator: 'EQ', AttributeValueList: [item.a]},
         }, ScanIndexForward: false}), function(err, res) {
           if (err) return done(err)
@@ -1736,16 +1546,10 @@ describe('query', function() {
       var item = {a: {S: helpers.randomString()}, b: {S: '1'}},
           item2 = {a: item.a, b: {S: '2'}},
           item3 = {a: item.a, b: {S: '10'}},
-          batchReq = {RequestItems: {}}
-      batchReq.RequestItems[helpers.testRangeTable] = [
-        {PutRequest: {Item: item}},
-        {PutRequest: {Item: item2}},
-        {PutRequest: {Item: item3}},
-      ]
-      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+          items = [item, item2, item3]
+      helpers.batchBulkPut(helpers.testRangeTable, items, function(err) {
         if (err) return done(err)
-        res.statusCode.should.equal(200)
-        request(opts({TableName: helpers.testRangeTable, KeyConditions: {
+        request(opts({TableName: helpers.testRangeTable, ConsistentRead: true, KeyConditions: {
           a: {ComparisonOperator: 'EQ', AttributeValueList: [item.a]},
         }, ScanIndexForward: false, Limit: 2}), function(err, res) {
           if (err) return done(err)
@@ -1766,22 +1570,10 @@ describe('query', function() {
           item7 = {a: item.a, b: {N: '-0.1'}},
           item8 = {a: item.a, b: {N: '-1'}},
           item9 = {a: item.a, b: {N: '-99.1'}},
-          batchReq = {RequestItems: {}}
-      batchReq.RequestItems[helpers.testRangeNTable] = [
-        {PutRequest: {Item: item}},
-        {PutRequest: {Item: item2}},
-        {PutRequest: {Item: item3}},
-        {PutRequest: {Item: item4}},
-        {PutRequest: {Item: item5}},
-        {PutRequest: {Item: item6}},
-        {PutRequest: {Item: item7}},
-        {PutRequest: {Item: item8}},
-        {PutRequest: {Item: item9}},
-      ]
-      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+          items = [item, item2, item3, item4, item5, item6, item7, item8, item9]
+      helpers.batchBulkPut(helpers.testRangeNTable, items, function(err) {
         if (err) return done(err)
-        res.statusCode.should.equal(200)
-        request(opts({TableName: helpers.testRangeNTable, KeyConditions: {
+        request(opts({TableName: helpers.testRangeNTable, ConsistentRead: true, KeyConditions: {
           a: {ComparisonOperator: 'EQ', AttributeValueList: [item.a]},
         }, ScanIndexForward: false}), function(err, res) {
           if (err) return done(err)
@@ -1798,18 +1590,10 @@ describe('query', function() {
           item3 = {a: item.a, b: {N: '10.9'}, c: {S: 'c'}},
           item4 = {a: item.a, b: {N: '9.1'}, c: {S: 'c'}},
           item5 = {a: item.a, b: {N: '0.9'}, c: {S: 'c'}},
-          batchReq = {RequestItems: {}}
-      batchReq.RequestItems[helpers.testRangeNTable] = [
-        {PutRequest: {Item: item}},
-        {PutRequest: {Item: item2}},
-        {PutRequest: {Item: item3}},
-        {PutRequest: {Item: item4}},
-        {PutRequest: {Item: item5}},
-      ]
-      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+          items = [item, item2, item3, item4, item5]
+      helpers.batchBulkPut(helpers.testRangeNTable, items, function(err) {
         if (err) return done(err)
-        res.statusCode.should.equal(200)
-        request(opts({TableName: helpers.testRangeNTable, KeyConditions: {
+        request(opts({TableName: helpers.testRangeNTable, ConsistentRead: true, KeyConditions: {
           a: {ComparisonOperator: 'EQ', AttributeValueList: [item.a]},
         }, ScanIndexForward: false, Limit: 3}), function(err, res) {
           if (err) return done(err)
@@ -1830,22 +1614,10 @@ describe('query', function() {
           item7 = {a: item.a, b: {B: '1g=='}},
           item8 = {a: item.a, b: {B: 'ER/jLQ=='}},
           item9 = {a: item.a, b: {B: 'T7MzEUw='}},
-          batchReq = {RequestItems: {}}
-      batchReq.RequestItems[helpers.testRangeBTable] = [
-        {PutRequest: {Item: item}},
-        {PutRequest: {Item: item2}},
-        {PutRequest: {Item: item3}},
-        {PutRequest: {Item: item4}},
-        {PutRequest: {Item: item5}},
-        {PutRequest: {Item: item6}},
-        {PutRequest: {Item: item7}},
-        {PutRequest: {Item: item8}},
-        {PutRequest: {Item: item9}},
-      ]
-      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+          items = [item, item2, item3, item4, item5, item6, item7, item8, item9]
+      helpers.batchBulkPut(helpers.testRangeBTable, items, function(err) {
         if (err) return done(err)
-        res.statusCode.should.equal(200)
-        request(opts({TableName: helpers.testRangeBTable, KeyConditions: {
+        request(opts({TableName: helpers.testRangeBTable, ConsistentRead: true, KeyConditions: {
           a: {ComparisonOperator: 'EQ', AttributeValueList: [item.a]},
         }, ScanIndexForward: false}), function(err, res) {
           if (err) return done(err)
@@ -1863,18 +1635,10 @@ describe('query', function() {
           item3 = {a: item.a, b: {B: '2w=='}},
           item4 = {a: item.a, b: {B: 'cAeRhZE='}},
           item5 = {a: item.a, b: {B: '6piVtA=='}},
-          batchReq = {RequestItems: {}}
-      batchReq.RequestItems[helpers.testRangeBTable] = [
-        {PutRequest: {Item: item}},
-        {PutRequest: {Item: item2}},
-        {PutRequest: {Item: item3}},
-        {PutRequest: {Item: item4}},
-        {PutRequest: {Item: item5}},
-      ]
-      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+          items = [item, item2, item3, item4, item5]
+      helpers.batchBulkPut(helpers.testRangeBTable, items, function(err) {
         if (err) return done(err)
-        res.statusCode.should.equal(200)
-        request(opts({TableName: helpers.testRangeBTable, KeyConditions: {
+        request(opts({TableName: helpers.testRangeBTable, ConsistentRead: true, KeyConditions: {
           a: {ComparisonOperator: 'EQ', AttributeValueList: [item.a]},
         }, ScanIndexForward: false, Limit: 3}), function(err, res) {
           if (err) return done(err)
@@ -1893,19 +1657,9 @@ describe('query', function() {
           item5 = {a: {S: 'c'}, b: {S: 'c'}, c: {S: 'c'}, d: {S: 'a'}},
           item6 = {a: {S: 'd'}, b: {S: 'a'}, c: item.c, d: {S: 'a'}},
           item7 = {a: {S: 'e'}, b: {S: 'a'}, c: item.c, d: {S: 'a'}},
-          batchReq = {RequestItems: {}}
-      batchReq.RequestItems[helpers.testRangeTable] = [
-        {PutRequest: {Item: item}},
-        {PutRequest: {Item: item2}},
-        {PutRequest: {Item: item3}},
-        {PutRequest: {Item: item4}},
-        {PutRequest: {Item: item5}},
-        {PutRequest: {Item: item6}},
-        {PutRequest: {Item: item7}},
-      ]
-      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+          items = [item, item2, item3, item4, item5, item6, item7]
+      helpers.batchBulkPut(helpers.testRangeTable, items, function(err) {
         if (err) return done(err)
-        res.statusCode.should.equal(200)
         var req = {TableName: helpers.testRangeTable,
           KeyConditions: {c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]}},
           IndexName: 'index3', Limit: 4, ReturnConsumedCapacity: 'TOTAL'}
@@ -1949,19 +1703,9 @@ describe('query', function() {
           item5 = {a: {S: 'c'}, b: {S: 'c'}, c: {S: 'c'}},
           item6 = {a: {S: 'd'}, b: {S: 'a'}, c: item.c},
           item7 = {a: {S: 'e'}, b: {S: 'a'}, c: item.c},
-          batchReq = {RequestItems: {}}
-      batchReq.RequestItems[helpers.testRangeTable] = [
-        {PutRequest: {Item: item}},
-        {PutRequest: {Item: item2}},
-        {PutRequest: {Item: item3}},
-        {PutRequest: {Item: item4}},
-        {PutRequest: {Item: item5}},
-        {PutRequest: {Item: item6}},
-        {PutRequest: {Item: item7}},
-      ]
-      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+          items = [item, item2, item3, item4, item5, item6, item7]
+      helpers.batchBulkPut(helpers.testRangeTable, items, function(err) {
         if (err) return done(err)
-        res.statusCode.should.equal(200)
         var req = {TableName: helpers.testRangeTable,
           KeyConditions: {c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]}},
           IndexName: 'index3', ScanIndexForward: false, Limit: 4, ReturnConsumedCapacity: 'INDEXES'}
@@ -1993,19 +1737,9 @@ describe('query', function() {
           item5 = {a: {S: 'c'}, b: {S: 'c'}, c: {S: 'c'}, d: {S: 'd'}, e: {S: 'a'}, f: {S: 'a'}},
           item6 = {a: {S: 'd'}, b: {S: 'a'}, c: item.c, d: {S: 'e'}, e: {S: 'a'}, f: {S: 'a'}},
           item7 = {a: {S: 'e'}, b: {S: 'a'}, c: item.c, d: {S: 'f'}, e: {S: 'a'}, f: {S: 'a'}},
-          batchReq = {RequestItems: {}}
-      batchReq.RequestItems[helpers.testRangeTable] = [
-        {PutRequest: {Item: item}},
-        {PutRequest: {Item: item2}},
-        {PutRequest: {Item: item3}},
-        {PutRequest: {Item: item4}},
-        {PutRequest: {Item: item5}},
-        {PutRequest: {Item: item6}},
-        {PutRequest: {Item: item7}},
-      ]
-      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+          items = [item, item2, item3, item4, item5, item6, item7]
+      helpers.batchBulkPut(helpers.testRangeTable, items, function(err) {
         if (err) return done(err)
-        res.statusCode.should.equal(200)
         request(opts({TableName: helpers.testRangeTable, KeyConditions: {
           c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
           d: {ComparisonOperator: 'LT', AttributeValueList: [item.d]},
@@ -2040,19 +1774,9 @@ describe('query', function() {
           item5 = {a: {S: 'c'}, b: {S: 'c'}, c: {S: 'c'}, d: {S: 'd'}},
           item6 = {a: {S: 'd'}, b: {S: 'a'}, c: item.c, d: {S: 'e'}},
           item7 = {a: {S: 'e'}, b: {S: 'a'}, c: item.c, d: {S: 'f'}},
-          batchReq = {RequestItems: {}}
-      batchReq.RequestItems[helpers.testRangeTable] = [
-        {PutRequest: {Item: item}},
-        {PutRequest: {Item: item2}},
-        {PutRequest: {Item: item3}},
-        {PutRequest: {Item: item4}},
-        {PutRequest: {Item: item5}},
-        {PutRequest: {Item: item6}},
-        {PutRequest: {Item: item7}},
-      ]
-      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+          items = [item, item2, item3, item4, item5, item6, item7]
+      helpers.batchBulkPut(helpers.testRangeTable, items, function(err) {
         if (err) return done(err)
-        res.statusCode.should.equal(200)
         request(opts({TableName: helpers.testRangeTable, KeyConditions: {
           c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
           d: {ComparisonOperator: 'LT', AttributeValueList: [item.d]},
@@ -2084,19 +1808,9 @@ describe('query', function() {
           item5 = {a: {S: 'c'}, b: {S: 'c'}, c: {S: 'c'}, d: {S: 'a'}},
           item6 = {a: {S: 'd'}, b: {S: 'a'}, c: item.c, d: {S: 'a'}},
           item7 = {a: {S: 'e'}, b: {S: 'a'}, c: item.c, d: {S: 'a'}},
-          batchReq = {RequestItems: {}}
-      batchReq.RequestItems[helpers.testRangeTable] = [
-        {PutRequest: {Item: item}},
-        {PutRequest: {Item: item2}},
-        {PutRequest: {Item: item3}},
-        {PutRequest: {Item: item4}},
-        {PutRequest: {Item: item5}},
-        {PutRequest: {Item: item6}},
-        {PutRequest: {Item: item7}},
-      ]
-      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+          items = [item, item2, item3, item4, item5, item6, item7]
+      helpers.batchBulkPut(helpers.testRangeTable, items, function(err) {
         if (err) return done(err)
-        res.statusCode.should.equal(200)
         delete item3.d
         request(opts({TableName: helpers.testRangeTable, KeyConditions: {
           c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
@@ -2128,19 +1842,9 @@ describe('query', function() {
           item5 = {a: {S: 'c'}, b: {S: 'c'}, c: {S: 'c'}},
           item6 = {a: {S: 'd'}, b: {S: 'a'}, c: item.c},
           item7 = {a: {S: 'e'}, b: {S: 'a'}, c: item.c},
-          batchReq = {RequestItems: {}}
-      batchReq.RequestItems[helpers.testRangeTable] = [
-        {PutRequest: {Item: item}},
-        {PutRequest: {Item: item2}},
-        {PutRequest: {Item: item3}},
-        {PutRequest: {Item: item4}},
-        {PutRequest: {Item: item5}},
-        {PutRequest: {Item: item6}},
-        {PutRequest: {Item: item7}},
-      ]
-      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+          items = [item, item2, item3, item4, item5, item6, item7]
+      helpers.batchBulkPut(helpers.testRangeTable, items, function(err) {
         if (err) return done(err)
-        res.statusCode.should.equal(200)
         delete item7.d
         request(opts({TableName: helpers.testRangeTable, KeyConditions: {
           c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
@@ -2172,19 +1876,9 @@ describe('query', function() {
           item5 = {a: {S: 'c'}, b: {S: 'c'}, c: {S: 'c'}, d: {S: 'd'}, e: {S: 'a'}, f: {S: 'a'}},
           item6 = {a: {S: 'd'}, b: {S: 'a'}, c: item.c, d: {S: 'e'}, e: {S: 'a'}, f: {S: 'a'}},
           item7 = {a: {S: 'e'}, b: {S: 'a'}, c: item.c, d: {S: 'f'}, e: {S: 'a'}, f: {S: 'a'}},
-          batchReq = {RequestItems: {}}
-      batchReq.RequestItems[helpers.testRangeTable] = [
-        {PutRequest: {Item: item}},
-        {PutRequest: {Item: item2}},
-        {PutRequest: {Item: item3}},
-        {PutRequest: {Item: item4}},
-        {PutRequest: {Item: item5}},
-        {PutRequest: {Item: item6}},
-        {PutRequest: {Item: item7}},
-      ]
-      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+          items = [item, item2, item3, item4, item5, item6, item7]
+      helpers.batchBulkPut(helpers.testRangeTable, items, function(err) {
         if (err) return done(err)
-        res.statusCode.should.equal(200)
         delete item3.e
         delete item3.f
         delete item4.f
@@ -2219,19 +1913,9 @@ describe('query', function() {
           item5 = {a: {S: 'c'}, b: {S: 'c'}, c: {S: 'c'}, d: {S: 'd'}, e: {S: 'a'}, f: {S: 'a'}},
           item6 = {a: {S: 'd'}, b: {S: 'a'}, c: item.c, d: {S: 'e'}, e: {S: 'a'}, f: {S: 'a'}},
           item7 = {a: {S: 'e'}, b: {S: 'a'}, c: item.c, d: {S: 'f'}, e: {S: 'a'}, f: {S: 'a'}},
-          batchReq = {RequestItems: {}}
-      batchReq.RequestItems[helpers.testRangeTable] = [
-        {PutRequest: {Item: item}},
-        {PutRequest: {Item: item2}},
-        {PutRequest: {Item: item3}},
-        {PutRequest: {Item: item4}},
-        {PutRequest: {Item: item5}},
-        {PutRequest: {Item: item6}},
-        {PutRequest: {Item: item7}},
-      ]
-      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+          items = [item, item2, item3, item4, item5, item6, item7]
+      helpers.batchBulkPut(helpers.testRangeTable, items, function(err) {
         if (err) return done(err)
-        res.statusCode.should.equal(200)
         delete item4.e
         delete item4.f
         delete item3.f

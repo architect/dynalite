@@ -30,6 +30,7 @@ describe('batchGetItem', function() {
     })
 
     it('should return SerializationException when RequestItems.Attr.Keys.0.Attr is not an attr struct', function(done) {
+      this.timeout(60000)
       assertType('RequestItems.Attr.Keys.0.Attr', 'AttrStructure', done)
     })
 

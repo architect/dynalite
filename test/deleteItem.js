@@ -20,6 +20,7 @@ describe('deleteItem', function() {
     })
 
     it('should return SerializationException when Key.Attr is not an attr struct', function(done) {
+      this.timeout(60000)
       assertType('Key.Attr', 'AttrStructure', done)
     })
 
@@ -36,6 +37,7 @@ describe('deleteItem', function() {
     })
 
     it('should return SerializationException when Expected.Attr.Value is not an attr struct', function(done) {
+      this.timeout(60000)
       assertType('Expected.Attr.Value', 'AttrStructure', done)
     })
 

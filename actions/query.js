@@ -201,7 +201,7 @@ module.exports = function query(store, data, cb) {
       }
       if (data.Select != 'COUNT') result.Items = items
       if (~['TOTAL', 'INDEXES'].indexOf(data.ReturnConsumedCapacity)) {
-        capacityUnits = Math.ceil(capacitySize / 1024 / 4) * 0.5
+        capacityUnits = Math.ceil(capacitySize / 1024 / 4) * (data.ConsistentRead ? 1 : 0.5)
         tableUnits = data.IndexName ? 0 : capacityUnits
         indexUnits = data.IndexName ? capacityUnits : 0
         if (indexAttrs && data.Select == 'ALL_ATTRIBUTES')

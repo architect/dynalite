@@ -35,6 +35,7 @@ describe('batchWriteItem', function() {
     })
 
     it('should return SerializationException when RequestItems.Attr.0.DeleteRequest.Key.Attr is not an attr struct', function(done) {
+      this.timeout(60000)
       assertType('RequestItems.Attr.0.DeleteRequest.Key.Attr', 'AttrStructure', done)
     })
 
@@ -47,6 +48,7 @@ describe('batchWriteItem', function() {
     })
 
     it('should return SerializationException when RequestItems.Attr.0.PutRequest.Item.Attr is not an attr struct', function(done) {
+      this.timeout(60000)
       assertType('RequestItems.Attr.0.PutRequest.Item.Attr', 'AttrStructure', done)
     })
 
