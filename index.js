@@ -119,7 +119,7 @@ function httpHandler(store, req, res) {
       return res.end('healthy: dynamodb.us-east-1.amazonaws.com ')
     }
 
-    var contentType = req.headers['content-type']
+    var contentType = (req.headers['content-type'] || '').split(';')[0].trim()
 
     if (req.method != 'POST' ||
         (body && contentType != 'application/json' && contentType != 'application/x-amz-json-1.0')) {

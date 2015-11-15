@@ -97,6 +97,14 @@ describe('dynalite connections', function() {
       request({body: 'hi', headers: {'content-type': 'whatever'}, noSign: true}, assert404(done))
     })
 
+    it('should return 404 if body and application/x-amz-json-1.1', function(done) {
+      request({body: 'hi', headers: {'content-type': 'application/x-amz-json-1.1'}, noSign: true}, assert404(done))
+    })
+
+    it('should return 404 if body but slightly different content-type', function(done) {
+      request({body: 'hi', headers: {'content-type': 'application/jsonasdf'}, noSign: true}, assert404(done))
+    })
+
     it('should connect to SSL', function(done) {
       var port = 10000 + Math.round(Math.random() * 10000), dynaliteServer = dynalite({ssl: true})
 
@@ -191,6 +199,26 @@ describe('dynalite connections', function() {
               assertSerialization('application/x-amz-json-1.0', done))
     })
 
+    it('should return SerializationException if body is application/json and semicolon but not JSON', function(done) {
+      request({body: 'hi', headers: {'content-type': 'application/json;'}, noSign: true},
+              assertSerialization(done))
+    })
+
+    it('should return SerializationException if body is application/json and spaces and semicolon but not JSON', function(done) {
+      request({body: 'hi', headers: {'content-type': '  application/json  ;   asfd'}, noSign: true},
+              assertSerialization(done))
+    })
+
+    it('should return SerializationException if body is application/json and nonsense but not JSON', function(done) {
+      request({body: 'hi', headers: {'content-type': 'application/json;blahblah'}, noSign: true},
+              assertSerialization(done))
+    })
+
+    it('should return SerializationException if body is application/x-amz-json-1.0 and nonsense but not JSON', function(done) {
+      request({body: 'hi', headers: {'content-type': 'application/x-amz-json-1.0;blahblah'}, noSign: true},
+              assertSerialization('application/x-amz-json-1.0', done))
+    })
+
     it('should return UnknownOperationException if no target', function(done) {
       request({noSign: true}, assertUnknownOp(done))
     })
@@ -211,6 +239,11 @@ describe('dynalite connections', function() {
     it('should return UnknownOperationException if body is application/x-amz-json-1.0', function(done) {
       request({body: '{}', headers: {'content-type': 'application/x-amz-json-1.0'}, noSign: true},
               assertUnknownOp('application/x-amz-json-1.0', done))
+    })
+
+    it('should return UnknownOperationException if body is application/json;charset=asfdsaf', function(done) {
+      request({body: '{}', headers: {'content-type': 'application/json;charset=asfdsaf'}, noSign: true},
+              assertUnknownOp(done))
     })
 
     it('should return UnknownOperationException if incorrect target', function(done) {
