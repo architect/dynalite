@@ -82,6 +82,7 @@ function create(options) {
     Object.keys(newStore).forEach(function(key) {
       self[key] = newStore[key]
     })
+    self.tableDb.options.db.clearGlobalStore();
   }
 
   return {
