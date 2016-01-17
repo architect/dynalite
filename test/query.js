@@ -1942,6 +1942,37 @@ describe('query', function() {
       })
     })
 
+    it('should query on a global index if values are equal', function(done) {
+      var item = {a: {S: 'a'}, b: {S: 'a'}, c: {S: helpers.randomString()}, d: {S: 'a'}},
+          item2 = {a: {S: 'b'}, b: {S: 'a'}, c: item.c, d: {S: 'a'}},
+          item3 = {a: {S: 'c'}, b: {S: 'a'}, c: item.c, d: {S: 'a'}},
+          item4 = {a: {S: 'c'}, b: {S: 'b'}, c: item.c, d: {S: 'a'}},
+          item5 = {a: {S: 'd'}, b: {S: 'a'}, c: item.c, d: {S: 'a'}},
+          item6 = {a: {S: 'd'}, b: {S: 'b'}, c: item.c, d: {S: 'a'}},
+          items = [item, item2, item3, item4, item5, item6]
+      helpers.batchBulkPut(helpers.testRangeTable, items, function(err) {
+        if (err) return done(err)
+        request(opts({TableName: helpers.testRangeTable, KeyConditions: {
+          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+        }, IndexName: 'index4', ExclusiveStartKey: item, ReturnConsumedCapacity: 'INDEXES'}), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.should.eql({
+            Count: 5,
+            ScannedCount: 5,
+            Items: [item5, item2, item3, item6, item4],
+            ConsumedCapacity: {
+              CapacityUnits: 0.5,
+              TableName: helpers.testRangeTable,
+              Table: {CapacityUnits: 0},
+              GlobalSecondaryIndexes: {index4: {CapacityUnits: 0.5}},
+            },
+          })
+          done()
+        })
+      })
+    })
+
     // TODO: Need high capacity to run this (~100 runs quickly)
     it.skip('should not return LastEvaluatedKey if just under limit', function(done) {
       this.timeout(200000)
