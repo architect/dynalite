@@ -30,12 +30,6 @@ function checkTypes(data, types) {
     return err
   }
 
-  function classForNumber(val) {
-    return val % 1 !== 0 ? 'java.lang.Double' :
-      val >= -32768 && val <= 32767 ? 'java.lang.Short' :
-      val >= -2147483648 && val <= 2147483647 ? 'java.lang.Integer' : 'java.lang.Long'
-  }
-
   function checkType(val, type) {
     if (val == null) return null
     var children = type.children
@@ -77,12 +71,7 @@ function checkTypes(data, types) {
       case 'Boolean':
         switch (typeof val) {
           case 'number':
-            // Strangely floats seem to be fine...?
-            var numClass = classForNumber(val)
-            if (numClass != 'java.lang.Double')
-              throw typeError('class ' + numClass + ' can not be converted to an Boolean')
-            val = Math.abs(val) >= 1
-            break
+            throw typeError('class com.amazon.coral.value.json.numbers.TruncatingBigNumber can not be converted to an Boolean')
           case 'string':
             // "\'HELLOWTF\' can not be converted to an Boolean"
             // seems to convert to uppercase
@@ -116,7 +105,7 @@ function checkTypes(data, types) {
           case 'boolean':
             throw typeError('class java.lang.Boolean can not be converted to an String')
           case 'number':
-            throw typeError('class ' + classForNumber(val) + ' can not be converted to an String')
+            throw typeError('class com.amazon.coral.value.json.numbers.TruncatingBigNumber can not be converted to an String')
           case 'object':
             if (Array.isArray(val)) throw typeError('Start of list found where not expected')
             throw typeError('Start of structure or map found where not expected.')
@@ -127,7 +116,7 @@ function checkTypes(data, types) {
           case 'boolean':
             throw typeError('class java.lang.Boolean can not be converted to a Blob')
           case 'number':
-            throw typeError('class ' + classForNumber(val) + ' can not be converted to a Blob')
+            throw typeError('class com.amazon.coral.value.json.numbers.TruncatingBigNumber can not be converted to a Blob')
           case 'object':
             if (Array.isArray(val)) throw typeError('Start of list found where not expected')
             throw typeError('Start of structure or map found where not expected.')

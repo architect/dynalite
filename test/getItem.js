@@ -331,15 +331,6 @@ describe('getItem', function() {
       })
     })
 
-    it('should return ConsumedCapacity if specified and consistent read is double', function(done) {
-      request(opts({TableName: helpers.testHashTable, Key: {a: {S: helpers.randomString()}}, ReturnConsumedCapacity: 'TOTAL', ConsistentRead: 0.5}), function(err, res) {
-        if (err) return done(err)
-        res.statusCode.should.equal(200)
-        res.body.should.eql({ConsumedCapacity: {CapacityUnits: 0.5, TableName: helpers.testHashTable}})
-        done()
-      })
-    })
-
     it('should return full ConsumedCapacity if specified', function(done) {
       var req = {TableName: helpers.testHashTable, Key: {a: {S: helpers.randomString()}}, ReturnConsumedCapacity: 'TOTAL', ConsistentRead: true}
       request(opts(req), function(err, res) {
@@ -353,15 +344,6 @@ describe('getItem', function() {
           res.body.should.eql({ConsumedCapacity: {CapacityUnits: 1, Table: {CapacityUnits: 1}, TableName: helpers.testHashTable}})
           done()
         })
-      })
-    })
-
-    it('should return full ConsumedCapacity if specified and double', function(done) {
-      request(opts({TableName: helpers.testHashTable, Key: {a: {S: helpers.randomString()}}, ReturnConsumedCapacity: 'TOTAL', ConsistentRead: -1.1}), function(err, res) {
-        if (err) return done(err)
-        res.statusCode.should.equal(200)
-        res.body.should.eql({ConsumedCapacity: {CapacityUnits: 1, TableName: helpers.testHashTable}})
-        done()
       })
     })
 
