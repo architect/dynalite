@@ -1,5 +1,7 @@
 var validateAttributeValue = require('./index').validateAttributeValue,
-    validateAttributeConditions = require('./index').validateAttributeConditions
+    validateAttributeConditions = require('./index').validateAttributeConditions,
+    validateExpressionParams = require('./index').validateExpressionParams,
+    validateExpressions = require('./index').validateExpressions
 
 exports.types = {
   ReturnConsumedCapacity: {
@@ -48,10 +50,24 @@ exports.types = {
       },
     },
   },
+  ConditionExpression: {
+    type: 'String',
+  },
+  ExpressionAttributeValues: {
+    type: 'Map',
+    children: 'AttrStructure',
+  },
+  ExpressionAttributeNames: {
+    type: 'Map',
+    children: 'String',
+  },
 }
 
 exports.custom = function(data) {
-  var msg
+
+  var msg = validateExpressionParams(data, ['ConditionExpression'], ['Expected'])
+  if (msg) return msg
+
   for (var key in data.Key) {
     msg = validateAttributeValue(data.Key[key])
     if (msg) return msg
@@ -59,5 +75,7 @@ exports.custom = function(data) {
 
   msg = validateAttributeConditions(data)
   if (msg) return msg
-}
 
+  msg = validateExpressions(data)
+  if (msg) return msg
+}

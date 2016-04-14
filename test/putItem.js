@@ -57,6 +57,27 @@ describe('putItem', function() {
       assertType('ReturnValues', 'String', done)
     })
 
+    it('should return SerializationException when ConditionExpression is not a string', function(done) {
+      assertType('ConditionExpression', 'String', done)
+    })
+
+    it('should return SerializationException when ExpressionAttributeValues is not a map', function(done) {
+      assertType('ExpressionAttributeValues', 'Map', done)
+    })
+
+    it('should return SerializationException when ExpressionAttributeValues.Attr is not an attr struct', function(done) {
+      this.timeout(60000)
+      assertType('ExpressionAttributeValues.Attr', 'AttrStructure', done)
+    })
+
+    it('should return SerializationException when ExpressionAttributeNames is not a map', function(done) {
+      assertType('ExpressionAttributeNames', 'Map', done)
+    })
+
+    it('should return SerializationException when ExpressionAttributeNames.Attr is not a string', function(done) {
+      assertType('ExpressionAttributeNames.Attr', 'String', done)
+    })
+
   })
 
   describe('validations', function() {
@@ -71,25 +92,35 @@ describe('putItem', function() {
     })
 
     it('should return ValidationException for empty TableName', function(done) {
+      var tableNamePieces = [
+        'Value \'\' at \'tableName\' failed to satisfy constraint: ' +
+        'Member must satisfy regular expression pattern: [a-zA-Z0-9_.-]+',
+        'Value \'\' at \'tableName\' failed to satisfy constraint: ' +
+        'Member must have length greater than or equal to 3',
+      ]
       assertValidation({TableName: ''},
-        '3 validation errors detected: ' +
-        'Value \'\' at \'tableName\' failed to satisfy constraint: ' +
-        'Member must satisfy regular expression pattern: [a-zA-Z0-9_.-]+; ' +
-        'Value \'\' at \'tableName\' failed to satisfy constraint: ' +
-        'Member must have length greater than or equal to 3; ' +
-        'Value null at \'item\' failed to satisfy constraint: ' +
-        'Member must not be null', done)
+        tableNamePieces.map(function(piece, ix) {
+          return '3 validation errors detected: ' +
+            [ix, +!ix].map(function(ix) { return tableNamePieces[ix] }).join('; ') +
+            '; Value null at \'item\' failed to satisfy constraint: ' +
+            'Member must not be null'
+        }), done)
     })
 
     it('should return ValidationException for short TableName', function(done) {
+      var tableNamePieces = [
+        'Value \'a;\' at \'tableName\' failed to satisfy constraint: ' +
+        'Member must satisfy regular expression pattern: [a-zA-Z0-9_.-]+',
+        'Value \'a;\' at \'tableName\' failed to satisfy constraint: ' +
+        'Member must have length greater than or equal to 3',
+      ]
       assertValidation({TableName: 'a;'},
-        '3 validation errors detected: ' +
-        'Value \'a;\' at \'tableName\' failed to satisfy constraint: ' +
-        'Member must satisfy regular expression pattern: [a-zA-Z0-9_.-]+; ' +
-        'Value \'a;\' at \'tableName\' failed to satisfy constraint: ' +
-        'Member must have length greater than or equal to 3; ' +
-        'Value null at \'item\' failed to satisfy constraint: ' +
-        'Member must not be null', done)
+        tableNamePieces.map(function(piece, ix) {
+          return '3 validation errors detected: ' +
+            [ix, +!ix].map(function(ix) { return tableNamePieces[ix] }).join('; ') +
+            '; Value null at \'item\' failed to satisfy constraint: ' +
+            'Member must not be null'
+        }), done)
     })
 
     it('should return ValidationException for long TableName', function(done) {
@@ -118,242 +149,100 @@ describe('putItem', function() {
         'Member must satisfy enum value set: [SIZE, NONE]', done)
     })
 
-    it('should return ValidationException if no value and no exists', function(done) {
-      assertValidation({TableName: 'abc', Item: {}, Expected: {a: {}}},
-        'One or more parameter values were invalid: Value must be provided when Exists is null for Attribute: a', done)
+    it('should return ValidationException if expression and non-expression', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        Item: {a: {}},
+        Expected: {a: {}},
+        ExpressionAttributeNames: {},
+        ExpressionAttributeValues: {},
+        ConditionExpression: '',
+      }, 'Can not use both expression and non-expression parameters in the same request: ' +
+        'Non-expression parameters: {Expected} Expression parameters: {ConditionExpression}', done)
     })
 
-    it('should return ValidationException for Exists true with no value', function(done) {
-      assertValidation({TableName: 'abc', Item: {}, Expected: {a: {Exists: true}}},
-        'One or more parameter values were invalid: Value must be provided when Exists is true for Attribute: a', done)
+    it('should return ValidationException if ExpressionAttributeNames but no ConditionExpression', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        Item: {a: {}},
+        Expected: {a: {}},
+        ExpressionAttributeNames: {},
+        ExpressionAttributeValues: {},
+      }, 'ExpressionAttributeNames can only be specified when using expressions', done)
     })
 
-    it('should return ValidationException for Exists false with value', function(done) {
-      assertValidation({TableName: 'abc', Item: {}, Expected: {a: {Exists: false, Value: {S: 'a'}}}},
-        'One or more parameter values were invalid: Value cannot be used when Exists is false for Attribute: a', done)
+    it('should return ValidationException if ExpressionAttributeValues but no ConditionExpression', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        Item: {a: {}},
+        Expected: {a: {}},
+        ExpressionAttributeValues: {},
+      }, 'ExpressionAttributeValues can only be specified when using expressions: ConditionExpression is null', done)
     })
 
-    it('should return ValidationException for incorrect ReturnValues', function(done) {
-      async.forEach(['UPDATED_OLD', 'ALL_NEW', 'UPDATED_NEW'], function(returnValues, cb) {
-        assertValidation({TableName: 'abc', Item: {}, ReturnValues: returnValues},
-          'ReturnValues can only be ALL_OLD or NONE', cb)
+    it('should return ValidationException for unsupported datatype in Item', function(done) {
+      async.forEach([
+        {},
+        {a: ''},
+        {M: {a: {}}},
+        {L: [{}]},
+        {L: [{a: {}}]},
+      ], function(expr, cb) {
+        assertValidation({TableName: 'abc', Item: {a: expr}, Expected: {a: {}}},
+          'Supplied AttributeValue is empty, must contain exactly one of the supported datatypes', cb)
       }, done)
     })
 
-    it('should return ValidationException for empty key type', function(done) {
-      assertValidation({TableName: 'abc', Item: {a: {}}},
-        'Supplied AttributeValue is empty, must contain exactly one of the supported datatypes', done)
+    it('should return ValidationException for invalid values in Item', function(done) {
+      async.forEach([
+        [{N: '', S: ''}, 'An AttributeValue may not contain an empty string'],
+        [{B: ''}, 'An AttributeValue may not contain a null or empty binary type.'],
+        [{NULL: 'no'}, 'Null attribute value types must have the value of true'],
+        [{SS: []}, 'An string set  may not be empty'],
+        [{NS: []}, 'An number set  may not be empty'],
+        [{BS: []}, 'Binary sets should not be empty'],
+        [{SS: ['a', '']}, 'An string set may not have a empty string as a member'],
+        [{BS: ['aaaa', '']}, 'Binary sets may not contain null or empty values'],
+        [{SS: ['a', 'a']}, 'Input collection [a, a] contains duplicates.'],
+        [{BS: ['Yg==', 'Yg==']}, 'Input collection [Yg==, Yg==]of type BS contains duplicates.'],
+      ], function(expr, cb) {
+        assertValidation({
+          TableName: 'abc',
+          Item: {a: expr[0]},
+          ExpressionAttributeNames: {},
+          ExpressionAttributeValues: {},
+          ConditionExpression: '',
+        }, 'One or more parameter values were invalid: ' + expr[1], cb)
+      }, done)
     })
 
-    it('should return ValidationException for bad key type', function(done) {
-      assertValidation({TableName: 'abc', Item: {a: {a: ''}}},
-        'Supplied AttributeValue is empty, must contain exactly one of the supported datatypes', done)
+    it('should return ValidationException for empty/invalid numbers in Item', function(done) {
+      async.forEach([
+        [{S: 'a', N: ''}, 'The parameter cannot be converted to a numeric value'],
+        [{S: 'a', N: 'b'}, 'The parameter cannot be converted to a numeric value: b'],
+        [{NS: ['1', '']}, 'The parameter cannot be converted to a numeric value'],
+        [{NS: ['1', 'b']}, 'The parameter cannot be converted to a numeric value: b'],
+        [{NS: ['1', '1']}, 'Input collection contains duplicates'],
+        [{N: '123456789012345678901234567890123456789'}, 'Attempting to store more than 38 significant digits in a Number'],
+        [{N: '-1.23456789012345678901234567890123456789'}, 'Attempting to store more than 38 significant digits in a Number'],
+        [{N: '1e126'}, 'Number overflow. Attempting to store a number with magnitude larger than supported range'],
+        [{N: '-1e126'}, 'Number overflow. Attempting to store a number with magnitude larger than supported range'],
+        [{N: '1e-131'}, 'Number underflow. Attempting to store a number with magnitude smaller than supported range'],
+        [{N: '-1e-131'}, 'Number underflow. Attempting to store a number with magnitude smaller than supported range'],
+      ], function(expr, cb) {
+        assertValidation({TableName: 'abc', Item: {a: expr[0]}}, expr[1], cb)
+      }, done)
     })
 
-    it('should return ValidationException for empty string', function(done) {
-      assertValidation({TableName: 'abc', Item: {a: {S: ''}}},
-        'One or more parameter values were invalid: An AttributeValue may not contain an empty string', done)
-    })
-
-    it('should return ValidationException for empty string in map', function(done) {
-      assertValidation({TableName: 'abc', Item: {a: {M: {b: {S: ''}}}}},
-        'One or more parameter values were invalid: An AttributeValue may not contain an empty string', done)
-    })
-
-    it('should return ValidationException for empty binary', function(done) {
-      assertValidation({TableName: 'abc', Item: {a: {B: ''}}},
-        'One or more parameter values were invalid: An AttributeValue may not contain a null or empty binary type.', done)
-    })
-
-    it('should return ValidationException for false null', function(done) {
-      assertValidation({TableName: 'abc', Item: {a: {NULL: false}}},
-        'One or more parameter values were invalid: Null attribute value types must have the value of true', done)
-    })
-
-    // Somehow allows set types for keys
-    it('should return ValidationException for empty set key', function(done) {
-      assertValidation({TableName: 'abc', Item: {a: {SS: []}}},
-        'One or more parameter values were invalid: An string set  may not be empty', done)
-    })
-
-    it('should return ValidationException for empty string in set', function(done) {
-      assertValidation({TableName: 'abc', Item: {a: {SS: ['a', '']}}},
-        'One or more parameter values were invalid: An string set may not have a empty string as a member', done)
-    })
-
-    it('should return ValidationException for empty binary in set', function(done) {
-      assertValidation({TableName: 'abc', Item: {a: {BS: ['aaaa', '']}}},
-        'One or more parameter values were invalid: Binary sets may not contain null or empty values', done)
-    })
-
-    it('should return ValidationException if key has empty numeric in set', function(done) {
-      assertValidation({TableName: 'abc', Item: {a: {NS: ['1', '']}}},
-        'The parameter cannot be converted to a numeric value', done)
-    })
-
-    it('should return ValidationException for duplicate string in set', function(done) {
-      assertValidation({TableName: 'abc', Item: {a: {SS: ['a', 'a']}}},
-        'One or more parameter values were invalid: Input collection [a, a] contains duplicates.', done)
-    })
-
-    it('should return ValidationException for duplicate number in set', function(done) {
-      assertValidation({TableName: 'abc', Item: {a: {NS: ['1', '1']}}},
-        'Input collection contains duplicates', done)
-    })
-
-    it('should return ValidationException for duplicate binary in set', function(done) {
-      assertValidation({TableName: 'abc', Item: {a: {BS: ['Yg==', 'Yg==']}}},
-        'One or more parameter values were invalid: Input collection [Yg==, Yg==]of type BS contains duplicates.', done)
-    })
-
-    it('should return ValidationException for multiple types', function(done) {
-      assertValidation({TableName: 'abc', Item: {a: {S: 'a', N: '1'}}},
+    it('should return ValidationException for multiple datatypes in Item', function(done) {
+      assertValidation({TableName: 'abc', Item: {'a': {S: 'a', N: '1'}}},
         'Supplied AttributeValue has more than one datatypes set, must contain exactly one of the supported datatypes', done)
-    })
-
-    it('should return ValidationException if key has empty numeric type', function(done) {
-      assertValidation({TableName: 'abc', Item: {a: {N: ''}}},
-        'The parameter cannot be converted to a numeric value', done)
-    })
-
-    it('should return ValidationException if key has incorrect numeric type', function(done) {
-      assertValidation({TableName: 'abc', Item: {a: {N: 'b'}}},
-        'The parameter cannot be converted to a numeric value: b', done)
-    })
-
-    it('should return ValidationException if key has incorrect numeric type in set', function(done) {
-      assertValidation({TableName: 'abc', Item: {a: {NS: ['1', 'b', 'a']}}},
-        'The parameter cannot be converted to a numeric value: b', done)
-    })
-
-    it('should return ValidationException for empty expected value', function(done) {
-      assertValidation({TableName: 'abc', Item: {}, Expected: {a: {Value: {}}}},
-        'Supplied AttributeValue is empty, must contain exactly one of the supported datatypes', done)
-    })
-
-    it('should return ValidationException if expected value has empty numeric in set', function(done) {
-      assertValidation({TableName: 'abc', Item: {}, Expected: {a: {Value: {NS: ['1', '']}}}},
-        'The parameter cannot be converted to a numeric value', done)
-    })
-
-    it('should return ValidationException if trying to store large number', function(done) {
-      assertValidation({TableName: 'aaa', Item: {a: {N: '123456789012345678901234567890123456789'}}},
-        'Attempting to store more than 38 significant digits in a Number', done)
-    })
-
-    it('should return ValidationException if trying to store long digited number', function(done) {
-      assertValidation({TableName: 'aaa', Item: {a: {N: '-1.23456789012345678901234567890123456789'}}},
-        'Attempting to store more than 38 significant digits in a Number', done)
-    })
-
-    it('should return ValidationException if trying to store huge positive number', function(done) {
-      assertValidation({TableName: 'aaa', Item: {a: {N: '1e126'}}},
-        'Number overflow. Attempting to store a number with magnitude larger than supported range', done)
-    })
-
-    it('should return ValidationException if trying to store huge negative number', function(done) {
-      assertValidation({TableName: 'aaa', Item: {a: {N: '-1e126'}}},
-        'Number overflow. Attempting to store a number with magnitude larger than supported range', done)
-    })
-
-    it('should return ValidationException if trying to store tiny positive number', function(done) {
-      assertValidation({TableName: 'aaa', Item: {a: {N: '1e-131'}}},
-        'Number underflow. Attempting to store a number with magnitude smaller than supported range', done)
-    })
-
-    it('should return ValidationException if trying to store tiny negative number', function(done) {
-      assertValidation({TableName: 'aaa', Item: {a: {N: '-1e-131'}}},
-        'Number underflow. Attempting to store a number with magnitude smaller than supported range', done)
     })
 
     it('should return ValidationException if item is too big with small attribute', function(done) {
       var keyStr = helpers.randomString(), b = new Array(db.MAX_SIZE + 1 - keyStr.length - 1).join('a')
-      assertValidation({TableName: 'aaa', Item: {a: {S: keyStr}, b: {S: b}}},
+      assertValidation({TableName: 'aaa', Item: {a: {S: keyStr}, b: {S: b}}, Expected: {a: {}}},
         'Item size has exceeded the maximum allowed size', done)
-    })
-
-    it('should return ValidationException if ComparisonOperator used alone', function(done) {
-      assertValidation({TableName: 'aaa', Item: {}, Expected: {a: {ComparisonOperator: 'LT'}}},
-        'One or more parameter values were invalid: Value or AttributeValueList must be used with ComparisonOperator: LT for Attribute: a', done)
-    })
-
-    it('should return ValidationException if ComparisonOperator and Exists are used together', function(done) {
-      assertValidation({TableName: 'aaa', Item: {}, Expected: {a: {Exists: true, ComparisonOperator: 'LT'}}},
-        'One or more parameter values were invalid: Exists and ComparisonOperator cannot be used together for Attribute: a', done)
-    })
-
-    it('should return ValidationException if AttributeValueList and Value are used together', function(done) {
-      var expected = {a: {
-        AttributeValueList: [{S: 'a'}],
-        Value: {S: 'a'},
-        ComparisonOperator: 'LT',
-      }}
-      assertValidation({TableName: 'aaa', Item: {}, Expected: expected},
-        'One or more parameter values were invalid: Value and AttributeValueList cannot be used together for Attribute: a', done)
-    })
-
-    it('should return ValidationException if AttributeValueList used without ComparisonOperator', function(done) {
-      assertValidation({TableName: 'aaa', Item: {}, Expected: {a: {AttributeValueList: [{S: 'a'}]}}},
-        'One or more parameter values were invalid: AttributeValueList can only be used with a ComparisonOperator for Attribute: a', done)
-    })
-
-    it('should return ValidationException if AttributeValueList used with Exists', function(done) {
-      assertValidation({TableName: 'aaa', Item: {}, Expected: {a: {Exists: true, AttributeValueList: [{S: 'a'}]}}},
-        'One or more parameter values were invalid: AttributeValueList can only be used with a ComparisonOperator for Attribute: a', done)
-    })
-
-    it('should return ValidationException if AttributeValueList is incorrect length: EQ', function(done) {
-      var expected = {a: {
-        AttributeValueList: [ ],
-        ComparisonOperator: 'EQ',
-      }}
-      assertValidation({TableName: 'aaa', Item: {}, Expected: expected},
-        'One or more parameter values were invalid: Invalid number of argument(s) for the EQ ComparisonOperator', done)
-    })
-
-    it('should return ValidationException if AttributeValueList is incorrect length: NULL', function(done) {
-      var expected = {a: {
-        AttributeValueList: [{S: 'a'}],
-        ComparisonOperator: 'NULL',
-      }}
-      assertValidation({TableName: 'aaa', Item: {}, Expected: expected},
-        'One or more parameter values were invalid: Invalid number of argument(s) for the NULL ComparisonOperator', done)
-    })
-
-    it('should return ValidationException if AttributeValueList is incorrect length: IN', function(done) {
-      var expected = {a: {
-        AttributeValueList: [],
-        ComparisonOperator: 'IN',
-      }}
-      assertValidation({TableName: 'aaa', Item: {}, Expected: expected},
-        'One or more parameter values were invalid: Invalid number of argument(s) for the IN ComparisonOperator', done)
-    })
-
-    it('should return ValidationException if AttributeValueList is incorrect length: BETWEEN', function(done) {
-      var expected = {a: {
-        AttributeValueList: [{N: '1'}, {N: '10'}, {N: '12'}],
-        ComparisonOperator: 'BETWEEN',
-      }}
-      assertValidation({TableName: 'aaa', Item: {}, Expected: expected},
-        'One or more parameter values were invalid: Invalid number of argument(s) for the BETWEEN ComparisonOperator', done)
-    })
-
-    it('should return ValidationException if Value provides incorrect number of attributes: NULL', function(done) {
-      var expected = {a: {
-        Value: {S: 'a'},
-        ComparisonOperator: 'NULL',
-      }}
-      assertValidation({TableName: 'aaa', Item: {}, Expected: expected},
-        'One or more parameter values were invalid: Invalid number of argument(s) for the NULL ComparisonOperator', done)
-    })
-
-    it('should return ValidationException if Value provides incorrect number of attributes: BETWEEN', function(done) {
-      var expected = {a: {
-        Value: {S: 'a'},
-        ComparisonOperator: 'BETWEEN',
-      }}
-      assertValidation({TableName: 'aaa', Item: {}, Expected: expected},
-        'One or more parameter values were invalid: Invalid number of argument(s) for the BETWEEN ComparisonOperator', done)
     })
 
     it('should return ResourceNotFoundException if item is just small enough with small attribute', function(done) {
@@ -442,44 +331,188 @@ describe('putItem', function() {
         'Requested resource not found', done)
     })
 
+    it('should return ValidationException if no value and no exists', function(done) {
+      assertValidation({TableName: 'abc', Item: {}, Expected: {a: {}}},
+        'One or more parameter values were invalid: Value must be provided when Exists is null for Attribute: a', done)
+    })
+
+    it('should return ValidationException for Exists true with no value', function(done) {
+      assertValidation({TableName: 'abc', Item: {}, Expected: {a: {Exists: true}}},
+        'One or more parameter values were invalid: Value must be provided when Exists is true for Attribute: a', done)
+    })
+
+    it('should return ValidationException for Exists false with value', function(done) {
+      assertValidation({TableName: 'abc', Item: {}, Expected: {a: {Exists: false, Value: {S: 'a'}}}},
+        'One or more parameter values were invalid: Value cannot be used when Exists is false for Attribute: a', done)
+    })
+
+    it('should return ValidationException for incorrect ReturnValues', function(done) {
+      async.forEach(['UPDATED_OLD', 'ALL_NEW', 'UPDATED_NEW'], function(returnValues, cb) {
+        assertValidation({TableName: 'abc', Item: {}, ReturnValues: returnValues},
+          'ReturnValues can only be ALL_OLD or NONE', cb)
+      }, done)
+    })
+
+    it('should return ValidationException if ComparisonOperator used alone', function(done) {
+      assertValidation({TableName: 'aaa', Item: {}, Expected: {a: {ComparisonOperator: 'LT'}}},
+        'One or more parameter values were invalid: Value or AttributeValueList must be used with ComparisonOperator: LT for Attribute: a', done)
+    })
+
+    it('should return ValidationException if ComparisonOperator and Exists are used together', function(done) {
+      assertValidation({TableName: 'aaa', Item: {}, Expected: {a: {Exists: true, ComparisonOperator: 'LT'}}},
+        'One or more parameter values were invalid: Exists and ComparisonOperator cannot be used together for Attribute: a', done)
+    })
+
+    it('should return ValidationException if AttributeValueList and Value are used together', function(done) {
+      var expected = {a: {
+        AttributeValueList: [{S: 'a'}],
+        Value: {S: 'a'},
+        ComparisonOperator: 'LT',
+      }}
+      assertValidation({TableName: 'aaa', Item: {}, Expected: expected},
+        'One or more parameter values were invalid: Value and AttributeValueList cannot be used together for Attribute: a', done)
+    })
+
+    it('should return ValidationException if AttributeValueList used without ComparisonOperator', function(done) {
+      assertValidation({TableName: 'aaa', Item: {}, Expected: {a: {AttributeValueList: [{S: 'a'}]}}},
+        'One or more parameter values were invalid: AttributeValueList can only be used with a ComparisonOperator for Attribute: a', done)
+    })
+
+    it('should return ValidationException if AttributeValueList used with Exists', function(done) {
+      assertValidation({TableName: 'aaa', Item: {}, Expected: {a: {Exists: true, AttributeValueList: [{S: 'a'}]}}},
+        'One or more parameter values were invalid: AttributeValueList can only be used with a ComparisonOperator for Attribute: a', done)
+    })
+
+    it('should return ValidationException if AttributeValueList is incorrect length: EQ', function(done) {
+      var expected = {a: {
+        AttributeValueList: [],
+        ComparisonOperator: 'EQ',
+      }}
+      assertValidation({TableName: 'aaa', Item: {}, Expected: expected},
+        'One or more parameter values were invalid: Invalid number of argument(s) for the EQ ComparisonOperator', done)
+    })
+
+    it('should return ValidationException if AttributeValueList is incorrect length: NULL', function(done) {
+      var expected = {a: {
+        AttributeValueList: [{S: 'a'}],
+        ComparisonOperator: 'NULL',
+      }}
+      assertValidation({TableName: 'aaa', Item: {}, Expected: expected},
+        'One or more parameter values were invalid: Invalid number of argument(s) for the NULL ComparisonOperator', done)
+    })
+
+    it('should return ValidationException if AttributeValueList is incorrect length: IN', function(done) {
+      var expected = {a: {
+        AttributeValueList: [],
+        ComparisonOperator: 'IN',
+      }}
+      assertValidation({TableName: 'aaa', Item: {}, Expected: expected},
+        'One or more parameter values were invalid: Invalid number of argument(s) for the IN ComparisonOperator', done)
+    })
+
+    it('should return ValidationException if AttributeValueList is incorrect length: BETWEEN', function(done) {
+      var expected = {a: {
+        AttributeValueList: [{N: '1'}, {N: '10'}, {N: '12'}],
+        ComparisonOperator: 'BETWEEN',
+      }}
+      assertValidation({TableName: 'aaa', Item: {}, Expected: expected},
+        'One or more parameter values were invalid: Invalid number of argument(s) for the BETWEEN ComparisonOperator', done)
+    })
+
+    it('should return ValidationException if Value provides incorrect number of attributes: NULL', function(done) {
+      var expected = {a: {
+        Value: {S: 'a'},
+        ComparisonOperator: 'NULL',
+      }}
+      assertValidation({TableName: 'aaa', Item: {}, Expected: expected},
+        'One or more parameter values were invalid: Invalid number of argument(s) for the NULL ComparisonOperator', done)
+    })
+
+    it('should return ValidationException if Value provides incorrect number of attributes: BETWEEN', function(done) {
+      var expected = {a: {
+        Value: {S: 'a'},
+        ComparisonOperator: 'BETWEEN',
+      }}
+      assertValidation({TableName: 'aaa', Item: {}, Expected: expected},
+        'One or more parameter values were invalid: Invalid number of argument(s) for the BETWEEN ComparisonOperator', done)
+    })
+
+    it('should return ValidationException for empty ExpressionAttributeNames', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        Item: {},
+        ExpressionAttributeNames: {},
+        ExpressionAttributeValues: {},
+        ConditionExpression: '',
+      }, 'ExpressionAttributeNames must not be empty', done)
+    })
+
+    it('should return ValidationException for invalid ExpressionAttributeNames', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        Item: {},
+        ExpressionAttributeNames: {'a': 'a'},
+        ExpressionAttributeValues: {},
+        ConditionExpression: '',
+      }, 'ExpressionAttributeNames contains invalid key: Syntax error; key: "a"', done)
+    })
+
+    it('should return ValidationException for empty ExpressionAttributeValues', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        Item: {},
+        ExpressionAttributeValues: {},
+        ConditionExpression: '',
+      }, 'ExpressionAttributeValues must not be empty', done)
+    })
+
+    it('should return ValidationException for invalid ExpressionAttributeValues', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        Item: {},
+        ExpressionAttributeValues: {'a': {S: 'a'}},
+        ConditionExpression: '',
+      }, 'ExpressionAttributeValues contains invalid key: Syntax error; key: "a"', done)
+    })
+
+    it('should return ValidationException for empty ConditionExpression', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        Item: {},
+        ConditionExpression: '',
+      }, 'Invalid ConditionExpression: The expression can not be empty;', done)
+    })
+
     it('should return ResourceNotFoundException if key is empty and table does not exist', function(done) {
       assertNotFound({TableName: helpers.randomString(), Item: {}},
         'Requested resource not found', done)
     })
 
-    it('should return ValidationException if key is empty and table does exist', function(done) {
-      assertValidation({TableName: helpers.testHashTable, Item: {}},
-        'One or more parameter values were invalid: Missing the key a in the item', done)
+    it('should return ValidationException if missing key', function(done) {
+      async.forEach([
+        {},
+        {b: {S: 'a'}},
+      ], function(expr, cb) {
+        assertValidation({TableName: helpers.testHashTable, Item: expr},
+          'One or more parameter values were invalid: Missing the key a in the item', cb)
+      }, done)
     })
 
-    it('should return ValidationException if key has incorrect attributes', function(done) {
-      assertValidation({TableName: helpers.testHashTable, Item: {b: {S: 'a'}}},
-        'One or more parameter values were invalid: Missing the key a in the item', done)
-    })
-
-    it('should return ValidationException if key is incorrect binary type', function(done) {
-      assertValidation({TableName: helpers.testHashTable, Item: {a: {B: 'abcd'}}},
-        'One or more parameter values were invalid: Type mismatch for key a expected: S actual: B', done)
-    })
-
-    it('should return ValidationException if key is incorrect numeric type', function(done) {
-      assertValidation({TableName: helpers.testHashTable, Item: {a: {N: '1'}}},
-        'One or more parameter values were invalid: Type mismatch for key a expected: S actual: N', done)
-    })
-
-    it('should return ValidationException if key is incorrect string set type', function(done) {
-      assertValidation({TableName: helpers.testHashTable, Item: {a: {SS: ['a']}}},
-        'One or more parameter values were invalid: Type mismatch for key a expected: S actual: SS', done)
-    })
-
-    it('should return ValidationException if key is incorrect numeric set type', function(done) {
-      assertValidation({TableName: helpers.testHashTable, Item: {a: {NS: ['1']}}},
-        'One or more parameter values were invalid: Type mismatch for key a expected: S actual: NS', done)
-    })
-
-    it('should return ValidationException if key is incorrect binary set type', function(done) {
-      assertValidation({TableName: helpers.testHashTable, Item: {a: {BS: ['aaaa']}}},
-        'One or more parameter values were invalid: Type mismatch for key a expected: S actual: BS', done)
+    it('should return ValidationException if type mismatch for key', function(done) {
+      async.forEach([
+        {a: {B: 'abcd'}},
+        {a: {N: '1'}},
+        {a: {BOOL: true}},
+        {a: {NULL: true}},
+        {a: {SS: ['a']}},
+        {a: {NS: ['1']}},
+        {a: {BS: ['aaaa']}},
+        {a: {M: {}}},
+        {a: {L: []}},
+      ], function(expr, cb) {
+        assertValidation({TableName: helpers.testHashTable, Item: expr},
+          'One or more parameter values were invalid: Type mismatch for key a expected: S actual: ' + Object.keys(expr.a)[0], cb)
+      }, done)
     })
 
     it('should return ValidationException if missing range key', function(done) {
@@ -666,33 +699,19 @@ describe('putItem', function() {
       })
     })
 
-    it('should return ConditionalCheckFailedException if expecting non-existent key to exist (legacy)', function(done) {
-      assertConditional({
-        TableName: helpers.testHashTable,
-        Item: {a: {S: helpers.randomString()}},
-        Expected: {a: {Value: {S: helpers.randomString()}}},
-      }, done)
-    })
-
     it('should return ConditionalCheckFailedException if expecting non-existent key to exist', function(done) {
-      assertConditional({
-        TableName: helpers.testHashTable,
-        Item: {a: {S: helpers.randomString()}},
-        Expected: {a: {ComparisonOperator: 'NOT_NULL'}},
+      async.forEach([
+        {Expected: {a: {Value: {S: helpers.randomString()}}}},
+        {Expected: {a: {ComparisonOperator: 'NOT_NULL'}}},
+        {ConditionExpression: 'a = :a', ExpressionAttributeValues: {':a': {S: helpers.randomString()}}},
+        {ConditionExpression: '#a = :a', ExpressionAttributeNames: {'#a': 'a'}, ExpressionAttributeValues: {':a': {S: helpers.randomString()}}},
+        {ConditionExpression: 'attribute_exists(a)'},
+        {ConditionExpression: 'attribute_exists(#a)', ExpressionAttributeNames: {'#a': 'a'}},
+      ], function(putOpts, cb) {
+        putOpts.TableName = helpers.testHashTable
+        putOpts.Item = {a: {S: helpers.randomString()}}
+        assertConditional(putOpts, cb)
       }, done)
-    })
-
-    it('should return ConditionalCheckFailedException if expecting existing key to not exist (legacy)', function(done) {
-      var item = {a: {S: helpers.randomString()}}
-      request(opts({TableName: helpers.testHashTable, Item: item}), function(err, res) {
-        if (err) return done(err)
-        res.statusCode.should.equal(200)
-        assertConditional({
-          TableName: helpers.testHashTable,
-          Item: item,
-          Expected: {a: {Exists: false}},
-        }, done)
-      })
     })
 
     it('should return ConditionalCheckFailedException if expecting existing key to not exist', function(done) {
@@ -700,47 +719,39 @@ describe('putItem', function() {
       request(opts({TableName: helpers.testHashTable, Item: item}), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        assertConditional({
-          TableName: helpers.testHashTable,
-          Item: item,
-          Expected: {a: {ComparisonOperator: 'NULL'}},
+        async.forEach([
+          {Expected: {a: {Exists: false}}},
+          {Expected: {a: {ComparisonOperator: 'NULL'}}},
+          {ConditionExpression: 'attribute_not_exists(a)'},
+          {ConditionExpression: 'attribute_not_exists(#a)', ExpressionAttributeNames: {'#a': 'a'}},
+        ], function(putOpts, cb) {
+          putOpts.TableName = helpers.testHashTable
+          putOpts.Item = item
+          assertConditional(putOpts, cb)
         }, done)
       })
     })
 
-    it('should succeed if conditional key is different and exists is false (legacy)', function(done) {
+    it('should succeed if conditional key is different and exists is false', function(done) {
       var item = {a: {S: helpers.randomString()}}
       request(opts({TableName: helpers.testHashTable, Item: item}), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        request(opts({
-          TableName: helpers.testHashTable,
-          Item: {a: {S: helpers.randomString()}},
-          Expected: {a: {Exists: false}},
-        }), function(err, res) {
-          if (err) return done(err)
-          res.statusCode.should.equal(200)
-          res.body.should.eql({})
-          done()
-        })
-      })
-    })
-
-    it('should succeed if conditional key is same and exists is true (legacy)', function(done) {
-      var item = {a: {S: helpers.randomString()}}
-      request(opts({TableName: helpers.testHashTable, Item: item}), function(err, res) {
-        if (err) return done(err)
-        res.statusCode.should.equal(200)
-        request(opts({
-          TableName: helpers.testHashTable,
-          Item: item,
-          Expected: {a: {Value: item.a}},
-        }), function(err, res) {
-          if (err) return done(err)
-          res.statusCode.should.equal(200)
-          res.body.should.eql({})
-          done()
-        })
+        async.forEach([
+          {Expected: {a: {Exists: false}}},
+          {Expected: {a: {ComparisonOperator: 'NULL'}}},
+          {ConditionExpression: 'attribute_not_exists(a)'},
+          {ConditionExpression: 'attribute_not_exists(#a)', ExpressionAttributeNames: {'#a': 'a'}},
+        ], function(putOpts, cb) {
+          putOpts.TableName = helpers.testHashTable
+          putOpts.Item = {a: {S: helpers.randomString()}}
+          request(opts(putOpts), function(err, res) {
+            if (err) return cb(err)
+            res.statusCode.should.equal(200)
+            res.body.should.eql({})
+            cb()
+          })
+        }, done)
       })
     })
 
@@ -749,88 +760,25 @@ describe('putItem', function() {
       request(opts({TableName: helpers.testHashTable, Item: item}), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        request(opts({
-          TableName: helpers.testHashTable,
-          Item: item,
-          Expected: {a: {
-            AttributeValueList: [item.a],
-            ComparisonOperator: 'EQ',
-          }},
-        }), function(err, res) {
-          if (err) return done(err)
-          res.statusCode.should.equal(200)
-          res.body.should.eql({})
-          done()
-        })
-      })
-    })
-
-    it('should succeed if conditional key is same (legacy plus ComparisonOperator)', function(done) {
-      var item = {a: {S: helpers.randomString()}}
-      request(opts({TableName: helpers.testHashTable, Item: item}), function(err, res) {
-        if (err) return done(err)
-        res.statusCode.should.equal(200)
-        request(opts({
-          TableName: helpers.testHashTable,
-          Item: item,
-          Expected: {a: {
-            Value: item.a,
-            ComparisonOperator: 'EQ'
-          }},
-        }), function(err, res) {
-          if (err) return done(err)
-          res.statusCode.should.equal(200)
-          res.body.should.eql({})
-          done()
-        })
-      })
-    })
-
-    it('should succeed if expecting non-existant value to not exist (legacy)', function(done) {
-      var item = {a: {S: helpers.randomString()}}
-      request(opts({TableName: helpers.testHashTable, Item: item}), function(err, res) {
-        if (err) return done(err)
-        res.statusCode.should.equal(200)
-        request(opts({
-          TableName: helpers.testHashTable,
-          Item: item,
-          Expected: {b: {Exists: false}},
-        }), function(err, res) {
-          if (err) return done(err)
-          res.statusCode.should.equal(200)
-          res.body.should.eql({})
-          done()
-        })
-      })
-    })
-
-    it('should succeed if expecting non-existant value to not exist', function(done) {
-      var item = {a: {S: helpers.randomString()}}
-      request(opts({TableName: helpers.testHashTable, Item: item}), function(err, res) {
-        if (err) return done(err)
-        res.statusCode.should.equal(200)
-        request(opts({
-          TableName: helpers.testHashTable,
-          Item: item,
-          Expected: {b: {ComparisonOperator: 'NULL'}},
-        }), function(err, res) {
-          if (err) return done(err)
-          res.statusCode.should.equal(200)
-          res.body.should.eql({})
-          done()
-        })
-      })
-    })
-
-    it('should return ConditionalCheckFailedException if expecting existing value to not exist if different value specified (legacy)', function(done) {
-      var item = {a: {S: helpers.randomString()}, b: {S: helpers.randomString()}}
-      request(opts({TableName: helpers.testHashTable, Item: item}), function(err, res) {
-        if (err) return done(err)
-        res.statusCode.should.equal(200)
-        assertConditional({
-          TableName: helpers.testHashTable,
-          Item: {a: item.a, b: {S: helpers.randomString()}},
-          Expected: {b: {Exists: false}},
+        async.forEach([
+          {Expected: {a: {Value: item.a}}},
+          {Expected: {a: {ComparisonOperator: 'EQ', AttributeValueList: [item.a]}}},
+          {Expected: {a: {Value: item.a, ComparisonOperator: 'EQ'}}},
+          {Expected: {b: {Exists: false}}},
+          {Expected: {b: {ComparisonOperator: 'NULL'}}},
+          {ConditionExpression: 'a = :a', ExpressionAttributeValues: {':a': item.a}},
+          {ConditionExpression: '#a = :a', ExpressionAttributeNames: {'#a': 'a'}, ExpressionAttributeValues: {':a': item.a}},
+          {ConditionExpression: 'attribute_not_exists(b)'},
+          {ConditionExpression: 'attribute_not_exists(#b)', ExpressionAttributeNames: {'#b': 'b'}},
+        ], function(putOpts, cb) {
+          putOpts.TableName = helpers.testHashTable
+          putOpts.Item = item
+          request(opts(putOpts), function(err, res) {
+            if (err) return cb(err)
+            res.statusCode.should.equal(200)
+            res.body.should.eql({})
+            cb()
+          })
         }, done)
       })
     })
@@ -840,23 +788,15 @@ describe('putItem', function() {
       request(opts({TableName: helpers.testHashTable, Item: item}), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        assertConditional({
-          TableName: helpers.testHashTable,
-          Item: {a: item.a, b: {S: helpers.randomString()}},
-          Expected: {b: {ComparisonOperator: 'NULL'}},
-        }, done)
-      })
-    })
-
-    it('should return ConditionalCheckFailedException if expecting existing value to not exist if value not specified (legacy)', function(done) {
-      var item = {a: {S: helpers.randomString()}, b: {S: helpers.randomString()}}
-      request(opts({TableName: helpers.testHashTable, Item: item}), function(err, res) {
-        if (err) return done(err)
-        res.statusCode.should.equal(200)
-        assertConditional({
-          TableName: helpers.testHashTable,
-          Item: {a: item.a},
-          Expected: {b: {Exists: false}},
+        async.forEach([
+          {Expected: {b: {Exists: false}}},
+          {Expected: {b: {ComparisonOperator: 'NULL'}}},
+          {ConditionExpression: 'attribute_not_exists(b)'},
+          {ConditionExpression: 'attribute_not_exists(#b)', ExpressionAttributeNames: {'#b': 'b'}},
+        ], function(putOpts, cb) {
+          putOpts.TableName = helpers.testHashTable
+          putOpts.Item = {a: item.a, b: {S: helpers.randomString()}}
+          assertConditional(putOpts, cb)
         }, done)
       })
     })
@@ -866,23 +806,15 @@ describe('putItem', function() {
       request(opts({TableName: helpers.testHashTable, Item: item}), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        assertConditional({
-          TableName: helpers.testHashTable,
-          Item: {a: item.a},
-          Expected: {b: {ComparisonOperator: 'NULL'}},
-        }, done)
-      })
-    })
-
-    it('should return ConditionalCheckFailedException if expecting existing value to not exist if same value specified (legacy)', function(done) {
-      var item = {a: {S: helpers.randomString()}, b: {S: helpers.randomString()}}
-      request(opts({TableName: helpers.testHashTable, Item: item}), function(err, res) {
-        if (err) return done(err)
-        res.statusCode.should.equal(200)
-        assertConditional({
-          TableName: helpers.testHashTable,
-          Item: item,
-          Expected: {b: {Exists: false}},
+        async.forEach([
+          {Expected: {b: {Exists: false}}},
+          {Expected: {b: {ComparisonOperator: 'NULL'}}},
+          {ConditionExpression: 'attribute_not_exists(b)'},
+          {ConditionExpression: 'attribute_not_exists(#b)', ExpressionAttributeNames: {'#b': 'b'}},
+        ], function(putOpts, cb) {
+          putOpts.TableName = helpers.testHashTable
+          putOpts.Item = {a: item.a}
+          assertConditional(putOpts, cb)
         }, done)
       })
     })
@@ -892,29 +824,16 @@ describe('putItem', function() {
       request(opts({TableName: helpers.testHashTable, Item: item}), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        assertConditional({
-          TableName: helpers.testHashTable,
-          Item: item,
-          Expected: {b: {ComparisonOperator: 'NULL'}},
+        async.forEach([
+          {Expected: {b: {Exists: false}}},
+          {Expected: {b: {ComparisonOperator: 'NULL'}}},
+          {ConditionExpression: 'attribute_not_exists(b)'},
+          {ConditionExpression: 'attribute_not_exists(#b)', ExpressionAttributeNames: {'#b': 'b'}},
+        ], function(putOpts, cb) {
+          putOpts.TableName = helpers.testHashTable
+          putOpts.Item = item
+          assertConditional(putOpts, cb)
         }, done)
-      })
-    })
-
-    it('should succeed for multiple conditional checks if all are valid (legacy)', function(done) {
-      var item = {a: {S: helpers.randomString()}, c: {S: helpers.randomString()}}
-      request(opts({TableName: helpers.testHashTable, Item: item}), function(err, res) {
-        if (err) return done(err)
-        res.statusCode.should.equal(200)
-        request(opts({
-          TableName: helpers.testHashTable,
-          Item: item,
-          Expected: {a: {Value: item.a}, b: {Exists: false}, c: {Value: item.c, ComparisonOperator: 'GE'}},
-        }), function(err, res) {
-          if (err) return done(err)
-          res.statusCode.should.equal(200)
-          res.body.should.eql({})
-          done()
-        })
       })
     })
 
@@ -923,63 +842,52 @@ describe('putItem', function() {
       request(opts({TableName: helpers.testHashTable, Item: item}), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        request(opts({
-          TableName: helpers.testHashTable,
-          Item: item,
-          Expected: {
-            a: {
-              ComparisonOperator: 'EQ',
-              AttributeValueList: [item.a],
-            },
-            b: {
-              ComparisonOperator: 'NULL',
-            },
-            c: {
-              ComparisonOperator: 'GE',
-              AttributeValueList: [item.c],
-            }
-          }
-        }), function(err, res) {
-          if (err) return done(err)
-          res.statusCode.should.equal(200)
-          res.body.should.eql({})
-          done()
-        })
-      })
-    })
-
-    it('should return ConditionalCheckFailedException for multiple conditional checks if one is invalid (legacy)', function(done) {
-      var item = {a: {S: helpers.randomString()}, c: {S: helpers.randomString()}}
-      request(opts({TableName: helpers.testHashTable, Item: item}), function(err, res) {
-        if (err) return done(err)
-        res.statusCode.should.equal(200)
-        assertConditional({
-          TableName: helpers.testHashTable,
-          Item: item,
-          Expected: {a: {Value: item.a}, b: {Exists: false}, c: {Value: {S: helpers.randomString()}}},
+        async.forEach([
+          {Expected: {a: {Value: item.a}, b: {Exists: false}, c: {ComparisonOperator: 'GE', Value: item.c}}},
+          {Expected: {
+            a: {ComparisonOperator: 'EQ', AttributeValueList: [item.a]},
+            b: {ComparisonOperator: 'NULL'},
+            c: {ComparisonOperator: 'GE', AttributeValueList: [item.c]},
+          }},
+          {
+            ConditionExpression: 'a = :a AND attribute_not_exists(#b) AND c >= :c',
+            ExpressionAttributeValues: {':a': item.a, ':c': item.c},
+            ExpressionAttributeNames: {'#b': 'b'},
+          },
+        ], function(putOpts, cb) {
+          putOpts.TableName = helpers.testHashTable
+          putOpts.Item = item
+          request(opts(putOpts), function(err, res) {
+            if (err) return cb(err)
+            res.statusCode.should.equal(200)
+            res.body.should.eql({})
+            cb()
+          })
         }, done)
       })
     })
 
-    it('should return ConditionalCheckFailedException for multiple conditional checks if one is invalid with', function(done) {
+    it('should return ConditionalCheckFailedException for multiple conditional checks if one is invalid', function(done) {
       var item = {a: {S: helpers.randomString()}, c: {S: helpers.randomString()}}
       request(opts({TableName: helpers.testHashTable, Item: item}), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        assertConditional({
-          TableName: helpers.testHashTable,
-          Item: item,
-          Expected: {
-            a: {
-              AttributeValueList: [item.a],
-              ComparisonOperator: 'EQ',
-            }, b: {
-              ComparisonOperator: 'NULL',
-            }, c: {
-              AttributeValueList: [{S: helpers.randomString()}],
-              ComparisonOperator: 'EQ',
-            }
-          }
+        async.forEach([
+          {Expected: {a: {Value: item.a}, b: {Exists: false}, c: {Value: {S: helpers.randomString()}}}},
+          {Expected: {
+            a: {AttributeValueList: [item.a], ComparisonOperator: 'EQ'},
+            b: {ComparisonOperator: 'NULL'},
+            c: {AttributeValueList: [{S: helpers.randomString()}], ComparisonOperator: 'EQ'},
+          }},
+          {
+            ConditionExpression: 'a = :a AND attribute_not_exists(#b) AND c = :c',
+            ExpressionAttributeValues: {':a': item.a, ':c': {S: helpers.randomString()}},
+            ExpressionAttributeNames: {'#b': 'b'},
+          },
+        ], function(putOpts, cb) {
+          putOpts.TableName = helpers.testHashTable
+          putOpts.Item = item
+          assertConditional(putOpts, cb)
         }, done)
       })
     })
@@ -989,65 +897,26 @@ describe('putItem', function() {
       request(opts({TableName: helpers.testHashTable, Item: item}), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        request(opts({
-          TableName: helpers.testHashTable,
-          Item: item,
-          ConditionalOperator: 'OR',
-          Expected: {
-            a: {
-              ComparisonOperator: 'EQ',
-              AttributeValueList: [item.a],
-            },
-            b: {
-              ComparisonOperator: 'NULL',
-            },
-            c: {
-              ComparisonOperator: 'EQ',
-              AttributeValueList: [{S: helpers.randomString()}],
-            }
-          }
-        }), function(err, res) {
-          if (err) return done(err)
-          res.body.should.eql({})
-          res.statusCode.should.equal(200)
-          done()
-        })
-      })
-    })
-
-    it('should succeed if condition is valid: EQ', function(done) {
-      var item = {a: {S: helpers.randomString()}}
-      request(opts({TableName: helpers.testHashTable, Item: item}), function(err, res) {
-        if (err) return done(err)
-        res.statusCode.should.equal(200)
-        request(opts({
-          TableName: helpers.testHashTable,
-          Item: item,
-          Expected: {a: {
-            ComparisonOperator: 'EQ',
-            AttributeValueList: [item.a],
-          }},
-        }), function(err, res) {
-          if (err) return done(err)
-          res.statusCode.should.equal(200)
-          res.body.should.eql({})
-          done()
-        })
-      })
-    })
-
-    it('should fail if condition is invalid: EQ', function(done) {
-      var item = {a: {S: helpers.randomString()}}
-      request(opts({TableName: helpers.testHashTable, Item: item}), function(err, res) {
-        if (err) return done(err)
-        res.statusCode.should.equal(200)
-        assertConditional({
-          TableName: helpers.testHashTable,
-          Item: item,
-          Expected: {a: {
-            ComparisonOperator: 'EQ',
-            AttributeValueList: [{S: helpers.randomString()}],
-          }}
+        async.forEach([
+          {Expected: {
+            a: {ComparisonOperator: 'EQ', AttributeValueList: [item.a]},
+            b: {ComparisonOperator: 'NULL'},
+            c: {ComparisonOperator: 'EQ', AttributeValueList: [{S: helpers.randomString()}]},
+          }, ConditionalOperator: 'OR'},
+          {
+            ConditionExpression: 'a = :a OR attribute_not_exists(#b) OR c = :c',
+            ExpressionAttributeValues: {':a': item.a, ':c': {S: helpers.randomString()}},
+            ExpressionAttributeNames: {'#b': 'b'},
+          },
+        ], function(putOpts, cb) {
+          putOpts.TableName = helpers.testHashTable
+          putOpts.Item = item
+          request(opts(putOpts), function(err, res) {
+            if (err) return cb(err)
+            res.statusCode.should.equal(200)
+            res.body.should.eql({})
+            cb()
+          })
         }, done)
       })
     })
@@ -1057,19 +926,27 @@ describe('putItem', function() {
       request(opts({TableName: helpers.testHashTable, Item: item}), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        request(opts({
-          TableName: helpers.testHashTable,
-          Item: item,
-          Expected: {a: {
-            ComparisonOperator: 'NE',
-            AttributeValueList: [{S: helpers.randomString()}],
-          }},
-        }), function(err, res) {
-          if (err) return done(err)
-          res.statusCode.should.equal(200)
-          res.body.should.eql({})
-          done()
-        })
+        async.forEach([
+          {Expected: {a: {ComparisonOperator: 'NE', AttributeValueList: [{S: helpers.randomString()}]}}},
+          {
+            ConditionExpression: 'a <> :a',
+            ExpressionAttributeValues: {':a': {S: helpers.randomString()}},
+          },
+          {
+            ConditionExpression: '#a <> :a',
+            ExpressionAttributeValues: {':a': {S: helpers.randomString()}},
+            ExpressionAttributeNames: {'#a': 'a'},
+          },
+        ], function(putOpts, cb) {
+          putOpts.TableName = helpers.testHashTable
+          putOpts.Item = item
+          request(opts(putOpts), function(err, res) {
+            if (err) return cb(err)
+            res.statusCode.should.equal(200)
+            res.body.should.eql({})
+            cb()
+          })
+        }, done)
       })
     })
 
@@ -1078,13 +955,21 @@ describe('putItem', function() {
       request(opts({TableName: helpers.testHashTable, Item: item}), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        assertConditional({
-          TableName: helpers.testHashTable,
-          Item: item,
-          Expected: {a: {
-            ComparisonOperator: 'NE',
-            AttributeValueList: [item.a],
-          }}
+        async.forEach([
+          {Expected: {a: {ComparisonOperator: 'NE', AttributeValueList: [item.a]}}},
+          {
+            ConditionExpression: 'a <> :a',
+            ExpressionAttributeValues: {':a': item.a},
+          },
+          {
+            ConditionExpression: '#a <> :a',
+            ExpressionAttributeValues: {':a': item.a},
+            ExpressionAttributeNames: {'#a': 'a'},
+          },
+        ], function(putOpts, cb) {
+          putOpts.TableName = helpers.testHashTable
+          putOpts.Item = item
+          assertConditional(putOpts, cb)
         }, done)
       })
     })
@@ -1094,19 +979,27 @@ describe('putItem', function() {
       request(opts({TableName: helpers.testHashTable, Item: item}), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        request(opts({
-          TableName: helpers.testHashTable,
-          Item: item,
-          Expected: {a: {
-            ComparisonOperator: 'LE',
-            AttributeValueList: [{S: 'c'}],
-          }},
-        }), function(err, res) {
-          if (err) return done(err)
-          res.body.should.eql({})
-          res.statusCode.should.equal(200)
-          done()
-        })
+        async.forEach([
+          {Expected: {a: {ComparisonOperator: 'LE', AttributeValueList: [{S: 'c'}]}}},
+          {
+            ConditionExpression: 'a <= :a',
+            ExpressionAttributeValues: {':a': {S: 'c'}},
+          },
+          {
+            ConditionExpression: '#a <= :a',
+            ExpressionAttributeValues: {':a': {S: 'c'}},
+            ExpressionAttributeNames: {'#a': 'a'},
+          },
+        ], function(putOpts, cb) {
+          putOpts.TableName = helpers.testHashTable
+          putOpts.Item = item
+          request(opts(putOpts), function(err, res) {
+            if (err) return cb(err)
+            res.statusCode.should.equal(200)
+            res.body.should.eql({})
+            cb()
+          })
+        }, done)
       })
     })
 
@@ -1115,13 +1008,21 @@ describe('putItem', function() {
       request(opts({TableName: helpers.testHashTable, Item: item}), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        assertConditional({
-          TableName: helpers.testHashTable,
-          Item: item,
-          Expected: {a: {
-            ComparisonOperator: 'LE',
-            AttributeValueList: [{S: 'c'}],
-          }}
+        async.forEach([
+          {Expected: {a: {ComparisonOperator: 'LE', AttributeValueList: [{S: 'c'}]}}},
+          {
+            ConditionExpression: 'a <= :a',
+            ExpressionAttributeValues: {':a': {S: 'c'}},
+          },
+          {
+            ConditionExpression: '#a <= :a',
+            ExpressionAttributeValues: {':a': {S: 'c'}},
+            ExpressionAttributeNames: {'#a': 'a'},
+          },
+        ], function(putOpts, cb) {
+          putOpts.TableName = helpers.testHashTable
+          putOpts.Item = item
+          assertConditional(putOpts, cb)
         }, done)
       })
     })
@@ -1131,19 +1032,27 @@ describe('putItem', function() {
       request(opts({TableName: helpers.testHashTable, Item: item}), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        request(opts({
-          TableName: helpers.testHashTable,
-          Item: item,
-          Expected: {a: {
-            ComparisonOperator: 'LT',
-            AttributeValueList: [{S: 'c'}],
-          }},
-        }), function(err, res) {
-          if (err) return done(err)
-          res.body.should.eql({})
-          res.statusCode.should.equal(200)
-          done()
-        })
+        async.forEach([
+          {Expected: {a: {ComparisonOperator: 'LT', AttributeValueList: [{S: 'c'}]}}},
+          {
+            ConditionExpression: 'a < :a',
+            ExpressionAttributeValues: {':a': {S: 'c'}},
+          },
+          {
+            ConditionExpression: '#a < :a',
+            ExpressionAttributeValues: {':a': {S: 'c'}},
+            ExpressionAttributeNames: {'#a': 'a'},
+          },
+        ], function(putOpts, cb) {
+          putOpts.TableName = helpers.testHashTable
+          putOpts.Item = item
+          request(opts(putOpts), function(err, res) {
+            if (err) return cb(err)
+            res.statusCode.should.equal(200)
+            res.body.should.eql({})
+            cb()
+          })
+        }, done)
       })
     })
 
@@ -1152,13 +1061,21 @@ describe('putItem', function() {
       request(opts({TableName: helpers.testHashTable, Item: item}), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        assertConditional({
-          TableName: helpers.testHashTable,
-          Item: item,
-          Expected: {a: {
-            ComparisonOperator: 'LT',
-            AttributeValueList: [{S: 'c'}],
-          }}
+        async.forEach([
+          {Expected: {a: {ComparisonOperator: 'LT', AttributeValueList: [{S: 'c'}]}}},
+          {
+            ConditionExpression: 'a < :a',
+            ExpressionAttributeValues: {':a': {S: 'c'}},
+          },
+          {
+            ConditionExpression: '#a < :a',
+            ExpressionAttributeValues: {':a': {S: 'c'}},
+            ExpressionAttributeNames: {'#a': 'a'},
+          },
+        ], function(putOpts, cb) {
+          putOpts.TableName = helpers.testHashTable
+          putOpts.Item = item
+          assertConditional(putOpts, cb)
         }, done)
       })
     })
@@ -1168,19 +1085,27 @@ describe('putItem', function() {
       request(opts({TableName: helpers.testHashTable, Item: item}), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        request(opts({
-          TableName: helpers.testHashTable,
-          Item: item,
-          Expected: {a: {
-            ComparisonOperator: 'GE',
-            AttributeValueList: [{S: 'a'}],
-          }},
-        }), function(err, res) {
-          if (err) return done(err)
-          res.body.should.eql({})
-          res.statusCode.should.equal(200)
-          done()
-        })
+        async.forEach([
+          {Expected: {a: {ComparisonOperator: 'GE', AttributeValueList: [{S: 'a'}]}}},
+          {
+            ConditionExpression: 'a >= :a',
+            ExpressionAttributeValues: {':a': {S: 'a'}},
+          },
+          {
+            ConditionExpression: '#a >= :a',
+            ExpressionAttributeValues: {':a': {S: 'a'}},
+            ExpressionAttributeNames: {'#a': 'a'},
+          },
+        ], function(putOpts, cb) {
+          putOpts.TableName = helpers.testHashTable
+          putOpts.Item = item
+          request(opts(putOpts), function(err, res) {
+            if (err) return cb(err)
+            res.statusCode.should.equal(200)
+            res.body.should.eql({})
+            cb()
+          })
+        }, done)
       })
     })
 
@@ -1189,13 +1114,21 @@ describe('putItem', function() {
       request(opts({TableName: helpers.testHashTable, Item: item}), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        assertConditional({
-          TableName: helpers.testHashTable,
-          Item: item,
-          Expected: {a: {
-            ComparisonOperator: 'GE',
-            AttributeValueList: [{S: 'c'}],
-          }}
+        async.forEach([
+          {Expected: {a: {ComparisonOperator: 'GE', AttributeValueList: [{S: 'c'}]}}},
+          {
+            ConditionExpression: 'a >= :a',
+            ExpressionAttributeValues: {':a': {S: 'c'}},
+          },
+          {
+            ConditionExpression: '#a >= :a',
+            ExpressionAttributeValues: {':a': {S: 'c'}},
+            ExpressionAttributeNames: {'#a': 'a'},
+          },
+        ], function(putOpts, cb) {
+          putOpts.TableName = helpers.testHashTable
+          putOpts.Item = item
+          assertConditional(putOpts, cb)
         }, done)
       })
     })
@@ -1205,19 +1138,27 @@ describe('putItem', function() {
       request(opts({TableName: helpers.testHashTable, Item: item}), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        request(opts({
-          TableName: helpers.testHashTable,
-          Item: item,
-          Expected: {a: {
-            ComparisonOperator: 'GT',
-            AttributeValueList: [{S: 'a'}],
-          }},
-        }), function(err, res) {
-          if (err) return done(err)
-          res.body.should.eql({})
-          res.statusCode.should.equal(200)
-          done()
-        })
+        async.forEach([
+          {Expected: {a: {ComparisonOperator: 'GT', AttributeValueList: [{S: 'a'}]}}},
+          {
+            ConditionExpression: 'a > :a',
+            ExpressionAttributeValues: {':a': {S: 'a'}},
+          },
+          {
+            ConditionExpression: '#a > :a',
+            ExpressionAttributeValues: {':a': {S: 'a'}},
+            ExpressionAttributeNames: {'#a': 'a'},
+          },
+        ], function(putOpts, cb) {
+          putOpts.TableName = helpers.testHashTable
+          putOpts.Item = item
+          request(opts(putOpts), function(err, res) {
+            if (err) return cb(err)
+            res.statusCode.should.equal(200)
+            res.body.should.eql({})
+            cb()
+          })
+        }, done)
       })
     })
 
@@ -1226,13 +1167,21 @@ describe('putItem', function() {
       request(opts({TableName: helpers.testHashTable, Item: item}), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        assertConditional({
-          TableName: helpers.testHashTable,
-          Item: item,
-          Expected: {a: {
-            ComparisonOperator: 'GT',
-            AttributeValueList: [{S: 'c'}],
-          }}
+        async.forEach([
+          {Expected: {a: {ComparisonOperator: 'GT', AttributeValueList: [{S: 'c'}]}}},
+          {
+            ConditionExpression: 'a > :a',
+            ExpressionAttributeValues: {':a': {S: 'c'}},
+          },
+          {
+            ConditionExpression: '#a > :a',
+            ExpressionAttributeValues: {':a': {S: 'c'}},
+            ExpressionAttributeNames: {'#a': 'a'},
+          },
+        ], function(putOpts, cb) {
+          putOpts.TableName = helpers.testHashTable
+          putOpts.Item = item
+          assertConditional(putOpts, cb)
         }, done)
       })
     })
@@ -1242,19 +1191,27 @@ describe('putItem', function() {
       request(opts({TableName: helpers.testHashTable, Item: item}), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        request(opts({
-          TableName: helpers.testHashTable,
-          Item: item,
-          Expected: {a: {
-            ComparisonOperator: 'CONTAINS',
-            AttributeValueList: [{S: 'ell'}],
-          }},
-        }), function(err, res) {
-          if (err) return done(err)
-          res.body.should.eql({})
-          res.statusCode.should.equal(200)
-          done()
-        })
+        async.forEach([
+          {Expected: {a: {ComparisonOperator: 'CONTAINS', AttributeValueList: [{S: 'ell'}]}}},
+          {
+            ConditionExpression: 'contains(a, :a)',
+            ExpressionAttributeValues: {':a': {S: 'ell'}},
+          },
+          {
+            ConditionExpression: 'contains(#a, :a)',
+            ExpressionAttributeValues: {':a': {S: 'ell'}},
+            ExpressionAttributeNames: {'#a': 'a'},
+          },
+        ], function(putOpts, cb) {
+          putOpts.TableName = helpers.testHashTable
+          putOpts.Item = item
+          request(opts(putOpts), function(err, res) {
+            if (err) return cb(err)
+            res.statusCode.should.equal(200)
+            res.body.should.eql({})
+            cb()
+          })
+        }, done)
       })
     })
 
@@ -1263,13 +1220,21 @@ describe('putItem', function() {
       request(opts({TableName: helpers.testHashTable, Item: item}), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        assertConditional({
-          TableName: helpers.testHashTable,
-          Item: item,
-          Expected: {a: {
-            ComparisonOperator: 'CONTAINS',
-            AttributeValueList: [{S: 'goodbye'}],
-          }}
+        async.forEach([
+          {Expected: {a: {ComparisonOperator: 'CONTAINS', AttributeValueList: [{S: 'goodbye'}]}}},
+          {
+            ConditionExpression: 'contains(a, :a)',
+            ExpressionAttributeValues: {':a': {S: 'goodbye'}},
+          },
+          {
+            ConditionExpression: 'contains(#a, :a)',
+            ExpressionAttributeValues: {':a': {S: 'goodbye'}},
+            ExpressionAttributeNames: {'#a': 'a'},
+          },
+        ], function(putOpts, cb) {
+          putOpts.TableName = helpers.testHashTable
+          putOpts.Item = item
+          assertConditional(putOpts, cb)
         }, done)
       })
     })
@@ -1279,19 +1244,27 @@ describe('putItem', function() {
       request(opts({TableName: helpers.testHashTable, Item: item}), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        request(opts({
-          TableName: helpers.testHashTable,
-          Item: item,
-          Expected: {a: {
-            ComparisonOperator: 'BEGINS_WITH',
-            AttributeValueList: [{S: 'he'}],
-          }},
-        }), function(err, res) {
-          if (err) return done(err)
-          res.body.should.eql({})
-          res.statusCode.should.equal(200)
-          done()
-        })
+        async.forEach([
+          {Expected: {a: {ComparisonOperator: 'BEGINS_WITH', AttributeValueList: [{S: 'he'}]}}},
+          {
+            ConditionExpression: 'begins_with(a, :a)',
+            ExpressionAttributeValues: {':a': {S: 'he'}},
+          },
+          {
+            ConditionExpression: 'begins_with(#a, :a)',
+            ExpressionAttributeValues: {':a': {S: 'he'}},
+            ExpressionAttributeNames: {'#a': 'a'},
+          },
+        ], function(putOpts, cb) {
+          putOpts.TableName = helpers.testHashTable
+          putOpts.Item = item
+          request(opts(putOpts), function(err, res) {
+            if (err) return cb(err)
+            res.statusCode.should.equal(200)
+            res.body.should.eql({})
+            cb()
+          })
+        }, done)
       })
     })
 
@@ -1300,13 +1273,21 @@ describe('putItem', function() {
       request(opts({TableName: helpers.testHashTable, Item: item}), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        assertConditional({
-          TableName: helpers.testHashTable,
-          Item: item,
-          Expected: {a: {
-            ComparisonOperator: 'BEGINS_WITH',
-            AttributeValueList: [{S: 'goodbye'}],
-          }}
+        async.forEach([
+          {Expected: {a: {ComparisonOperator: 'BEGINS_WITH', AttributeValueList: [{S: 'goodbye'}]}}},
+          {
+            ConditionExpression: 'begins_with(a, :a)',
+            ExpressionAttributeValues: {':a': {S: 'goodbye'}},
+          },
+          {
+            ConditionExpression: 'begins_with(#a, :a)',
+            ExpressionAttributeValues: {':a': {S: 'goodbye'}},
+            ExpressionAttributeNames: {'#a': 'a'},
+          },
+        ], function(putOpts, cb) {
+          putOpts.TableName = helpers.testHashTable
+          putOpts.Item = item
+          assertConditional(putOpts, cb)
         }, done)
       })
     })
@@ -1316,19 +1297,27 @@ describe('putItem', function() {
       request(opts({TableName: helpers.testHashTable, Item: item}), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        request(opts({
-          TableName: helpers.testHashTable,
-          Item: item,
-          Expected: {a: {
-            ComparisonOperator: 'NOT_CONTAINS',
-            AttributeValueList: [{S: 'goodbye'}],
-          }},
-        }), function(err, res) {
-          if (err) return done(err)
-          res.body.should.eql({})
-          res.statusCode.should.equal(200)
-          done()
-        })
+        async.forEach([
+          {Expected: {a: {ComparisonOperator: 'NOT_CONTAINS', AttributeValueList: [{S: 'goodbye'}]}}},
+          {
+            ConditionExpression: 'not contains(a, :a)',
+            ExpressionAttributeValues: {':a': {S: 'goodbye'}},
+          },
+          {
+            ConditionExpression: 'not contains(#a, :a)',
+            ExpressionAttributeValues: {':a': {S: 'goodbye'}},
+            ExpressionAttributeNames: {'#a': 'a'},
+          },
+        ], function(putOpts, cb) {
+          putOpts.TableName = helpers.testHashTable
+          putOpts.Item = item
+          request(opts(putOpts), function(err, res) {
+            if (err) return cb(err)
+            res.statusCode.should.equal(200)
+            res.body.should.eql({})
+            cb()
+          })
+        }, done)
       })
     })
 
@@ -1337,83 +1326,21 @@ describe('putItem', function() {
       request(opts({TableName: helpers.testHashTable, Item: item}), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        assertConditional({
-          TableName: helpers.testHashTable,
-          Item: item,
-          Expected: {a: {
-            ComparisonOperator: 'NOT_CONTAINS',
-            AttributeValueList: [{S: 'ell'}],
-          }}
-        }, done)
-      })
-    })
-
-    it('should succeed if condition is valid: NOT_NULL', function(done) {
-      var item = {a: {S: 'b'}}
-      request(opts({TableName: helpers.testHashTable, Item: item}), function(err, res) {
-        if (err) return done(err)
-        res.statusCode.should.equal(200)
-        request(opts({
-          TableName: helpers.testHashTable,
-          Item: item,
-          Expected: {a: {
-            ComparisonOperator: 'NOT_NULL',
-          }},
-        }), function(err, res) {
-          if (err) return done(err)
-          res.body.should.eql({})
-          res.statusCode.should.equal(200)
-          done()
-        })
-      })
-    })
-
-    it('should fail if condition is invalid: NOT_NULL', function(done) {
-      var item = {a: {S: 'd'}}
-      request(opts({TableName: helpers.testHashTable, Item: item}), function(err, res) {
-        if (err) return done(err)
-        res.statusCode.should.equal(200)
-        assertConditional({
-          TableName: helpers.testHashTable,
-          Item: item,
-          Expected: {b: {
-            ComparisonOperator: 'NOT_NULL',
-          }}
-        }, done)
-      })
-    })
-
-    it('should succeed if condition is valid: NULL', function(done) {
-      var item = {a: {S: 'b'}}
-      request(opts({TableName: helpers.testHashTable, Item: item}), function(err, res) {
-        if (err) return done(err)
-        res.statusCode.should.equal(200)
-        request(opts({
-          TableName: helpers.testHashTable,
-          Item: item,
-          Expected: {b: {
-            ComparisonOperator: 'NULL',
-          }},
-        }), function(err, res) {
-          if (err) return done(err)
-          res.body.should.eql({})
-          res.statusCode.should.equal(200)
-          done()
-        })
-      })
-    })
-
-    it('should fail if condition is invalid: NULL', function(done) {
-      var item = {a: {S: 'd'}}
-      request(opts({TableName: helpers.testHashTable, Item: item}), function(err, res) {
-        if (err) return done(err)
-        res.statusCode.should.equal(200)
-        assertConditional({
-          TableName: helpers.testHashTable,
-          Item: item,
-          Expected: {a: {
-            ComparisonOperator: 'NULL',
-          }}
+        async.forEach([
+          {Expected: {a: {ComparisonOperator: 'NOT_CONTAINS', AttributeValueList: [{S: 'ell'}]}}},
+          {
+            ConditionExpression: 'not contains(a, :a)',
+            ExpressionAttributeValues: {':a': {S: 'ell'}},
+          },
+          {
+            ConditionExpression: 'not contains(#a, :a)',
+            ExpressionAttributeValues: {':a': {S: 'ell'}},
+            ExpressionAttributeNames: {'#a': 'a'},
+          },
+        ], function(putOpts, cb) {
+          putOpts.TableName = helpers.testHashTable
+          putOpts.Item = item
+          assertConditional(putOpts, cb)
         }, done)
       })
     })
@@ -1423,19 +1350,27 @@ describe('putItem', function() {
       request(opts({TableName: helpers.testHashTable, Item: item}), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        request(opts({
-          TableName: helpers.testHashTable,
-          Item: item,
-          Expected: {a: {
-            ComparisonOperator: 'IN',
-            AttributeValueList: [{S: 'c'}, {S: 'b'}],
-          }},
-        }), function(err, res) {
-          if (err) return done(err)
-          res.body.should.eql({})
-          res.statusCode.should.equal(200)
-          done()
-        })
+        async.forEach([
+          {Expected: {a: {ComparisonOperator: 'IN', AttributeValueList: [{S: 'c'}, {S: 'b'}]}}},
+          {
+            ConditionExpression: 'a in (:a, :b)',
+            ExpressionAttributeValues: {':a': {S: 'c'}, ':b': {S: 'b'}},
+          },
+          {
+            ConditionExpression: '#a in (:a, :b)',
+            ExpressionAttributeValues: {':a': {S: 'c'}, ':b': {S: 'b'}},
+            ExpressionAttributeNames: {'#a': 'a'},
+          },
+        ], function(putOpts, cb) {
+          putOpts.TableName = helpers.testHashTable
+          putOpts.Item = item
+          request(opts(putOpts), function(err, res) {
+            if (err) return cb(err)
+            res.statusCode.should.equal(200)
+            res.body.should.eql({})
+            cb()
+          })
+        }, done)
       })
     })
 
@@ -1444,13 +1379,21 @@ describe('putItem', function() {
       request(opts({TableName: helpers.testHashTable, Item: item}), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        assertConditional({
-          TableName: helpers.testHashTable,
-          Item: item,
-          Expected: {a: {
-            ComparisonOperator: 'IN',
-            AttributeValueList: [{S: 'c'}],
-          }}
+        async.forEach([
+          {Expected: {a: {ComparisonOperator: 'IN', AttributeValueList: [{S: 'c'}]}}},
+          {
+            ConditionExpression: 'a in (:a)',
+            ExpressionAttributeValues: {':a': {S: 'c'}},
+          },
+          {
+            ConditionExpression: '#a in (:a)',
+            ExpressionAttributeValues: {':a': {S: 'c'}},
+            ExpressionAttributeNames: {'#a': 'a'},
+          },
+        ], function(putOpts, cb) {
+          putOpts.TableName = helpers.testHashTable
+          putOpts.Item = item
+          assertConditional(putOpts, cb)
         }, done)
       })
     })
@@ -1460,19 +1403,27 @@ describe('putItem', function() {
       request(opts({TableName: helpers.testHashTable, Item: item}), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        request(opts({
-          TableName: helpers.testHashTable,
-          Item: item,
-          Expected: {a: {
-            ComparisonOperator: 'BETWEEN',
-            AttributeValueList: [{S: 'a'}, {S: 'c'}],
-          }},
-        }), function(err, res) {
-          if (err) return done(err)
-          res.body.should.eql({})
-          res.statusCode.should.equal(200)
-          done()
-        })
+        async.forEach([
+          {Expected: {a: {ComparisonOperator: 'BETWEEN', AttributeValueList: [{S: 'a'}, {S: 'c'}]}}},
+          {
+            ConditionExpression: 'a between :a and :b',
+            ExpressionAttributeValues: {':a': {S: 'a'}, ':b': {S: 'c'}},
+          },
+          {
+            ConditionExpression: '#a between :a and :b',
+            ExpressionAttributeValues: {':a': {S: 'a'}, ':b': {S: 'c'}},
+            ExpressionAttributeNames: {'#a': 'a'},
+          },
+        ], function(putOpts, cb) {
+          putOpts.TableName = helpers.testHashTable
+          putOpts.Item = item
+          request(opts(putOpts), function(err, res) {
+            if (err) return cb(err)
+            res.statusCode.should.equal(200)
+            res.body.should.eql({})
+            cb()
+          })
+        }, done)
       })
     })
 
@@ -1481,13 +1432,21 @@ describe('putItem', function() {
       request(opts({TableName: helpers.testHashTable, Item: item}), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        assertConditional({
-          TableName: helpers.testHashTable,
-          Item: item,
-          Expected: {a: {
-            ComparisonOperator: 'BETWEEN',
-            AttributeValueList: [{S: 'c'}, {S: 'd'}],
-          }}
+        async.forEach([
+          {Expected: {a: {ComparisonOperator: 'BETWEEN', AttributeValueList: [{S: 'c'}, {S: 'd'}]}}},
+          {
+            ConditionExpression: 'a between :a and :b',
+            ExpressionAttributeValues: {':a': {S: 'c'}, ':b': {S: 'd'}},
+          },
+          {
+            ConditionExpression: '#a between :a and :b',
+            ExpressionAttributeValues: {':a': {S: 'c'}, ':b': {S: 'd'}},
+            ExpressionAttributeNames: {'#a': 'a'},
+          },
+        ], function(putOpts, cb) {
+          putOpts.TableName = helpers.testHashTable
+          putOpts.Item = item
+          assertConditional(putOpts, cb)
         }, done)
       })
     })
@@ -1542,5 +1501,3 @@ describe('putItem', function() {
   })
 
 })
-
-

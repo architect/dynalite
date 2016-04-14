@@ -1,4 +1,6 @@
-var validateAttributeValue = require('./index').validateAttributeValue
+var validateAttributeValue = require('./index').validateAttributeValue,
+    validateExpressionParams = require('./index').validateExpressionParams,
+    validateExpressions = require('./index').validateExpressions
 
 exports.types = {
   Limit: {
@@ -40,6 +42,10 @@ exports.types = {
       },
     },
   },
+  ConditionalOperator: {
+    type: 'String',
+    enum: ['OR', 'AND'],
+  },
   TotalSegments: {
     type: 'Integer',
     greaterThanOrEqual: 1,
@@ -55,10 +61,45 @@ exports.types = {
     type: 'Map',
     children: 'AttrStructure',
   },
+  IndexName: {
+    type: 'String',
+    regex: '[a-zA-Z0-9_.-]+',
+    lengthGreaterThanOrEqual: 3,
+    lengthLessThanOrEqual: 255,
+  },
+  FilterExpression: {
+    type: 'String',
+  },
+  ProjectionExpression: {
+    type: 'String',
+  },
+  ExpressionAttributeValues: {
+    type: 'Map',
+    children: 'AttrStructure',
+  },
+  ExpressionAttributeNames: {
+    type: 'Map',
+    children: 'String',
+  },
 }
 
 exports.custom = function(data) {
-  var msg = '', i
+
+  var msg = validateExpressionParams(data,
+    ['ProjectionExpression', 'FilterExpression'],
+    ['AttributesToGet', 'ScanFilter', 'ConditionalOperator'])
+  if (msg) return msg
+
+  if (data.AttributesToGet) {
+    var attrs = Object.create(null)
+    for (var i = 0; i < data.AttributesToGet.length; i++) {
+      if (attrs[data.AttributesToGet[i]])
+        return 'One or more parameter values were invalid: Duplicate value in attribute name: ' +
+          data.AttributesToGet[i]
+      attrs[data.AttributesToGet[i]] = true
+    }
+  }
+
   var lengths = {
     NULL: 0,
     NOT_NULL: 0,
@@ -114,14 +155,20 @@ exports.custom = function(data) {
     if (msg) return 'The provided starting key is invalid: ' + msg
   }
 
-  if (data.AttributesToGet) {
-    var attrs = Object.create(null)
-    for (i = 0; i < data.AttributesToGet.length; i++) {
-      if (attrs[data.AttributesToGet[i]])
-        return 'One or more parameter values were invalid: Duplicate value in attribute name: ' +
-          data.AttributesToGet[i]
-      attrs[data.AttributesToGet[i]] = true
+  if (data.Segment && data.TotalSegments == null) {
+    return 'The TotalSegments parameter is required but was not present in the request when Segment parameter is present'
+  }
+
+  if (data.TotalSegments) {
+    if (data.Segment == null) {
+      return 'The Segment parameter is required but was not present in the request when parameter TotalSegments is present'
+    }
+    if (data.Segment >= data.TotalSegments) {
+      return 'The Segment parameter is zero-based and must be less than parameter TotalSegments: ' +
+        'Segment: ' + data.Segment + ' is not less than TotalSegments: ' + data.TotalSegments
     }
   }
-}
 
+  msg = validateExpressions(data, ['ProjectionExpression', 'FilterExpression'])
+  if (msg) return msg
+}

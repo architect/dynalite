@@ -91,7 +91,7 @@ function request(opts, cb) {
       cb(null, res)
     })
   }).on('error', function(err) {
-    if (err && ~['ECONNRESET', 'EMFILE'].indexOf(err.code))
+    if (err && ~['ECONNRESET', 'EMFILE', 'ENOTFOUND'].indexOf(err.code))
       return setTimeout(request, Math.floor(Math.random() * 100), opts, cb)
     cb(err)
   }).end(opts.body)
@@ -306,7 +306,7 @@ function batchWriteUntilDone(name, actions, cb) {
         if (res.body.UnprocessedItems && Object.keys(res.body.UnprocessedItems).length) {
           batchReq.RequestItems = res.body.UnprocessedItems
         } else if (/ProvisionedThroughputExceededException/.test(res.body.__type)) {
-          console.log('ProvisionedThroughputExceededException')
+          console.log('ProvisionedThroughputExceededException') // eslint-disable-line no-console
           return setTimeout(cb, 2000)
         } else if (res.statusCode != 200) {
           return cb(new Error(res.statusCode + ': ' + JSON.stringify(res.body)))
@@ -468,6 +468,9 @@ function assertValidation(target, data, msg, done) {
     if (msg instanceof RegExp) {
       res.body.__type.should.equal('com.amazon.coral.validate#ValidationException')
       res.body.message.should.match(msg)
+    } else if (Array.isArray(msg)) {
+      res.body.__type.should.equal('com.amazon.coral.validate#ValidationException')
+      res.body.message.should.equalOneOf(msg)
     } else {
       res.body.should.eql({
         __type: 'com.amazon.coral.validate#ValidationException',
@@ -526,4 +529,3 @@ function strDecrement(str, regex, length) {
   while (prefix.length < length) prefix += String.fromCharCode(finalChar)
   return prefix
 }
-

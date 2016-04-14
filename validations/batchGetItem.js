@@ -1,4 +1,7 @@
-var validateAttributeValue = require('./index').validateAttributeValue
+var validateAttributeValue = require('./index').validateAttributeValue,
+    validateExpressionParams = require('./index').validateExpressionParams,
+    validateExpressions = require('./index').validateExpressions,
+    db = require('../db')
 
 exports.types = {
   ReturnConsumedCapacity: {
@@ -34,32 +37,58 @@ exports.types = {
           children: 'String',
         },
         ConsistentRead: 'Boolean',
+        ProjectionExpression: {
+          type: 'String',
+        },
+        ExpressionAttributeNames: {
+          type: 'Map',
+          children: 'String',
+        },
       },
     },
   },
 }
 
 exports.custom = function(data) {
-  var numReqs = 0, table, i, key, msg, attrs
+  var numReqs = 0, table, i, key, msg, attrs, tableData, seenKeys
+
   for (table in data.RequestItems) {
-    for (i = 0; i < data.RequestItems[table].Keys.length; i++) {
-      for (key in data.RequestItems[table].Keys[i]) {
-        msg = validateAttributeValue(data.RequestItems[table].Keys[i][key])
+    tableData = data.RequestItems[table]
+
+    msg = validateExpressionParams(tableData, ['ProjectionExpression'], ['AttributesToGet'])
+    if (msg) return msg
+
+    seenKeys = {}
+    for (i = 0; i < tableData.Keys.length; i++) {
+      for (key in tableData.Keys[i]) {
+        msg = validateAttributeValue(tableData.Keys[i][key])
         if (msg) return msg
       }
+      // TODO: this is unnecessarily expensive
+      var keyStr = Object.keys(tableData.Keys[i]).sort().reduce(function(str, key) {
+        var type = Object.keys(tableData.Keys[i][key])[0]
+        return str + '~' + db.toLexiStr(tableData.Keys[i][key][type], type)
+      }, '')
+      if (seenKeys[keyStr])
+        return 'Provided list of item keys contains duplicates'
+      seenKeys[keyStr] = true
+
       numReqs++
       if (numReqs > 100)
         return 'Too many items requested for the BatchGetItem call'
     }
-    if (data.RequestItems[table].AttributesToGet) {
+
+    if (tableData.AttributesToGet) {
       attrs = Object.create(null)
-      for (i = 0; i < data.RequestItems[table].AttributesToGet.length; i++) {
-        if (attrs[data.RequestItems[table].AttributesToGet[i]])
+      for (i = 0; i < tableData.AttributesToGet.length; i++) {
+        if (attrs[tableData.AttributesToGet[i]])
           return 'One or more parameter values were invalid: Duplicate value in attribute name: ' +
-            data.RequestItems[table].AttributesToGet[i]
-        attrs[data.RequestItems[table].AttributesToGet[i]] = true
+            tableData.AttributesToGet[i]
+        attrs[tableData.AttributesToGet[i]] = true
       }
     }
+
+    msg = validateExpressions(tableData)
+    if (msg) return msg
   }
 }
-

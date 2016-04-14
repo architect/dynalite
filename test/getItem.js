@@ -38,6 +38,18 @@ describe('getItem', function() {
       assertType('ReturnConsumedCapacity', 'String', done)
     })
 
+    it('should return SerializationException when ExpressionAttributeNames is not a map', function(done) {
+      assertType('ExpressionAttributeNames', 'Map', done)
+    })
+
+    it('should return SerializationException when ExpressionAttributeNames.Attr is not a string', function(done) {
+      assertType('ExpressionAttributeNames.Attr', 'String', done)
+    })
+
+    it('should return SerializationException when ProjectionExpression is not a string', function(done) {
+      assertType('ProjectionExpression', 'String', done)
+    })
+
   })
 
   describe('validations', function() {
@@ -52,25 +64,35 @@ describe('getItem', function() {
     })
 
     it('should return ValidationException for empty TableName', function(done) {
+      var tableNamePieces = [
+        'Value \'\' at \'tableName\' failed to satisfy constraint: ' +
+        'Member must satisfy regular expression pattern: [a-zA-Z0-9_.-]+',
+        'Value \'\' at \'tableName\' failed to satisfy constraint: ' +
+        'Member must have length greater than or equal to 3',
+      ]
       assertValidation({TableName: ''},
-        '3 validation errors detected: ' +
-        'Value \'\' at \'tableName\' failed to satisfy constraint: ' +
-        'Member must satisfy regular expression pattern: [a-zA-Z0-9_.-]+; ' +
-        'Value \'\' at \'tableName\' failed to satisfy constraint: ' +
-        'Member must have length greater than or equal to 3; ' +
-        'Value null at \'key\' failed to satisfy constraint: ' +
-        'Member must not be null', done)
+        tableNamePieces.map(function(piece, ix) {
+          return '3 validation errors detected: ' +
+            [ix, +!ix].map(function(ix) { return tableNamePieces[ix] }).join('; ') +
+            '; Value null at \'key\' failed to satisfy constraint: ' +
+            'Member must not be null'
+        }), done)
     })
 
     it('should return ValidationException for short TableName', function(done) {
+      var tableNamePieces = [
+        'Value \'a;\' at \'tableName\' failed to satisfy constraint: ' +
+        'Member must satisfy regular expression pattern: [a-zA-Z0-9_.-]+',
+        'Value \'a;\' at \'tableName\' failed to satisfy constraint: ' +
+        'Member must have length greater than or equal to 3',
+      ]
       assertValidation({TableName: 'a;'},
-        '3 validation errors detected: ' +
-        'Value \'a;\' at \'tableName\' failed to satisfy constraint: ' +
-        'Member must satisfy regular expression pattern: [a-zA-Z0-9_.-]+; ' +
-        'Value \'a;\' at \'tableName\' failed to satisfy constraint: ' +
-        'Member must have length greater than or equal to 3; ' +
-        'Value null at \'key\' failed to satisfy constraint: ' +
-        'Member must not be null', done)
+        tableNamePieces.map(function(piece, ix) {
+          return '3 validation errors detected: ' +
+            [ix, +!ix].map(function(ix) { return tableNamePieces[ix] }).join('; ') +
+            '; Value null at \'key\' failed to satisfy constraint: ' +
+            'Member must not be null'
+        }), done)
     })
 
     it('should return ValidationException for long TableName', function(done) {
@@ -96,115 +118,78 @@ describe('getItem', function() {
         'Member must not be null', done)
     })
 
-    it('should return ValidationException for empty key type', function(done) {
-      assertValidation({TableName: 'abc', Key: {a: {}}},
-        'Supplied AttributeValue is empty, must contain exactly one of the supported datatypes', done)
+    it('should return ValidationException if expression and non-expression', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        Key: {a: {}},
+        AttributesToGet: ['a'],
+        ExpressionAttributeNames: {},
+        ProjectionExpression: '',
+      }, 'Can not use both expression and non-expression parameters in the same request: ' +
+        'Non-expression parameters: {AttributesToGet} Expression parameters: {ProjectionExpression}', done)
     })
 
-    it('should return ValidationException for bad key type', function(done) {
-      assertValidation({TableName: 'abc', Key: {a: {a: ''}}},
-        'Supplied AttributeValue is empty, must contain exactly one of the supported datatypes', done)
+    it('should return ValidationException if ExpressionAttributeNames but no ProjectionExpression', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        Key: {a: {}},
+        AttributesToGet: ['a'],
+        ExpressionAttributeNames: {},
+      }, 'ExpressionAttributeNames can only be specified when using expressions', done)
     })
 
-    it('should return ValidationException for empty string', function(done) {
-      assertValidation({TableName: 'abc', Key: {a: {S: ''}}},
-        'One or more parameter values were invalid: An AttributeValue may not contain an empty string', done)
+    it('should return ValidationException for unsupported datatype in Key', function(done) {
+      async.forEach([
+        {},
+        {a: ''},
+        {M: {a: {}}},
+        {L: [{}]},
+        {L: [{a: {}}]},
+      ], function(expr, cb) {
+        assertValidation({TableName: 'abc', Key: {a: expr}, ProjectionExpression: '', ExpressionAttributeNames: {}},
+          'Supplied AttributeValue is empty, must contain exactly one of the supported datatypes', cb)
+      }, done)
     })
 
-    it('should return ValidationException for empty binary', function(done) {
-      assertValidation({TableName: 'abc', Key: {a: {B: ''}}},
-        'One or more parameter values were invalid: An AttributeValue may not contain a null or empty binary type.', done)
+    it('should return ValidationException for invalid values in Key', function(done) {
+      async.forEach([
+        [{N: '', S: ''}, 'An AttributeValue may not contain an empty string'],
+        [{B: ''}, 'An AttributeValue may not contain a null or empty binary type.'],
+        [{NULL: 'no'}, 'Null attribute value types must have the value of true'],
+        [{SS: []}, 'An string set  may not be empty'],
+        [{NS: []}, 'An number set  may not be empty'],
+        [{BS: []}, 'Binary sets should not be empty'],
+        [{SS: ['a', '']}, 'An string set may not have a empty string as a member'],
+        [{BS: ['aaaa', '']}, 'Binary sets may not contain null or empty values'],
+        [{SS: ['a', 'a']}, 'Input collection [a, a] contains duplicates.'],
+        [{BS: ['Yg==', 'Yg==']}, 'Input collection [Yg==, Yg==]of type BS contains duplicates.'],
+      ], function(expr, cb) {
+        assertValidation({TableName: 'abc', Key: {a: expr[0]}, AttributesToGet: ['a', 'a']},
+          'One or more parameter values were invalid: ' + expr[1], cb)
+      }, done)
     })
 
-    it('should return ValidationException for false null', function(done) {
-      assertValidation({TableName: 'abc', Key: {a: {NULL: false}}},
-        'One or more parameter values were invalid: Null attribute value types must have the value of true', done)
+    it('should return ValidationException for empty/invalid numbers in Key', function(done) {
+      async.forEach([
+        [{S: 'a', N: ''}, 'The parameter cannot be converted to a numeric value'],
+        [{S: 'a', N: 'b'}, 'The parameter cannot be converted to a numeric value: b'],
+        [{NS: ['1', '']}, 'The parameter cannot be converted to a numeric value'],
+        [{NS: ['1', 'b']}, 'The parameter cannot be converted to a numeric value: b'],
+        [{NS: ['1', '1']}, 'Input collection contains duplicates'],
+        [{N: '123456789012345678901234567890123456789'}, 'Attempting to store more than 38 significant digits in a Number'],
+        [{N: '-1.23456789012345678901234567890123456789'}, 'Attempting to store more than 38 significant digits in a Number'],
+        [{N: '1e126'}, 'Number overflow. Attempting to store a number with magnitude larger than supported range'],
+        [{N: '-1e126'}, 'Number overflow. Attempting to store a number with magnitude larger than supported range'],
+        [{N: '1e-131'}, 'Number underflow. Attempting to store a number with magnitude smaller than supported range'],
+        [{N: '-1e-131'}, 'Number underflow. Attempting to store a number with magnitude smaller than supported range'],
+      ], function(expr, cb) {
+        assertValidation({TableName: 'abc', Key: {a: expr[0]}}, expr[1], cb)
+      }, done)
     })
 
-    // Somehow allows set types for keys
-    it('should return ValidationException for empty set key', function(done) {
-      assertValidation({TableName: 'abc', Key: {a: {SS: []}}},
-        'One or more parameter values were invalid: An string set  may not be empty', done)
-    })
-
-    it('should return ValidationException for empty string in set', function(done) {
-      assertValidation({TableName: 'abc', Key: {a: {SS: ['a', '']}}},
-        'One or more parameter values were invalid: An string set may not have a empty string as a member', done)
-    })
-
-    it('should return ValidationException for empty binary in set', function(done) {
-      assertValidation({TableName: 'abc', Key: {a: {BS: ['aaaa', '']}}},
-        'One or more parameter values were invalid: Binary sets may not contain null or empty values', done)
-    })
-
-    it('should return ValidationException if key has empty numeric in set', function(done) {
-      assertValidation({TableName: 'abc', Key: {a: {NS: ['1', '']}}},
-        'The parameter cannot be converted to a numeric value', done)
-    })
-
-    it('should return ValidationException for duplicate string in set', function(done) {
-      assertValidation({TableName: 'abc', Key: {a: {SS: ['a', 'a']}}},
-        'One or more parameter values were invalid: Input collection [a, a] contains duplicates.', done)
-    })
-
-    it('should return ValidationException for duplicate number in set', function(done) {
-      assertValidation({TableName: 'abc', Key: {a: {NS: ['1', '1']}}},
-        'Input collection contains duplicates', done)
-    })
-
-    it('should return ValidationException for duplicate binary in set', function(done) {
-      assertValidation({TableName: 'abc', Key: {a: {BS: ['Yg==', 'Yg==']}}},
-        'One or more parameter values were invalid: Input collection [Yg==, Yg==]of type BS contains duplicates.', done)
-    })
-
-    it('should return ValidationException for multiple types', function(done) {
-      assertValidation({TableName: 'abc', Key: {a: {S: 'a', N: '1'}}},
+    it('should return ValidationException for multiple datatypes in Key', function(done) {
+      assertValidation({TableName: 'abc', Key: {'a': {S: 'a', N: '1'}}},
         'Supplied AttributeValue has more than one datatypes set, must contain exactly one of the supported datatypes', done)
-    })
-
-    it('should return ValidationException if key has empty numeric type', function(done) {
-      assertValidation({TableName: 'abc', Key: {a: {N: ''}}},
-        'The parameter cannot be converted to a numeric value', done)
-    })
-
-    it('should return ValidationException if key has incorrect numeric type', function(done) {
-      assertValidation({TableName: 'abc', Key: {a: {N: 'b'}}},
-        'The parameter cannot be converted to a numeric value: b', done)
-    })
-
-    it('should return ValidationException if key has large numeric type', function(done) {
-      assertValidation({TableName: 'abc', Key: {a: {N: '123456789012345678901234567890123456789'}}},
-        'Attempting to store more than 38 significant digits in a Number', done)
-    })
-
-    it('should return ValidationException if key has long digited number', function(done) {
-      assertValidation({TableName: 'aaa', Key: {a: {N: '-1.23456789012345678901234567890123456789'}}},
-        'Attempting to store more than 38 significant digits in a Number', done)
-    })
-
-    it('should return ValidationException if key has huge positive number', function(done) {
-      assertValidation({TableName: 'aaa', Key: {a: {N: '1e126'}}},
-        'Number overflow. Attempting to store a number with magnitude larger than supported range', done)
-    })
-
-    it('should return ValidationException if key has huge negative number', function(done) {
-      assertValidation({TableName: 'aaa', Key: {a: {N: '-1e126'}}},
-        'Number overflow. Attempting to store a number with magnitude larger than supported range', done)
-    })
-
-    it('should return ValidationException if key has tiny positive number', function(done) {
-      assertValidation({TableName: 'aaa', Key: {a: {N: '1e-131'}}},
-        'Number underflow. Attempting to store a number with magnitude smaller than supported range', done)
-    })
-
-    it('should return ValidationException if key has tiny negative number', function(done) {
-      assertValidation({TableName: 'aaa', Key: {a: {N: '-1e-131'}}},
-        'Number underflow. Attempting to store a number with magnitude smaller than supported range', done)
-    })
-
-    it('should return ValidationException if key has incorrect numeric type in set', function(done) {
-      assertValidation({TableName: 'abc', Key: {a: {NS: ['1', 'b', 'a']}}},
-        'The parameter cannot be converted to a numeric value: b', done)
     })
 
     it('should return ValidationException duplicate values in AttributesToGet', function(done) {
@@ -212,52 +197,151 @@ describe('getItem', function() {
         'One or more parameter values were invalid: Duplicate value in attribute name: a', done)
     })
 
+    it('should return ValidationException for empty ExpressionAttributeNames', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        Key: {},
+        ExpressionAttributeNames: {},
+        ProjectionExpression: '',
+      }, 'ExpressionAttributeNames must not be empty', done)
+    })
+
+    it('should return ValidationException for invalid ExpressionAttributeNames', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        Key: {},
+        ExpressionAttributeNames: {'a': 'a'},
+        ProjectionExpression: '',
+      }, 'ExpressionAttributeNames contains invalid key: Syntax error; key: "a"', done)
+    })
+
+    it('should return ValidationException for empty ProjectionExpression', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        Key: {},
+        ProjectionExpression: '',
+      }, 'Invalid ProjectionExpression: The expression can not be empty;', done)
+    })
+
+    it('should return ValidationException for syntax error in ProjectionExpression', function(done) {
+      async.forEach([
+        'whatever(stuff)',
+        ':a',
+        'abort,',
+        'a,,b',
+        'a..b',
+        'a[b]',
+        '(a.b).c',
+        '(a)',
+        '(a),(b)',
+        '(a,b)',
+        'a-b',
+      ], function(expr, cb) {
+        assertValidation({
+          TableName: 'abc',
+          Key: {},
+          ProjectionExpression: expr,
+        }, /^Invalid ProjectionExpression: Syntax error; /, cb)
+      }, done)
+    })
+
+    it('should return ValidationException for reserved keywords in ProjectionExpression', function(done) {
+      async.forEach([
+        'a.abORt',
+        '#a,ABSoLUTE',
+      ], function(expr, cb) {
+        assertValidation({
+          TableName: 'abc',
+          Key: {},
+          ProjectionExpression: expr,
+        }, /^Invalid ProjectionExpression: Attribute name is a reserved keyword; reserved keyword: /, cb)
+      }, done)
+    })
+
+    it('should return ValidationException for missing names in ProjectionExpression', function(done) {
+      async.forEach([
+        'a,b,a,#a',
+      ], function(expr, cb) {
+        assertValidation({
+          TableName: 'abc',
+          Key: {},
+          ProjectionExpression: expr,
+        }, 'Invalid ProjectionExpression: An expression attribute name used in the document path is not defined; attribute name: #a', cb)
+      }, done)
+    })
+
+    it('should return ValidationException for overlapping paths in ProjectionExpression', function(done) {
+      async.forEach([
+        ['b[1], b.a, #a.b, a', '[a, b]', '[a]'],
+        ['a, #a[1]', '[a]', '[a, [1]]'],
+        ['a,b,a', '[a]', '[a]'],
+      ], function(expr, cb) {
+        assertValidation({
+          TableName: 'abc',
+          Key: {},
+          ProjectionExpression: expr[0],
+          ExpressionAttributeNames: {'#a': 'a'},
+        }, 'Invalid ProjectionExpression: Two document paths overlap with each other; ' +
+          'must remove or rewrite one of these paths; path one: ' + expr[1] + ', path two: ' + expr[2], cb)
+      }, done)
+    })
+
+    it('should return ValidationException for conflicting paths in ProjectionExpression', function(done) {
+      async.forEach([
+        ['a.b, #a[1], #b', '[a, b]', '[a, [1]]'],
+        ['a.b[1], #a[1], #b', '[a, b, [1]]', '[a, [1]]'],
+        ['a[3].b, #a.#b.b', '[a, [3], b]', '[a, [3], b]'],
+      ], function(expr, cb) {
+        assertValidation({
+          TableName: 'abc',
+          Key: {},
+          ProjectionExpression: expr[0],
+          ExpressionAttributeNames: {'#a': 'a', '#b': '[3]'},
+        }, 'Invalid ProjectionExpression: Two document paths conflict with each other; ' +
+          'must remove or rewrite one of these paths; path one: ' + expr[1] + ', path two: ' + expr[2], cb)
+      }, done)
+    })
+
+    it('should return ValidationException for unused names in ProjectionExpression', function(done) {
+      async.forEach([
+        'a',
+        'a,b',
+      ], function(expr, cb) {
+        assertValidation({
+          TableName: 'abc',
+          Key: {},
+          ProjectionExpression: expr,
+          ExpressionAttributeNames: {'#a': 'a', '#b': 'b'},
+        }, 'Value provided in ExpressionAttributeNames unused in expressions: keys: {#a, #b}', cb)
+      }, done)
+    })
+
     it('should return ResourceNotFoundException if key is empty and table does not exist', function(done) {
       assertNotFound({TableName: helpers.randomString(), Key: {}},
         'Requested resource not found', done)
     })
 
-    it('should return ValidationException if key is empty and table does exist', function(done) {
-      assertValidation({TableName: helpers.testHashTable, Key: {}},
-        'The provided key element does not match the schema', done)
+    it('should return ValidationException if key does not match schema', function(done) {
+      async.forEach([
+        {},
+        {b: {S: 'a'}},
+        {a: {S: 'a'}, b: {S: 'a'}},
+        {a: {B: 'abcd'}},
+        {a: {N: '1'}},
+        {a: {BOOL: true}},
+        {a: {NULL: true}},
+        {a: {SS: ['a']}},
+        {a: {NS: ['1']}},
+        {a: {BS: ['aaaa']}},
+        {a: {M: {}}},
+        {a: {L: []}},
+      ], function(expr, cb) {
+        assertValidation({TableName: helpers.testHashTable, Key: expr},
+          'The provided key element does not match the schema', cb)
+      }, done)
     })
 
-    it('should return ValidationException if key has incorrect attributes', function(done) {
-      assertValidation({TableName: helpers.testHashTable, Key: {b: {S: 'a'}}},
-        'The provided key element does not match the schema', done)
-    })
-
-    it('should return ValidationException if key has extra attributes', function(done) {
-      assertValidation({TableName: helpers.testHashTable, Key: {a: {S: 'a'}, b: {S: 'a'}}},
-        'The provided key element does not match the schema', done)
-    })
-
-    it('should return ValidationException if key is incorrect binary type', function(done) {
-      assertValidation({TableName: helpers.testHashTable, Key: {a: {B: 'abcd'}}},
-        'The provided key element does not match the schema', done)
-    })
-
-    it('should return ValidationException if key is incorrect numeric type', function(done) {
-      assertValidation({TableName: helpers.testHashTable, Key: {a: {N: '1'}}},
-        'The provided key element does not match the schema', done)
-    })
-
-    it('should return ValidationException if key is incorrect string set type', function(done) {
-      assertValidation({TableName: helpers.testHashTable, Key: {a: {SS: ['a']}}},
-        'The provided key element does not match the schema', done)
-    })
-
-    it('should return ValidationException if key is incorrect numeric set type', function(done) {
-      assertValidation({TableName: helpers.testHashTable, Key: {a: {NS: ['1']}}},
-        'The provided key element does not match the schema', done)
-    })
-
-    it('should return ValidationException if key is incorrect binary set type', function(done) {
-      assertValidation({TableName: helpers.testHashTable, Key: {a: {BS: ['aaaa']}}},
-        'The provided key element does not match the schema', done)
-    })
-
-    it('should return ValidationException if missing range key', function(done) {
+    it('should return ValidationException if range key does not match schema', function(done) {
       assertValidation({TableName: helpers.testRangeTable, Key: {a: {S: 'a'}}},
         'The provided key element does not match the schema', done)
     })
@@ -274,6 +358,34 @@ describe('getItem', function() {
       assertValidation({TableName: helpers.testRangeTable, Key: {a: {S: 'a'}, b: {S: keyStr}}},
         'One or more parameter values were invalid: ' +
         'Aggregated size of all range keys has exceeded the size limit of 1024 bytes', done)
+    })
+
+    it('should return ValidationException for non-scalar key access in ProjectionExpression', function(done) {
+      async.forEach([
+        '#a.b.c',
+        '#a[0]',
+      ], function(expr, cb) {
+        assertValidation({
+          TableName: helpers.testHashTable,
+          Key: {a: {S: helpers.randomString()}},
+          ProjectionExpression: expr,
+          ExpressionAttributeNames: {'#a': 'a'},
+        }, 'Key attributes must be scalars; list random access \'[]\' and map lookup \'.\' are not allowed: Key: a', cb)
+      }, done)
+    })
+
+    it('should return ValidationException for non-scalar index access in ProjectionExpression', function(done) {
+      async.forEach([
+        '#d.b.c',
+        '#d[0]',
+      ], function(expr, cb) {
+        assertValidation({
+          TableName: helpers.testRangeTable,
+          Key: {a: {S: helpers.randomString()}, b: {S: helpers.randomString()}},
+          ProjectionExpression: expr,
+          ExpressionAttributeNames: {'#d': 'd'},
+        }, 'Key attributes must be scalars; list random access \'[]\' and map lookup \'.\' are not allowed: IndexKey: d', cb)
+      }, done)
     })
 
     it('should return ResourceNotFoundException if table is being created', function(done) {
@@ -366,11 +478,42 @@ describe('getItem', function() {
     })
 
     it('should only return requested attributes', function(done) {
-      request(opts({TableName: helpers.testHashTable, Key: {a: hashItem.a}, AttributesToGet: ['b', 'g'], ConsistentRead: true}), function(err, res) {
+      async.forEach([
+        {AttributesToGet: ['b', 'g']},
+        {ProjectionExpression: 'b, g'},
+        {ProjectionExpression: '#b, #g', ExpressionAttributeNames: {'#b': 'b', '#g': 'g'}},
+      ], function(getOpts, cb) {
+        getOpts.TableName = helpers.testHashTable
+        getOpts.Key = {a: hashItem.a}
+        getOpts.ConsistentRead = true
+        request(opts(getOpts), function(err, res) {
+          if (err) return cb(err)
+          res.statusCode.should.equal(200)
+          res.body.should.eql({Item: {b: hashItem.b, g: hashItem.g}})
+          cb()
+        })
+      }, done)
+    })
+
+    it('should only return requested nested attributes', function(done) {
+      var item = {a: {S: helpers.randomString()}, b: {M: {a: {S: 'a'}, b: {S: 'b'}, c: {S: 'c'}}}, c: {L: [{S: 'a'}, {S: 'b'}, {S: 'c'}]}}
+      request(helpers.opts('PutItem', {TableName: helpers.testHashTable, Item: item}), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        res.body.should.eql({Item: {b: hashItem.b, g: hashItem.g}})
-        done()
+        async.forEach([
+          {ProjectionExpression: 'b.c,c[2],b.b,c[1],c[0].a'},
+          {ProjectionExpression: '#b.#c,#c[2],#b.#b,#c[1],#c[0][1]', ExpressionAttributeNames: {'#b': 'b', '#c': 'c'}},
+        ], function(getOpts, cb) {
+          getOpts.TableName = helpers.testHashTable
+          getOpts.Key = {a: item.a}
+          getOpts.ConsistentRead = true
+          request(opts(getOpts), function(err, res) {
+            if (err) return cb(err)
+            res.statusCode.should.equal(200)
+            res.body.should.eql({Item: {b: {M: {b: item.b.M.b, c: item.b.M.c}}, c: {L: [item.c.L[1], item.c.L[2]]}}})
+            cb()
+          })
+        }, done)
       })
     })
 
@@ -437,5 +580,3 @@ describe('getItem', function() {
   })
 
 })
-
-

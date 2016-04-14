@@ -37,4 +37,3 @@ module.exports = function putItem(store, data, cb) {
     })
   })
 }
-

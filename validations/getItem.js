@@ -1,4 +1,6 @@
-var validateAttributeValue = require('./index').validateAttributeValue
+var validateAttributeValue = require('./index').validateAttributeValue,
+    validateExpressionParams = require('./index').validateExpressionParams,
+    validateExpressions = require('./index').validateExpressions
 
 exports.types = {
   ReturnConsumedCapacity: {
@@ -24,11 +26,22 @@ exports.types = {
     children: 'AttrStructure',
   },
   ConsistentRead: 'Boolean',
+  ProjectionExpression: {
+    type: 'String',
+  },
+  ExpressionAttributeNames: {
+    type: 'Map',
+    children: 'String',
+  },
 }
 
 exports.custom = function(data) {
+
+  var msg = validateExpressionParams(data, ['ProjectionExpression'], ['AttributesToGet'])
+  if (msg) return msg
+
   for (var key in data.Key) {
-    var msg = validateAttributeValue(data.Key[key])
+    msg = validateAttributeValue(data.Key[key])
     if (msg) return msg
   }
   if (data.AttributesToGet) {
@@ -40,5 +53,6 @@ exports.custom = function(data) {
       attrs[data.AttributesToGet[i]] = true
     }
   }
+  msg = validateExpressions(data)
+  if (msg) return msg
 }
-

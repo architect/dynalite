@@ -28,6 +28,7 @@ module.exports = function deleteTable(store, data, cb) {
 
         setTimeout(function() {
           tableDb.del(key, function(err) {
+            // eslint-disable-next-line no-console
             if (err && !/Database is not open/.test(err)) console.error(err.stack || err)
           })
         }, store.deleteTableMs)

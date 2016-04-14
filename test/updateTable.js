@@ -217,7 +217,7 @@ describe('updateTable', function() {
         {Delete: {IndexName: 'abe'}},
         {Delete: {IndexName: 'abf'}},
         {Delete: {IndexName: 'abg'}},
-        {Delete: {IndexName: 'abh'}}
+        {Delete: {IndexName: 'abh'}},
       ]}, '', done)
     })
 
@@ -294,5 +294,3 @@ describe('updateTable', function() {
     })
   })
 })
-
-

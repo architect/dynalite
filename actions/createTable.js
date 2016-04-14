@@ -57,6 +57,7 @@ module.exports = function createTable(store, data, cb) {
           }
 
           tableDb.put(key, data, function(err) {
+            // eslint-disable-next-line no-console
             if (err && !/Database is not open/.test(err)) console.error(err.stack || err)
           })
 

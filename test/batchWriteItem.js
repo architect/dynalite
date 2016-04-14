@@ -168,6 +168,12 @@ describe('batchWriteItem', function() {
         'Requested resource not found', done)
     })
 
+    it('should check table exists first before checking for duplicate keys', function(done) {
+      var item = {a: {S: helpers.randomString()}, c: {S: 'c'}}
+      assertNotFound({RequestItems: {abc: [{PutRequest: {Item: item}}, {DeleteRequest: {Key: {a: item.a}}}]}},
+         'Requested resource not found', done)
+    })
+
     it('should return ValidationException for puts and deletes of the same item with put first', function(done) {
       var item = {a: {S: helpers.randomString()}, c: {S: 'c'}},
           batchReq = {RequestItems: {}}
@@ -193,115 +199,58 @@ describe('batchWriteItem', function() {
           'Member must satisfy regular expression pattern: \\[a-zA-Z0-9_.-\\]\\+\\]'), done)
     })
 
-    it('should return ValidationException for empty key type', function(done) {
-      assertValidation({RequestItems: {abc: [{PutRequest: {Item: {a: {}}}}]}},
-        'Supplied AttributeValue is empty, must contain exactly one of the supported datatypes', done)
+    it('should return ValidationException for unsupported datatype in Item', function(done) {
+      async.forEach([
+        {},
+        {a: ''},
+        {M: {a: {}}},
+        {L: [{}]},
+        {L: [{a: {}}]},
+      ], function(expr, cb) {
+        assertValidation({RequestItems: {abc: [{PutRequest: {Item: {a: expr}}}]}},
+          'Supplied AttributeValue is empty, must contain exactly one of the supported datatypes', cb)
+      }, done)
     })
 
-    it('should return ValidationException for bad key type', function(done) {
-      assertValidation({RequestItems: {abc: [{PutRequest: {Item: {a: {a: ''}}}}]}},
-        'Supplied AttributeValue is empty, must contain exactly one of the supported datatypes', done)
+    it('should return ValidationException for invalid values in Item', function(done) {
+      async.forEach([
+        [{N: '', S: ''}, 'An AttributeValue may not contain an empty string'],
+        [{B: ''}, 'An AttributeValue may not contain a null or empty binary type.'],
+        [{NULL: 'no'}, 'Null attribute value types must have the value of true'],
+        [{SS: []}, 'An string set  may not be empty'],
+        [{NS: []}, 'An number set  may not be empty'],
+        [{BS: []}, 'Binary sets should not be empty'],
+        [{SS: ['a', '']}, 'An string set may not have a empty string as a member'],
+        [{BS: ['aaaa', '']}, 'Binary sets may not contain null or empty values'],
+        [{SS: ['a', 'a']}, 'Input collection [a, a] contains duplicates.'],
+        [{BS: ['Yg==', 'Yg==']}, 'Input collection [Yg==, Yg==]of type BS contains duplicates.'],
+      ], function(expr, cb) {
+        assertValidation({RequestItems: {abc: [{PutRequest: {Item: {a: expr[0]}}}]}},
+          'One or more parameter values were invalid: ' + expr[1], cb)
+      }, done)
     })
 
-    it('should return ValidationException for empty string', function(done) {
-      assertValidation({RequestItems: {abc: [{PutRequest: {Item: {a: {S: ''}}}}]}},
-        'One or more parameter values were invalid: An AttributeValue may not contain an empty string', done)
+    it('should return ValidationException for empty/invalid numbers in Item', function(done) {
+      async.forEach([
+        [{S: 'a', N: ''}, 'The parameter cannot be converted to a numeric value'],
+        [{S: 'a', N: 'b'}, 'The parameter cannot be converted to a numeric value: b'],
+        [{NS: ['1', '']}, 'The parameter cannot be converted to a numeric value'],
+        [{NS: ['1', 'b']}, 'The parameter cannot be converted to a numeric value: b'],
+        [{NS: ['1', '1']}, 'Input collection contains duplicates'],
+        [{N: '123456789012345678901234567890123456789'}, 'Attempting to store more than 38 significant digits in a Number'],
+        [{N: '-1.23456789012345678901234567890123456789'}, 'Attempting to store more than 38 significant digits in a Number'],
+        [{N: '1e126'}, 'Number overflow. Attempting to store a number with magnitude larger than supported range'],
+        [{N: '-1e126'}, 'Number overflow. Attempting to store a number with magnitude larger than supported range'],
+        [{N: '1e-131'}, 'Number underflow. Attempting to store a number with magnitude smaller than supported range'],
+        [{N: '-1e-131'}, 'Number underflow. Attempting to store a number with magnitude smaller than supported range'],
+      ], function(expr, cb) {
+        assertValidation({RequestItems: {abc: [{PutRequest: {Item: {a: expr[0]}}}]}}, expr[1], cb)
+      }, done)
     })
 
-    it('should return ValidationException for empty binary', function(done) {
-      assertValidation({RequestItems: {abc: [{PutRequest: {Item: {a: {B: ''}}}}]}},
-        'One or more parameter values were invalid: An AttributeValue may not contain a null or empty binary type.', done)
-    })
-
-    it('should return ValidationException for false null', function(done) {
-      assertValidation({RequestItems: {abc: [{PutRequest: {Item: {a: {NULL: false}}}}]}},
-        'One or more parameter values were invalid: Null attribute value types must have the value of true', done)
-    })
-
-    // Somehow allows set types for keys
-    it('should return ValidationException for empty set key', function(done) {
-      assertValidation({RequestItems: {abc: [{PutRequest: {Item: {a: {SS: []}}}}]}},
-        'One or more parameter values were invalid: An string set  may not be empty', done)
-    })
-
-    it('should return ValidationException for empty string in set', function(done) {
-      assertValidation({RequestItems: {abc: [{PutRequest: {Item: {a: {SS: ['a', '']}}}}]}},
-        'One or more parameter values were invalid: An string set may not have a empty string as a member', done)
-    })
-
-    it('should return ValidationException for empty binary in set', function(done) {
-      assertValidation({RequestItems: {abc: [{PutRequest: {Item: {a: {BS: ['aaaa', '']}}}}]}},
-        'One or more parameter values were invalid: Binary sets may not contain null or empty values', done)
-    })
-
-    it('should return ValidationException if key has empty numeric in set', function(done) {
-      assertValidation({RequestItems: {abc: [{PutRequest: {Item: {a: {NS: ['1', '']}}}}]}},
-        'The parameter cannot be converted to a numeric value', done)
-    })
-
-    it('should return ValidationException for duplicate string in set', function(done) {
-      assertValidation({RequestItems: {abc: [{PutRequest: {Item: {a: {SS: ['a', 'a']}}}}]}},
-        'One or more parameter values were invalid: Input collection [a, a] contains duplicates.', done)
-    })
-
-    it('should return ValidationException for duplicate number in set', function(done) {
-      assertValidation({RequestItems: {abc: [{PutRequest: {Item: {a: {NS: ['1', '1']}}}}]}},
-        'Input collection contains duplicates', done)
-    })
-
-    it('should return ValidationException for duplicate binary in set', function(done) {
-      assertValidation({RequestItems: {abc: [{PutRequest: {Item: {a: {BS: ['Yg==', 'Yg==']}}}}]}},
-        'One or more parameter values were invalid: Input collection [Yg==, Yg==]of type BS contains duplicates.', done)
-    })
-
-    it('should return ValidationException for multiple types', function(done) {
+    it('should return ValidationException for multiple datatypes in Item', function(done) {
       assertValidation({RequestItems: {abc: [{PutRequest: {Item: {a: {S: 'a', N: '1'}}}}]}},
         'Supplied AttributeValue has more than one datatypes set, must contain exactly one of the supported datatypes', done)
-    })
-
-    it('should return ValidationException if key has empty numeric type', function(done) {
-      assertValidation({RequestItems: {abc: [{PutRequest: {Item: {a: {N: ''}}}}]}},
-        'The parameter cannot be converted to a numeric value', done)
-    })
-
-    it('should return ValidationException if key has incorrect numeric type', function(done) {
-      assertValidation({RequestItems: {abc: [{PutRequest: {Item: {a: {N: 'b'}}}}]}},
-        'The parameter cannot be converted to a numeric value: b', done)
-    })
-
-    it('should return ValidationException if key has incorrect numeric type in set', function(done) {
-      assertValidation({RequestItems: {abc: [{PutRequest: {Item: {a: {NS: ['1', 'b', 'a']}}}}]}},
-        'The parameter cannot be converted to a numeric value: b', done)
-    })
-
-    it('should return ValidationException if trying to store large number', function(done) {
-      assertValidation({RequestItems: {abc: [{PutRequest: {Item: {a: {N: '123456789012345678901234567890123456789'}}}}]}},
-        'Attempting to store more than 38 significant digits in a Number', done)
-    })
-
-    it('should return ValidationException if trying to store long digited number', function(done) {
-      assertValidation({RequestItems: {abc: [{PutRequest: {Item: {a: {N: '-1.23456789012345678901234567890123456789'}}}}]}},
-        'Attempting to store more than 38 significant digits in a Number', done)
-    })
-
-    it('should return ValidationException if trying to store huge positive number', function(done) {
-      assertValidation({RequestItems: {abc: [{PutRequest: {Item: {a: {N: '1e126'}}}}]}},
-        'Number overflow. Attempting to store a number with magnitude larger than supported range', done)
-    })
-
-    it('should return ValidationException if trying to store huge negative number', function(done) {
-      assertValidation({RequestItems: {abc: [{PutRequest: {Item: {a: {N: '-1e126'}}}}]}},
-        'Number overflow. Attempting to store a number with magnitude larger than supported range', done)
-    })
-
-    it('should return ValidationException if trying to store tiny positive number', function(done) {
-      assertValidation({RequestItems: {abc: [{PutRequest: {Item: {a: {N: '1e-131'}}}}]}},
-        'Number underflow. Attempting to store a number with magnitude smaller than supported range', done)
-    })
-
-    it('should return ValidationException if trying to store tiny negative number', function(done) {
-      assertValidation({RequestItems: {abc: [{PutRequest: {Item: {a: {N: '-1e-131'}}}}]}},
-        'Number underflow. Attempting to store a number with magnitude smaller than supported range', done)
     })
 
     it('should return ValidationException if item is too big with small attribute', function(done) {
@@ -403,56 +352,28 @@ describe('batchWriteItem', function() {
         'Requested resource not found', done)
     })
 
-    it('should return ValidationException if key is empty and table does exist', function(done) {
-      var batchReq = {RequestItems: {}}
-      batchReq.RequestItems[helpers.testHashTable] = [{PutRequest: {Item: {}}}]
-      assertValidation(batchReq,
-        'The provided key element does not match the schema', done)
+    it('should return ValidationException if key does not match schema', function(done) {
+      async.forEach([
+        {},
+        {b: {S: 'a'}},
+        {a: {B: 'abcd'}},
+        {a: {N: '1'}},
+        {a: {BOOL: true}},
+        {a: {NULL: true}},
+        {a: {SS: ['a']}},
+        {a: {NS: ['1']}},
+        {a: {BS: ['aaaa']}},
+        {a: {M: {}}},
+        {a: {L: []}},
+      ], function(expr, cb) {
+        var batchReq = {RequestItems: {}}
+        batchReq.RequestItems[helpers.testHashTable] = [{PutRequest: {Item: expr}}]
+        assertValidation(batchReq,
+          'The provided key element does not match the schema', cb)
+      }, done)
     })
 
-    it('should return ValidationException if key has incorrect attributes', function(done) {
-      var batchReq = {RequestItems: {}}
-      batchReq.RequestItems[helpers.testHashTable] = [{PutRequest: {Item: {b: {S: 'a'}}}}]
-      assertValidation(batchReq,
-        'The provided key element does not match the schema', done)
-    })
-
-    it('should return ValidationException if key is incorrect binary type', function(done) {
-      var batchReq = {RequestItems: {}}
-      batchReq.RequestItems[helpers.testHashTable] = [{PutRequest: {Item: {a: {B: 'abcd'}}}}]
-      assertValidation(batchReq,
-        'The provided key element does not match the schema', done)
-    })
-
-    it('should return ValidationException if key is incorrect numeric type', function(done) {
-      var batchReq = {RequestItems: {}}
-      batchReq.RequestItems[helpers.testHashTable] = [{PutRequest: {Item: {a: {N: '1'}}}}]
-      assertValidation(batchReq,
-        'The provided key element does not match the schema', done)
-    })
-
-    it('should return ValidationException if key is incorrect string set type', function(done) {
-      var batchReq = {RequestItems: {}}
-      batchReq.RequestItems[helpers.testHashTable] = [{PutRequest: {Item: {a: {SS: ['a']}}}}]
-      assertValidation(batchReq,
-        'The provided key element does not match the schema', done)
-    })
-
-    it('should return ValidationException if key is incorrect numeric set type', function(done) {
-      var batchReq = {RequestItems: {}}
-      batchReq.RequestItems[helpers.testHashTable] = [{PutRequest: {Item: {a: {NS: ['1']}}}}]
-      assertValidation(batchReq,
-        'The provided key element does not match the schema', done)
-    })
-
-    it('should return ValidationException if key is incorrect binary set type', function(done) {
-      var batchReq = {RequestItems: {}}
-      batchReq.RequestItems[helpers.testHashTable] = [{PutRequest: {Item: {a: {BS: ['aaaa']}}}}]
-      assertValidation(batchReq,
-        'The provided key element does not match the schema', done)
-    })
-
-    it('should return ValidationException if missing range key', function(done) {
+    it('should return ValidationException if range key does not match schema', function(done) {
       var batchReq = {RequestItems: {}}
       batchReq.RequestItems[helpers.testRangeTable] = [{PutRequest: {Item: {a: {S: 'a'}}}}]
       assertValidation(batchReq,
@@ -719,6 +640,7 @@ describe('batchWriteItem', function() {
             return cb()
           }
           res.statusCode.should.equal(200)
+          // eslint-disable-next-line no-console
           console.log([CAPACITY, res.body.ConsumedCapacity[0].CapacityUnits, totalSize].join())
           setTimeout(cb, res.body.ConsumedCapacity[0].CapacityUnits * 1000 / CAPACITY)
         })

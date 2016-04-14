@@ -1,4 +1,5 @@
-var helpers = require('./helpers')
+var async = require('async'),
+    helpers = require('./helpers')
 
 var target = 'DeleteItem',
     request = helpers.request,
@@ -53,6 +54,27 @@ describe('deleteItem', function() {
       assertType('ReturnValues', 'String', done)
     })
 
+    it('should return SerializationException when ConditionExpression is not a string', function(done) {
+      assertType('ConditionExpression', 'String', done)
+    })
+
+    it('should return SerializationException when ExpressionAttributeValues is not a map', function(done) {
+      assertType('ExpressionAttributeValues', 'Map', done)
+    })
+
+    it('should return SerializationException when ExpressionAttributeValues.Attr is not an attr struct', function(done) {
+      this.timeout(60000)
+      assertType('ExpressionAttributeValues.Attr', 'AttrStructure', done)
+    })
+
+    it('should return SerializationException when ExpressionAttributeNames is not a map', function(done) {
+      assertType('ExpressionAttributeNames', 'Map', done)
+    })
+
+    it('should return SerializationException when ExpressionAttributeNames.Attr is not a string', function(done) {
+      assertType('ExpressionAttributeNames.Attr', 'String', done)
+    })
+
   })
 
   describe('validations', function() {
@@ -67,25 +89,35 @@ describe('deleteItem', function() {
     })
 
     it('should return ValidationException for empty TableName', function(done) {
+      var tableNamePieces = [
+        'Value \'\' at \'tableName\' failed to satisfy constraint: ' +
+        'Member must satisfy regular expression pattern: [a-zA-Z0-9_.-]+',
+        'Value \'\' at \'tableName\' failed to satisfy constraint: ' +
+        'Member must have length greater than or equal to 3',
+      ]
       assertValidation({TableName: ''},
-        '3 validation errors detected: ' +
-        'Value \'\' at \'tableName\' failed to satisfy constraint: ' +
-        'Member must satisfy regular expression pattern: [a-zA-Z0-9_.-]+; ' +
-        'Value \'\' at \'tableName\' failed to satisfy constraint: ' +
-        'Member must have length greater than or equal to 3; ' +
-        'Value null at \'key\' failed to satisfy constraint: ' +
-        'Member must not be null', done)
+        tableNamePieces.map(function(piece, ix) {
+          return '3 validation errors detected: ' +
+            [ix, +!ix].map(function(ix) { return tableNamePieces[ix] }).join('; ') +
+            '; Value null at \'key\' failed to satisfy constraint: ' +
+            'Member must not be null'
+        }), done)
     })
 
     it('should return ValidationException for short TableName', function(done) {
+      var tableNamePieces = [
+        'Value \'a;\' at \'tableName\' failed to satisfy constraint: ' +
+        'Member must satisfy regular expression pattern: [a-zA-Z0-9_.-]+',
+        'Value \'a;\' at \'tableName\' failed to satisfy constraint: ' +
+        'Member must have length greater than or equal to 3',
+      ]
       assertValidation({TableName: 'a;'},
-        '3 validation errors detected: ' +
-        'Value \'a;\' at \'tableName\' failed to satisfy constraint: ' +
-        'Member must satisfy regular expression pattern: [a-zA-Z0-9_.-]+; ' +
-        'Value \'a;\' at \'tableName\' failed to satisfy constraint: ' +
-        'Member must have length greater than or equal to 3; ' +
-        'Value null at \'key\' failed to satisfy constraint: ' +
-        'Member must not be null', done)
+        tableNamePieces.map(function(piece, ix) {
+          return '3 validation errors detected: ' +
+            [ix, +!ix].map(function(ix) { return tableNamePieces[ix] }).join('; ') +
+            '; Value null at \'key\' failed to satisfy constraint: ' +
+            'Member must not be null'
+        }), done)
     })
 
     it('should return ValidationException for long TableName', function(done) {
@@ -114,19 +146,217 @@ describe('deleteItem', function() {
         'Member must not be null', done)
     })
 
-    it('should return ValidationException for bad key type', function(done) {
-      assertValidation({TableName: 'abc', Key: {a: {a: ''}}},
-        'Supplied AttributeValue is empty, must contain exactly one of the supported datatypes', done)
+    it('should return ValidationException if expression and non-expression', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        Key: {},
+        Expected: {},
+        ExpressionAttributeNames: {},
+        ExpressionAttributeValues: {},
+        ConditionExpression: '',
+      }, 'Can not use both expression and non-expression parameters in the same request: ' +
+        'Non-expression parameters: {Expected} Expression parameters: {ConditionExpression}', done)
     })
 
-    it('should return ValidationException for empty key', function(done) {
-      assertValidation({TableName: 'abc', Key: {a: {S: ''}}},
-        'One or more parameter values were invalid: An AttributeValue may not contain an empty string', done)
+    it('should return ValidationException if ExpressionAttributeNames but no ConditionExpression', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        Key: {},
+        Expected: {},
+        ExpressionAttributeNames: {},
+        ExpressionAttributeValues: {},
+      }, 'ExpressionAttributeNames can only be specified when using expressions', done)
     })
 
-    it('should return empty response if key has incorrect numeric type', function(done) {
-      assertValidation({TableName: 'abc', Key: {a: {N: 'b'}}},
-        'The parameter cannot be converted to a numeric value: b', done)
+    it('should return ValidationException if ExpressionAttributeValues but no ConditionExpression', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        Key: {},
+        Expected: {},
+        ExpressionAttributeValues: {},
+      }, 'ExpressionAttributeValues can only be specified when using expressions: ConditionExpression is null', done)
+    })
+
+    it('should return ValidationException for empty ExpressionAttributeNames', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        Key: {},
+        ExpressionAttributeNames: {},
+        ExpressionAttributeValues: {},
+        ConditionExpression: '',
+      }, 'ExpressionAttributeNames must not be empty', done)
+    })
+
+    it('should return ValidationException for invalid ExpressionAttributeNames', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        Key: {},
+        ExpressionAttributeNames: {'a': 'a'},
+        ExpressionAttributeValues: {},
+        ConditionExpression: '',
+      }, 'ExpressionAttributeNames contains invalid key: Syntax error; key: "a"', done)
+    })
+
+    it('should return ValidationException for empty ExpressionAttributeValues', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        Key: {},
+        ExpressionAttributeValues: {},
+        ConditionExpression: '',
+      }, 'ExpressionAttributeValues must not be empty', done)
+    })
+
+    it('should return ValidationException for invalid keys in ExpressionAttributeValues', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        Key: {},
+        ExpressionAttributeValues: {':b': {a: ''}, 'b': {S: 'a'}},
+        ConditionExpression: '',
+      }, 'ExpressionAttributeValues contains invalid key: Syntax error; key: "b"', done)
+    })
+
+    it('should return ValidationException for unsupported datatype in ExpressionAttributeValues', function(done) {
+      async.forEach([
+        {},
+        {a: ''},
+        {M: {a: {}}},
+        {L: [{}]},
+        {L: [{a: {}}]},
+      ], function(expr, cb) {
+        assertValidation({
+          TableName: 'abc',
+          Key: {},
+          ExpressionAttributeValues: {':b': expr},
+          ConditionExpression: '',
+        }, 'ExpressionAttributeValues contains invalid value: ' +
+          'Supplied AttributeValue is empty, must contain exactly one of the supported datatypes for key :b', cb)
+      }, done)
+    })
+
+    it('should return ValidationException for invalid values in ExpressionAttributeValues', function(done) {
+      async.forEach([
+        [{N: '', S: ''}, 'An AttributeValue may not contain an empty string'],
+        [{B: ''}, 'An AttributeValue may not contain a null or empty binary type.'],
+        [{NULL: 'no'}, 'Null attribute value types must have the value of true'],
+        [{SS: []}, 'An string set  may not be empty'],
+        [{NS: []}, 'An number set  may not be empty'],
+        [{BS: []}, 'Binary sets should not be empty'],
+        [{SS: ['a', '']}, 'An string set may not have a empty string as a member'],
+        [{BS: ['aaaa', '']}, 'Binary sets may not contain null or empty values'],
+        [{SS: ['a', 'a']}, 'Input collection [a, a] contains duplicates.'],
+        [{BS: ['Yg==', 'Yg==']}, 'Input collection [Yg==, Yg==]of type BS contains duplicates.'],
+      ], function(expr, cb) {
+        assertValidation({
+          TableName: 'abc',
+          Key: {},
+          ExpressionAttributeValues: {':b': expr[0]},
+          ConditionExpression: '',
+        }, 'ExpressionAttributeValues contains invalid value: ' +
+          'One or more parameter values were invalid: ' + expr[1] + ' for key :b', cb)
+      }, done)
+    })
+
+    it('should return ValidationException for empty/invalid numbers in ExpressionAttributeValues', function(done) {
+      async.forEach([
+        [{S: 'a', N: ''}, 'The parameter cannot be converted to a numeric value'],
+        [{S: 'a', N: 'b'}, 'The parameter cannot be converted to a numeric value: b'],
+        [{NS: ['1', '']}, 'The parameter cannot be converted to a numeric value'],
+        [{NS: ['1', 'b']}, 'The parameter cannot be converted to a numeric value: b'],
+        [{NS: ['1', '1']}, 'Input collection contains duplicates'],
+        [{N: '123456789012345678901234567890123456789'}, 'Attempting to store more than 38 significant digits in a Number'],
+        [{N: '-1.23456789012345678901234567890123456789'}, 'Attempting to store more than 38 significant digits in a Number'],
+        [{N: '1e126'}, 'Number overflow. Attempting to store a number with magnitude larger than supported range'],
+        [{N: '-1e126'}, 'Number overflow. Attempting to store a number with magnitude larger than supported range'],
+        [{N: '1e-131'}, 'Number underflow. Attempting to store a number with magnitude smaller than supported range'],
+        [{N: '-1e-131'}, 'Number underflow. Attempting to store a number with magnitude smaller than supported range'],
+      ], function(expr, cb) {
+        assertValidation({
+          TableName: 'abc',
+          Key: {},
+          ExpressionAttributeValues: {':b': expr[0]},
+          ConditionExpression: '',
+        }, 'ExpressionAttributeValues contains invalid value: ' + expr[1] + ' for key :b', cb)
+      }, done)
+    })
+
+    it('should return ValidationException for multiple datatypes in ExpressionAttributeValues', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        Key: {},
+        ExpressionAttributeValues: {':b': {S: 'a', N: '1'}},
+        ConditionExpression: '',
+      }, 'ExpressionAttributeValues contains invalid value: ' +
+        'Supplied AttributeValue has more than one datatypes set, must contain exactly one of the supported datatypes for key :b', done)
+    })
+
+    it('should return ValidationException for empty ConditionExpression', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        Key: {},
+        ConditionExpression: '',
+      }, 'Invalid ConditionExpression: The expression can not be empty;', done)
+    })
+
+    it('should return ValidationException for incorrect ConditionExpression', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        Key: {},
+        ConditionExpression: 'whatever',
+      }, /^Invalid ConditionExpression: Syntax error; /, done)
+    })
+
+    it('should return ValidationException for unsupported datatype in Key', function(done) {
+      async.forEach([
+        {},
+        {a: ''},
+        {M: {a: {}}},
+        {L: [{}]},
+        {L: [{a: {}}]},
+      ], function(expr, cb) {
+        assertValidation({TableName: 'abc', Key: {a: expr}},
+          'Supplied AttributeValue is empty, must contain exactly one of the supported datatypes', cb)
+      }, done)
+    })
+
+    it('should return ValidationException for invalid values in Key', function(done) {
+      async.forEach([
+        [{N: '', S: ''}, 'An AttributeValue may not contain an empty string'],
+        [{B: ''}, 'An AttributeValue may not contain a null or empty binary type.'],
+        [{NULL: 'no'}, 'Null attribute value types must have the value of true'],
+        [{SS: []}, 'An string set  may not be empty'],
+        [{NS: []}, 'An number set  may not be empty'],
+        [{BS: []}, 'Binary sets should not be empty'],
+        [{SS: ['a', '']}, 'An string set may not have a empty string as a member'],
+        [{BS: ['aaaa', '']}, 'Binary sets may not contain null or empty values'],
+        [{SS: ['a', 'a']}, 'Input collection [a, a] contains duplicates.'],
+        [{BS: ['Yg==', 'Yg==']}, 'Input collection [Yg==, Yg==]of type BS contains duplicates.'],
+      ], function(expr, cb) {
+        assertValidation({TableName: 'abc', Key: {a: expr[0]}},
+          'One or more parameter values were invalid: ' + expr[1], cb)
+      }, done)
+    })
+
+    it('should return ValidationException for empty/invalid numbers in Key', function(done) {
+      async.forEach([
+        [{S: 'a', N: ''}, 'The parameter cannot be converted to a numeric value'],
+        [{S: 'a', N: 'b'}, 'The parameter cannot be converted to a numeric value: b'],
+        [{NS: ['1', '']}, 'The parameter cannot be converted to a numeric value'],
+        [{NS: ['1', 'b']}, 'The parameter cannot be converted to a numeric value: b'],
+        [{NS: ['1', '1']}, 'Input collection contains duplicates'],
+        [{N: '123456789012345678901234567890123456789'}, 'Attempting to store more than 38 significant digits in a Number'],
+        [{N: '-1.23456789012345678901234567890123456789'}, 'Attempting to store more than 38 significant digits in a Number'],
+        [{N: '1e126'}, 'Number overflow. Attempting to store a number with magnitude larger than supported range'],
+        [{N: '-1e126'}, 'Number overflow. Attempting to store a number with magnitude larger than supported range'],
+        [{N: '1e-131'}, 'Number underflow. Attempting to store a number with magnitude smaller than supported range'],
+        [{N: '-1e-131'}, 'Number underflow. Attempting to store a number with magnitude smaller than supported range'],
+      ], function(expr, cb) {
+        assertValidation({TableName: 'abc', Key: {a: expr[0]}}, expr[1], cb)
+      }, done)
+    })
+
+    it('should return ValidationException for multiple datatypes in Key', function(done) {
+      assertValidation({TableName: 'abc', Key: {'a': {S: 'a', N: '1'}}},
+        'Supplied AttributeValue has more than one datatypes set, must contain exactly one of the supported datatypes', done)
     })
 
     it('should return ValidationException if ComparisonOperator used alone', function(done) {
@@ -170,6 +400,31 @@ describe('deleteItem', function() {
       }}
       assertValidation({TableName: 'aaa', Key: {}, Expected: expected},
         'One or more parameter values were invalid: Invalid number of argument(s) for the NULL ComparisonOperator', done)
+    })
+
+    it('should return ValidationException if key does not match schema', function(done) {
+      async.forEach([
+        {},
+        {b: {S: 'a'}},
+        {a: {S: 'a'}, b: {S: 'a'}},
+        {a: {B: 'abcd'}},
+        {a: {N: '1'}},
+        {a: {BOOL: true}},
+        {a: {NULL: true}},
+        {a: {SS: ['a']}},
+        {a: {NS: ['1']}},
+        {a: {BS: ['aaaa']}},
+        {a: {M: {}}},
+        {a: {L: []}},
+      ], function(expr, cb) {
+        assertValidation({TableName: helpers.testHashTable, Key: expr},
+          'The provided key element does not match the schema', cb)
+      }, done)
+    })
+
+    it('should return ValidationException if range key does not match schema', function(done) {
+      assertValidation({TableName: helpers.testRangeTable, Key: {a: {S: 'a'}}},
+        'The provided key element does not match the schema', done)
     })
 
   })
@@ -235,10 +490,14 @@ describe('deleteItem', function() {
     })
 
     it('should return ConditionalCheckFailedException if expecting non-existent key to exist', function(done) {
-      assertConditional({
-        TableName: helpers.testHashTable,
-        Key: {a: {S: helpers.randomString()}},
-        Expected: {a: {Value: {S: helpers.randomString()}}},
+      async.forEach([
+        {Expected: {a: {Value: {S: helpers.randomString()}}}},
+        {ConditionExpression: 'a = :a', ExpressionAttributeValues: {':a': {S: helpers.randomString()}}},
+        {ConditionExpression: '#a = :a', ExpressionAttributeNames: {'#a': 'a'}, ExpressionAttributeValues: {':a': {S: helpers.randomString()}}},
+      ], function(deleteOpts, cb) {
+        deleteOpts.TableName = helpers.testHashTable
+        deleteOpts.Key = {a: {S: helpers.randomString()}}
+        assertConditional(deleteOpts, cb)
       }, done)
     })
 
@@ -246,10 +505,13 @@ describe('deleteItem', function() {
       var item = {a: {S: helpers.randomString()}}
       request(helpers.opts('PutItem', {TableName: helpers.testHashTable, Item: item}), function(err) {
         if (err) return done(err)
-        assertConditional({
-          TableName: helpers.testHashTable,
-          Key: {a: item.a},
-          Expected: {a: {Exists: false}},
+        async.forEach([
+          {Expected: {a: {Exists: false}}},
+          {ConditionExpression: 'attribute_not_exists(a)'},
+        ], function(deleteOpts, cb) {
+          deleteOpts.TableName = helpers.testHashTable
+          deleteOpts.Key = {a: item.a}
+          assertConditional(deleteOpts, cb)
         }, done)
       })
     })
@@ -258,90 +520,113 @@ describe('deleteItem', function() {
       var item = {a: {S: helpers.randomString()}}
       request(helpers.opts('PutItem', {TableName: helpers.testHashTable, Item: item}), function(err) {
         if (err) return done(err)
-        request(opts({
-          TableName: helpers.testHashTable,
-          Key: {a: {S: helpers.randomString()}},
-          Expected: {a: {Exists: false}},
-        }), function(err, res) {
-          if (err) return done(err)
-          res.statusCode.should.equal(200)
-          res.body.should.eql({})
-          done()
-        })
+        async.forEach([
+          {Expected: {a: {Exists: false}}},
+          {ConditionExpression: 'attribute_not_exists(a)'},
+        ], function(deleteOpts, cb) {
+          deleteOpts.TableName = helpers.testHashTable
+          deleteOpts.Key = {a: {S: helpers.randomString()}}
+          request(opts(deleteOpts), function(err, res) {
+            if (err) return cb(err)
+            res.statusCode.should.equal(200)
+            res.body.should.eql({})
+            cb()
+          })
+        }, done)
       })
     })
 
     it('should succeed if conditional key is same and exists is true', function(done) {
-      var item = {a: {S: helpers.randomString()}}
-      request(helpers.opts('PutItem', {TableName: helpers.testHashTable, Item: item}), function(err) {
-        if (err) return done(err)
-        request(opts({
-          TableName: helpers.testHashTable,
-          Key: {a: item.a},
-          Expected: {a: {Value: item.a}},
-        }), function(err, res) {
-          if (err) return done(err)
-          res.statusCode.should.equal(200)
-          res.body.should.eql({})
-          done()
+      async.forEach([
+        {Expected: {a: {Value: {S: helpers.randomString()}}}},
+        {ConditionExpression: 'a = :a', ExpressionAttributeValues: {':a': {S: helpers.randomString()}}},
+        {ConditionExpression: '#a = :a', ExpressionAttributeNames: {'#a': 'a'}, ExpressionAttributeValues: {':a': {S: helpers.randomString()}}},
+      ], function(deleteOpts, cb) {
+        var item = {a: deleteOpts.Expected ? deleteOpts.Expected.a.Value : deleteOpts.ExpressionAttributeValues[':a']}
+        request(helpers.opts('PutItem', {TableName: helpers.testHashTable, Item: item}), function(err) {
+          if (err) return cb(err)
+          deleteOpts.TableName = helpers.testHashTable
+          deleteOpts.Key = item
+          request(opts(deleteOpts), function(err, res) {
+            if (err) return cb(err)
+            res.statusCode.should.equal(200)
+            res.body.should.eql({})
+            cb()
+          })
         })
-      })
+      }, done)
     })
 
     it('should succeed if expecting non-existant value to not exist', function(done) {
-      var item = {a: {S: helpers.randomString()}}
-      request(helpers.opts('PutItem', {TableName: helpers.testHashTable, Item: item}), function(err) {
-        if (err) return done(err)
-        request(opts({
-          TableName: helpers.testHashTable,
-          Key: {a: item.a},
-          Expected: {b: {Exists: false}},
-        }), function(err, res) {
-          if (err) return done(err)
-          res.statusCode.should.equal(200)
-          res.body.should.eql({})
-          done()
+      async.forEach([
+        {Expected: {b: {Exists: false}}, Key: {a: {S: helpers.randomString()}}},
+        {ConditionExpression: 'attribute_not_exists(b)', Key: {a: {S: helpers.randomString()}}},
+        {ConditionExpression: 'attribute_not_exists(#b)', ExpressionAttributeNames: {'#b': 'b'}, Key: {a: {S: helpers.randomString()}}},
+      ], function(deleteOpts, cb) {
+        var item = deleteOpts.Key
+        request(helpers.opts('PutItem', {TableName: helpers.testHashTable, Item: item}), function(err) {
+          if (err) return cb(err)
+          deleteOpts.TableName = helpers.testHashTable
+          request(opts(deleteOpts), function(err, res) {
+            if (err) return cb(err)
+            res.statusCode.should.equal(200)
+            res.body.should.eql({})
+            cb()
+          })
         })
-      })
+      }, done)
     })
 
     it('should return ConditionalCheckFailedException if expecting existing value to not exist', function(done) {
       var item = {a: {S: helpers.randomString()}, b: {S: helpers.randomString()}}
       request(helpers.opts('PutItem', {TableName: helpers.testHashTable, Item: item}), function(err) {
         if (err) return done(err)
-        assertConditional({
-          TableName: helpers.testHashTable,
-          Key: {a: item.a},
-          Expected: {b: {Exists: false}},
+        async.forEach([
+          {Expected: {b: {Exists: false}}},
+          {ConditionExpression: 'attribute_not_exists(b)'},
+          {ConditionExpression: 'attribute_not_exists(#b)', ExpressionAttributeNames: {'#b': 'b'}},
+        ], function(deleteOpts, cb) {
+          deleteOpts.TableName = helpers.testHashTable
+          deleteOpts.Key = {a: item.a}
+          assertConditional(deleteOpts, cb)
         }, done)
       })
     })
 
     it('should succeed for multiple conditional checks if all are valid', function(done) {
-      var item = {a: {S: helpers.randomString()}, c: {S: helpers.randomString()}}
-      request(helpers.opts('PutItem', {TableName: helpers.testHashTable, Item: item}), function(err) {
-        if (err) return done(err)
-        request(opts({
-          TableName: helpers.testHashTable,
-          Key: {a: item.a},
-          Expected: {a: {Value: item.a}, b: {Exists: false}, c: {Value: item.c}},
-        }), function(err, res) {
-          if (err) return done(err)
-          res.statusCode.should.equal(200)
-          res.body.should.eql({})
-          done()
+      async.forEach([
+        {Expected: {a: {Value: {S: helpers.randomString()}}, b: {Exists: false}, c: {Value: {S: helpers.randomString()}}}},
+        {ConditionExpression: 'a = :a AND attribute_not_exists(b) AND c = :c', ExpressionAttributeValues: {':a': {S: helpers.randomString()}, ':c': {S: helpers.randomString()}}},
+        {ConditionExpression: '#a = :a AND attribute_not_exists(#b) AND #c = :c', ExpressionAttributeNames: {'#a': 'a', '#b': 'b', '#c': 'c'}, ExpressionAttributeValues: {':a': {S: helpers.randomString()}, ':c': {S: helpers.randomString()}}},
+      ], function(deleteOpts, cb) {
+        var item = deleteOpts.Expected ? {a: deleteOpts.Expected.a.Value, c: deleteOpts.Expected.c.Value} :
+          {a: deleteOpts.ExpressionAttributeValues[':a'], c: deleteOpts.ExpressionAttributeValues[':c']}
+        request(helpers.opts('PutItem', {TableName: helpers.testHashTable, Item: item}), function(err) {
+          if (err) return cb(err)
+          deleteOpts.TableName = helpers.testHashTable
+          deleteOpts.Key = {a: item.a}
+          request(opts(deleteOpts), function(err, res) {
+            if (err) return cb(err)
+            res.statusCode.should.equal(200)
+            res.body.should.eql({})
+            cb()
+          })
         })
-      })
+      }, done)
     })
 
     it('should return ConditionalCheckFailedException for multiple conditional checks if one is invalid', function(done) {
       var item = {a: {S: helpers.randomString()}, c: {S: helpers.randomString()}}
       request(helpers.opts('PutItem', {TableName: helpers.testHashTable, Item: item}), function(err) {
         if (err) return done(err)
-        assertConditional({
-          TableName: helpers.testHashTable,
-          Key: {a: item.a},
-          Expected: {a: {Value: item.a}, b: {Exists: false}, c: {Value: {S: helpers.randomString()}}},
+        async.forEach([
+          {Expected: {a: {Value: item.a}, b: {Exists: false}, c: {Value: {S: helpers.randomString()}}}},
+          {ConditionExpression: 'a = :a AND attribute_not_exists(b) AND c = :c', ExpressionAttributeValues: {':a': item.a, ':c': {S: helpers.randomString()}}},
+          {ConditionExpression: '#a = :a AND attribute_not_exists(#b) AND #c = :c', ExpressionAttributeNames: {'#a': 'a', '#b': 'b', '#c': 'c'}, ExpressionAttributeValues: {':a': item.a, ':c': {S: helpers.randomString()}}},
+        ], function(deleteOpts, cb) {
+          deleteOpts.TableName = helpers.testHashTable
+          deleteOpts.Key = {a: item.a}
+          assertConditional(deleteOpts, cb)
         }, done)
       })
     })
@@ -378,5 +663,3 @@ describe('deleteItem', function() {
 
   })
 })
-
-

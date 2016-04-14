@@ -1,4 +1,7 @@
-var validateAttributeValue = require('./index').validateAttributeValue
+var validateAttributeValue = require('./index').validateAttributeValue,
+    validateExpressionParams = require('./index').validateExpressionParams,
+    validateExpressions = require('./index').validateExpressions,
+    convertKeyCondition = require('./index').convertKeyCondition
 
 exports.types = {
   Limit: {
@@ -40,6 +43,10 @@ exports.types = {
     type: 'String',
     enum: ['SPECIFIC_ATTRIBUTES', 'COUNT', 'ALL_ATTRIBUTES', 'ALL_PROJECTED_ATTRIBUTES'],
   },
+  ConditionalOperator: {
+    type: 'String',
+    enum: ['OR', 'AND'],
+  },
   KeyConditions: {
     type: 'Map',
     children: {
@@ -72,15 +79,33 @@ exports.types = {
     lengthLessThanOrEqual: 255,
   },
   ScanIndexForward: 'Boolean',
+  KeyConditionExpression: {
+    type: 'String',
+  },
+  FilterExpression: {
+    type: 'String',
+  },
+  ProjectionExpression: {
+    type: 'String',
+  },
+  ExpressionAttributeValues: {
+    type: 'Map',
+    children: 'AttrStructure',
+  },
+  ExpressionAttributeNames: {
+    type: 'Map',
+    children: 'String',
+  },
 }
 
 exports.custom = function(data) {
-  if (!data.KeyConditions && !data.KeyConditionExpression)
-    return 'Either the KeyConditions or KeyConditionExpression parameter must be specified in the request.'
-  var conditionKeys = Object.keys(data.KeyConditions), key, comparisonOperator, attrValList
 
-  var msg = '', i
-  var lengths = {
+  var msg = validateExpressionParams(data,
+    ['ProjectionExpression', 'FilterExpression', 'KeyConditionExpression'],
+    ['AttributesToGet', 'QueryFilter', 'ConditionalOperator', 'KeyConditions'])
+  if (msg) return msg
+
+  var i, key, comparisonOperator, attrValList, lengths = {
     NULL: 0,
     NOT_NULL: 0,
     EQ: 1,
@@ -130,6 +155,36 @@ exports.custom = function(data) {
     }
   }
 
+  if (data.AttributesToGet) {
+    var attrs = Object.create(null)
+    for (i = 0; i < data.AttributesToGet.length; i++) {
+      if (attrs[data.AttributesToGet[i]])
+        return 'One or more parameter values were invalid: Duplicate value in attribute name: ' +
+          data.AttributesToGet[i]
+      attrs[data.AttributesToGet[i]] = true
+    }
+  }
+
+  for (key in data.ExclusiveStartKey) {
+    msg = validateAttributeValue(data.ExclusiveStartKey[key])
+    if (msg) return 'The provided starting key is invalid: ' + msg
+  }
+
+  if (data.KeyConditions == null && data.KeyConditionExpression == null) {
+    return 'Either the KeyConditions or KeyConditionExpression parameter must be specified in the request.'
+  }
+
+  msg = validateExpressions(data)
+  if (msg) return msg
+
+  if (data._keyConditionExpression != null) {
+    data.KeyConditions = convertKeyCondition(data._keyConditionExpression)
+    if (typeof data.KeyConditions == 'string') {
+      return data.KeyConditions
+    }
+  }
+
+  var numConditions = 0
   for (key in data.KeyConditions) {
     comparisonOperator = data.KeyConditions[key].ComparisonOperator
     attrValList = data.KeyConditions[key].AttributeValueList || []
@@ -150,25 +205,9 @@ exports.custom = function(data) {
             ' is not valid for ' + Object.keys(attrValList[i])[0] + ' AttributeValue type'
       }
     }
+    numConditions++
   }
-
-  if (conditionKeys.length != 1 && conditionKeys.length != 2) {
+  if (numConditions != 1 && numConditions != 2) {
     return 'Conditions can be of length 1 or 2 only'
   }
-
-  for (key in data.ExclusiveStartKey) {
-    msg = validateAttributeValue(data.ExclusiveStartKey[key])
-    if (msg) return 'The provided starting key is invalid: ' + msg
-  }
-
-  if (data.AttributesToGet) {
-    var attrs = Object.create(null)
-    for (i = 0; i < data.AttributesToGet.length; i++) {
-      if (attrs[data.AttributesToGet[i]])
-        return 'One or more parameter values were invalid: Duplicate value in attribute name: ' +
-          data.AttributesToGet[i]
-      attrs[data.AttributesToGet[i]] = true
-    }
-  }
 }
-

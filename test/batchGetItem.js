@@ -1,4 +1,5 @@
-var helpers = require('./helpers'),
+var async = require('async'),
+    helpers = require('./helpers'),
     db = require('../db')
 
 var target = 'BatchGetItem',
@@ -40,6 +41,18 @@ describe('batchGetItem', function() {
 
     it('should return SerializationException when RequestItems.Attr.ConsistentRead is not a boolean', function(done) {
       assertType('RequestItems.Attr.ConsistentRead', 'Boolean', done)
+    })
+
+    it('should return SerializationException when RequestItems.Attr.ExpressionAttributeNames is not a map', function(done) {
+      assertType('RequestItems.Attr.ExpressionAttributeNames', 'Map', done)
+    })
+
+    it('should return SerializationException when RequestItems.Attr.ExpressionAttributeNames.Attr is not a string', function(done) {
+      assertType('RequestItems.Attr.ExpressionAttributeNames.Attr', 'String', done)
+    })
+
+    it('should return SerializationException when RequestItems.Attr.ProjectionExpression is not a string', function(done) {
+      assertType('RequestItems.Attr.ProjectionExpression', 'String', done)
     })
 
     it('should return SerializationException when ReturnConsumedCapacity is not a string', function(done) {
@@ -134,6 +147,67 @@ describe('batchGetItem', function() {
           'Member must have length less than or equal to 100'), done)
     })
 
+    it('should return ValidationException if filter expression and non-expression', function(done) {
+      assertValidation({
+        RequestItems: {
+          abc: {
+            Keys: [{}],
+            AttributesToGet: ['a'],
+            ExpressionAttributeNames: {},
+            ProjectionExpression: '',
+          },
+        },
+      }, 'Can not use both expression and non-expression parameters in the same request: ' +
+        'Non-expression parameters: {AttributesToGet} Expression parameters: {ProjectionExpression}', done)
+    })
+
+    it('should return ValidationException if ExpressionAttributeNames but no ProjectionExpression', function(done) {
+      assertValidation({
+        RequestItems: {
+          abc: {
+            Keys: [{}],
+            AttributesToGet: ['a'],
+            ExpressionAttributeNames: {},
+          },
+        },
+      }, 'ExpressionAttributeNames can only be specified when using expressions', done)
+    })
+
+    it('should return ValidationException for empty ExpressionAttributeNames', function(done) {
+      assertValidation({
+        RequestItems: {
+          abc: {
+            Keys: [{}],
+            ExpressionAttributeNames: {},
+            ProjectionExpression: '',
+          },
+        },
+      }, 'ExpressionAttributeNames must not be empty', done)
+    })
+
+    it('should return ValidationException for invalid ExpressionAttributeNames', function(done) {
+      assertValidation({
+        RequestItems: {
+          abc: {
+            Keys: [{}],
+            ExpressionAttributeNames: {'a': 'a'},
+            ProjectionExpression: '',
+          },
+        },
+      }, 'ExpressionAttributeNames contains invalid key: Syntax error; key: "a"', done)
+    })
+
+    it('should return ValidationException for empty ProjectionExpression', function(done) {
+      assertValidation({
+        RequestItems: {
+          abc: {
+            Keys: [{}],
+            ProjectionExpression: '',
+          },
+        },
+      }, 'Invalid ProjectionExpression: The expression can not be empty;', done)
+    })
+
     it('should return ValidationException when fetching more than 100 keys over multiple tables', function(done) {
       var keys = [], i
       for (i = 0; i < 100; i++) {
@@ -152,130 +226,84 @@ describe('batchGetItem', function() {
         'Requested resource not found', done)
     })
 
+    it('should return ValidationException for unsupported datatype in Key', function(done) {
+      async.forEach([
+        {},
+        {a: ''},
+        {M: {a: {}}},
+        {L: [{}]},
+        {L: [{a: {}}]},
+      ], function(expr, cb) {
+        assertValidation({RequestItems: {abc: {Keys: [{a: expr}]}}},
+          'Supplied AttributeValue is empty, must contain exactly one of the supported datatypes', cb)
+      }, done)
+    })
+
+    it('should return ValidationException for invalid values in Key', function(done) {
+      async.forEach([
+        [{N: '', S: ''}, 'An AttributeValue may not contain an empty string'],
+        [{B: ''}, 'An AttributeValue may not contain a null or empty binary type.'],
+        [{NULL: 'no'}, 'Null attribute value types must have the value of true'],
+        [{SS: []}, 'An string set  may not be empty'],
+        [{NS: []}, 'An number set  may not be empty'],
+        [{BS: []}, 'Binary sets should not be empty'],
+        [{SS: ['a', '']}, 'An string set may not have a empty string as a member'],
+        [{BS: ['aaaa', '']}, 'Binary sets may not contain null or empty values'],
+        [{SS: ['a', 'a']}, 'Input collection [a, a] contains duplicates.'],
+        [{BS: ['Yg==', 'Yg==']}, 'Input collection [Yg==, Yg==]of type BS contains duplicates.'],
+      ], function(expr, cb) {
+        assertValidation({RequestItems: {abc: {Keys: [{a: expr[0]}]}}},
+          'One or more parameter values were invalid: ' + expr[1], cb)
+      }, done)
+    })
+
+    it('should return ValidationException for empty/invalid numbers in Key', function(done) {
+      async.forEach([
+        [{S: 'a', N: ''}, 'The parameter cannot be converted to a numeric value'],
+        [{S: 'a', N: 'b'}, 'The parameter cannot be converted to a numeric value: b'],
+        [{NS: ['1', '']}, 'The parameter cannot be converted to a numeric value'],
+        [{NS: ['1', 'b']}, 'The parameter cannot be converted to a numeric value: b'],
+        [{NS: ['1', '1']}, 'Input collection contains duplicates'],
+        [{N: '123456789012345678901234567890123456789'}, 'Attempting to store more than 38 significant digits in a Number'],
+        [{N: '-1.23456789012345678901234567890123456789'}, 'Attempting to store more than 38 significant digits in a Number'],
+        [{N: '1e126'}, 'Number overflow. Attempting to store a number with magnitude larger than supported range'],
+        [{N: '-1e126'}, 'Number overflow. Attempting to store a number with magnitude larger than supported range'],
+        [{N: '1e-131'}, 'Number underflow. Attempting to store a number with magnitude smaller than supported range'],
+        [{N: '-1e-131'}, 'Number underflow. Attempting to store a number with magnitude smaller than supported range'],
+      ], function(expr, cb) {
+        assertValidation({RequestItems: {abc: {Keys: [{a: expr[0]}]}}}, expr[1], cb)
+      }, done)
+    })
+
+    it('should return ValidationException for multiple datatypes in Key', function(done) {
+      assertValidation({RequestItems: {abc: {Keys: [{'a': {S: 'a', N: '1'}}]}}},
+        'Supplied AttributeValue has more than one datatypes set, must contain exactly one of the supported datatypes', done)
+    })
+
     it('should return ValidationException for duplicated keys', function(done) {
-      var key = {a: {S: helpers.randomString()}},
-          batchReq = {RequestItems: {}}
-      batchReq.RequestItems[helpers.testHashTable] = {Keys: [key, key, key]}
-      assertValidation(batchReq, 'Provided list of item keys contains duplicates', done)
+      var key = {a: {S: helpers.randomString()}, b: {N: helpers.randomNumber()}}
+      assertValidation({
+        RequestItems: {
+          abc: {
+            Keys: [key, {b: key.b, a: key.a}, key],
+            ExpressionAttributeNames: {},
+            ProjectionExpression: '',
+          },
+        },
+      }, 'Provided list of item keys contains duplicates', done)
     })
 
     it('should return ValidationException for duplicated mixed up keys', function(done) {
       var key = {a: {S: helpers.randomString()}},
-          key2 = {a: {S: helpers.randomString()}},
-          batchReq = {RequestItems: {}}
-      batchReq.RequestItems[helpers.testHashTable] = {Keys: [key, key2, key]}
-      assertValidation(batchReq, 'Provided list of item keys contains duplicates', done)
-    })
-
-    it('should return ValidationException for empty key type', function(done) {
-      assertValidation({RequestItems: {abc: {Keys: [{a: {}}]}}},
-        'Supplied AttributeValue is empty, must contain exactly one of the supported datatypes', done)
-    })
-
-    it('should return ValidationException for bad key type', function(done) {
-      assertValidation({RequestItems: {abc: {Keys: [{a: {a: ''}}]}}},
-        'Supplied AttributeValue is empty, must contain exactly one of the supported datatypes', done)
-    })
-
-    it('should return ValidationException for empty string', function(done) {
-      assertValidation({RequestItems: {abc: {Keys: [{a: {S: ''}}]}}},
-        'One or more parameter values were invalid: An AttributeValue may not contain an empty string', done)
-    })
-
-    it('should return ValidationException for empty binary', function(done) {
-      assertValidation({RequestItems: {abc: {Keys: [{a: {B: ''}}]}}},
-        'One or more parameter values were invalid: An AttributeValue may not contain a null or empty binary type.', done)
-    })
-
-    it('should return ValidationException for false null', function(done) {
-      assertValidation({RequestItems: {abc: {Keys: [{a: {NULL: false}}]}}},
-        'One or more parameter values were invalid: Null attribute value types must have the value of true', done)
-    })
-
-    // Somehow allows set types for keys
-    it('should return ValidationException for empty set key', function(done) {
-      assertValidation({RequestItems: {abc: {Keys: [{a: {SS: []}}]}}},
-        'One or more parameter values were invalid: An string set  may not be empty', done)
-    })
-
-    it('should return ValidationException for empty string in set', function(done) {
-      assertValidation({RequestItems: {abc: {Keys: [{a: {SS: ['a', '']}}]}}},
-        'One or more parameter values were invalid: An string set may not have a empty string as a member', done)
-    })
-
-    it('should return ValidationException for empty binary in set', function(done) {
-      assertValidation({RequestItems: {abc: {Keys: [{a: {BS: ['aaaa', '']}}]}}},
-        'One or more parameter values were invalid: Binary sets may not contain null or empty values', done)
-    })
-
-    it('should return ValidationException if key has empty numeric in set', function(done) {
-      assertValidation({RequestItems: {abc: {Keys: [{a: {NS: ['1', '']}}]}}},
-        'The parameter cannot be converted to a numeric value', done)
-    })
-
-    it('should return ValidationException for duplicate string in set', function(done) {
-      assertValidation({RequestItems: {abc: {Keys: [{a: {SS: ['a', 'a']}}]}}},
-        'One or more parameter values were invalid: Input collection [a, a] contains duplicates.', done)
-    })
-
-    it('should return ValidationException for duplicate number in set', function(done) {
-      assertValidation({RequestItems: {abc: {Keys: [{a: {NS: ['1', '1']}}]}}},
-        'Input collection contains duplicates', done)
-    })
-
-    it('should return ValidationException for duplicate binary in set', function(done) {
-      assertValidation({RequestItems: {abc: {Keys: [{a: {BS: ['Yg==', 'Yg==']}}]}}},
-        'One or more parameter values were invalid: Input collection [Yg==, Yg==]of type BS contains duplicates.', done)
-    })
-
-    it('should return ValidationException for multiple types', function(done) {
-      assertValidation({RequestItems: {abc: {Keys: [{a: {S: 'a', N: '1'}}]}}},
-        'Supplied AttributeValue has more than one datatypes set, must contain exactly one of the supported datatypes', done)
-    })
-
-    it('should return ValidationException if key has empty numeric type', function(done) {
-      assertValidation({RequestItems: {abc: {Keys: [{a: {N: ''}}]}}},
-        'The parameter cannot be converted to a numeric value', done)
-    })
-
-    it('should return ValidationException if key has incorrect numeric type', function(done) {
-      assertValidation({RequestItems: {abc: {Keys: [{a: {N: 'b'}}]}}},
-        'The parameter cannot be converted to a numeric value: b', done)
-    })
-
-    it('should return ValidationException if key has large numeric type', function(done) {
-      assertValidation({RequestItems: {abc: {Keys: [{a: {N: '123456789012345678901234567890123456789'}}]}}},
-        'Attempting to store more than 38 significant digits in a Number', done)
-    })
-
-    it('should return ValidationException if key has long digited number', function(done) {
-      assertValidation({RequestItems: {abc: {Keys: [{a: {N: '-1.23456789012345678901234567890123456789'}}]}}},
-        'Attempting to store more than 38 significant digits in a Number', done)
-    })
-
-    it('should return ValidationException if key has huge positive number', function(done) {
-      assertValidation({RequestItems: {abc: {Keys: [{a: {N: '1e126'}}]}}},
-        'Number overflow. Attempting to store a number with magnitude larger than supported range', done)
-    })
-
-    it('should return ValidationException if key has huge negative number', function(done) {
-      assertValidation({RequestItems: {abc: {Keys: [{a: {N: '-1e126'}}]}}},
-        'Number overflow. Attempting to store a number with magnitude larger than supported range', done)
-    })
-
-    it('should return ValidationException if key has tiny positive number', function(done) {
-      assertValidation({RequestItems: {abc: {Keys: [{a: {N: '1e-131'}}]}}},
-        'Number underflow. Attempting to store a number with magnitude smaller than supported range', done)
-    })
-
-    it('should return ValidationException if key has tiny negative number', function(done) {
-      assertValidation({RequestItems: {abc: {Keys: [{a: {N: '-1e-131'}}]}}},
-        'Number underflow. Attempting to store a number with magnitude smaller than supported range', done)
-    })
-
-    it('should return ValidationException if key has incorrect numeric type in set', function(done) {
-      assertValidation({RequestItems: {abc: {Keys: [{a: {NS: ['1', 'b', 'a']}}]}}},
-        'The parameter cannot be converted to a numeric value: b', done)
+          key2 = {a: {S: helpers.randomString()}}
+      assertValidation({
+        RequestItems: {
+          abc: {
+            Keys: [key, key2, key],
+            AttributesToGet: ['a', 'a'],
+          },
+        },
+      }, 'Provided list of item keys contains duplicates', done)
     })
 
     it('should return ValidationException duplicate values in AttributesToGet', function(done) {
@@ -290,63 +318,29 @@ describe('batchGetItem', function() {
         'Requested resource not found', done)
     })
 
-    it('should return ValidationException if key is empty and table does exist', function(done) {
-      var batchReq = {RequestItems: {}}
-      batchReq.RequestItems[helpers.testHashTable] = {Keys: [{}]}
-      assertValidation(batchReq,
-        'The provided key element does not match the schema', done)
+    it('should return ValidationException if key does not match schema', function(done) {
+      async.forEach([
+        {},
+        {b: {S: 'a'}},
+        {a: {S: 'a'}, b: {S: 'a'}},
+        {a: {B: 'abcd'}},
+        {a: {N: '1'}},
+        {a: {BOOL: true}},
+        {a: {NULL: true}},
+        {a: {SS: ['a']}},
+        {a: {NS: ['1']}},
+        {a: {BS: ['aaaa']}},
+        {a: {M: {}}},
+        {a: {L: []}},
+      ], function(expr, cb) {
+        var batchReq = {RequestItems: {}}
+        batchReq.RequestItems[helpers.testHashTable] = {Keys: [expr]}
+        assertValidation(batchReq,
+          'The provided key element does not match the schema', cb)
+      }, done)
     })
 
-    it('should return ValidationException if key has incorrect attributes', function(done) {
-      var batchReq = {RequestItems: {}}
-      batchReq.RequestItems[helpers.testHashTable] = {Keys: [{b: {S: 'a'}}]}
-      assertValidation(batchReq,
-        'The provided key element does not match the schema', done)
-    })
-
-    it('should return ValidationException if key has extra attributes', function(done) {
-      var batchReq = {RequestItems: {}}
-      batchReq.RequestItems[helpers.testHashTable] = {Keys: [{a: {S: 'a'}, b: {S: 'a'}}]}
-      assertValidation(batchReq,
-        'The provided key element does not match the schema', done)
-    })
-
-    it('should return ValidationException if key is incorrect binary type', function(done) {
-      var batchReq = {RequestItems: {}}
-      batchReq.RequestItems[helpers.testHashTable] = {Keys: [{a: {B: 'abcd'}}]}
-      assertValidation(batchReq,
-        'The provided key element does not match the schema', done)
-    })
-
-    it('should return ValidationException if key is incorrect numeric type', function(done) {
-      var batchReq = {RequestItems: {}}
-      batchReq.RequestItems[helpers.testHashTable] = {Keys: [{a: {N: '1'}}]}
-      assertValidation(batchReq,
-        'The provided key element does not match the schema', done)
-    })
-
-    it('should return ValidationException if key is incorrect string set type', function(done) {
-      var batchReq = {RequestItems: {}}
-      batchReq.RequestItems[helpers.testHashTable] = {Keys: [{a: {SS: ['a']}}]}
-      assertValidation(batchReq,
-        'The provided key element does not match the schema', done)
-    })
-
-    it('should return ValidationException if key is incorrect numeric set type', function(done) {
-      var batchReq = {RequestItems: {}}
-      batchReq.RequestItems[helpers.testHashTable] = {Keys: [{a: {NS: ['1']}}]}
-      assertValidation(batchReq,
-        'The provided key element does not match the schema', done)
-    })
-
-    it('should return ValidationException if key is incorrect binary set type', function(done) {
-      var batchReq = {RequestItems: {}}
-      batchReq.RequestItems[helpers.testHashTable] = {Keys: [{a: {BS: ['aaaa']}}]}
-      assertValidation(batchReq,
-        'The provided key element does not match the schema', done)
-    })
-
-    it('should return ValidationException if missing range key', function(done) {
+    it('should return ValidationException if range key does not match schema', function(done) {
       var batchReq = {RequestItems: {}}
       batchReq.RequestItems[helpers.testRangeTable] = {Keys: [{a: {S: 'a'}}]}
       assertValidation(batchReq,
@@ -450,24 +444,32 @@ describe('batchGetItem', function() {
       request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        batchReq = {RequestItems: {}}
-        batchReq.RequestItems[helpers.testHashTable] = {Keys: [
-          {a: item.a},
-          {a: {S: helpers.randomString()}},
-          {a: item3.a},
-          {a: {S: helpers.randomString()}},
-          {a: item4.a},
-        ], AttributesToGet: ['b', 'c'], ConsistentRead: true}
-        request(opts(batchReq), function(err, res) {
-          if (err) return done(err)
-          res.statusCode.should.equal(200)
-          res.body.Responses[helpers.testHashTable].should.containEql({b: item.b, c: item.c})
-          res.body.Responses[helpers.testHashTable].should.containEql({b: item3.b})
-          res.body.Responses[helpers.testHashTable].should.containEql({})
-          res.body.Responses[helpers.testHashTable].should.have.length(3)
-          res.body.UnprocessedKeys.should.eql({})
-          done()
-        })
+        async.forEach([
+          {AttributesToGet: ['b', 'c']},
+          {ProjectionExpression: 'b, c'},
+          {ProjectionExpression: '#b, #c', ExpressionAttributeNames: {'#b': 'b', '#c': 'c'}},
+        ], function(batchOpts, cb) {
+          batchReq = {RequestItems: {}}
+          batchReq.RequestItems[helpers.testHashTable] = batchOpts
+          batchOpts.Keys = [
+            {a: item.a},
+            {a: {S: helpers.randomString()}},
+            {a: item3.a},
+            {a: {S: helpers.randomString()}},
+            {a: item4.a},
+          ]
+          batchOpts.ConsistentRead = true
+          request(opts(batchReq), function(err, res) {
+            if (err) return cb(err)
+            res.statusCode.should.equal(200)
+            res.body.Responses[helpers.testHashTable].should.containEql({b: item.b, c: item.c})
+            res.body.Responses[helpers.testHashTable].should.containEql({b: item3.b})
+            res.body.Responses[helpers.testHashTable].should.containEql({})
+            res.body.Responses[helpers.testHashTable].should.have.length(3)
+            res.body.UnprocessedKeys.should.eql({})
+            cb()
+          })
+        }, done)
       })
     })
 
@@ -705,5 +707,3 @@ describe('batchGetItem', function() {
   })
 
 })
-
-

@@ -8,13 +8,20 @@ module.exports = function getItem(store, data, cb) {
     var key = db.validateKey(data.Key, table), itemDb = store.getItemDb(data.TableName)
     if (key instanceof Error) return cb(key)
 
+    if (data._projectionPaths) {
+      err = db.validateKeyPaths(data._projectionPaths, table)
+      if (err) return cb(err)
+    }
+
     itemDb.get(key, function(err, item) {
       if (err && err.name != 'NotFoundError') return cb(err)
 
       var returnObj = {}
 
       if (item) {
-        if (data.AttributesToGet) {
+        if (data._projectionPaths) {
+          returnObj.Item = db.mapPaths(data._projectionPaths, item)
+        } else if (data.AttributesToGet) {
           returnObj.Item = data.AttributesToGet.reduce(function(returnItem, attr) {
             if (item[attr] != null) returnItem[attr] = item[attr]
             return returnItem
@@ -36,4 +43,3 @@ module.exports = function getItem(store, data, cb) {
     })
   })
 }
-

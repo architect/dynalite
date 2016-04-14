@@ -13,6 +13,7 @@ describe.skip('benchmarks', function() {
     helpers.batchBulkPut(helpers.testHashTable, items, numSegments, function(err) {
       if (err) return done(err)
 
+      // eslint-disable-next-line no-console
       console.log('batchBulkPut: %dms, %d items/sec', Date.now() - start, 1000 * numItems / (Date.now() - start))
 
       done()
@@ -31,6 +32,7 @@ describe.skip('benchmarks', function() {
         if (err) return done(err)
         res.statusCode.should.equal(200)
 
+        // eslint-disable-next-line no-console
         console.log('Scan: %d items, %dms, %d items/sec, %s', res.body.Count, Date.now() - start,
           1000 * res.body.Count / (Date.now() - start), JSON.stringify(res.body.LastEvaluatedKey))
 

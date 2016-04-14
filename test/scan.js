@@ -1,5 +1,6 @@
 var helpers = require('./helpers'),
-    should = require('should')
+    should = require('should'),
+    async = require('async')
 
 var target = 'Scan',
     request = helpers.request,
@@ -45,6 +46,10 @@ describe('scan', function() {
       assertType('Segment', 'Integer', done)
     })
 
+    it('should return SerializationException when ConditionalOperator is not a string', function(done) {
+      assertType('ConditionalOperator', 'String', done)
+    })
+
     it('should return SerializationException when TotalSegments is not an integer', function(done) {
       assertType('TotalSegments', 'Integer', done)
     })
@@ -70,6 +75,35 @@ describe('scan', function() {
       assertType('ScanFilter.Attr.AttributeValueList.0', 'AttrStructure', done)
     })
 
+    it('should return SerializationException when FilterExpression is not a string', function(done) {
+      assertType('FilterExpression', 'String', done)
+    })
+
+    it('should return SerializationException when ExpressionAttributeValues is not a map', function(done) {
+      assertType('ExpressionAttributeValues', 'Map', done)
+    })
+
+    it('should return SerializationException when ExpressionAttributeValues.Attr is not an attr struct', function(done) {
+      this.timeout(60000)
+      assertType('ExpressionAttributeValues.Attr', 'AttrStructure', done)
+    })
+
+    it('should return SerializationException when ExpressionAttributeNames is not a map', function(done) {
+      assertType('ExpressionAttributeNames', 'Map', done)
+    })
+
+    it('should return SerializationException when ExpressionAttributeNames.Attr is not a string', function(done) {
+      assertType('ExpressionAttributeNames.Attr', 'String', done)
+    })
+
+    it('should return SerializationException when ProjectionExpression is not a string', function(done) {
+      assertType('ProjectionExpression', 'String', done)
+    })
+
+    it('should return SerializationException when IndexName is not a string', function(done) {
+      assertType('IndexName', 'String', done)
+    })
+
   })
 
   describe('validations', function() {
@@ -82,21 +116,31 @@ describe('scan', function() {
     })
 
     it('should return ValidationException for empty TableName', function(done) {
+      var tableNamePieces = [
+        'Value \'\' at \'tableName\' failed to satisfy constraint: ' +
+        'Member must satisfy regular expression pattern: [a-zA-Z0-9_.-]+',
+        'Value \'\' at \'tableName\' failed to satisfy constraint: ' +
+        'Member must have length greater than or equal to 3',
+      ]
       assertValidation({TableName: ''},
-        '2 validation errors detected: ' +
-        'Value \'\' at \'tableName\' failed to satisfy constraint: ' +
-        'Member must satisfy regular expression pattern: [a-zA-Z0-9_.-]+; ' +
-        'Value \'\' at \'tableName\' failed to satisfy constraint: ' +
-        'Member must have length greater than or equal to 3', done)
+        tableNamePieces.map(function(piece, ix) {
+          return '2 validation errors detected: ' +
+            [ix, +!ix].map(function(ix) { return tableNamePieces[ix] }).join('; ')
+        }), done)
     })
 
     it('should return ValidationException for short TableName', function(done) {
+      var tableNamePieces = [
+        'Value \'a;\' at \'tableName\' failed to satisfy constraint: ' +
+        'Member must satisfy regular expression pattern: [a-zA-Z0-9_.-]+',
+        'Value \'a;\' at \'tableName\' failed to satisfy constraint: ' +
+        'Member must have length greater than or equal to 3',
+      ]
       assertValidation({TableName: 'a;'},
-        '2 validation errors detected: ' +
-        'Value \'a;\' at \'tableName\' failed to satisfy constraint: ' +
-        'Member must satisfy regular expression pattern: [a-zA-Z0-9_.-]+; ' +
-        'Value \'a;\' at \'tableName\' failed to satisfy constraint: ' +
-        'Member must have length greater than or equal to 3', done)
+        tableNamePieces.map(function(piece, ix) {
+          return '2 validation errors detected: ' +
+            [ix, +!ix].map(function(ix) { return tableNamePieces[ix] }).join('; ')
+        }), done)
     })
 
     it('should return ValidationException for long TableName', function(done) {
@@ -109,8 +153,9 @@ describe('scan', function() {
 
     it('should return ValidationException for incorrect attributes', function(done) {
       assertValidation({TableName: 'abc;', ReturnConsumedCapacity: 'hi', AttributesToGet: [],
-        Segment: -1, TotalSegments: -1, Select: 'hi', Limit: -1, ScanFilter: {a: {}, b: {ComparisonOperator: ''}}},
-        '9 validation errors detected: ' +
+        IndexName: 'abc;', Segment: -1, TotalSegments: -1, Select: 'hi', Limit: -1, ScanFilter: {a: {}, b: {ComparisonOperator: ''}},
+        ConditionalOperator: 'AN', ExpressionAttributeNames: {}, ExpressionAttributeValues: {}, ProjectionExpression: ''},
+        '10 validation errors detected: ' +
         'Value \'-1\' at \'limit\' failed to satisfy constraint: ' +
         'Member must have value greater than or equal to 1; ' +
         'Value \'hi\' at \'returnConsumedCapacity\' failed to satisfy constraint: ' +
@@ -125,563 +170,946 @@ describe('scan', function() {
         'Member must satisfy enum value set: [IN, NULL, BETWEEN, LT, NOT_CONTAINS, EQ, GT, NOT_NULL, NE, LE, BEGINS_WITH, GE, CONTAINS]; ' +
         'Value null at \'scanFilter.a.member.comparisonOperator\' failed to satisfy constraint: ' +
         'Member must not be null; ' +
+        'Value \'AN\' at \'conditionalOperator\' failed to satisfy constraint: ' +
+        'Member must satisfy enum value set: [OR, AND]; ' +
         'Value \'-1\' at \'totalSegments\' failed to satisfy constraint: ' +
         'Member must have value greater than or equal to 1; ' +
         'Value \'abc;\' at \'tableName\' failed to satisfy constraint: ' +
         'Member must satisfy regular expression pattern: [a-zA-Z0-9_.-]+', done)
     })
 
-    it('should return ValidationException for incorrect number of filter arguments', function(done) {
+    it('should return ValidationException if expression and non-expression', function(done) {
       assertValidation({
         TableName: 'abc',
-        ScanFilter: {
-          a: {ComparisonOperator: 'EQ'},
-          b: {ComparisonOperator: 'NULL'},
-          c: {ComparisonOperator: 'NULL'},
-        }},
-        'One or more parameter values were invalid: Invalid number of argument(s) for the EQ ComparisonOperator', done)
-    })
-
-    it('should return ValidationException for bad key type', function(done) {
-      assertValidation({
-        TableName: 'abc',
-        ScanFilter: {
-          a: {ComparisonOperator: 'EQ', AttributeValueList: [{}]},
-          b: {ComparisonOperator: 'NULL'},
-          c: {ComparisonOperator: 'NULL'},
-        }},
-        'Supplied AttributeValue is empty, must contain exactly one of the supported datatypes', done)
-    })
-
-    it('should return ValidationException for bad key type', function(done) {
-      assertValidation({
-        TableName: 'abc',
-        ScanFilter: {
-          a: {ComparisonOperator: 'EQ', AttributeValueList: [{a: ''}]},
-          b: {ComparisonOperator: 'NULL'},
-          c: {ComparisonOperator: 'NULL'},
-        }},
-        'Supplied AttributeValue is empty, must contain exactly one of the supported datatypes', done)
-    })
-
-    it('should return ValidationException for empty key', function(done) {
-      assertValidation({
-        TableName: 'abc',
-        ScanFilter: {
-          a: {ComparisonOperator: 'EQ', AttributeValueList: [{S: ''}]},
-          b: {ComparisonOperator: 'NULL'},
-          c: {ComparisonOperator: 'NULL'},
-        }},
-        'One or more parameter values were invalid: An AttributeValue may not contain an empty string', done)
-    })
-
-    it('should return empty response if key has incorrect numeric type', function(done) {
-      assertValidation({
-        TableName: 'abc',
-        ScanFilter: {
-          a: {ComparisonOperator: 'EQ', AttributeValueList: [{N: 'b'}]},
-          b: {ComparisonOperator: 'NULL'},
-          c: {ComparisonOperator: 'NULL'},
-        }},
-        'The parameter cannot be converted to a numeric value: b', done)
-    })
-
-    it('should return ValidationException for too many filter args', function(done) {
-      assertValidation({
-        TableName: 'abc',
-        ScanFilter: {
-          a: {ComparisonOperator: 'EQ', AttributeValueList: [{S: 'a'}, {S: 'a'}]},
-          b: {ComparisonOperator: 'NULL'},
-          c: {ComparisonOperator: 'NULL'},
-        }},
-        'One or more parameter values were invalid: Invalid number of argument(s) for the EQ ComparisonOperator', done)
-    })
-
-    it('should return ResourceNotFoundException for EQ on type SS when table does not exist', function(done) {
-      assertNotFound({
-        TableName: 'abc',
-        ScanFilter: {a: {ComparisonOperator: 'EQ', AttributeValueList: [{SS: ['a']}]}}},
-        'Requested resource not found', done)
-    })
-
-    it('should return ValidationException for 1 arg to NULL', function(done) {
-      assertValidation({
-        TableName: 'abc',
-        ScanFilter: {a: {ComparisonOperator: 'NULL', AttributeValueList: [{S: 'a'}]}}},
-        'One or more parameter values were invalid: Invalid number of argument(s) for the NULL ComparisonOperator', done)
-    })
-
-    it('should return ValidationException for 1 arg to NOT_NULL', function(done) {
-      assertValidation({
-        TableName: 'abc',
-        ScanFilter: {a: {ComparisonOperator: 'NOT_NULL', AttributeValueList: [{S: 'a'}]}}},
-        'One or more parameter values were invalid: Invalid number of argument(s) for the NOT_NULL ComparisonOperator', done)
-    })
-
-    it('should return ValidationException for 0 args to NE', function(done) {
-      assertValidation({
-        TableName: 'abc',
-        ScanFilter: {a: {ComparisonOperator: 'NE'}}},
-        'One or more parameter values were invalid: Invalid number of argument(s) for the NE ComparisonOperator', done)
-    })
-
-    it('should return ValidationException for 2 args to NE', function(done) {
-      assertValidation({
-        TableName: 'abc',
-        ScanFilter: {a: {ComparisonOperator: 'NE', AttributeValueList: [{S: 'a'}, {S: 'a'}]}}},
-        'One or more parameter values were invalid: Invalid number of argument(s) for the NE ComparisonOperator', done)
-    })
-
-    it('should return ValidationException for 0 args to LE', function(done) {
-      assertValidation({
-        TableName: 'abc',
-        ScanFilter: {a: {ComparisonOperator: 'LE'}}},
-        'One or more parameter values were invalid: Invalid number of argument(s) for the LE ComparisonOperator', done)
-    })
-
-    it('should return ValidationException for 2 args to LE', function(done) {
-      assertValidation({
-        TableName: 'abc',
-        ScanFilter: {a: {ComparisonOperator: 'LE', AttributeValueList: [{S: 'a'}, {S: 'a'}]}}},
-        'One or more parameter values were invalid: Invalid number of argument(s) for the LE ComparisonOperator', done)
-    })
-
-    it('should return ValidationException for LE on type SS', function(done) {
-      assertValidation({
-        TableName: 'abc',
-        ScanFilter: {a: {ComparisonOperator: 'LE', AttributeValueList: [{SS: ['a']}]}}},
-        'One or more parameter values were invalid: ComparisonOperator LE is not valid for SS AttributeValue type', done)
-    })
-
-    it('should return ValidationException for LE on type NS', function(done) {
-      assertValidation({
-        TableName: 'abc',
-        ScanFilter: {a: {ComparisonOperator: 'LE', AttributeValueList: [{NS: ['1']}]}}},
-        'One or more parameter values were invalid: ComparisonOperator LE is not valid for NS AttributeValue type', done)
-    })
-
-    it('should return ValidationException for LE on type BS', function(done) {
-      assertValidation({
-        TableName: 'abc',
-        ScanFilter: {a: {ComparisonOperator: 'LE', AttributeValueList: [{BS: ['abcd']}]}}},
-        'One or more parameter values were invalid: ComparisonOperator LE is not valid for BS AttributeValue type', done)
-    })
-
-    it('should return ValidationException for 0 args to LT', function(done) {
-      assertValidation({
-        TableName: 'abc',
-        ScanFilter: {a: {ComparisonOperator: 'LT'}}},
-        'One or more parameter values were invalid: Invalid number of argument(s) for the LT ComparisonOperator', done)
-    })
-
-    it('should return ValidationException for 2 args to LT', function(done) {
-      assertValidation({
-        TableName: 'abc',
-        ScanFilter: {a: {ComparisonOperator: 'LT', AttributeValueList: [{S: 'a'}, {S: 'a'}]}}},
-        'One or more parameter values were invalid: Invalid number of argument(s) for the LT ComparisonOperator', done)
-    })
-
-    it('should return ValidationException for LT on type SS', function(done) {
-      assertValidation({
-        TableName: 'abc',
-        ScanFilter: {a: {ComparisonOperator: 'LT', AttributeValueList: [{SS: ['a']}]}}},
-        'One or more parameter values were invalid: ComparisonOperator LT is not valid for SS AttributeValue type', done)
-    })
-
-    it('should return ValidationException for LT on type NS', function(done) {
-      assertValidation({
-        TableName: 'abc',
-        ScanFilter: {a: {ComparisonOperator: 'LT', AttributeValueList: [{NS: ['1']}]}}},
-        'One or more parameter values were invalid: ComparisonOperator LT is not valid for NS AttributeValue type', done)
-    })
-
-    it('should return ValidationException for LT on type BS', function(done) {
-      assertValidation({
-        TableName: 'abc',
-        ScanFilter: {a: {ComparisonOperator: 'LT', AttributeValueList: [{BS: ['abcd']}]}}},
-        'One or more parameter values were invalid: ComparisonOperator LT is not valid for BS AttributeValue type', done)
-    })
-
-    it('should return ValidationException for 0 args to GE', function(done) {
-      assertValidation({
-        TableName: 'abc',
-        ScanFilter: {a: {ComparisonOperator: 'GE'}}},
-        'One or more parameter values were invalid: Invalid number of argument(s) for the GE ComparisonOperator', done)
-    })
-
-    it('should return ValidationException for 2 args to GE', function(done) {
-      assertValidation({
-        TableName: 'abc',
-        ScanFilter: {a: {ComparisonOperator: 'GE', AttributeValueList: [{S: 'a'}, {S: 'a'}]}}},
-        'One or more parameter values were invalid: Invalid number of argument(s) for the GE ComparisonOperator', done)
-    })
-
-    it('should return ValidationException for GE on type SS', function(done) {
-      assertValidation({
-        TableName: 'abc',
-        ScanFilter: {a: {ComparisonOperator: 'GE', AttributeValueList: [{SS: ['a']}]}}},
-        'One or more parameter values were invalid: ComparisonOperator GE is not valid for SS AttributeValue type', done)
-    })
-
-    it('should return ValidationException for GE on type NS', function(done) {
-      assertValidation({
-        TableName: 'abc',
-        ScanFilter: {a: {ComparisonOperator: 'GE', AttributeValueList: [{NS: ['1']}]}}},
-        'One or more parameter values were invalid: ComparisonOperator GE is not valid for NS AttributeValue type', done)
-    })
-
-    it('should return ValidationException for GE on type BS', function(done) {
-      assertValidation({
-        TableName: 'abc',
-        ScanFilter: {a: {ComparisonOperator: 'GE', AttributeValueList: [{BS: ['abcd']}]}}},
-        'One or more parameter values were invalid: ComparisonOperator GE is not valid for BS AttributeValue type', done)
-    })
-
-    it('should return ValidationException for 0 args to GT', function(done) {
-      assertValidation({
-        TableName: 'abc',
-        ScanFilter: {a: {ComparisonOperator: 'GT'}}},
-        'One or more parameter values were invalid: Invalid number of argument(s) for the GT ComparisonOperator', done)
-    })
-
-    it('should return ValidationException for 2 args to GT', function(done) {
-      assertValidation({
-        TableName: 'abc',
-        ScanFilter: {a: {ComparisonOperator: 'GT', AttributeValueList: [{S: 'a'}, {S: 'a'}]}}},
-        'One or more parameter values were invalid: Invalid number of argument(s) for the GT ComparisonOperator', done)
-    })
-
-    it('should return ValidationException for GT on type SS', function(done) {
-      assertValidation({
-        TableName: 'abc',
-        ScanFilter: {a: {ComparisonOperator: 'GT', AttributeValueList: [{SS: ['a']}]}}},
-        'One or more parameter values were invalid: ComparisonOperator GT is not valid for SS AttributeValue type', done)
-    })
-
-    it('should return ValidationException for GT on type NS', function(done) {
-      assertValidation({
-        TableName: 'abc',
-        ScanFilter: {a: {ComparisonOperator: 'GT', AttributeValueList: [{NS: ['1']}]}}},
-        'One or more parameter values were invalid: ComparisonOperator GT is not valid for NS AttributeValue type', done)
-    })
-
-    it('should return ValidationException for GT on type BS', function(done) {
-      assertValidation({
-        TableName: 'abc',
-        ScanFilter: {a: {ComparisonOperator: 'GT', AttributeValueList: [{BS: ['abcd']}]}}},
-        'One or more parameter values were invalid: ComparisonOperator GT is not valid for BS AttributeValue type', done)
-    })
-
-    it('should return ValidationException for 0 args to CONTAINS', function(done) {
-      assertValidation({
-        TableName: 'abc',
-        ScanFilter: {a: {ComparisonOperator: 'CONTAINS'}}},
-        'One or more parameter values were invalid: Invalid number of argument(s) for the CONTAINS ComparisonOperator', done)
-    })
-
-    it('should return ValidationException for 2 args to CONTAINS', function(done) {
-      assertValidation({
-        TableName: 'abc',
-        ScanFilter: {a: {ComparisonOperator: 'CONTAINS', AttributeValueList: [{S: 'a'}, {S: 'a'}]}}},
-        'One or more parameter values were invalid: Invalid number of argument(s) for the CONTAINS ComparisonOperator', done)
-    })
-
-    it('should return ValidationException for CONTAINS on type SS', function(done) {
-      assertValidation({
-        TableName: 'abc',
-        ScanFilter: {a: {ComparisonOperator: 'CONTAINS', AttributeValueList: [{SS: ['a']}]}}},
-        'One or more parameter values were invalid: ComparisonOperator CONTAINS is not valid for SS AttributeValue type', done)
-    })
-
-    it('should return ValidationException for CONTAINS on type NS', function(done) {
-      assertValidation({
-        TableName: 'abc',
-        ScanFilter: {a: {ComparisonOperator: 'CONTAINS', AttributeValueList: [{NS: ['1']}]}}},
-        'One or more parameter values were invalid: ComparisonOperator CONTAINS is not valid for NS AttributeValue type', done)
-    })
-
-    it('should return ValidationException for CONTAINS on type BS', function(done) {
-      assertValidation({
-        TableName: 'abc',
-        ScanFilter: {a: {ComparisonOperator: 'CONTAINS', AttributeValueList: [{BS: ['abcd']}]}}},
-        'One or more parameter values were invalid: ComparisonOperator CONTAINS is not valid for BS AttributeValue type', done)
-    })
-
-    it('should return ValidationException for 0 args to NOT_CONTAINS', function(done) {
-      assertValidation({
-        TableName: 'abc',
-        ScanFilter: {a: {ComparisonOperator: 'NOT_CONTAINS'}}},
-        'One or more parameter values were invalid: Invalid number of argument(s) for the NOT_CONTAINS ComparisonOperator', done)
-    })
-
-    it('should return ValidationException for 2 args to NOT_CONTAINS', function(done) {
-      assertValidation({
-        TableName: 'abc',
-        ScanFilter: {a: {ComparisonOperator: 'NOT_CONTAINS', AttributeValueList: [{S: 'a'}, {S: 'a'}]}}},
-        'One or more parameter values were invalid: Invalid number of argument(s) for the NOT_CONTAINS ComparisonOperator', done)
-    })
-
-    it('should return ValidationException for NOT_CONTAINS on type SS', function(done) {
-      assertValidation({
-        TableName: 'abc',
-        ScanFilter: {a: {ComparisonOperator: 'NOT_CONTAINS', AttributeValueList: [{SS: ['a']}]}}},
-        'One or more parameter values were invalid: ComparisonOperator NOT_CONTAINS is not valid for SS AttributeValue type', done)
-    })
-
-    it('should return ValidationException for NOT_CONTAINS on type NS', function(done) {
-      assertValidation({
-        TableName: 'abc',
-        ScanFilter: {a: {ComparisonOperator: 'NOT_CONTAINS', AttributeValueList: [{NS: ['1']}]}}},
-        'One or more parameter values were invalid: ComparisonOperator NOT_CONTAINS is not valid for NS AttributeValue type', done)
-    })
-
-    it('should return ValidationException for NOT_CONTAINS on type BS', function(done) {
-      assertValidation({
-        TableName: 'abc',
-        ScanFilter: {a: {ComparisonOperator: 'NOT_CONTAINS', AttributeValueList: [{BS: ['abcd']}]}}},
-        'One or more parameter values were invalid: ComparisonOperator NOT_CONTAINS is not valid for BS AttributeValue type', done)
-    })
-
-    it('should return ValidationException for 0 args to BEGINS_WITH', function(done) {
-      assertValidation({
-        TableName: 'abc',
-        ScanFilter: {a: {ComparisonOperator: 'BEGINS_WITH'}}},
-        'One or more parameter values were invalid: Invalid number of argument(s) for the BEGINS_WITH ComparisonOperator', done)
-    })
-
-    it('should return ValidationException for 2 args to BEGINS_WITH', function(done) {
-      assertValidation({
-        TableName: 'abc',
-        ScanFilter: {a: {ComparisonOperator: 'BEGINS_WITH', AttributeValueList: [{S: 'a'}, {S: 'a'}]}}},
-        'One or more parameter values were invalid: Invalid number of argument(s) for the BEGINS_WITH ComparisonOperator', done)
-    })
-
-    it('should return ValidationException for BEGINS_WITH on type N', function(done) {
-      assertValidation({
-        TableName: 'abc',
-        ScanFilter: {a: {ComparisonOperator: 'BEGINS_WITH', AttributeValueList: [{N: '1'}]}}},
-        'One or more parameter values were invalid: ComparisonOperator BEGINS_WITH is not valid for N AttributeValue type', done)
-    })
-
-    it('should return ValidationException for BEGINS_WITH on type SS', function(done) {
-      assertValidation({
-        TableName: 'abc',
-        ScanFilter: {a: {ComparisonOperator: 'BEGINS_WITH', AttributeValueList: [{SS: ['a']}]}}},
-        'One or more parameter values were invalid: ComparisonOperator BEGINS_WITH is not valid for SS AttributeValue type', done)
-    })
-
-    it('should return ValidationException for BEGINS_WITH on type NS', function(done) {
-      assertValidation({
-        TableName: 'abc',
-        ScanFilter: {a: {ComparisonOperator: 'BEGINS_WITH', AttributeValueList: [{NS: ['1']}]}}},
-        'One or more parameter values were invalid: ComparisonOperator BEGINS_WITH is not valid for NS AttributeValue type', done)
-    })
-
-    it('should return ValidationException for BEGINS_WITH on type BS', function(done) {
-      assertValidation({
-        TableName: 'abc',
-        ScanFilter: {a: {ComparisonOperator: 'BEGINS_WITH', AttributeValueList: [{BS: ['abcd']}]}}},
-        'One or more parameter values were invalid: ComparisonOperator BEGINS_WITH is not valid for BS AttributeValue type', done)
-    })
-
-    it('should return ValidationException for 0 args to IN', function(done) {
-      assertValidation({
-        TableName: 'abc',
-        ScanFilter: {a: {ComparisonOperator: 'IN'}}},
-        'One or more parameter values were invalid: Invalid number of argument(s) for the IN ComparisonOperator', done)
-    })
-
-    it('should return ValidationException for IN on type SS', function(done) {
-      assertValidation({
-        TableName: 'abc',
-        ScanFilter: {a: {ComparisonOperator: 'IN', AttributeValueList: [{SS: ['a']}]}}},
-        'One or more parameter values were invalid: ComparisonOperator IN is not valid for SS AttributeValue type', done)
-    })
-
-    it('should return ValidationException for IN on type NS', function(done) {
-      assertValidation({
-        TableName: 'abc',
-        ScanFilter: {a: {ComparisonOperator: 'IN', AttributeValueList: [{NS: ['1']}]}}},
-        'One or more parameter values were invalid: ComparisonOperator IN is not valid for NS AttributeValue type', done)
-    })
-
-    it('should return ValidationException for IN on type BS', function(done) {
-      assertValidation({
-        TableName: 'abc',
-        ScanFilter: {a: {ComparisonOperator: 'IN', AttributeValueList: [{BS: ['abcd']}]}}},
-        'One or more parameter values were invalid: ComparisonOperator IN is not valid for BS AttributeValue type', done)
-    })
-
-    it('should return ValidationException for 0 args to BETWEEN', function(done) {
-      assertValidation({
-        TableName: 'abc',
-        ScanFilter: {a: {ComparisonOperator: 'BETWEEN'}}},
-        'One or more parameter values were invalid: Invalid number of argument(s) for the BETWEEN ComparisonOperator', done)
-    })
-
-    it('should return ValidationException for 3 args to BETWEEN', function(done) {
-      assertValidation({
-        TableName: 'abc',
-        ScanFilter: {a: {ComparisonOperator: 'BETWEEN', AttributeValueList: [{S: 'a'}, {S: 'a'}, {S: 'a'}]}}},
-        'One or more parameter values were invalid: Invalid number of argument(s) for the BETWEEN ComparisonOperator', done)
-    })
-
-    it('should return ValidationException for BETWEEN on type SS', function(done) {
-      assertValidation({
-        TableName: 'abc',
-        ScanFilter: {a: {ComparisonOperator: 'BETWEEN', AttributeValueList: [{S: 'a'}, {SS: ['a']}]}}},
-        'One or more parameter values were invalid: ComparisonOperator BETWEEN is not valid for SS AttributeValue type', done)
-    })
-
-    it('should return ValidationException for BETWEEN on type NS', function(done) {
-      assertValidation({
-        TableName: 'abc',
-        ScanFilter: {a: {ComparisonOperator: 'BETWEEN', AttributeValueList: [{S: 'a'}, {NS: ['1']}]}}},
-        'One or more parameter values were invalid: ComparisonOperator BETWEEN is not valid for NS AttributeValue type', done)
-    })
-
-    it('should return ValidationException for BETWEEN on type BS', function(done) {
-      assertValidation({
-        TableName: 'abc',
-        ScanFilter: {a: {ComparisonOperator: 'BETWEEN', AttributeValueList: [{S: 'a'}, {BS: ['abcd']}]}}},
-        'One or more parameter values were invalid: ComparisonOperator BETWEEN is not valid for BS AttributeValue type', done)
-    })
-
-    it('should return ValidationException for empty object ExclusiveStartKey', function(done) {
-      assertValidation({
-        TableName: 'abc',
+        ScanFilter: {a: {ComparisonOperator: 'EQ', AttributeValueList: [{}]}},
+        Segment: 1,
+        Limit: 1,
+        AttributesToGet: ['a', 'a'],
         ExclusiveStartKey: {a: {}},
-        ScanFilter: {a: {ComparisonOperator: 'NULL'}}},
-        'The provided starting key is invalid: ' +
-        'Supplied AttributeValue is empty, must contain exactly one of the supported datatypes', done)
+        ConditionalOperator: 'OR',
+        Select: 'SPECIFIC_ATTRIBUTES',
+        FilterExpression: '',
+        ProjectionExpression: '',
+        ExpressionAttributeNames: {},
+        ExpressionAttributeValues: {},
+      }, 'Can not use both expression and non-expression parameters in the same request: ' +
+        'Non-expression parameters: {AttributesToGet, ScanFilter, ConditionalOperator} ' +
+        'Expression parameters: {ProjectionExpression, FilterExpression}', done)
     })
 
-    it('should return ValidationException for wrong attribute ExclusiveStartKey', function(done) {
+    it('should return ValidationException if ExpressionAttributeNames but no FilterExpression', function(done) {
       assertValidation({
         TableName: 'abc',
-        ExclusiveStartKey: {a: {a: ''}},
-        ScanFilter: {a: {ComparisonOperator: 'NULL'}}},
-        'The provided starting key is invalid: ' +
-        'Supplied AttributeValue is empty, must contain exactly one of the supported datatypes', done)
+        ScanFilter: {a: {ComparisonOperator: 'EQ', AttributeValueList: [{}]}},
+        Segment: 1,
+        Limit: 1,
+        AttributesToGet: ['a', 'a'],
+        ExclusiveStartKey: {a: {}},
+        ConditionalOperator: 'OR',
+        Select: 'SPECIFIC_ATTRIBUTES',
+        ExpressionAttributeNames: {},
+        ExpressionAttributeValues: {},
+      }, 'ExpressionAttributeNames can only be specified when using expressions', done)
     })
 
-    it('should return ValidationException for empty string ExclusiveStartKey', function(done) {
+    it('should return ValidationException if ExpressionAttributeValues but no FilterExpression', function(done) {
       assertValidation({
         TableName: 'abc',
-        ExclusiveStartKey: {a: {S: ''}},
-        ScanFilter: {a: {ComparisonOperator: 'NULL'}}},
-        'The provided starting key is invalid: ' +
-        'One or more parameter values were invalid: An AttributeValue may not contain an empty string', done)
+        ScanFilter: {a: {ComparisonOperator: 'EQ', AttributeValueList: [{}]}},
+        Segment: 1,
+        Limit: 1,
+        AttributesToGet: ['a', 'a'],
+        ExclusiveStartKey: {a: {}},
+        ConditionalOperator: 'OR',
+        Select: 'SPECIFIC_ATTRIBUTES',
+        ExpressionAttributeValues: {},
+      }, 'ExpressionAttributeValues can only be specified when using expressions: FilterExpression is null', done)
     })
 
-    it('should return ValidationException for empty binary', function(done) {
+    it('should return ValidationException for duplicate values in AttributesToGet', function(done) {
       assertValidation({
         TableName: 'abc',
-        ExclusiveStartKey: {a: {B: ''}},
-        ScanFilter: {a: {ComparisonOperator: 'NULL'}}},
-        'The provided starting key is invalid: ' +
-        'One or more parameter values were invalid: An AttributeValue may not contain a null or empty binary type.', done)
+        Segment: 1,
+        ScanFilter: {a: {ComparisonOperator: 'EQ', AttributeValueList: [{}, {a: ''}, {S: ''}]}},
+        ExclusiveStartKey: {a: {}},
+        AttributesToGet: ['a', 'a'],
+      }, 'One or more parameter values were invalid: Duplicate value in attribute name: a', done)
     })
 
-    it('should return ValidationException for false null', function(done) {
-      assertValidation({
-        TableName: 'abc',
-        ExclusiveStartKey: {a: {NULL: false}},
-        ScanFilter: {a: {ComparisonOperator: 'NULL'}}},
-        'The provided starting key is invalid: ' +
-        'One or more parameter values were invalid: Null attribute value types must have the value of true', done)
+    it('should return ValidationException for bad attribute values in ScanFilter', function(done) {
+      async.forEach([
+        {},
+        {a: ''},
+      ], function(expr, cb) {
+        assertValidation({
+          TableName: 'abc',
+          Segment: 1,
+          ExclusiveStartKey: {a: {}},
+          ScanFilter: {a: {ComparisonOperator: 'EQ', AttributeValueList: [expr, {S: ''}]}},
+        }, 'Supplied AttributeValue is empty, must contain exactly one of the supported datatypes', cb)
+      }, done)
     })
 
-    // Somehow allows set types for keys
-    it('should return ValidationException for empty set key', function(done) {
-      assertValidation({
-        TableName: 'abc',
-        ExclusiveStartKey: {a: {SS: []}},
-        ScanFilter: {a: {ComparisonOperator: 'NULL'}}},
-        'The provided starting key is invalid: ' +
-        'One or more parameter values were invalid: An string set  may not be empty', done)
+    it('should return ValidationException for invalid values in ScanFilter', function(done) {
+      async.forEach([
+        [{N: '', S: ''}, 'An AttributeValue may not contain an empty string'],
+        [{B: ''}, 'An AttributeValue may not contain a null or empty binary type.'],
+        [{NULL: 'no'}, 'Null attribute value types must have the value of true'],
+        [{SS: []}, 'An string set  may not be empty'],
+        [{NS: []}, 'An number set  may not be empty'],
+        [{BS: []}, 'Binary sets should not be empty'],
+        [{SS: ['a', '']}, 'An string set may not have a empty string as a member'],
+        [{BS: ['aaaa', '']}, 'Binary sets may not contain null or empty values'],
+        [{SS: ['a', 'a']}, 'Input collection [a, a] contains duplicates.'],
+        [{BS: ['Yg==', 'Yg==']}, 'Input collection [Yg==, Yg==]of type BS contains duplicates.'],
+      ], function(expr, cb) {
+        assertValidation({
+          TableName: 'abc',
+          Segment: 1,
+          ExclusiveStartKey: {a: {}},
+          ScanFilter: {a: {ComparisonOperator: 'EQ', AttributeValueList: [{N: '1'}, expr[0], {}]}},
+        }, 'One or more parameter values were invalid: ' + expr[1], cb)
+      }, done)
     })
 
-    it('should return ValidationException for empty string in set', function(done) {
-      assertValidation({
-        TableName: 'abc',
-        ExclusiveStartKey: {a: {SS: ['a', '']}},
-        ScanFilter: {a: {ComparisonOperator: 'NULL'}}},
-        'The provided starting key is invalid: ' +
-        'One or more parameter values were invalid: An string set may not have a empty string as a member', done)
+    it('should return ValidationException for empty/invalid numbers in ScanFilter', function(done) {
+      async.forEach([
+        [{S: 'a', N: ''}, 'The parameter cannot be converted to a numeric value'],
+        [{S: 'a', N: 'b'}, 'The parameter cannot be converted to a numeric value: b'],
+        [{NS: ['1', '']}, 'The parameter cannot be converted to a numeric value'],
+        [{NS: ['1', 'b']}, 'The parameter cannot be converted to a numeric value: b'],
+        [{NS: ['1', '1']}, 'Input collection contains duplicates'],
+        [{N: '123456789012345678901234567890123456789'}, 'Attempting to store more than 38 significant digits in a Number'],
+        [{N: '-1.23456789012345678901234567890123456789'}, 'Attempting to store more than 38 significant digits in a Number'],
+        [{N: '1e126'}, 'Number overflow. Attempting to store a number with magnitude larger than supported range'],
+        [{N: '-1e126'}, 'Number overflow. Attempting to store a number with magnitude larger than supported range'],
+        [{N: '1e-131'}, 'Number underflow. Attempting to store a number with magnitude smaller than supported range'],
+        [{N: '-1e-131'}, 'Number underflow. Attempting to store a number with magnitude smaller than supported range'],
+      ], function(expr, cb) {
+        assertValidation({
+          TableName: 'abc',
+          Segment: 1,
+          ExclusiveStartKey: {a: {}},
+          ScanFilter: {a: {ComparisonOperator: 'EQ', AttributeValueList: [{N: '1'}, expr[0]]}},
+        }, expr[1], cb)
+      }, done)
     })
 
-    it('should return ValidationException for empty binary in set', function(done) {
+    it('should return ValidationException for multiple datatypes in ScanFilter', function(done) {
       assertValidation({
         TableName: 'abc',
-        ExclusiveStartKey: {a: {BS: ['aaaa', '']}},
-        ScanFilter: {a: {ComparisonOperator: 'NULL'}}},
-        'The provided starting key is invalid: ' +
-        'One or more parameter values were invalid: Binary sets may not contain null or empty values', done)
+        Segment: 1,
+        ExclusiveStartKey: {a: {}},
+        ScanFilter: {a: {ComparisonOperator: 'EQ', AttributeValueList: [{N: '1'}, {S: 'a', N: '1'}]}},
+      }, 'Supplied AttributeValue has more than one datatypes set, must contain exactly one of the supported datatypes', done)
     })
 
-    it('should return ValidationException for multiple types', function(done) {
+    it('should return ValidationException for incorrect number of ScanFilter arguments', function(done) {
+      async.forEach([
+        {a: {ComparisonOperator: 'EQ'}, b: {ComparisonOperator: 'NULL'}, c: {ComparisonOperator: 'NULL'}},
+        {a: {ComparisonOperator: 'EQ'}},
+        {a: {ComparisonOperator: 'EQ', AttributeValueList: []}},
+        {a: {ComparisonOperator: 'NE'}},
+        {a: {ComparisonOperator: 'LE'}},
+        {a: {ComparisonOperator: 'LT'}},
+        {a: {ComparisonOperator: 'GE'}},
+        {a: {ComparisonOperator: 'GT'}},
+        {a: {ComparisonOperator: 'CONTAINS'}},
+        {a: {ComparisonOperator: 'NOT_CONTAINS'}},
+        {a: {ComparisonOperator: 'BEGINS_WITH'}},
+        {a: {ComparisonOperator: 'IN'}},
+        {a: {ComparisonOperator: 'BETWEEN'}},
+        {a: {ComparisonOperator: 'NULL', AttributeValueList: [{S: 'a'}]}},
+        {a: {ComparisonOperator: 'NOT_NULL', AttributeValueList: [{S: 'a'}]}},
+        {a: {ComparisonOperator: 'EQ', AttributeValueList: [{S: 'a'}, {S: 'a'}]}},
+        {a: {ComparisonOperator: 'NE', AttributeValueList: [{S: 'a'}, {S: 'a'}]}},
+        {a: {ComparisonOperator: 'LE', AttributeValueList: [{S: 'a'}, {S: 'a'}]}},
+        {a: {ComparisonOperator: 'LT', AttributeValueList: [{S: 'a'}, {S: 'a'}]}},
+        {a: {ComparisonOperator: 'GE', AttributeValueList: [{S: 'a'}, {S: 'a'}]}},
+        {a: {ComparisonOperator: 'GT', AttributeValueList: [{S: 'a'}, {S: 'a'}]}},
+        {a: {ComparisonOperator: 'CONTAINS', AttributeValueList: [{S: 'a'}, {S: 'a'}]}},
+        {a: {ComparisonOperator: 'NOT_CONTAINS', AttributeValueList: [{S: 'a'}, {S: 'a'}]}},
+        {a: {ComparisonOperator: 'NULL', AttributeValueList: [{S: 'a'}, {S: 'a'}]}},
+        {a: {ComparisonOperator: 'NOT_NULL', AttributeValueList: [{S: 'a'}, {S: 'a'}]}},
+        {a: {ComparisonOperator: 'BETWEEN', AttributeValueList: [{S: 'a'}, {S: 'a'}, {S: 'a'}]}},
+      ], function(expr, cb) {
+        assertValidation({
+          TableName: 'abc',
+          Segment: 1,
+          ExclusiveStartKey: {a: {}},
+          ScanFilter: expr,
+        }, 'One or more parameter values were invalid: Invalid number of argument(s) for the ' +
+          expr.a.ComparisonOperator + ' ComparisonOperator', cb)
+      }, done)
+    })
+
+    it('should return ValidationException for invalid ComparisonOperator types', function(done) {
+      async.forEach([
+        'LT',
+        'LE',
+        'GT',
+        'GE',
+        'IN',
+      ], function(cond, cb) {
+        async.forEach([
+          [{BOOL: true}],
+          [{NULL: true}],
+          [{SS: ['a']}],
+          [{NS: ['1']}],
+          [{BS: ['abcd']}],
+          [{M: {}}],
+          [{L: []}],
+        ], function(list, cb) {
+          assertValidation({
+            TableName: 'abc',
+            Segment: 1,
+            ExclusiveStartKey: {a: {}},
+            ScanFilter: {a: {ComparisonOperator: cond, AttributeValueList: list}},
+          }, 'One or more parameter values were invalid: ' +
+            'ComparisonOperator ' + cond + ' is not valid for ' +
+            Object.keys(list[0])[0] + ' AttributeValue type', cb)
+        }, cb)
+      }, done)
+    })
+
+    it('should return ValidationException for invalid CONTAINS ComparisonOperator types', function(done) {
+      async.forEach([
+        'CONTAINS',
+        'NOT_CONTAINS',
+      ], function(cond, cb) {
+        async.forEach([
+          [{SS: ['a']}],
+          [{NS: ['1']}],
+          [{BS: ['abcd']}],
+          [{M: {}}],
+          [{L: []}],
+        ], function(list, cb) {
+          assertValidation({
+            TableName: 'abc',
+            Segment: 1,
+            ExclusiveStartKey: {a: {}},
+            ScanFilter: {a: {ComparisonOperator: cond, AttributeValueList: list}},
+          }, 'One or more parameter values were invalid: ' +
+            'ComparisonOperator ' + cond + ' is not valid for ' +
+            Object.keys(list[0])[0] + ' AttributeValue type', cb)
+        }, cb)
+      }, done)
+    })
+
+    it('should return ValidationException for invalid BETWEEN ComparisonOperator types', function(done) {
+      async.forEach([
+        [{BOOL: true}, {BOOL: true}],
+        [{NULL: true}, {NULL: true}],
+        [{SS: ['a']}, {SS: ['a']}],
+        [{NS: ['1']}, {NS: ['1']}],
+        [{BS: ['abcd']}, {BS: ['abcd']}],
+        [{M: {}}, {M: {}}],
+        [{L: []}, {L: []}],
+      ], function(list, cb) {
+        assertValidation({
+          TableName: 'abc',
+          Segment: 1,
+          ExclusiveStartKey: {a: {}},
+          ScanFilter: {a: {ComparisonOperator: 'BETWEEN', AttributeValueList: list}},
+        }, 'One or more parameter values were invalid: ' +
+          'ComparisonOperator BETWEEN is not valid for ' +
+          Object.keys(list[0])[0] + ' AttributeValue type', cb)
+      }, done)
+    })
+
+    it('should return ValidationException for invalid BEGINS_WITH ComparisonOperator types', function(done) {
+      async.forEach([
+        [{N: '1'}],
+        // [{B: 'YQ=='}], // B is fine
+        [{BOOL: true}],
+        [{NULL: true}],
+        [{SS: ['a']}],
+        [{NS: ['1']}],
+        [{BS: ['abcd']}],
+        [{M: {}}],
+        [{L: []}],
+      ], function(list, cb) {
+        assertValidation({
+          TableName: 'abc',
+          Segment: 1,
+          ExclusiveStartKey: {a: {}},
+          ScanFilter: {a: {ComparisonOperator: 'BEGINS_WITH', AttributeValueList: list}},
+        }, 'One or more parameter values were invalid: ' +
+          'ComparisonOperator BEGINS_WITH is not valid for ' +
+          Object.keys(list[0])[0] + ' AttributeValue type', cb)
+      }, done)
+    })
+
+    it('should return ValidationException on ExclusiveStartKey if ScanFilter ok with EQ on type SS when table does not exist', function(done) {
       assertValidation({
         TableName: 'abc',
+        Segment: 1,
+        ExclusiveStartKey: {a: {}},
+        ScanFilter: {a: {ComparisonOperator: 'EQ', AttributeValueList: [{SS: ['a']}]}},
+      }, 'The provided starting key is invalid: Supplied AttributeValue is empty, must contain exactly one of the supported datatypes', done)
+    })
+
+    it('should return ValidationException for unsupported datatype in ExclusiveStartKey', function(done) {
+      async.forEach([
+        {},
+        {a: ''},
+        {M: {a: {}}},
+        {L: [{}]},
+        {L: [{a: {}}]},
+      ], function(expr, cb) {
+        assertValidation({
+          TableName: 'abc',
+          Segment: 1,
+          FilterExpression: '',
+          ExpressionAttributeNames: {},
+          ExpressionAttributeValues: {},
+          ExclusiveStartKey: {a: expr},
+        }, 'The provided starting key is invalid: ' +
+          'Supplied AttributeValue is empty, must contain exactly one of the supported datatypes', cb)
+      }, done)
+    })
+
+    it('should return ValidationException for invalid values in ExclusiveStartKey', function(done) {
+      async.forEach([
+        [{N: '', S: ''}, 'An AttributeValue may not contain an empty string'],
+        [{B: ''}, 'An AttributeValue may not contain a null or empty binary type.'],
+        [{NULL: 'no'}, 'Null attribute value types must have the value of true'],
+        [{SS: []}, 'An string set  may not be empty'],
+        [{NS: []}, 'An number set  may not be empty'],
+        [{BS: []}, 'Binary sets should not be empty'],
+        [{SS: ['a', '']}, 'An string set may not have a empty string as a member'],
+        [{BS: ['aaaa', '']}, 'Binary sets may not contain null or empty values'],
+        [{SS: ['a', 'a']}, 'Input collection [a, a] contains duplicates.'],
+        [{BS: ['Yg==', 'Yg==']}, 'Input collection [Yg==, Yg==]of type BS contains duplicates.'],
+      ], function(expr, cb) {
+        assertValidation({
+          TableName: 'abc',
+          Segment: 1,
+          FilterExpression: '',
+          ExpressionAttributeNames: {},
+          ExpressionAttributeValues: {},
+          ExclusiveStartKey: {a: expr[0]},
+        }, 'The provided starting key is invalid: ' +
+          'One or more parameter values were invalid: ' + expr[1], cb)
+      }, done)
+    })
+
+    it('should return ValidationException for empty/invalid numbers in ExclusiveStartKey', function(done) {
+      async.forEach([
+        [{S: 'a', N: ''}, 'The parameter cannot be converted to a numeric value'],
+        [{S: 'a', N: 'b'}, 'The parameter cannot be converted to a numeric value: b'],
+        [{NS: ['1', '']}, 'The parameter cannot be converted to a numeric value'],
+        [{NS: ['1', 'b']}, 'The parameter cannot be converted to a numeric value: b'],
+        [{NS: ['1', '1']}, 'Input collection contains duplicates'],
+        [{N: '123456789012345678901234567890123456789'}, 'Attempting to store more than 38 significant digits in a Number'],
+        [{N: '-1.23456789012345678901234567890123456789'}, 'Attempting to store more than 38 significant digits in a Number'],
+        [{N: '1e126'}, 'Number overflow. Attempting to store a number with magnitude larger than supported range'],
+        [{N: '-1e126'}, 'Number overflow. Attempting to store a number with magnitude larger than supported range'],
+        [{N: '1e-131'}, 'Number underflow. Attempting to store a number with magnitude smaller than supported range'],
+        [{N: '-1e-131'}, 'Number underflow. Attempting to store a number with magnitude smaller than supported range'],
+      ], function(expr, cb) {
+        assertValidation({
+          TableName: 'abc',
+          Segment: 1,
+          FilterExpression: '',
+          ExpressionAttributeNames: {},
+          ExpressionAttributeValues: {},
+          ExclusiveStartKey: {a: expr[0]},
+        }, 'The provided starting key is invalid: ' + expr[1], cb)
+      }, done)
+    })
+
+    it('should return ValidationException for multiple datatypes in ExclusiveStartKey', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        TotalSegments: 1,
+        FilterExpression: '',
+        ExpressionAttributeNames: {},
+        ExpressionAttributeValues: {},
         ExclusiveStartKey: {a: {S: 'a', N: '1'}},
-        ScanFilter: {a: {ComparisonOperator: 'NULL'}}},
-        'The provided starting key is invalid: ' +
+      }, 'The provided starting key is invalid: ' +
         'Supplied AttributeValue has more than one datatypes set, must contain exactly one of the supported datatypes', done)
     })
 
-    it('should return ValidationException if key has empty numeric type', function(done) {
+    it('should return ValidationException for missing TotalSegments', function(done) {
       assertValidation({
         TableName: 'abc',
-        ExclusiveStartKey: {a: {N: ''}},
-        ScanFilter: {a: {ComparisonOperator: 'NULL'}}},
-        'The provided starting key is invalid: ' +
-        'The parameter cannot be converted to a numeric value', done)
+        Segment: 1,
+        FilterExpression: '',
+        ExpressionAttributeNames: {},
+        ExpressionAttributeValues: {},
+      }, 'The TotalSegments parameter is required but was not present in the request when Segment parameter is present', done)
     })
 
-    it('should return ValidationException if key has incorrect numeric type', function(done) {
+    it('should return ValidationException for missing Segment', function(done) {
       assertValidation({
         TableName: 'abc',
-        ExclusiveStartKey: {a: {N: 'b'}},
-        ScanFilter: {a: {ComparisonOperator: 'NULL'}}},
-        'The provided starting key is invalid: ' +
-        'The parameter cannot be converted to a numeric value: b', done)
+        TotalSegments: 1,
+        FilterExpression: '',
+        ExpressionAttributeNames: {},
+        ExpressionAttributeValues: {},
+      }, 'The Segment parameter is required but was not present in the request when parameter TotalSegments is present', done)
     })
 
-    it('should return ValidationException if key has empty numeric type in set', function(done) {
+    it('should return ValidationException for Segment more than TotalSegments', function(done) {
       assertValidation({
         TableName: 'abc',
-        ExclusiveStartKey: {a: {NS: ['1', '']}},
-        ScanFilter: {a: {ComparisonOperator: 'NULL'}}},
-        'The provided starting key is invalid: ' +
-        'The parameter cannot be converted to a numeric value', done)
+        Segment: 1,
+        TotalSegments: 1,
+        FilterExpression: '',
+        ExpressionAttributeNames: {},
+        ExpressionAttributeValues: {},
+      }, 'The Segment parameter is zero-based and must be less than parameter TotalSegments: Segment: 1 is not less than TotalSegments: 1', done)
     })
 
-    it('should return ValidationException if key has incorrect numeric type in set', function(done) {
+    it('should return ValidationException for empty ExpressionAttributeNames', function(done) {
       assertValidation({
         TableName: 'abc',
-        ExclusiveStartKey: {a: {NS: ['1', 'b', 'a']}},
-        ScanFilter: {a: {ComparisonOperator: 'NULL'}}},
-        'The provided starting key is invalid: ' +
-        'The parameter cannot be converted to a numeric value: b', done)
+        FilterExpression: '',
+        ExpressionAttributeNames: {},
+        ExpressionAttributeValues: {},
+      }, 'ExpressionAttributeNames must not be empty', done)
     })
 
-    it('should return ValidationException duplicate values in AttributesToGet', function(done) {
-      assertValidation({TableName: 'abc', ScanFilter: {a: {ComparisonOperator: 'NULL'}}, AttributesToGet: ['a', 'a']},
-        'One or more parameter values were invalid: Duplicate value in attribute name: a', done)
-    })
-
-    it('should return ValidationException for empty ExclusiveStartKey', function(done) {
+    it('should return ValidationException for invalid ExpressionAttributeNames', function(done) {
       assertValidation({
-        TableName: helpers.testHashTable,
-        ExclusiveStartKey: {}},
-        'The provided starting key is invalid: The provided key element does not match the schema', done)
+        TableName: 'abc',
+        FilterExpression: '',
+        ExpressionAttributeNames: {'a': 'a'},
+        ExpressionAttributeValues: {},
+      }, 'ExpressionAttributeNames contains invalid key: Syntax error; key: "a"', done)
     })
 
-    it('should return ValidationException for ExclusiveStartKey with incorrect schema', function(done) {
+    it('should return ValidationException for empty ExpressionAttributeValues', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        FilterExpression: '',
+        ExpressionAttributeValues: {},
+      }, 'ExpressionAttributeValues must not be empty', done)
+    })
+
+    it('should return ValidationException for invalid ExpressionAttributeValues', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        FilterExpression: '',
+        ExpressionAttributeValues: {'a': {S: 'b'}},
+      }, 'ExpressionAttributeValues contains invalid key: Syntax error; key: "a"', done)
+    })
+
+    it('should return ValidationException for empty FilterExpression', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        FilterExpression: '',
+        ProjectionExpression: '',
+        ExpressionAttributeValues: {':0': {S: 'b'}},
+      }, 'Invalid FilterExpression: The expression can not be empty;', done)
+    })
+
+    it('should return ValidationException for empty ProjectionExpression', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        FilterExpression: 'a > b',
+        ProjectionExpression: '',
+      }, 'Invalid ProjectionExpression: The expression can not be empty;', done)
+    })
+
+    it('should return ValidationException for syntax errors', function(done) {
+      var expressions = [
+        'things are not gonna be ok',
+        'a > 4',
+        'attribute_exists(Pictures-RearView)',
+        'attribute_exists("Pictures.RearView")',
+        'attribute_exists(Pictures..RearView)',
+        'attribute_exists(Pi#ctures.RearView)',
+        'attribute_exists(asdf[a])',
+        'a.:a < b.:b',
+        'a in b, c',
+        'a > between',
+        'a in b, c',
+        'a in b',
+        'a in (b,c,)',
+        '(a)between(b.(c.d))and(c)',
+        '(a)between(b.c.d)and((c)',
+        '#$.b > a',
+        'a > :things.stuff',
+        'b[:a] > a',
+        'b[#_] > a',
+        'ü > a',
+        '(a)between(b.c[4.5].#d)and(:a)',
+        'size(a).b > a',
+        '(size(a)).b > a',
+        'size(a)[0] > a',
+        '(size(a))[0] > a',
+      ]
+      async.forEach(expressions, function(expression, cb) {
+        assertValidation({
+          TableName: 'abc',
+          FilterExpression: expression,
+        }, /^Invalid FilterExpression: Syntax error; /, cb)
+      }, done)
+    })
+
+    it('should return ValidationException for redundant parentheses', function(done) {
+      var expressions = [
+        'a=a and a > ((views))',
+        '(a)between(((b.c)).d)and(c)',
+        'a > whatever((:things), ((a)))',
+      ]
+      async.forEach(expressions, function(expression, cb) {
+        assertValidation({
+          TableName: 'abc',
+          FilterExpression: expression,
+        }, 'Invalid FilterExpression: The expression has redundant parentheses;', cb)
+      }, done)
+    })
+
+    it('should return ValidationException for invalid function names', function(done) {
+      var expressions = [
+        ['a=a and whatever((:things)) > a', 'whatever'],
+        ['attRIbute_exIsts((views), #a)', 'attRIbute_exIsts'],
+      ]
+      async.forEach(expressions, function(expr, cb) {
+        assertValidation({
+          TableName: 'abc',
+          FilterExpression: expr[0],
+        }, 'Invalid FilterExpression: Invalid function name; function: ' + expr[1], cb)
+      }, done)
+    })
+
+    it('should return ValidationException for functions used incorrectly', function(done) {
+      var expressions = [
+        ['a=a and attribute_exists((views), (#a)) > b', 'attribute_exists'],
+        ['attribute_not_exists(things) > b', 'attribute_not_exists'],
+        ['attribute_type(things, :a) > b', 'attribute_type'],
+        ['begins_with(things, a) > b', 'begins_with'],
+        ['contains(:things, c) > b', 'contains'],
+        ['size(contains(a, b)) > a', 'contains'],
+        ['size(things)', 'size'],
+        ['a between b and attribute_exists(things)', 'attribute_exists'],
+        ['a in (b, attribute_exists(things))', 'attribute_exists'],
+      ]
+      async.forEach(expressions, function(expr, cb) {
+        assertValidation({
+          TableName: 'abc',
+          FilterExpression: expr[0],
+        }, 'Invalid FilterExpression: The function is not allowed to be used this way in an expression; function: ' + expr[1], cb)
+      }, done)
+    })
+
+    it('should return ValidationException for reserved keywords', function(done) {
+      var expressions = [
+        ['attribute_exists(views, #a)', 'views'],
+        [':a < abOrT', 'abOrT'],
+      ]
+      async.forEach(expressions, function(expr, cb) {
+        assertValidation({
+          TableName: 'abc',
+          FilterExpression: expr[0],
+        }, 'Invalid FilterExpression: Attribute name is a reserved keyword; reserved keyword: ' + expr[1], cb)
+      }, done)
+    })
+
+    // All checks below here are done on a per-expression basis
+
+    it('should return ValidationException for missing attribute names', function(done) {
+      var expressions = [
+        ['attribute_exists(#Pictures.RearView, :a) and a=a', '#Pictures'],
+        ['begins_with(Pictures.#RearView)', '#RearView'],
+        ['(#P between :lo and :hi) and (#PC in (:cat1, :cat2))', '#P'],
+        ['#4g > a', '#4g'],
+        ['#_ > a', '#_'],
+        ['(a)between(b.c[45].#d)and(:a)', '#d'],
+      ]
+      async.forEach(expressions, function(expr, cb) {
+        assertValidation({
+          TableName: 'abc',
+          FilterExpression: expr[0],
+        }, 'Invalid FilterExpression: An expression attribute name used in the document path is not defined; attribute name: ' + expr[1], cb)
+      }, done)
+    })
+
+    it('should return ValidationException for missing attribute values', function(done) {
+      var expressions = [
+        ['begins_with(:hello, #a, #b)', ':hello'],
+        [':a < :b', ':a'],
+        [':_ > a', ':_'],
+      ]
+      async.forEach(expressions, function(expr, cb) {
+        assertValidation({
+          TableName: 'abc',
+          FilterExpression: expr[0],
+        }, 'Invalid FilterExpression: An expression attribute value used in expression is not defined; attribute value: ' + expr[1], cb)
+      }, done)
+    })
+
+    it('should return ValidationException for functions with incorrect operands', function(done) {
+      var expressions = [
+        ['attribute_exists(things, a) and a=a', 'attribute_exists', 2],
+        ['attribute_not_exists(things, b)', 'attribute_not_exists', 2],
+        ['attribute_type(things)', 'attribute_type', 1],
+        ['begins_with(things)', 'begins_with', 1],
+        ['begins_with(things, size(a), b)', 'begins_with', 3],
+        ['contains(things)', 'contains', 1],
+        ['size(things, a) > b', 'size', 2],
+      ]
+      async.forEach(expressions, function(expr, cb) {
+        assertValidation({
+          TableName: 'abc',
+          FilterExpression: expr[0],
+        }, 'Invalid FilterExpression: Incorrect number of operands for operator or function; operator or function: ' +
+          expr[1] +', number of operands: ' + expr[2], cb)
+      }, done)
+    })
+
+    it('should return ValidationException for functions with incorrect operand type', function(done) {
+      var expressions = [
+        // Order of the {...} args is non-deterministic
+        // ['attribute_type(ab.bc[1].a, SS)', 'attribute_type', '{NS,SS,L,BS,N,M,B,BOOL,NULL,S}'],
+        ['attribute_type(a, size(a)) and a=a and a=:a', 'attribute_type', {'N': '1'}],
+        ['attribute_type(a, :a)', 'attribute_type', {'N': '1'}],
+        ['attribute_type(a, :a)', 'attribute_type', {'B': 'YQ=='}],
+        ['attribute_type(a, :a)', 'attribute_type', {'BOOL': true}],
+        ['attribute_type(a, :a)', 'attribute_type', {'NULL': true}],
+        ['attribute_type(a, :a)', 'attribute_type', {'L': []}],
+        ['attribute_type(a, :a)', 'attribute_type', {'M': {}}],
+        ['attribute_type(a, :a)', 'attribute_type', {'SS': ['1']}],
+        ['attribute_type(a, :a)', 'attribute_type', {'NS': ['1']}],
+        ['attribute_type(a, :a)', 'attribute_type', {'BS': ['YQ==']}],
+        ['begins_with(a, size(a)) and a=:a', 'begins_with', {'N': '1'}],
+        ['begins_with(a, :a)', 'begins_with', {'N': '1'}],
+        ['begins_with(a, :a)', 'begins_with', {'BOOL': true}],
+        ['begins_with(a, :a)', 'begins_with', {'NULL': true}],
+        ['begins_with(a, :a)', 'begins_with', {'L': []}],
+        ['begins_with(a, :a)', 'begins_with', {'M': {}}],
+        ['begins_with(a, :a)', 'begins_with', {'SS': ['1']}],
+        ['begins_with(a, :a)', 'begins_with', {'NS': ['1']}],
+        ['begins_with(a, :a)', 'begins_with', {'BS': ['YQ==']}],
+        ['begins_with(:a, a)', 'begins_with', {'N': '1'}],
+        ['begins_with(:a, a)', 'begins_with', {'BOOL': true}],
+        ['begins_with(:a, a)', 'begins_with', {'NULL': true}],
+        ['begins_with(:a, a)', 'begins_with', {'L': []}],
+        ['begins_with(:a, a)', 'begins_with', {'M': {}}],
+        ['begins_with(:a, a)', 'begins_with', {'SS': ['1']}],
+        ['begins_with(:a, a)', 'begins_with', {'NS': ['1']}],
+        ['begins_with(:a, a)', 'begins_with', {'BS': ['YQ==']}],
+        ['size(size(a)) > :a', 'size', {'N': '1'}],
+        ['attribute_not_exists(size(:a))', 'size', {'N': '1'}],
+        ['size(:a) > a', 'size', {'BOOL': true}],
+        ['size(:a) > a', 'size', {'NULL': true}],
+      ]
+      async.forEach(expressions, function(expr, cb) {
+        assertValidation({
+          TableName: 'abc',
+          FilterExpression: expr[0],
+          ExpressionAttributeValues: {':a': expr[2]},
+        }, 'Invalid FilterExpression: Incorrect operand type for operator or function; operator or function: ' +
+          expr[1] + ', operand type: ' + Object.keys(expr[2])[0], cb)
+      }, done)
+    })
+
+    it('should return ValidationException for attribute_type with incorrect value', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        FilterExpression: 'attribute_type(a, :a)',
+        ExpressionAttributeValues: {':a': {'S': '1'}},
+      }, /^Invalid FilterExpression: Invalid attribute type name found; type: 1, valid types: {((B|NULL|SS|BOOL|L|BS|N|NS|S|M),?){10}}$/, done)
+    })
+
+    it('should return ValidationException for functions with attr values instead of paths', function(done) {
+      var expressions = [
+        ['attribute_exists(:a) and a=a', 'attribute_exists'],
+        ['attribute_not_exists(size(:a))', 'attribute_not_exists'],
+      ]
+      async.forEach(expressions, function(expr, cb) {
+        assertValidation({
+          TableName: 'abc',
+          FilterExpression: expr[0],
+          ExpressionAttributeValues: {':a': {'S': '1'}},
+        }, 'Invalid FilterExpression: Operator or function requires a document path; operator or function: ' + expr[1], cb)
+      }, done)
+    })
+
+    it('should return ValidationException for non-distinct expressions', function(done) {
+      var expressions = [
+        ['a = a AND #a = b AND :views > a', '=', '[a]'],
+        ['#a <> a', '<>', '[a]'],
+        ['a > #a', '>', '[a]'],
+        ['contains(ab.bc[1].a, ab.bc[1].#a)', 'contains', '[ab, bc, [1], a]'],
+        ['attribute_type(ab.bc[1].#a, ab.bc[1].a)', 'attribute_type', '[ab, bc, [1], a]'],
+        ['begins_with(ab.bc[1].a, ab.bc[1].#a)', 'begins_with', '[ab, bc, [1], a]'],
+        // ':a > :a', ... is ok
+      ]
+      async.forEach(expressions, function(expr, cb) {
+        assertValidation({
+          TableName: 'abc',
+          FilterExpression: expr[0],
+          ExpressionAttributeNames: {'#a': 'a'},
+        }, 'Invalid FilterExpression: The first operand must be distinct from the remaining operands for this operator or function; operator: ' +
+          expr[1] + ', first operand: ' + expr[2], cb)
+      }, done)
+    })
+
+    it('should check table exists before checking key validity', function(done) {
+      async.forEach([
+        {},
+        {b: {S: 'a'}},
+        {a: {S: 'a'}, b: {S: 'a'}},
+      ], function(expr, cb) {
+        assertNotFound({
+          TableName: 'abc',
+          ExclusiveStartKey: expr,
+        }, 'Requested resource not found', cb)
+      }, done)
+    })
+
+    it('should return ValidationException if unknown index and bad ExclusiveStartKey in hash table', function(done) {
+      async.forEach([
+        {},
+        // {z: {S: 'a'}}, // Returns a 500
+        // {a: {S: 'a'}, b: {S: 'a'}}, // Returns a 500
+        {a: {S: 'a'}, b: {S: 'a'}, c: {S: 'a'}},
+        {z: {S: 'a'}, y: {S: 'a'}, x: {S: 'a'}},
+      ], function(expr, cb) {
+        assertValidation({
+          TableName: helpers.testHashTable,
+          IndexName: 'whatever',
+          FilterExpression: 'attribute_exists(a.b.c)',
+          ExclusiveStartKey: expr,
+        }, 'The provided starting key is invalid', cb)
+      }, done)
+    })
+
+    it('should return ValidationException if unknown index and bad ExclusiveStartKey in range table', function(done) {
+      async.forEach([
+        {},
+        {z: {S: 'a'}},
+        // {a: {S: 'a'}, b: {S: 'a'}}, // Returns a 500
+        {a: {S: 'a'}, b: {S: 'a'}, c: {S: 'a'}},
+        {z: {S: 'a'}, y: {S: 'a'}, x: {S: 'a'}, w: {S: 'a'}},
+      ], function(expr, cb) {
+        assertValidation({
+          TableName: helpers.testRangeTable,
+          IndexName: 'whatever',
+          FilterExpression: 'attribute_exists(a.b.c)',
+          ExclusiveStartKey: expr,
+        }, 'The provided starting key is invalid', cb)
+      }, done)
+    })
+
+    it('should return ValidationException if ExclusiveStartKey is invalid for local index', function(done) {
+      async.forEach([
+        {},
+        {z: {N: '1'}},
+        {a: {B: 'abcd'}},
+        {a: {S: 'a'}},
+        {a: {S: 'a'}, b: {S: 'a'}},
+        {a: {S: 'a'}, c: {S: 'a'}},
+        {b: {S: 'a'}, c: {S: 'a'}},
+        {a: {S: 'a'}, c: {N: '1'}},
+        {a: {S: 'a'}, z: {S: '1'}},
+        {a: {S: 'a'}, b: {S: '1'}, c: {S: '1'}, d: {S: '1'}},
+      ], function(expr, cb) {
+        assertValidation({
+          TableName: helpers.testRangeTable,
+          IndexName: 'index1',
+          ExclusiveStartKey: expr,
+        }, 'The provided starting key is invalid', cb)
+      }, done)
+    })
+
+    it('should return ValidationException if ExclusiveStartKey is invalid for global index', function(done) {
+      async.forEach([
+        {},
+        {z: {N: '1'}},
+        {a: {B: 'abcd'}},
+        {a: {S: 'a'}},
+        {c: {N: '1'}},
+        {c: {S: '1'}},
+        {a: {S: 'a'}, b: {S: 'a'}},
+        {a: {S: 'a'}, c: {S: 'a'}},
+        {a: {S: 'a'}, b: {S: 'a'}, z: {S: 'a'}},
+        {a: {S: 'a'}, b: {S: 'a'}, c: {S: 'a'}, z: {S: 'a'}},
+      ], function(expr, cb) {
+        assertValidation({
+          TableName: helpers.testRangeTable,
+          IndexName: 'index3',
+          ExclusiveStartKey: expr,
+        }, 'The provided starting key is invalid', cb)
+      }, done)
+    })
+
+    it('should return ValidationException if global range in ExclusiveStartKey is invalid', function(done) {
+      async.forEach([
+        {c: {S: '1'}},
+        {a: {N: '1'}, c: {S: '1'}},
+        {a: {N: '1'}, b: {N: '1'}, c: {S: '1'}},
+        {a: {N: '1'}, b: {N: '1'}, c: {S: '1'}, e: {N: '1'}},
+        {a: {S: 'a'}, b: {S: '1'}, c: {S: '1'}, d: {S: '1'}, e: {S: '1'}},
+      ], function(expr, cb) {
+        assertValidation({
+          TableName: helpers.testRangeTable,
+          IndexName: 'index4',
+          Select: 'ALL_ATTRIBUTES',
+          ExclusiveStartKey: expr,
+        }, 'The provided starting key is invalid', cb)
+      }, done)
+    })
+
+    it('should return ValidationException for non-existent index name', function(done) {
+      async.forEach([
+        helpers.testHashTable,
+        helpers.testRangeTable,
+      ], function(table, cb) {
+        assertValidation({
+          TableName: table,
+          IndexName: 'whatever',
+          FilterExpression: 'attribute_exists(a.b.c)',
+        }, 'The table does not have the specified index: whatever', cb)
+      }, done)
+    })
+
+    it('should return ValidationException for specifying ALL_ATTRIBUTES when global index does not have ALL', function(done) {
       assertValidation({
         TableName: helpers.testRangeTable,
-        ExclusiveStartKey: {a: {S: 'b'}}},
-        'The provided starting key is invalid: The provided key element does not match the schema', done)
+        FilterExpression: 'attribute_exists(a.b.c)',
+        IndexName: 'index4',
+        Select: 'ALL_ATTRIBUTES',
+        ExclusiveStartKey: {x: {N: '1'}, y: {N: '1'}, c: {S: 'a'}, d: {S: 'a'}},
+      }, 'One or more parameter values were invalid: ' +
+        'Select type ALL_ATTRIBUTES is not supported for global secondary index index4 ' +
+        'because its projection type is not ALL', done)
+    })
+
+    it('should return ValidationException if ExclusiveStartKey does not match schema for local index', function(done) {
+      async.forEach([
+        {a: {N: '1'}, x: {S: '1'}, y: {S: '1'}},
+        {a: {B: 'YQ=='}, b: {S: '1'}, c: {S: '1'}},
+        {a: {S: 'a'}, b: {N: '1'}, c: {N: '1'}},
+        {a: {S: 'a'}, b: {B: 'YQ=='}, c: {N: '1'}},
+        {a: {S: 'a'}, b: {S: 'a'}, c: {N: '1'}},
+        {a: {S: 'a'}, b: {S: 'a'}, c: {B: 'YQ=='}},
+      ], function(expr, cb) {
+        assertValidation({
+          TableName: helpers.testRangeTable,
+          IndexName: 'index1',
+          ExclusiveStartKey: expr,
+        }, 'The provided key element does not match the schema', cb)
+      }, done)
+    })
+
+    it('should return ValidationException if ExclusiveStartKey does not match schema for global index', function(done) {
+      async.forEach([
+        {x: {S: '1'}, y: {S: '1'}, c: {N: '1'}},
+        {a: {S: '1'}, b: {S: '1'}, c: {B: 'YQ=='}},
+      ], function(expr, cb) {
+        assertValidation({
+          TableName: helpers.testRangeTable,
+          IndexName: 'index3',
+          ExclusiveStartKey: expr,
+        }, 'The provided key element does not match the schema', cb)
+      }, done)
+    })
+
+    it('should return ValidationException if ExclusiveStartKey does not match schema for global compound index', function(done) {
+      async.forEach([
+        {x: {N: '1'}, y: {N: '1'}, c: {S: '1'}, d: {N: '1'}},
+        {x: {N: '1'}, y: {N: '1'}, c: {N: '1'}, d: {S: '1'}},
+      ], function(expr, cb) {
+        assertValidation({
+          TableName: helpers.testRangeTable,
+          IndexName: 'index4',
+          ExclusiveStartKey: expr,
+        }, 'The provided key element does not match the schema', cb)
+      }, done)
+    })
+
+    it('should return ValidationException if ExclusiveStartKey does not match schema', function(done) {
+      async.forEach([
+        {},
+        {b: {S: 'a'}},
+        {a: {S: 'a'}, b: {S: 'a'}},
+        {a: {B: 'abcd'}},
+        {a: {N: '1'}},
+        {a: {BOOL: true}},
+        {a: {NULL: true}},
+        {a: {SS: ['a']}},
+        {a: {NS: ['1']}},
+        {a: {BS: ['aaaa']}},
+        {a: {M: {}}},
+        {a: {L: []}},
+      ], function(expr, cb) {
+        assertValidation({
+          TableName: helpers.testHashTable,
+          FilterExpression: 'attribute_exists(a.b.c)',
+          ExclusiveStartKey: expr,
+        }, 'The provided starting key is invalid: The provided key element does not match the schema', cb)
+      }, done)
+    })
+
+    it('should return ValidationException if ExclusiveStartKey for range table is invalid', function(done) {
+      async.forEach([
+        {},
+        {z: {N: '1'}},
+        {b: {S: 'a'}, c: {S: 'b'}},
+        {a: {B: 'abcd'}},
+        {a: {S: 'a'}},
+        {a: {N: '1'}, b: {S: 'a'}, c: {S: 'b'}},
+        {a: {N: '1'}, b: {N: '1'}, z: {N: '1'}},
+        {a: {N: '1'}, z: {S: 'a'}},
+        {a: {B: 'YQ=='}, b: {S: 'a'}},
+        {a: {S: 'a'}},
+        {a: {S: 'a'}, c: {N: '1'}},
+        {a: {S: 'a'}, z: {S: '1'}},
+        {a: {S: 'a'}, b: {S: '1'}, c: {S: '1'}},
+        {a: {S: 'a'}, b: {N: '1'}},
+        {a: {S: 'a'}, b: {B: 'YQ=='}},
+      ], function(expr, cb) {
+        assertValidation({
+          TableName: helpers.testRangeTable,
+          ExclusiveStartKey: expr,
+        }, 'The provided starting key is invalid: The provided key element does not match the schema', cb)
+      }, done)
+    })
+
+    it('should return ValidationException if range in ExclusiveStartKey is invalid, but hash and local are ok', function(done) {
+      async.forEach([
+        {a: {S: '1'}, b: {N: '1'}, c: {S: 'a'}},
+        {a: {S: '1'}, b: {B: 'YQ=='}, c: {S: 'a'}},
+      ], function(expr, cb) {
+        assertValidation({
+          TableName: helpers.testRangeTable,
+          IndexName: 'index1',
+          ExclusiveStartKey: expr,
+        }, 'The provided starting key is invalid: The provided key element does not match the schema', cb)
+      }, done)
+    })
+
+    it('should return ValidationException if global hash in ExclusiveStartKey but bad in query', function(done) {
+      async.forEach([
+        {x: {N: '1'}, y: {N: '1'}, c: {S: 'a'}},
+        {a: {N: '1'}, b: {S: '1'}, c: {S: 'a'}},
+        {a: {S: '1'}, b: {N: '1'}, c: {S: 'a'}},
+      ], function(expr, cb) {
+        assertValidation({
+          TableName: helpers.testRangeTable,
+          IndexName: 'index3',
+          ExclusiveStartKey: expr,
+        }, 'The provided starting key is invalid: The provided key element does not match the schema', cb)
+      }, done)
+    })
+
+    it('should return ValidationException if global range in ExclusiveStartKey but bad in query', function(done) {
+      async.forEach([
+        {x: {N: '1'}, y: {N: '1'}, c: {S: 'a'}, d: {S: 'a'}},
+        {a: {N: '1'}, b: {S: '1'}, c: {S: 'a'}, d: {S: 'a'}},
+        {a: {S: '1'}, b: {N: '1'}, c: {S: 'a'}, d: {S: 'a'}},
+      ], function(expr, cb) {
+        assertValidation({
+          TableName: helpers.testRangeTable,
+          IndexName: 'index4',
+          ExclusiveStartKey: expr,
+        }, 'The provided starting key is invalid: The provided key element does not match the schema', cb)
+      }, done)
     })
 
     it('should return ValidationException if ExclusiveStartKey is from different segment', function(done) {
@@ -704,12 +1132,28 @@ describe('scan', function() {
           assertValidation({TableName: helpers.testHashTable,
             Segment: 0,
             TotalSegments: 2,
+            FilterExpression: 'attribute_exists(a.b.c)',
             ExclusiveStartKey: {a: res.body.Items[0].a}},
             'The provided starting key is invalid: ' +
             'Invalid ExclusiveStartKey. Please use ExclusiveStartKey with correct Segment. ' +
             'TotalSegments: 2 Segment: 0', done)
         })
       })
+    })
+
+    it('should return ValidationException for non-scalar key access', function(done) {
+      var expressions = [
+        'attribute_exists(a.b.c) and #a = b',
+        'attribute_exists(#a.b.c)',
+        'attribute_exists(#a[0])',
+      ]
+      async.forEach(expressions, function(expression, cb) {
+        assertValidation({
+          TableName: helpers.testHashTable,
+          FilterExpression: expression,
+          ExpressionAttributeNames: {'#a': 'a'},
+        }, 'Key attributes must be scalars; list random access \'[]\' and map lookup \'.\' are not allowed: Key: a', cb)
+      }, done)
     })
 
   })
@@ -737,16 +1181,21 @@ describe('scan', function() {
       request(helpers.opts('PutItem', {TableName: helpers.testHashTable, Item: item}), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        request(opts({TableName: helpers.testHashTable, ScanFilter: {
-          a: {ComparisonOperator: 'EQ', AttributeValueList: [item.a]}
-        }}), function(err, res) {
-          if (err) return done(err)
-          res.statusCode.should.equal(200)
-          res.body.Items.should.eql([item])
-          res.body.Count.should.equal(1)
-          res.body.ScannedCount.should.be.above(0)
-          done()
-        })
+        async.forEach([
+          {ScanFilter: {a: {ComparisonOperator: 'EQ', AttributeValueList: [item.a]}}},
+          {FilterExpression: 'a = :a', ExpressionAttributeValues: {':a': item.a}},
+          {FilterExpression: '#a = :a', ExpressionAttributeValues: {':a': item.a}, ExpressionAttributeNames: {'#a': 'a'}},
+        ], function(scanOpts, cb) {
+          scanOpts.TableName = helpers.testHashTable
+          request(opts(scanOpts), function(err, res) {
+            if (err) return cb(err)
+            res.statusCode.should.equal(200)
+            res.body.Items.should.eql([item])
+            res.body.Count.should.equal(1)
+            res.body.ScannedCount.should.be.above(0)
+            cb()
+          })
+        }, done)
       })
     })
 
@@ -755,16 +1204,20 @@ describe('scan', function() {
       request(helpers.opts('PutItem', {TableName: helpers.testHashTable, Item: item}), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        request(opts({TableName: helpers.testHashTable, ScanFilter: {
-          a: {ComparisonOperator: 'EQ', AttributeValueList: [{S: helpers.randomString()}]}
-        }}), function(err, res) {
-          if (err) return done(err)
-          res.statusCode.should.equal(200)
-          res.body.Items.should.eql([])
-          res.body.Count.should.equal(0)
-          res.body.ScannedCount.should.be.above(0)
-          done()
-        })
+        async.forEach([
+          {ScanFilter: {a: {ComparisonOperator: 'EQ', AttributeValueList: [{S: helpers.randomString()}]}}},
+          {FilterExpression: 'a = :a', ExpressionAttributeValues: {':a': {S: helpers.randomString()}}},
+        ], function(scanOpts, cb) {
+          scanOpts.TableName = helpers.testHashTable
+          request(opts(scanOpts), function(err, res) {
+            if (err) return cb(err)
+            res.statusCode.should.equal(200)
+            res.body.Items.should.eql([])
+            res.body.Count.should.equal(0)
+            res.body.ScannedCount.should.be.above(0)
+            cb()
+          })
+        }, done)
       })
     })
 
@@ -781,17 +1234,21 @@ describe('scan', function() {
       request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        request(opts({TableName: helpers.testHashTable, ScanFilter: {
-          b: {ComparisonOperator: 'EQ', AttributeValueList: [item.b]}
-        }}), function(err, res) {
-          if (err) return done(err)
-          res.statusCode.should.equal(200)
-          res.body.Items.should.containEql(item)
-          res.body.Items.should.containEql(item2)
-          res.body.Items.should.have.length(2)
-          res.body.Count.should.equal(2)
-          done()
-        })
+        async.forEach([
+          {ScanFilter: {b: {ComparisonOperator: 'EQ', AttributeValueList: [item.b]}}},
+          {FilterExpression: 'b = :b', ExpressionAttributeValues: {':b': item.b}},
+        ], function(scanOpts, cb) {
+          scanOpts.TableName = helpers.testHashTable
+          request(opts(scanOpts), function(err, res) {
+            if (err) return cb(err)
+            res.statusCode.should.equal(200)
+            res.body.Items.should.containEql(item)
+            res.body.Items.should.containEql(item2)
+            res.body.Items.should.have.length(2)
+            res.body.Count.should.equal(2)
+            cb()
+          })
+        }, done)
       })
     })
 
@@ -808,18 +1265,26 @@ describe('scan', function() {
       request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        request(opts({TableName: helpers.testHashTable, ScanFilter: {
-          b: {ComparisonOperator: 'EQ', AttributeValueList: [item.b]},
-          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
-        }}), function(err, res) {
-          if (err) return done(err)
-          res.statusCode.should.equal(200)
-          res.body.Items.should.containEql(item)
-          res.body.Items.should.containEql(item2)
-          res.body.Items.should.have.length(2)
-          res.body.Count.should.equal(2)
-          done()
-        })
+        async.forEach([{
+          ScanFilter: {
+            b: {ComparisonOperator: 'EQ', AttributeValueList: [item.b]},
+            c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+          },
+        }, {
+          FilterExpression: 'b = :b AND c = :c',
+          ExpressionAttributeValues: {':b': item.b, ':c': item.c},
+        }], function(scanOpts, cb) {
+          scanOpts.TableName = helpers.testHashTable
+          request(opts(scanOpts), function(err, res) {
+            if (err) return cb(err)
+            res.statusCode.should.equal(200)
+            res.body.Items.should.containEql(item)
+            res.body.Items.should.containEql(item2)
+            res.body.Items.should.have.length(2)
+            res.body.Count.should.equal(2)
+            cb()
+          })
+        }, done)
       })
     })
 
@@ -836,18 +1301,26 @@ describe('scan', function() {
       request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        request(opts({TableName: helpers.testHashTable, ScanFilter: {
-          b: {ComparisonOperator: 'EQ', AttributeValueList: [item.b]},
-          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
-        }}), function(err, res) {
-          if (err) return done(err)
-          res.statusCode.should.equal(200)
-          res.body.Items.should.containEql(item)
-          res.body.Items.should.containEql(item2)
-          res.body.Items.should.have.length(2)
-          res.body.Count.should.equal(2)
-          done()
-        })
+        async.forEach([{
+          ScanFilter: {
+            b: {ComparisonOperator: 'EQ', AttributeValueList: [item.b]},
+            c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+          },
+        }, {
+          FilterExpression: 'b = :b AND c = :c',
+          ExpressionAttributeValues: {':b': item.b, ':c': item.c},
+        }], function(scanOpts, cb) {
+          scanOpts.TableName = helpers.testHashTable
+          request(opts(scanOpts), function(err, res) {
+            if (err) return cb(err)
+            res.statusCode.should.equal(200)
+            res.body.Items.should.containEql(item)
+            res.body.Items.should.containEql(item2)
+            res.body.Items.should.have.length(2)
+            res.body.Count.should.equal(2)
+            cb()
+          })
+        }, done)
       })
     })
 
@@ -864,18 +1337,26 @@ describe('scan', function() {
       request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        request(opts({TableName: helpers.testHashTable, ScanFilter: {
-          b: {ComparisonOperator: 'EQ', AttributeValueList: [{SS: ['b', 'a']}]},
-          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
-        }}), function(err, res) {
-          if (err) return done(err)
-          res.statusCode.should.equal(200)
-          res.body.Items.should.containEql(item)
-          res.body.Items.should.containEql(item2)
-          res.body.Items.should.have.length(2)
-          res.body.Count.should.equal(2)
-          done()
-        })
+        async.forEach([{
+          ScanFilter: {
+            b: {ComparisonOperator: 'EQ', AttributeValueList: [{SS: ['b', 'a']}]},
+            c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+          },
+        }, {
+          FilterExpression: 'b = :b AND c = :c',
+          ExpressionAttributeValues: {':b': {SS: ['b', 'a']}, ':c': item.c},
+        }], function(scanOpts, cb) {
+          scanOpts.TableName = helpers.testHashTable
+          request(opts(scanOpts), function(err, res) {
+            if (err) return cb(err)
+            res.statusCode.should.equal(200)
+            res.body.Items.should.containEql(item)
+            res.body.Items.should.containEql(item2)
+            res.body.Items.should.have.length(2)
+            res.body.Count.should.equal(2)
+            cb()
+          })
+        }, done)
       })
     })
 
@@ -892,18 +1373,26 @@ describe('scan', function() {
       request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        request(opts({TableName: helpers.testHashTable, ScanFilter: {
-          b: {ComparisonOperator: 'EQ', AttributeValueList: [{NS: ['2', '1']}]},
-          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
-        }}), function(err, res) {
-          if (err) return done(err)
-          res.statusCode.should.equal(200)
-          res.body.Items.should.containEql(item)
-          res.body.Items.should.containEql(item2)
-          res.body.Items.should.have.length(2)
-          res.body.Count.should.equal(2)
-          done()
-        })
+        async.forEach([{
+          ScanFilter: {
+            b: {ComparisonOperator: 'EQ', AttributeValueList: [{NS: ['2', '1']}]},
+            c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+          },
+        }, {
+          FilterExpression: 'b = :b AND c = :c',
+          ExpressionAttributeValues: {':b': {NS: ['2', '1']}, ':c': item.c},
+        }], function(scanOpts, cb) {
+          scanOpts.TableName = helpers.testHashTable
+          request(opts(scanOpts), function(err, res) {
+            if (err) return cb(err)
+            res.statusCode.should.equal(200)
+            res.body.Items.should.containEql(item)
+            res.body.Items.should.containEql(item2)
+            res.body.Items.should.have.length(2)
+            res.body.Count.should.equal(2)
+            cb()
+          })
+        }, done)
       })
     })
 
@@ -920,18 +1409,26 @@ describe('scan', function() {
       request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        request(opts({TableName: helpers.testHashTable, ScanFilter: {
-          b: {ComparisonOperator: 'EQ', AttributeValueList: [{BS: ['abcd', 'Yg==']}]},
-          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
-        }}), function(err, res) {
-          if (err) return done(err)
-          res.statusCode.should.equal(200)
-          res.body.Items.should.containEql(item)
-          res.body.Items.should.containEql(item2)
-          res.body.Items.should.have.length(2)
-          res.body.Count.should.equal(2)
-          done()
-        })
+        async.forEach([{
+          ScanFilter: {
+            b: {ComparisonOperator: 'EQ', AttributeValueList: [{BS: ['abcd', 'Yg==']}]},
+            c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+          },
+        }, {
+          FilterExpression: 'b = :b AND c = :c',
+          ExpressionAttributeValues: {':b': {BS: ['abcd', 'Yg==']}, ':c': item.c},
+        }], function(scanOpts, cb) {
+          scanOpts.TableName = helpers.testHashTable
+          request(opts(scanOpts), function(err, res) {
+            if (err) return cb(err)
+            res.statusCode.should.equal(200)
+            res.body.Items.should.containEql(item)
+            res.body.Items.should.containEql(item2)
+            res.body.Items.should.have.length(2)
+            res.body.Count.should.equal(2)
+            cb()
+          })
+        }, done)
       })
     })
 
@@ -948,16 +1445,24 @@ describe('scan', function() {
       request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        request(opts({TableName: helpers.testHashTable, ScanFilter: {
-          b: {ComparisonOperator: 'EQ', AttributeValueList: [item.b]},
-          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
-        }}), function(err, res) {
-          if (err) return done(err)
-          res.statusCode.should.equal(200)
-          res.body.Items.should.eql([item])
-          res.body.Count.should.equal(1)
-          done()
-        })
+        async.forEach([{
+          ScanFilter: {
+            b: {ComparisonOperator: 'EQ', AttributeValueList: [item.b]},
+            c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+          },
+        }, {
+          FilterExpression: 'b = :b AND c = :c',
+          ExpressionAttributeValues: {':b': item.b, ':c': item.c},
+        }], function(scanOpts, cb) {
+          scanOpts.TableName = helpers.testHashTable
+          request(opts(scanOpts), function(err, res) {
+            if (err) return cb(err)
+            res.statusCode.should.equal(200)
+            res.body.Items.should.eql([item])
+            res.body.Count.should.equal(1)
+            cb()
+          })
+        }, done)
       })
     })
 
@@ -974,17 +1479,26 @@ describe('scan', function() {
       request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        request(opts({TableName: helpers.testHashTable, ScanFilter: {
-          b: {ComparisonOperator: 'NE', AttributeValueList: [item.b]},
-          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
-        }}), function(err, res) {
-          if (err) return done(err)
-          res.body.Items.should.containEql(item2)
-          res.body.Items.should.containEql(item3)
-          res.body.Items.should.have.length(2)
-          res.body.Count.should.equal(2)
-          done()
-        })
+        async.forEach([{
+          ScanFilter: {
+            b: {ComparisonOperator: 'NE', AttributeValueList: [item.b]},
+            c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+          },
+        }, {
+          FilterExpression: 'b <> :b AND c = :c',
+          ExpressionAttributeValues: {':b': item.b, ':c': item.c},
+        }], function(scanOpts, cb) {
+          scanOpts.TableName = helpers.testHashTable
+          request(opts(scanOpts), function(err, res) {
+            if (err) return cb(err)
+            res.statusCode.should.equal(200)
+            res.body.Items.should.containEql(item2)
+            res.body.Items.should.containEql(item3)
+            res.body.Items.should.have.length(2)
+            res.body.Count.should.equal(2)
+            cb()
+          })
+        }, done)
       })
     })
 
@@ -1001,17 +1515,25 @@ describe('scan', function() {
       request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        request(opts({TableName: helpers.testHashTable, ScanFilter: {
-          b: {ComparisonOperator: 'NE', AttributeValueList: [{SS: ['b', 'a']}]},
-          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
-        }}), function(err, res) {
-          if (err) return done(err)
-          res.statusCode.should.equal(200)
-          res.body.Items.should.containEql(item3)
-          res.body.Items.should.have.length(1)
-          res.body.Count.should.equal(1)
-          done()
-        })
+        async.forEach([{
+          ScanFilter: {
+            b: {ComparisonOperator: 'NE', AttributeValueList: [{SS: ['b', 'a']}]},
+            c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+          },
+        }, {
+          FilterExpression: 'b <> :b AND c = :c',
+          ExpressionAttributeValues: {':b': {SS: ['b', 'a']}, ':c': item.c},
+        }], function(scanOpts, cb) {
+          scanOpts.TableName = helpers.testHashTable
+          request(opts(scanOpts), function(err, res) {
+            if (err) return cb(err)
+            res.statusCode.should.equal(200)
+            res.body.Items.should.containEql(item3)
+            res.body.Items.should.have.length(1)
+            res.body.Count.should.equal(1)
+            cb()
+          })
+        }, done)
       })
     })
 
@@ -1028,17 +1550,25 @@ describe('scan', function() {
       request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        request(opts({TableName: helpers.testHashTable, ScanFilter: {
-          b: {ComparisonOperator: 'NE', AttributeValueList: [{NS: ['2', '1']}]},
-          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
-        }}), function(err, res) {
-          if (err) return done(err)
-          res.statusCode.should.equal(200)
-          res.body.Items.should.containEql(item3)
-          res.body.Items.should.have.length(1)
-          res.body.Count.should.equal(1)
-          done()
-        })
+        async.forEach([{
+          ScanFilter: {
+            b: {ComparisonOperator: 'NE', AttributeValueList: [{NS: ['2', '1']}]},
+            c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+          },
+        }, {
+          FilterExpression: 'b <> :b AND c = :c',
+          ExpressionAttributeValues: {':b': {NS: ['2', '1']}, ':c': item.c},
+        }], function(scanOpts, cb) {
+          scanOpts.TableName = helpers.testHashTable
+          request(opts(scanOpts), function(err, res) {
+            if (err) return cb(err)
+            res.statusCode.should.equal(200)
+            res.body.Items.should.containEql(item3)
+            res.body.Items.should.have.length(1)
+            res.body.Count.should.equal(1)
+            cb()
+          })
+        }, done)
       })
     })
 
@@ -1055,17 +1585,25 @@ describe('scan', function() {
       request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        request(opts({TableName: helpers.testHashTable, ScanFilter: {
-          b: {ComparisonOperator: 'NE', AttributeValueList: [{BS: ['abcd', 'Yg==']}]},
-          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
-        }}), function(err, res) {
-          if (err) return done(err)
-          res.statusCode.should.equal(200)
-          res.body.Items.should.containEql(item3)
-          res.body.Items.should.have.length(1)
-          res.body.Count.should.equal(1)
-          done()
-        })
+        async.forEach([{
+          ScanFilter: {
+            b: {ComparisonOperator: 'NE', AttributeValueList: [{BS: ['abcd', 'Yg==']}]},
+            c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+          },
+        }, {
+          FilterExpression: 'b <> :b AND c = :c',
+          ExpressionAttributeValues: {':b': {BS: ['abcd', 'Yg==']}, ':c': item.c},
+        }], function(scanOpts, cb) {
+          scanOpts.TableName = helpers.testHashTable
+          request(opts(scanOpts), function(err, res) {
+            if (err) return cb(err)
+            res.statusCode.should.equal(200)
+            res.body.Items.should.containEql(item3)
+            res.body.Items.should.have.length(1)
+            res.body.Count.should.equal(1)
+            cb()
+          })
+        }, done)
       })
     })
 
@@ -1086,20 +1624,28 @@ describe('scan', function() {
       request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        request(opts({TableName: helpers.testHashTable, ScanFilter: {
-          b: {ComparisonOperator: 'LE', AttributeValueList: [item.b]},
-          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
-        }}), function(err, res) {
-          if (err) return done(err)
-          res.statusCode.should.equal(200)
-          res.body.Items.should.containEql(item)
-          res.body.Items.should.containEql(item2)
-          res.body.Items.should.containEql(item3)
-          res.body.Items.should.containEql(item5)
-          res.body.Items.should.have.length(4)
-          res.body.Count.should.equal(4)
-          done()
-        })
+        async.forEach([{
+          ScanFilter: {
+            b: {ComparisonOperator: 'LE', AttributeValueList: [item.b]},
+            c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+          },
+        }, {
+          FilterExpression: 'b <= :b AND c = :c',
+          ExpressionAttributeValues: {':b': item.b, ':c': item.c},
+        }], function(scanOpts, cb) {
+          scanOpts.TableName = helpers.testHashTable
+          request(opts(scanOpts), function(err, res) {
+            if (err) return cb(err)
+            res.statusCode.should.equal(200)
+            res.body.Items.should.containEql(item)
+            res.body.Items.should.containEql(item2)
+            res.body.Items.should.containEql(item3)
+            res.body.Items.should.containEql(item5)
+            res.body.Items.should.have.length(4)
+            res.body.Count.should.equal(4)
+            cb()
+          })
+        }, done)
       })
     })
 
@@ -1120,20 +1666,28 @@ describe('scan', function() {
       request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        request(opts({TableName: helpers.testHashTable, ScanFilter: {
-          b: {ComparisonOperator: 'LE', AttributeValueList: [item.b]},
-          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
-        }}), function(err, res) {
-          if (err) return done(err)
-          res.statusCode.should.equal(200)
-          res.body.Items.should.containEql(item)
-          res.body.Items.should.containEql(item2)
-          res.body.Items.should.containEql(item3)
-          res.body.Items.should.containEql(item5)
-          res.body.Items.should.have.length(4)
-          res.body.Count.should.equal(4)
-          done()
-        })
+        async.forEach([{
+          ScanFilter: {
+            b: {ComparisonOperator: 'LE', AttributeValueList: [item.b]},
+            c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+          },
+        }, {
+          FilterExpression: 'b <= :b AND c = :c',
+          ExpressionAttributeValues: {':b': item.b, ':c': item.c},
+        }], function(scanOpts, cb) {
+          scanOpts.TableName = helpers.testHashTable
+          request(opts(scanOpts), function(err, res) {
+            if (err) return cb(err)
+            res.statusCode.should.equal(200)
+            res.body.Items.should.containEql(item)
+            res.body.Items.should.containEql(item2)
+            res.body.Items.should.containEql(item3)
+            res.body.Items.should.containEql(item5)
+            res.body.Items.should.have.length(4)
+            res.body.Count.should.equal(4)
+            cb()
+          })
+        }, done)
       })
     })
 
@@ -1154,19 +1708,27 @@ describe('scan', function() {
       request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        request(opts({TableName: helpers.testHashTable, ScanFilter: {
-          b: {ComparisonOperator: 'LE', AttributeValueList: [item.b]},
-          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
-        }}), function(err, res) {
-          if (err) return done(err)
-          res.statusCode.should.equal(200)
-          res.body.Items.should.containEql(item)
-          res.body.Items.should.containEql(item3)
-          res.body.Items.should.containEql(item5)
-          res.body.Items.should.have.length(3)
-          res.body.Count.should.equal(3)
-          done()
-        })
+        async.forEach([{
+          ScanFilter: {
+            b: {ComparisonOperator: 'LE', AttributeValueList: [item.b]},
+            c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+          },
+        }, {
+          FilterExpression: 'b <= :b AND c = :c',
+          ExpressionAttributeValues: {':b': item.b, ':c': item.c},
+        }], function(scanOpts, cb) {
+          scanOpts.TableName = helpers.testHashTable
+          request(opts(scanOpts), function(err, res) {
+            if (err) return cb(err)
+            res.statusCode.should.equal(200)
+            res.body.Items.should.containEql(item)
+            res.body.Items.should.containEql(item3)
+            res.body.Items.should.containEql(item5)
+            res.body.Items.should.have.length(3)
+            res.body.Count.should.equal(3)
+            cb()
+          })
+        }, done)
       })
     })
 
@@ -1187,20 +1749,28 @@ describe('scan', function() {
       request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        request(opts({TableName: helpers.testHashTable, ScanFilter: {
-          b: {ComparisonOperator: 'LE', AttributeValueList: [item2.b]},
-          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
-        }}), function(err, res) {
-          if (err) return done(err)
-          res.statusCode.should.equal(200)
-          res.body.Items.should.containEql(item)
-          res.body.Items.should.containEql(item2)
-          res.body.Items.should.containEql(item3)
-          res.body.Items.should.containEql(item5)
-          res.body.Items.should.have.length(4)
-          res.body.Count.should.equal(4)
-          done()
-        })
+        async.forEach([{
+          ScanFilter: {
+            b: {ComparisonOperator: 'LE', AttributeValueList: [item2.b]},
+            c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+          },
+        }, {
+          FilterExpression: 'b <= :b AND c = :c',
+          ExpressionAttributeValues: {':b': item2.b, ':c': item.c},
+        }], function(scanOpts, cb) {
+          scanOpts.TableName = helpers.testHashTable
+          request(opts(scanOpts), function(err, res) {
+            if (err) return cb(err)
+            res.statusCode.should.equal(200)
+            res.body.Items.should.containEql(item)
+            res.body.Items.should.containEql(item2)
+            res.body.Items.should.containEql(item3)
+            res.body.Items.should.containEql(item5)
+            res.body.Items.should.have.length(4)
+            res.body.Count.should.equal(4)
+            cb()
+          })
+        }, done)
       })
     })
 
@@ -1221,19 +1791,27 @@ describe('scan', function() {
       request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        request(opts({TableName: helpers.testHashTable, ScanFilter: {
-          b: {ComparisonOperator: 'LT', AttributeValueList: [item.b]},
-          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
-        }}), function(err, res) {
-          if (err) return done(err)
-          res.statusCode.should.equal(200)
-          res.body.Items.should.containEql(item2)
-          res.body.Items.should.containEql(item3)
-          res.body.Items.should.containEql(item5)
-          res.body.Items.should.have.length(3)
-          res.body.Count.should.equal(3)
-          done()
-        })
+        async.forEach([{
+          ScanFilter: {
+            b: {ComparisonOperator: 'LT', AttributeValueList: [item.b]},
+            c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+          },
+        }, {
+          FilterExpression: 'b < :b AND c = :c',
+          ExpressionAttributeValues: {':b': item.b, ':c': item.c},
+        }], function(scanOpts, cb) {
+          scanOpts.TableName = helpers.testHashTable
+          request(opts(scanOpts), function(err, res) {
+            if (err) return cb(err)
+            res.statusCode.should.equal(200)
+            res.body.Items.should.containEql(item2)
+            res.body.Items.should.containEql(item3)
+            res.body.Items.should.containEql(item5)
+            res.body.Items.should.have.length(3)
+            res.body.Count.should.equal(3)
+            cb()
+          })
+        }, done)
       })
     })
 
@@ -1254,19 +1832,27 @@ describe('scan', function() {
       request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        request(opts({TableName: helpers.testHashTable, ScanFilter: {
-          b: {ComparisonOperator: 'LT', AttributeValueList: [item.b]},
-          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
-        }}), function(err, res) {
-          if (err) return done(err)
-          res.statusCode.should.equal(200)
-          res.body.Items.should.containEql(item2)
-          res.body.Items.should.containEql(item3)
-          res.body.Items.should.containEql(item5)
-          res.body.Items.should.have.length(3)
-          res.body.Count.should.equal(3)
-          done()
-        })
+        async.forEach([{
+          ScanFilter: {
+            b: {ComparisonOperator: 'LT', AttributeValueList: [item.b]},
+            c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+          },
+        }, {
+          FilterExpression: 'b < :b AND c = :c',
+          ExpressionAttributeValues: {':b': item.b, ':c': item.c},
+        }], function(scanOpts, cb) {
+          scanOpts.TableName = helpers.testHashTable
+          request(opts(scanOpts), function(err, res) {
+            if (err) return cb(err)
+            res.statusCode.should.equal(200)
+            res.body.Items.should.containEql(item2)
+            res.body.Items.should.containEql(item3)
+            res.body.Items.should.containEql(item5)
+            res.body.Items.should.have.length(3)
+            res.body.Count.should.equal(3)
+            cb()
+          })
+        }, done)
       })
     })
 
@@ -1287,19 +1873,27 @@ describe('scan', function() {
       request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        request(opts({TableName: helpers.testHashTable, ScanFilter: {
-          b: {ComparisonOperator: 'LT', AttributeValueList: [item2.b]},
-          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
-        }}), function(err, res) {
-          if (err) return done(err)
-          res.statusCode.should.equal(200)
-          res.body.Items.should.containEql(item)
-          res.body.Items.should.containEql(item3)
-          res.body.Items.should.containEql(item5)
-          res.body.Items.should.have.length(3)
-          res.body.Count.should.equal(3)
-          done()
-        })
+        async.forEach([{
+          ScanFilter: {
+            b: {ComparisonOperator: 'LT', AttributeValueList: [item2.b]},
+            c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+          },
+        }, {
+          FilterExpression: 'b < :b AND c = :c',
+          ExpressionAttributeValues: {':b': item2.b, ':c': item.c},
+        }], function(scanOpts, cb) {
+          scanOpts.TableName = helpers.testHashTable
+          request(opts(scanOpts), function(err, res) {
+            if (err) return cb(err)
+            res.statusCode.should.equal(200)
+            res.body.Items.should.containEql(item)
+            res.body.Items.should.containEql(item3)
+            res.body.Items.should.containEql(item5)
+            res.body.Items.should.have.length(3)
+            res.body.Count.should.equal(3)
+            cb()
+          })
+        }, done)
       })
     })
 
@@ -1320,20 +1914,28 @@ describe('scan', function() {
       request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        request(opts({TableName: helpers.testHashTable, ScanFilter: {
-          b: {ComparisonOperator: 'GE', AttributeValueList: [item3.b]},
-          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
-        }}), function(err, res) {
-          if (err) return done(err)
-          res.statusCode.should.equal(200)
-          res.body.Items.should.containEql(item)
-          res.body.Items.should.containEql(item2)
-          res.body.Items.should.containEql(item3)
-          res.body.Items.should.containEql(item4)
-          res.body.Items.should.have.length(4)
-          res.body.Count.should.equal(4)
-          done()
-        })
+        async.forEach([{
+          ScanFilter: {
+            b: {ComparisonOperator: 'GE', AttributeValueList: [item3.b]},
+            c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+          },
+        }, {
+          FilterExpression: 'b >= :b AND c = :c',
+          ExpressionAttributeValues: {':b': item3.b, ':c': item.c},
+        }], function(scanOpts, cb) {
+          scanOpts.TableName = helpers.testHashTable
+          request(opts(scanOpts), function(err, res) {
+            if (err) return cb(err)
+            res.statusCode.should.equal(200)
+            res.body.Items.should.containEql(item)
+            res.body.Items.should.containEql(item2)
+            res.body.Items.should.containEql(item3)
+            res.body.Items.should.containEql(item4)
+            res.body.Items.should.have.length(4)
+            res.body.Count.should.equal(4)
+            cb()
+          })
+        }, done)
       })
     })
 
@@ -1354,19 +1956,27 @@ describe('scan', function() {
       request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        request(opts({TableName: helpers.testHashTable, ScanFilter: {
-          b: {ComparisonOperator: 'GE', AttributeValueList: [item2.b]},
-          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
-        }}), function(err, res) {
-          if (err) return done(err)
-          res.statusCode.should.equal(200)
-          res.body.Items.should.containEql(item)
-          res.body.Items.should.containEql(item2)
-          res.body.Items.should.containEql(item4)
-          res.body.Items.should.have.length(3)
-          res.body.Count.should.equal(3)
-          done()
-        })
+        async.forEach([{
+          ScanFilter: {
+            b: {ComparisonOperator: 'GE', AttributeValueList: [item2.b]},
+            c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+          },
+        }, {
+          FilterExpression: 'b >= :b AND c = :c',
+          ExpressionAttributeValues: {':b': item2.b, ':c': item.c},
+        }], function(scanOpts, cb) {
+          scanOpts.TableName = helpers.testHashTable
+          request(opts(scanOpts), function(err, res) {
+            if (err) return cb(err)
+            res.statusCode.should.equal(200)
+            res.body.Items.should.containEql(item)
+            res.body.Items.should.containEql(item2)
+            res.body.Items.should.containEql(item4)
+            res.body.Items.should.have.length(3)
+            res.body.Count.should.equal(3)
+            cb()
+          })
+        }, done)
       })
     })
 
@@ -1387,20 +1997,28 @@ describe('scan', function() {
       request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        request(opts({TableName: helpers.testHashTable, ScanFilter: {
-          b: {ComparisonOperator: 'GE', AttributeValueList: [item3.b]},
-          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
-        }}), function(err, res) {
-          if (err) return done(err)
-          res.statusCode.should.equal(200)
-          res.body.Items.should.containEql(item2)
-          res.body.Items.should.containEql(item3)
-          res.body.Items.should.containEql(item4)
-          res.body.Items.should.containEql(item5)
-          res.body.Items.should.have.length(4)
-          res.body.Count.should.equal(4)
-          done()
-        })
+        async.forEach([{
+          ScanFilter: {
+            b: {ComparisonOperator: 'GE', AttributeValueList: [item3.b]},
+            c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+          },
+        }, {
+          FilterExpression: 'b >= :b AND c = :c',
+          ExpressionAttributeValues: {':b': item3.b, ':c': item.c},
+        }], function(scanOpts, cb) {
+          scanOpts.TableName = helpers.testHashTable
+          request(opts(scanOpts), function(err, res) {
+            if (err) return cb(err)
+            res.statusCode.should.equal(200)
+            res.body.Items.should.containEql(item2)
+            res.body.Items.should.containEql(item3)
+            res.body.Items.should.containEql(item4)
+            res.body.Items.should.containEql(item5)
+            res.body.Items.should.have.length(4)
+            res.body.Count.should.equal(4)
+            cb()
+          })
+        }, done)
       })
     })
 
@@ -1421,19 +2039,27 @@ describe('scan', function() {
       request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        request(opts({TableName: helpers.testHashTable, ScanFilter: {
-          b: {ComparisonOperator: 'GT', AttributeValueList: [item3.b]},
-          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
-        }}), function(err, res) {
-          if (err) return done(err)
-          res.statusCode.should.equal(200)
-          res.body.Items.should.containEql(item)
-          res.body.Items.should.containEql(item2)
-          res.body.Items.should.containEql(item4)
-          res.body.Items.should.have.length(3)
-          res.body.Count.should.equal(3)
-          done()
-        })
+        async.forEach([{
+          ScanFilter: {
+            b: {ComparisonOperator: 'GT', AttributeValueList: [item3.b]},
+            c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+          },
+        }, {
+          FilterExpression: 'b > :b AND c = :c',
+          ExpressionAttributeValues: {':b': item3.b, ':c': item.c},
+        }], function(scanOpts, cb) {
+          scanOpts.TableName = helpers.testHashTable
+          request(opts(scanOpts), function(err, res) {
+            if (err) return cb(err)
+            res.statusCode.should.equal(200)
+            res.body.Items.should.containEql(item)
+            res.body.Items.should.containEql(item2)
+            res.body.Items.should.containEql(item4)
+            res.body.Items.should.have.length(3)
+            res.body.Count.should.equal(3)
+            cb()
+          })
+        }, done)
       })
     })
 
@@ -1454,18 +2080,26 @@ describe('scan', function() {
       request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        request(opts({TableName: helpers.testHashTable, ScanFilter: {
-          b: {ComparisonOperator: 'GT', AttributeValueList: [item2.b]},
-          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
-        }}), function(err, res) {
-          if (err) return done(err)
-          res.statusCode.should.equal(200)
-          res.body.Items.should.containEql(item)
-          res.body.Items.should.containEql(item4)
-          res.body.Items.should.have.length(2)
-          res.body.Count.should.equal(2)
-          done()
-        })
+        async.forEach([{
+          ScanFilter: {
+            b: {ComparisonOperator: 'GT', AttributeValueList: [item2.b]},
+            c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+          },
+        }, {
+          FilterExpression: 'b > :b AND c = :c',
+          ExpressionAttributeValues: {':b': item2.b, ':c': item.c},
+        }], function(scanOpts, cb) {
+          scanOpts.TableName = helpers.testHashTable
+          request(opts(scanOpts), function(err, res) {
+            if (err) return cb(err)
+            res.statusCode.should.equal(200)
+            res.body.Items.should.containEql(item)
+            res.body.Items.should.containEql(item4)
+            res.body.Items.should.have.length(2)
+            res.body.Count.should.equal(2)
+            cb()
+          })
+        }, done)
       })
     })
 
@@ -1486,19 +2120,27 @@ describe('scan', function() {
       request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        request(opts({TableName: helpers.testHashTable, ScanFilter: {
-          b: {ComparisonOperator: 'GT', AttributeValueList: [item3.b]},
-          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
-        }}), function(err, res) {
-          if (err) return done(err)
-          res.statusCode.should.equal(200)
-          res.body.Items.should.containEql(item2)
-          res.body.Items.should.containEql(item4)
-          res.body.Items.should.containEql(item5)
-          res.body.Items.should.have.length(3)
-          res.body.Count.should.equal(3)
-          done()
-        })
+        async.forEach([{
+          ScanFilter: {
+            b: {ComparisonOperator: 'GT', AttributeValueList: [item3.b]},
+            c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+          },
+        }, {
+          FilterExpression: 'b > :b AND c = :c',
+          ExpressionAttributeValues: {':b': item3.b, ':c': item.c},
+        }], function(scanOpts, cb) {
+          scanOpts.TableName = helpers.testHashTable
+          request(opts(scanOpts), function(err, res) {
+            if (err) return cb(err)
+            res.statusCode.should.equal(200)
+            res.body.Items.should.containEql(item2)
+            res.body.Items.should.containEql(item4)
+            res.body.Items.should.containEql(item5)
+            res.body.Items.should.have.length(3)
+            res.body.Count.should.equal(3)
+            cb()
+          })
+        }, done)
       })
     })
 
@@ -1515,18 +2157,26 @@ describe('scan', function() {
       request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        request(opts({TableName: helpers.testHashTable, ScanFilter: {
-          b: {ComparisonOperator: 'NOT_NULL'},
-          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
-        }}), function(err, res) {
-          if (err) return done(err)
-          res.statusCode.should.equal(200)
-          res.body.Items.should.containEql(item)
-          res.body.Items.should.containEql(item2)
-          res.body.Items.should.have.length(2)
-          res.body.Count.should.equal(2)
-          done()
-        })
+        async.forEach([{
+          ScanFilter: {
+            b: {ComparisonOperator: 'NOT_NULL'},
+            c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+          },
+        }, {
+          FilterExpression: 'attribute_exists(b) AND c = :c',
+          ExpressionAttributeValues: {':c': item.c},
+        }], function(scanOpts, cb) {
+          scanOpts.TableName = helpers.testHashTable
+          request(opts(scanOpts), function(err, res) {
+            if (err) return cb(err)
+            res.statusCode.should.equal(200)
+            res.body.Items.should.containEql(item)
+            res.body.Items.should.containEql(item2)
+            res.body.Items.should.have.length(2)
+            res.body.Count.should.equal(2)
+            cb()
+          })
+        }, done)
       })
     })
 
@@ -1543,18 +2193,26 @@ describe('scan', function() {
       request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        request(opts({TableName: helpers.testHashTable, ScanFilter: {
-          b: {ComparisonOperator: 'NULL'},
-          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
-        }}), function(err, res) {
-          if (err) return done(err)
-          res.statusCode.should.equal(200)
-          res.body.Items.should.containEql(item)
-          res.body.Items.should.containEql(item2)
-          res.body.Items.should.have.length(2)
-          res.body.Count.should.equal(2)
-          done()
-        })
+        async.forEach([{
+          ScanFilter: {
+            b: {ComparisonOperator: 'NULL'},
+            c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+          },
+        }, {
+          FilterExpression: 'attribute_not_exists(b) AND c = :c',
+          ExpressionAttributeValues: {':c': item.c},
+        }], function(scanOpts, cb) {
+          scanOpts.TableName = helpers.testHashTable
+          request(opts(scanOpts), function(err, res) {
+            if (err) return cb(err)
+            res.statusCode.should.equal(200)
+            res.body.Items.should.containEql(item)
+            res.body.Items.should.containEql(item2)
+            res.body.Items.should.have.length(2)
+            res.body.Count.should.equal(2)
+            cb()
+          })
+        }, done)
       })
     })
 
@@ -1577,19 +2235,27 @@ describe('scan', function() {
       request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        request(opts({TableName: helpers.testHashTable, ScanFilter: {
-          b: {ComparisonOperator: 'CONTAINS', AttributeValueList: [item5.b]},
-          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
-        }}), function(err, res) {
-          if (err) return done(err)
-          res.statusCode.should.equal(200)
-          res.body.Items.should.containEql(item)
-          res.body.Items.should.containEql(item2)
-          res.body.Items.should.containEql(item5)
-          res.body.Items.should.have.length(3)
-          res.body.Count.should.equal(3)
-          done()
-        })
+        async.forEach([{
+          ScanFilter: {
+            b: {ComparisonOperator: 'CONTAINS', AttributeValueList: [item5.b]},
+            c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+          },
+        }, {
+          FilterExpression: 'contains(b, :b) AND c = :c',
+          ExpressionAttributeValues: {':b': item5.b, ':c': item.c},
+        }], function(scanOpts, cb) {
+          scanOpts.TableName = helpers.testHashTable
+          request(opts(scanOpts), function(err, res) {
+            if (err) return cb(err)
+            res.statusCode.should.equal(200)
+            res.body.Items.should.containEql(item)
+            res.body.Items.should.containEql(item2)
+            res.body.Items.should.containEql(item5)
+            res.body.Items.should.have.length(3)
+            res.body.Count.should.equal(3)
+            cb()
+          })
+        }, done)
       })
     })
 
@@ -1610,17 +2276,25 @@ describe('scan', function() {
       request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        request(opts({TableName: helpers.testHashTable, ScanFilter: {
-          b: {ComparisonOperator: 'CONTAINS', AttributeValueList: [{N: '234'}]},
-          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
-        }}), function(err, res) {
-          if (err) return done(err)
-          res.statusCode.should.equal(200)
-          res.body.Items.should.have.lengthOf(1)
-          res.body.Items[0].a.should.eql(item2.a)
-          res.body.Count.should.equal(1)
-          done()
-        })
+        async.forEach([{
+          ScanFilter: {
+            b: {ComparisonOperator: 'CONTAINS', AttributeValueList: [{N: '234'}]},
+            c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+          },
+        }, {
+          FilterExpression: 'contains(b, :b) AND c = :c',
+          ExpressionAttributeValues: {':b': {N: '234'}, ':c': item.c},
+        }], function(scanOpts, cb) {
+          scanOpts.TableName = helpers.testHashTable
+          request(opts(scanOpts), function(err, res) {
+            if (err) return cb(err)
+            res.statusCode.should.equal(200)
+            res.body.Items.should.have.lengthOf(1)
+            res.body.Items[0].a.should.eql(item2.a)
+            res.body.Count.should.equal(1)
+            cb()
+          })
+        }, done)
       })
     })
 
@@ -1643,19 +2317,27 @@ describe('scan', function() {
       request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        request(opts({TableName: helpers.testHashTable, ScanFilter: {
-          b: {ComparisonOperator: 'CONTAINS', AttributeValueList: [item5.b]},
-          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
-        }}), function(err, res) {
-          if (err) return done(err)
-          res.statusCode.should.equal(200)
-          res.body.Items.should.containEql(item3)
-          res.body.Items.should.containEql(item4)
-          res.body.Items.should.containEql(item5)
-          res.body.Items.should.have.length(3)
-          res.body.Count.should.equal(3)
-          done()
-        })
+        async.forEach([{
+          ScanFilter: {
+            b: {ComparisonOperator: 'CONTAINS', AttributeValueList: [item5.b]},
+            c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+          },
+        }, {
+          FilterExpression: 'contains(b, :b) AND c = :c',
+          ExpressionAttributeValues: {':b': item5.b, ':c': item.c},
+        }], function(scanOpts, cb) {
+          scanOpts.TableName = helpers.testHashTable
+          request(opts(scanOpts), function(err, res) {
+            if (err) return cb(err)
+            res.statusCode.should.equal(200)
+            res.body.Items.should.containEql(item3)
+            res.body.Items.should.containEql(item4)
+            res.body.Items.should.containEql(item5)
+            res.body.Items.should.have.length(3)
+            res.body.Count.should.equal(3)
+            cb()
+          })
+        }, done)
       })
     })
 
@@ -1678,19 +2360,27 @@ describe('scan', function() {
       request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        request(opts({TableName: helpers.testHashTable, ScanFilter: {
-          b: {ComparisonOperator: 'NOT_CONTAINS', AttributeValueList: [item5.b]},
-          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
-        }}), function(err, res) {
-          if (err) return done(err)
-          res.statusCode.should.equal(200)
-          res.body.Items.should.containEql(item3)
-          res.body.Items.should.containEql(item4)
-          res.body.Items.should.containEql(item6)
-          res.body.Items.should.have.length(3)
-          res.body.Count.should.equal(3)
-          done()
-        })
+        async.forEach([{
+          ScanFilter: {
+            b: {ComparisonOperator: 'NOT_CONTAINS', AttributeValueList: [item5.b]},
+            c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+          },
+        }, {
+          FilterExpression: 'NOT contains(b, :b) AND c = :c',
+          ExpressionAttributeValues: {':b': item5.b, ':c': item.c},
+        }], function(scanOpts, cb) {
+          scanOpts.TableName = helpers.testHashTable
+          request(opts(scanOpts), function(err, res) {
+            if (err) return cb(err)
+            res.statusCode.should.equal(200)
+            res.body.Items.should.containEql(item3)
+            res.body.Items.should.containEql(item4)
+            res.body.Items.should.containEql(item6)
+            res.body.Items.should.have.length(3)
+            res.body.Count.should.equal(3)
+            cb()
+          })
+        }, done)
       })
     })
 
@@ -1711,20 +2401,28 @@ describe('scan', function() {
       request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        request(opts({TableName: helpers.testHashTable, ScanFilter: {
-          b: {ComparisonOperator: 'NOT_CONTAINS', AttributeValueList: [{N: '234'}]},
-          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
-        }}), function(err, res) {
-          if (err) return done(err)
-          res.statusCode.should.equal(200)
-          res.body.Items.should.containEql(item)
-          res.body.Items.should.containEql(item3)
-          res.body.Items.should.containEql(item4)
-          res.body.Items.should.containEql(item5)
-          res.body.Items.should.have.length(4)
-          res.body.Count.should.equal(4)
-          done()
-        })
+        async.forEach([{
+          ScanFilter: {
+            b: {ComparisonOperator: 'NOT_CONTAINS', AttributeValueList: [{N: '234'}]},
+            c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+          },
+        }, {
+          FilterExpression: 'NOT contains(b, :b) AND c = :c',
+          ExpressionAttributeValues: {':b': {N: '234'}, ':c': item.c},
+        }], function(scanOpts, cb) {
+          scanOpts.TableName = helpers.testHashTable
+          request(opts(scanOpts), function(err, res) {
+            if (err) return cb(err)
+            res.statusCode.should.equal(200)
+            res.body.Items.should.containEql(item)
+            res.body.Items.should.containEql(item3)
+            res.body.Items.should.containEql(item4)
+            res.body.Items.should.containEql(item5)
+            res.body.Items.should.have.length(4)
+            res.body.Count.should.equal(4)
+            cb()
+          })
+        }, done)
       })
     })
 
@@ -1747,19 +2445,27 @@ describe('scan', function() {
       request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        request(opts({TableName: helpers.testHashTable, ScanFilter: {
-          b: {ComparisonOperator: 'NOT_CONTAINS', AttributeValueList: [item5.b]},
-          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
-        }}), function(err, res) {
-          if (err) return done(err)
-          res.statusCode.should.equal(200)
-          res.body.Items.should.containEql(item)
-          res.body.Items.should.containEql(item2)
-          res.body.Items.should.containEql(item6)
-          res.body.Items.should.have.length(3)
-          res.body.Count.should.equal(3)
-          done()
-        })
+        async.forEach([{
+          ScanFilter: {
+            b: {ComparisonOperator: 'NOT_CONTAINS', AttributeValueList: [item5.b]},
+            c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+          },
+        }, {
+          FilterExpression: 'NOT contains(b, :b) AND c = :c',
+          ExpressionAttributeValues: {':b': item5.b, ':c': item.c},
+        }], function(scanOpts, cb) {
+          scanOpts.TableName = helpers.testHashTable
+          request(opts(scanOpts), function(err, res) {
+            if (err) return cb(err)
+            res.statusCode.should.equal(200)
+            res.body.Items.should.containEql(item)
+            res.body.Items.should.containEql(item2)
+            res.body.Items.should.containEql(item6)
+            res.body.Items.should.have.length(3)
+            res.body.Count.should.equal(3)
+            cb()
+          })
+        }, done)
       })
     })
 
@@ -1780,18 +2486,26 @@ describe('scan', function() {
       request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        request(opts({TableName: helpers.testHashTable, ScanFilter: {
-          b: {ComparisonOperator: 'BEGINS_WITH', AttributeValueList: [item5.b]},
-          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
-        }}), function(err, res) {
-          if (err) return done(err)
-          res.statusCode.should.equal(200)
-          res.body.Items.should.containEql(item)
-          res.body.Items.should.containEql(item5)
-          res.body.Items.should.have.length(2)
-          res.body.Count.should.equal(2)
-          done()
-        })
+        async.forEach([{
+          ScanFilter: {
+            b: {ComparisonOperator: 'BEGINS_WITH', AttributeValueList: [item5.b]},
+            c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+          },
+        }, {
+          FilterExpression: 'begins_with(b, :b) AND c = :c',
+          ExpressionAttributeValues: {':b': item5.b, ':c': item.c},
+        }], function(scanOpts, cb) {
+          scanOpts.TableName = helpers.testHashTable
+          request(opts(scanOpts), function(err, res) {
+            if (err) return cb(err)
+            res.statusCode.should.equal(200)
+            res.body.Items.should.containEql(item)
+            res.body.Items.should.containEql(item5)
+            res.body.Items.should.have.length(2)
+            res.body.Count.should.equal(2)
+            cb()
+          })
+        }, done)
       })
     })
 
@@ -1812,18 +2526,26 @@ describe('scan', function() {
       request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        request(opts({TableName: helpers.testHashTable, ScanFilter: {
-          b: {ComparisonOperator: 'BEGINS_WITH', AttributeValueList: [item5.b]},
-          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
-        }}), function(err, res) {
-          if (err) return done(err)
-          res.statusCode.should.equal(200)
-          res.body.Items.should.containEql(item3)
-          res.body.Items.should.containEql(item5)
-          res.body.Items.should.have.length(2)
-          res.body.Count.should.equal(2)
-          done()
-        })
+        async.forEach([{
+          ScanFilter: {
+            b: {ComparisonOperator: 'BEGINS_WITH', AttributeValueList: [item5.b]},
+            c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+          },
+        }, {
+          FilterExpression: 'begins_with(b, :b) AND c = :c',
+          ExpressionAttributeValues: {':b': item5.b, ':c': item.c},
+        }], function(scanOpts, cb) {
+          scanOpts.TableName = helpers.testHashTable
+          request(opts(scanOpts), function(err, res) {
+            if (err) return cb(err)
+            res.statusCode.should.equal(200)
+            res.body.Items.should.containEql(item3)
+            res.body.Items.should.containEql(item5)
+            res.body.Items.should.have.length(2)
+            res.body.Count.should.equal(2)
+            cb()
+          })
+        }, done)
       })
     })
 
@@ -1844,18 +2566,26 @@ describe('scan', function() {
       request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        request(opts({TableName: helpers.testHashTable, ScanFilter: {
-          b: {ComparisonOperator: 'IN', AttributeValueList: [item5.b, item.b]},
-          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
-        }}), function(err, res) {
-          if (err) return done(err)
-          res.statusCode.should.equal(200)
-          res.body.Items.should.containEql(item)
-          res.body.Items.should.containEql(item5)
-          res.body.Items.should.have.length(2)
-          res.body.Count.should.equal(2)
-          done()
-        })
+        async.forEach([{
+          ScanFilter: {
+            b: {ComparisonOperator: 'IN', AttributeValueList: [item5.b, item.b]},
+            c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+          },
+        }, {
+          FilterExpression: 'b IN (:b, :d) AND c = :c',
+          ExpressionAttributeValues: {':b': item5.b, ':c': item.c, ':d': item.b},
+        }], function(scanOpts, cb) {
+          scanOpts.TableName = helpers.testHashTable
+          request(opts(scanOpts), function(err, res) {
+            if (err) return cb(err)
+            res.statusCode.should.equal(200)
+            res.body.Items.should.containEql(item)
+            res.body.Items.should.containEql(item5)
+            res.body.Items.should.have.length(2)
+            res.body.Count.should.equal(2)
+            cb()
+          })
+        }, done)
       })
     })
 
@@ -1876,18 +2606,26 @@ describe('scan', function() {
       request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        request(opts({TableName: helpers.testHashTable, ScanFilter: {
-          b: {ComparisonOperator: 'IN', AttributeValueList: [item4.b, item5.b]},
-          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
-        }}), function(err, res) {
-          if (err) return done(err)
-          res.statusCode.should.equal(200)
-          res.body.Items.should.containEql(item4)
-          res.body.Items.should.containEql(item5)
-          res.body.Items.should.have.length(2)
-          res.body.Count.should.equal(2)
-          done()
-        })
+        async.forEach([{
+          ScanFilter: {
+            b: {ComparisonOperator: 'IN', AttributeValueList: [item4.b, item5.b]},
+            c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+          },
+        }, {
+          FilterExpression: 'b IN (:b, :d) AND c = :c',
+          ExpressionAttributeValues: {':b': item4.b, ':c': item.c, ':d': item5.b},
+        }], function(scanOpts, cb) {
+          scanOpts.TableName = helpers.testHashTable
+          request(opts(scanOpts), function(err, res) {
+            if (err) return cb(err)
+            res.statusCode.should.equal(200)
+            res.body.Items.should.containEql(item4)
+            res.body.Items.should.containEql(item5)
+            res.body.Items.should.have.length(2)
+            res.body.Count.should.equal(2)
+            cb()
+          })
+        }, done)
       })
     })
 
@@ -1908,18 +2646,26 @@ describe('scan', function() {
       request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        request(opts({TableName: helpers.testHashTable, ScanFilter: {
-          b: {ComparisonOperator: 'IN', AttributeValueList: [item3.b, item5.b]},
-          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
-        }}), function(err, res) {
-          if (err) return done(err)
-          res.statusCode.should.equal(200)
-          res.body.Items.should.containEql(item3)
-          res.body.Items.should.containEql(item5)
-          res.body.Items.should.have.length(2)
-          res.body.Count.should.equal(2)
-          done()
-        })
+        async.forEach([{
+          ScanFilter: {
+            b: {ComparisonOperator: 'IN', AttributeValueList: [item3.b, item5.b]},
+            c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+          },
+        }, {
+          FilterExpression: 'b IN (:b, :d) AND c = :c',
+          ExpressionAttributeValues: {':b': item3.b, ':c': item.c, ':d': item5.b},
+        }], function(scanOpts, cb) {
+          scanOpts.TableName = helpers.testHashTable
+          request(opts(scanOpts), function(err, res) {
+            if (err) return cb(err)
+            res.statusCode.should.equal(200)
+            res.body.Items.should.containEql(item3)
+            res.body.Items.should.containEql(item5)
+            res.body.Items.should.have.length(2)
+            res.body.Count.should.equal(2)
+            cb()
+          })
+        }, done)
       })
     })
 
@@ -1940,19 +2686,27 @@ describe('scan', function() {
       request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        request(opts({TableName: helpers.testHashTable, ScanFilter: {
-          b: {ComparisonOperator: 'BETWEEN', AttributeValueList: [item2.b, item4.b]},
-          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
-        }}), function(err, res) {
-          if (err) return done(err)
-          res.statusCode.should.equal(200)
-          res.body.Items.should.containEql(item2)
-          res.body.Items.should.containEql(item3)
-          res.body.Items.should.containEql(item4)
-          res.body.Items.should.have.length(3)
-          res.body.Count.should.equal(3)
-          done()
-        })
+        async.forEach([{
+          ScanFilter: {
+            b: {ComparisonOperator: 'BETWEEN', AttributeValueList: [item2.b, item4.b]},
+            c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+          },
+        }, {
+          FilterExpression: 'b BETWEEN :b AND :d AND c = :c',
+          ExpressionAttributeValues: {':b': item2.b, ':c': item.c, ':d': item4.b},
+        }], function(scanOpts, cb) {
+          scanOpts.TableName = helpers.testHashTable
+          request(opts(scanOpts), function(err, res) {
+            if (err) return cb(err)
+            res.statusCode.should.equal(200)
+            res.body.Items.should.containEql(item2)
+            res.body.Items.should.containEql(item3)
+            res.body.Items.should.containEql(item4)
+            res.body.Items.should.have.length(3)
+            res.body.Count.should.equal(3)
+            cb()
+          })
+        }, done)
       })
     })
 
@@ -1973,19 +2727,27 @@ describe('scan', function() {
       request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        request(opts({TableName: helpers.testHashTable, ScanFilter: {
-          b: {ComparisonOperator: 'BETWEEN', AttributeValueList: [item2.b, item4.b]},
-          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
-        }}), function(err, res) {
-          if (err) return done(err)
-          res.statusCode.should.equal(200)
-          res.body.Items.should.containEql(item2)
-          res.body.Items.should.containEql(item3)
-          res.body.Items.should.containEql(item4)
-          res.body.Items.should.have.length(3)
-          res.body.Count.should.equal(3)
-          done()
-        })
+        async.forEach([{
+          ScanFilter: {
+            b: {ComparisonOperator: 'BETWEEN', AttributeValueList: [item2.b, item4.b]},
+            c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+          },
+        }, {
+          FilterExpression: 'b BETWEEN :b AND :d AND c = :c',
+          ExpressionAttributeValues: {':b': item2.b, ':c': item.c, ':d': item4.b},
+        }], function(scanOpts, cb) {
+          scanOpts.TableName = helpers.testHashTable
+          request(opts(scanOpts), function(err, res) {
+            if (err) return cb(err)
+            res.statusCode.should.equal(200)
+            res.body.Items.should.containEql(item2)
+            res.body.Items.should.containEql(item3)
+            res.body.Items.should.containEql(item4)
+            res.body.Items.should.have.length(3)
+            res.body.Count.should.equal(3)
+            cb()
+          })
+        }, done)
       })
     })
 
@@ -2006,19 +2768,110 @@ describe('scan', function() {
       request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        request(opts({TableName: helpers.testHashTable, ScanFilter: {
-          b: {ComparisonOperator: 'BETWEEN', AttributeValueList: [item5.b, item4.b]},
-          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
-        }}), function(err, res) {
-          if (err) return done(err)
-          res.statusCode.should.equal(200)
-          res.body.Items.should.containEql(item2)
-          res.body.Items.should.containEql(item4)
-          res.body.Items.should.containEql(item5)
-          res.body.Items.should.have.length(3)
-          res.body.Count.should.equal(3)
-          done()
-        })
+        async.forEach([{
+          ScanFilter: {
+            b: {ComparisonOperator: 'BETWEEN', AttributeValueList: [item5.b, item4.b]},
+            c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+          },
+        }, {
+          FilterExpression: 'b BETWEEN :b AND :d AND c = :c',
+          ExpressionAttributeValues: {':b': item5.b, ':c': item.c, ':d': item4.b},
+        }], function(scanOpts, cb) {
+          scanOpts.TableName = helpers.testHashTable
+          request(opts(scanOpts), function(err, res) {
+            if (err) return cb(err)
+            res.statusCode.should.equal(200)
+            res.body.Items.should.containEql(item2)
+            res.body.Items.should.containEql(item4)
+            res.body.Items.should.containEql(item5)
+            res.body.Items.should.have.length(3)
+            res.body.Count.should.equal(3)
+            cb()
+          })
+        }, done)
+      })
+    })
+
+    it('should scan by nested properties', function(done) {
+      var item = {a: {S: helpers.randomString()}, b: {M: {a: {M: {b: {S: helpers.randomString()}}}}}, c: {N: helpers.randomNumber()}}
+      var item2 = {a: {S: helpers.randomString()}, b: {L: [{S: helpers.randomString()}, item.b]}, c: item.c}
+      var item3 = {a: {S: helpers.randomString()}, b: item.b, c: {N: helpers.randomNumber()}}
+      var item4 = {a: {S: helpers.randomString()}, b: {S: helpers.randomString()}, c: item.c}
+      var item5 = {a: {S: helpers.randomString()}, c: item.c}
+      var batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testHashTable] = [
+        {PutRequest: {Item: item}},
+        {PutRequest: {Item: item2}},
+        {PutRequest: {Item: item3}},
+        {PutRequest: {Item: item4}},
+        {PutRequest: {Item: item5}},
+      ]
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        async.forEach([{
+          FilterExpression: '(b[1].a.b = :b OR b.a.b = :b) AND c = :c',
+          ExpressionAttributeValues: {':b': item.b.M.a.M.b, ':c': item.c},
+        }, {
+          FilterExpression: '(attribute_exists(b.a) OR attribute_exists(b[1])) AND c = :c',
+          ExpressionAttributeValues: {':c': item.c},
+        }, {
+          FilterExpression: '(attribute_type(b.a, :m) OR attribute_type(b[1].a, :m)) AND c = :c',
+          ExpressionAttributeValues: {':c': item.c, ':m': {S: 'M'}},
+        }], function(scanOpts, cb) {
+          scanOpts.TableName = helpers.testHashTable
+          request(opts(scanOpts), function(err, res) {
+            if (err) return cb(err)
+            res.statusCode.should.equal(200)
+            res.body.Items.should.containEql(item)
+            res.body.Items.should.containEql(item2)
+            res.body.Items.should.have.length(2)
+            res.body.Count.should.equal(2)
+            cb()
+          })
+        }, done)
+      })
+    })
+
+    it('should calculate size function correctly', function(done) {
+      var item = {a: {S: helpers.randomString()}, b: {S: 'abÿ'}, c: {N: helpers.randomNumber()}}
+      var item2 = {a: {S: helpers.randomString()}, b: {N: '123'}, c: item.c}
+      var item3 = {a: {S: helpers.randomString()}, b: {B: 'YWJj'}, c: item.c}
+      var item4 = {a: {S: helpers.randomString()}, b: {SS: ['a', 'b', 'c']}, c: item.c}
+      var item5 = {a: {S: helpers.randomString()}, b: {L: [{S: 'a'}, {S: 'a'}, {S: 'a'}]}, c: item.c}
+      var item6 = {a: {S: helpers.randomString()}, b: {M: {a: {S: 'a'}, b: {S: 'a'}, c: {S: 'a'}}}, c: item.c}
+      var item7 = {a: {S: helpers.randomString()}, b: {S: 'abcd'}, c: item.c}
+      var batchReq = {RequestItems: {}}
+      batchReq.RequestItems[helpers.testHashTable] = [
+        {PutRequest: {Item: item}},
+        {PutRequest: {Item: item2}},
+        {PutRequest: {Item: item3}},
+        {PutRequest: {Item: item4}},
+        {PutRequest: {Item: item5}},
+        {PutRequest: {Item: item6}},
+        {PutRequest: {Item: item7}},
+      ]
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        async.forEach([{
+          FilterExpression: 'size(b) = :b AND c = :c',
+          ExpressionAttributeValues: {':b': {N: '3'}, ':c': item.c},
+        }], function(scanOpts, cb) {
+          scanOpts.TableName = helpers.testHashTable
+          request(opts(scanOpts), function(err, res) {
+            if (err) return cb(err)
+            res.statusCode.should.equal(200)
+            res.body.Items.should.containEql(item)
+            res.body.Items.should.containEql(item3)
+            res.body.Items.should.containEql(item4)
+            res.body.Items.should.containEql(item5)
+            res.body.Items.should.containEql(item6)
+            res.body.Items.should.have.length(5)
+            res.body.Count.should.equal(5)
+            cb()
+          })
+        }, done)
       })
     })
 
@@ -2035,18 +2888,33 @@ describe('scan', function() {
       request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        request(opts({TableName: helpers.testHashTable, ScanFilter: {
-          c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
-        }, AttributesToGet: ['b', 'd']}), function(err, res) {
-          if (err) return done(err)
-          res.statusCode.should.equal(200)
-          res.body.Items.should.containEql({b: {S: 'b1'}, d: {S: 'd1'}})
-          res.body.Items.should.containEql({b: {S: 'b2'}})
-          res.body.Items.should.containEql({b: {S: 'b3'}, d: {S: 'd3'}})
-          res.body.Items.should.have.length(3)
-          res.body.Count.should.equal(3)
-          done()
-        })
+        async.forEach([{
+          ScanFilter: {
+            c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
+          },
+          AttributesToGet: ['b', 'd'],
+        }, {
+          FilterExpression: 'c = :c',
+          ExpressionAttributeValues: {':c': item.c},
+          ProjectionExpression: 'b, d',
+        }, {
+          FilterExpression: 'c = :c',
+          ExpressionAttributeValues: {':c': item.c},
+          ExpressionAttributeNames: {'#b': 'b', '#d': 'd'},
+          ProjectionExpression: '#b, #d',
+        }], function(scanOpts, cb) {
+          scanOpts.TableName = helpers.testHashTable
+          request(opts(scanOpts), function(err, res) {
+            if (err) return cb(err)
+            res.statusCode.should.equal(200)
+            res.body.Items.should.containEql({b: {S: 'b1'}, d: {S: 'd1'}})
+            res.body.Items.should.containEql({b: {S: 'b2'}})
+            res.body.Items.should.containEql({b: {S: 'b3'}, d: {S: 'd3'}})
+            res.body.Items.should.have.length(3)
+            res.body.Count.should.equal(3)
+            cb()
+          })
+        }, done)
       })
     })
 
@@ -2114,7 +2982,7 @@ describe('scan', function() {
       request(opts({
         TableName: helpers.testHashTable,
         ExclusiveStartKey: {a: {S: hashes[1]}},
-        ScanFilter: {a: {ComparisonOperator: 'EQ', AttributeValueList: [{S: hashes[0]}]}}
+        ScanFilter: {a: {ComparisonOperator: 'EQ', AttributeValueList: [{S: hashes[0]}]}},
       }), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
@@ -2515,7 +3383,7 @@ describe('scan', function() {
       var attrValList = [], i
       for (i = 0; i < 27500; i++) attrValList.push({S: 'a'})
       request(opts({TableName: helpers.testHashTable, ScanFilter: {
-        a: {ComparisonOperator: 'IN', AttributeValueList: attrValList}
+        a: {ComparisonOperator: 'IN', AttributeValueList: attrValList},
       }}), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
@@ -2526,5 +3394,3 @@ describe('scan', function() {
   })
 
 })
-
-

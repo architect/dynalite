@@ -61,12 +61,13 @@ module.exports = function batchGetItem(store, data, cb) {
     store.getTable(tableName, function(err, table) {
       if (err) return cb(err)
 
-      var req = data.RequestItems[tableName], i, key, options, gets = [], seenKeys = {}
+      var req = data.RequestItems[tableName], i, key, options, gets = []
 
       for (i = 0; i < req.Keys.length; i++) {
         key = req.Keys[i]
 
         options = {TableName: tableName, Key: key}
+        if (req._projectionPaths) options._projectionPaths = req._projectionPaths
         if (req.AttributesToGet) options.AttributesToGet = req.AttributesToGet
         if (req.ConsistentRead) options.ConsistentRead = req.ConsistentRead
         if (data.ReturnConsumedCapacity) options.ReturnConsumedCapacity = data.ReturnConsumedCapacity
@@ -74,9 +75,6 @@ module.exports = function batchGetItem(store, data, cb) {
 
         key = db.validateKey(key, table)
         if (key instanceof Error) return cb(key)
-        if (seenKeys[key])
-          return cb(db.validationError('Provided list of item keys contains duplicates'))
-        seenKeys[key] = true
       }
 
       requests[tableName] = async.map.bind(async, gets, function(data, cb) { return getItem(store, data, cb) })

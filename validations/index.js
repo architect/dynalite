@@ -1,10 +1,17 @@
-var Big = require('big.js')
+var Big = require('big.js'),
+    db = require('../db'),
+    conditionParser = require('../db/conditionParser'),
+    projectionParser = require('../db/projectionParser'),
+    updateParser = require('../db/updateParser')
 
 exports.checkTypes = checkTypes
 exports.checkValidations = checkValidations
 exports.toLowerFirst = toLowerFirst
 exports.validateAttributeValue = validateAttributeValue
 exports.validateAttributeConditions = validateAttributeConditions
+exports.validateExpressionParams = validateExpressionParams
+exports.validateExpressions = validateExpressions
+exports.convertKeyCondition = convertKeyCondition
 
 function checkTypes(data, types) {
   var key
@@ -77,7 +84,14 @@ function checkTypes(data, types) {
             // seems to convert to uppercase
             // 'true'/'false'/'1'/'0'/'no'/'yes' seem to convert fine
             val = val.toUpperCase()
-            throw typeError('\'' + val + '\' can not be converted to an Boolean')
+            if (~['TRUE', '1', 'YES'].indexOf(val)) {
+              val = true
+            } else if (~['FALSE', '0', 'NO'].indexOf(val)) {
+              val = false
+            } else {
+              throw typeError('\'' + val + '\' can not be converted to an Boolean')
+            }
+            break
           case 'object':
             if (Array.isArray(val)) throw typeError('Start of list found where not expected')
             throw typeError('Start of structure or map found where not expected.')
@@ -320,7 +334,7 @@ function toLowerFirst(str) {
 }
 
 function validateAttributeValue(value) {
-  var types = Object.keys(value), msg
+  var types = Object.keys(value), msg, i, attr
   if (!types.length)
     return 'Supplied AttributeValue is empty, must contain exactly one of the supported datatypes'
 
@@ -342,8 +356,11 @@ function validateAttributeValue(value) {
     if (type == 'SS' && !value[type].length)
       return 'One or more parameter values were invalid: An string set  may not be empty'
 
-    if ((type == 'NS' || type == 'BS') && !value[type].length)
-      return 'One or more parameter values were invalid: An AttributeValue may not contain an empty set.'
+    if (type == 'NS' && !value[type].length)
+      return 'One or more parameter values were invalid: An number set  may not be empty'
+
+    if (type == 'BS' && !value[type].length)
+      return 'One or more parameter values were invalid: Binary sets should not be empty'
 
     if (type == 'SS' && value[type].some(function(x) { return !x })) // eslint-disable-line no-loop-func
       return 'One or more parameter values were invalid: An string set may not have a empty string as a member'
@@ -351,11 +368,8 @@ function validateAttributeValue(value) {
     if (type == 'BS' && value[type].some(function(x) { return !x })) // eslint-disable-line no-loop-func
       return 'One or more parameter values were invalid: Binary sets may not contain null or empty values'
 
-    if (type == 'NS' && value[type].some(function(x) { return !x })) // eslint-disable-line no-loop-func
-      return 'The parameter cannot be converted to a numeric value'
-
     if (type == 'NS') {
-      for (var i = 0; i < value[type].length; i++) {
+      for (i = 0; i < value[type].length; i++) {
         msg = checkNum(i, value[type])
         if (msg) return msg
       }
@@ -371,8 +385,15 @@ function validateAttributeValue(value) {
       return 'One or more parameter values were invalid: Input collection ' + valueStr(value[type]) + 'of type BS contains duplicates.'
 
     if (type == 'M') {
-      for (var attr in value[type]) {
+      for (attr in value[type]) {
         msg = validateAttributeValue(value[type][attr])
+        if (msg) return msg
+      }
+    }
+
+    if (type == 'L') {
+      for (i = 0; i < value[type].length; i++) {
+        msg = validateAttributeValue(value[type][i])
         if (msg) return msg
       }
     }
@@ -486,4 +507,786 @@ function validateAttributeConditions(data) {
       }
     }
   }
+}
+
+function validateExpressionParams(data, expressions, nonExpressions) {
+  var exprParams = expressions.filter(function(expr) { return data[expr] != null })
+
+  if (exprParams.length) {
+    // Special case for KeyConditions and KeyConditionExpression
+    if (data.KeyConditions != null && data.KeyConditionExpression == null) {
+      nonExpressions.splice(nonExpressions.indexOf('KeyConditions'), 1)
+    }
+    var nonExprParams = nonExpressions.filter(function(expr) { return data[expr] != null })
+    if (nonExprParams.length) {
+      return 'Can not use both expression and non-expression parameters in the same request: ' +
+        'Non-expression parameters: {' + nonExprParams.join(', ') + '} ' +
+        'Expression parameters: {' + exprParams.join(', ') + '}'
+    }
+  }
+
+  if (data.ExpressionAttributeNames != null && !exprParams.length) {
+    return 'ExpressionAttributeNames can only be specified when using expressions'
+  }
+
+  var valExprs = expressions.filter(function(expr) { return expr != 'ProjectionExpression' })
+  if (valExprs.length && data.ExpressionAttributeValues != null &&
+      valExprs.every(function(expr) { return data[expr] == null })) {
+    return 'ExpressionAttributeValues can only be specified when using expressions: ' +
+      valExprs.join(' and ') + ' ' + (valExprs.length > 1 ? 'are' : 'is') + ' null'
+  }
+}
+
+function validateExpressions(data) {
+  var key, msg, result, context = {
+    attrNames: data.ExpressionAttributeNames,
+    attrVals: data.ExpressionAttributeValues,
+    unusedAttrNames: {},
+    unusedAttrVals: {},
+  }
+
+  if (data.ExpressionAttributeNames != null) {
+    if (!Object.keys(data.ExpressionAttributeNames).length)
+      return 'ExpressionAttributeNames must not be empty'
+    for (key in data.ExpressionAttributeNames) {
+      if (!/^#[0-9a-zA-Z_]+$/.test(key)) {
+        return 'ExpressionAttributeNames contains invalid key: Syntax error; key: "' + key + '"'
+      }
+      context.unusedAttrNames[key] = true
+    }
+  }
+
+  if (data.ExpressionAttributeValues != null) {
+    if (!Object.keys(data.ExpressionAttributeValues).length)
+      return 'ExpressionAttributeValues must not be empty'
+    for (key in data.ExpressionAttributeValues) {
+      if (!/^:[0-9a-zA-Z_]+$/.test(key)) {
+        return 'ExpressionAttributeValues contains invalid key: Syntax error; key: "' + key + '"'
+      }
+      context.unusedAttrVals[key] = true
+    }
+    for (key in data.ExpressionAttributeValues) {
+      msg = validateAttributeValue(data.ExpressionAttributeValues[key])
+      if (msg) {
+        msg = 'ExpressionAttributeValues contains invalid value: ' + msg + ' for key ' + key
+        return msg
+      }
+    }
+  }
+
+  if (data.UpdateExpression != null) {
+    result = parse(data.UpdateExpression, updateParser, context)
+    if (typeof result == 'string') {
+      return 'Invalid UpdateExpression: ' + result
+    }
+    data._updates = result
+  }
+
+  if (data.ConditionExpression != null) {
+    result = parse(data.ConditionExpression, conditionParser, context)
+    if (typeof result == 'string') {
+      return 'Invalid ConditionExpression: ' + result
+    }
+    data._conditionExpression = result
+  }
+
+  if (data.KeyConditionExpression != null) {
+    context.isKeyCondition = true
+    result = parse(data.KeyConditionExpression, conditionParser, context)
+    if (typeof result == 'string') {
+      return 'Invalid KeyConditionExpression: ' + result
+    }
+    data._keyConditionExpression = result
+  }
+
+  if (data.FilterExpression != null) {
+    result = parse(data.FilterExpression, conditionParser, context)
+    if (typeof result == 'string') {
+      return 'Invalid FilterExpression: ' + result
+    }
+    data._filterExpression = result
+  }
+
+  if (data.ProjectionExpression != null) {
+    result = parse(data.ProjectionExpression, projectionParser, context)
+    if (typeof result == 'string') {
+      return 'Invalid ProjectionExpression: ' + result
+    }
+    data._projectionPaths = result
+  }
+
+  if (Object.keys(context.unusedAttrNames).length) {
+    return 'Value provided in ExpressionAttributeNames unused in expressions: ' +
+      'keys: {' + Object.keys(context.unusedAttrNames).join(', ') + '}'
+  }
+
+  if (Object.keys(context.unusedAttrVals).length) {
+    return 'Value provided in ExpressionAttributeValues unused in expressions: ' +
+      'keys: {' + Object.keys(context.unusedAttrVals).join(', ') + '}'
+  }
+}
+
+function parse(str, parser, context) {
+  if (str == '') return 'The expression can not be empty;'
+  context.isReserved = isReserved
+  try {
+    return parser.parse(str, {context: context})
+  } catch (e) {
+    return e.name == 'SyntaxError' ? 'Syntax error; ' + e.message : e.message
+  }
+}
+
+function convertKeyCondition(keyCondExpr) {
+  var keyConds = Object.create(null)
+  var errMsg = checkExpr(keyCondExpr.expression, keyConds)
+  if (errMsg) return errMsg
+  return keyConds
+}
+
+function checkExpr(expr, keyConds) {
+  if (!expr || !expr.type) return
+  if (~['or', 'not', 'in', '<>'].indexOf(expr.type)) {
+    return 'Invalid operator used in KeyConditionExpression: ' + expr.type.toUpperCase()
+  }
+  if (expr.type == 'function' && ~['attribute_exists', 'attribute_not_exists', 'attribute_type', 'contains'].indexOf(expr.name)) {
+    return 'Invalid operator used in KeyConditionExpression: ' + expr.name
+  }
+  if (expr.type == 'function' && expr.name == 'size') {
+    return 'KeyConditionExpressions cannot contain nested operations'
+  }
+  if (expr.type == 'between' && !Array.isArray(expr.args[0])) {
+    return 'Invalid condition in KeyConditionExpression: ' + expr.type.toUpperCase() + ' operator must have the key attribute as its first operand'
+  }
+  if (expr.type == 'function' && expr.name == 'begins_with' && !Array.isArray(expr.args[0])) {
+    return 'Invalid condition in KeyConditionExpression: ' + expr.name + ' operator must have the key attribute as its first operand'
+  }
+  if (expr.args) {
+    var attrName = '', attrIx = 0
+    for (var i = 0; i < expr.args.length; i++) {
+      if (Array.isArray(expr.args[i])) {
+        if (attrName) {
+          return 'Invalid condition in KeyConditionExpression: Multiple attribute names used in one condition'
+        }
+        if (expr.args[i].length > 1) {
+          return 'KeyConditionExpressions cannot have conditions on nested attributes'
+        }
+        attrName = expr.args[i][0]
+        attrIx = i
+      } else if (expr.args[i].type) {
+        var result = checkExpr(expr.args[i], keyConds)
+        if (result) return result
+      }
+    }
+    if (expr.type != 'and') {
+      if (!attrName) {
+        return 'Invalid condition in KeyConditionExpression: No key attribute specified'
+      }
+      if (keyConds[attrName]) {
+        return 'KeyConditionExpressions must only contain one condition per key'
+      }
+      if (attrIx != 0) {
+        expr.type = {
+          '=': '=',
+          '<': '>',
+          '<=': '>=',
+          '>': '<',
+          '>=': '<=',
+        }[expr.type]
+        expr.args[1] = expr.args[0]
+      }
+      keyConds[attrName] = {
+        ComparisonOperator: {
+          '=': 'EQ',
+          '<': 'LT',
+          '<=': 'LE',
+          '>': 'GT',
+          '>=': 'GE',
+          'between': 'BETWEEN',
+          'function': 'BEGINS_WITH',
+        }[expr.type],
+        AttributeValueList: expr.args.slice(1),
+      }
+    }
+  }
+}
+
+// http://docs.aws.amazon.com/amazondynamodb/latest/developerguide/ReservedWords.html
+var RESERVED_WORDS = {
+  ABORT: true,
+  ABSOLUTE: true,
+  ACTION: true,
+  ADD: true,
+  AFTER: true,
+  AGENT: true,
+  AGGREGATE: true,
+  ALL: true,
+  ALLOCATE: true,
+  ALTER: true,
+  ANALYZE: true,
+  AND: true,
+  ANY: true,
+  ARCHIVE: true,
+  ARE: true,
+  ARRAY: true,
+  AS: true,
+  ASC: true,
+  ASCII: true,
+  ASENSITIVE: true,
+  ASSERTION: true,
+  ASYMMETRIC: true,
+  AT: true,
+  ATOMIC: true,
+  ATTACH: true,
+  ATTRIBUTE: true,
+  AUTH: true,
+  AUTHORIZATION: true,
+  AUTHORIZE: true,
+  AUTO: true,
+  AVG: true,
+  BACK: true,
+  BACKUP: true,
+  BASE: true,
+  BATCH: true,
+  BEFORE: true,
+  BEGIN: true,
+  BETWEEN: true,
+  BIGINT: true,
+  BINARY: true,
+  BIT: true,
+  BLOB: true,
+  BLOCK: true,
+  BOOLEAN: true,
+  BOTH: true,
+  BREADTH: true,
+  BUCKET: true,
+  BULK: true,
+  BY: true,
+  BYTE: true,
+  CALL: true,
+  CALLED: true,
+  CALLING: true,
+  CAPACITY: true,
+  CASCADE: true,
+  CASCADED: true,
+  CASE: true,
+  CAST: true,
+  CATALOG: true,
+  CHAR: true,
+  CHARACTER: true,
+  CHECK: true,
+  CLASS: true,
+  CLOB: true,
+  CLOSE: true,
+  CLUSTER: true,
+  CLUSTERED: true,
+  CLUSTERING: true,
+  CLUSTERS: true,
+  COALESCE: true,
+  COLLATE: true,
+  COLLATION: true,
+  COLLECTION: true,
+  COLUMN: true,
+  COLUMNS: true,
+  COMBINE: true,
+  COMMENT: true,
+  COMMIT: true,
+  COMPACT: true,
+  COMPILE: true,
+  COMPRESS: true,
+  CONDITION: true,
+  CONFLICT: true,
+  CONNECT: true,
+  CONNECTION: true,
+  CONSISTENCY: true,
+  CONSISTENT: true,
+  CONSTRAINT: true,
+  CONSTRAINTS: true,
+  CONSTRUCTOR: true,
+  CONSUMED: true,
+  CONTINUE: true,
+  CONVERT: true,
+  COPY: true,
+  CORRESPONDING: true,
+  COUNT: true,
+  COUNTER: true,
+  CREATE: true,
+  CROSS: true,
+  CUBE: true,
+  CURRENT: true,
+  CURSOR: true,
+  CYCLE: true,
+  DATA: true,
+  DATABASE: true,
+  DATE: true,
+  DATETIME: true,
+  DAY: true,
+  DEALLOCATE: true,
+  DEC: true,
+  DECIMAL: true,
+  DECLARE: true,
+  DEFAULT: true,
+  DEFERRABLE: true,
+  DEFERRED: true,
+  DEFINE: true,
+  DEFINED: true,
+  DEFINITION: true,
+  DELETE: true,
+  DELIMITED: true,
+  DEPTH: true,
+  DEREF: true,
+  DESC: true,
+  DESCRIBE: true,
+  DESCRIPTOR: true,
+  DETACH: true,
+  DETERMINISTIC: true,
+  DIAGNOSTICS: true,
+  DIRECTORIES: true,
+  DISABLE: true,
+  DISCONNECT: true,
+  DISTINCT: true,
+  DISTRIBUTE: true,
+  DO: true,
+  DOMAIN: true,
+  DOUBLE: true,
+  DROP: true,
+  DUMP: true,
+  DURATION: true,
+  DYNAMIC: true,
+  EACH: true,
+  ELEMENT: true,
+  ELSE: true,
+  ELSEIF: true,
+  EMPTY: true,
+  ENABLE: true,
+  END: true,
+  EQUAL: true,
+  EQUALS: true,
+  ERROR: true,
+  ESCAPE: true,
+  ESCAPED: true,
+  EVAL: true,
+  EVALUATE: true,
+  EXCEEDED: true,
+  EXCEPT: true,
+  EXCEPTION: true,
+  EXCEPTIONS: true,
+  EXCLUSIVE: true,
+  EXEC: true,
+  EXECUTE: true,
+  EXISTS: true,
+  EXIT: true,
+  EXPLAIN: true,
+  EXPLODE: true,
+  EXPORT: true,
+  EXPRESSION: true,
+  EXTENDED: true,
+  EXTERNAL: true,
+  EXTRACT: true,
+  FAIL: true,
+  FALSE: true,
+  FAMILY: true,
+  FETCH: true,
+  FIELDS: true,
+  FILE: true,
+  FILTER: true,
+  FILTERING: true,
+  FINAL: true,
+  FINISH: true,
+  FIRST: true,
+  FIXED: true,
+  FLATTERN: true,
+  FLOAT: true,
+  FOR: true,
+  FORCE: true,
+  FOREIGN: true,
+  FORMAT: true,
+  FORWARD: true,
+  FOUND: true,
+  FREE: true,
+  FROM: true,
+  FULL: true,
+  FUNCTION: true,
+  FUNCTIONS: true,
+  GENERAL: true,
+  GENERATE: true,
+  GET: true,
+  GLOB: true,
+  GLOBAL: true,
+  GO: true,
+  GOTO: true,
+  GRANT: true,
+  GREATER: true,
+  GROUP: true,
+  GROUPING: true,
+  HANDLER: true,
+  HASH: true,
+  HAVE: true,
+  HAVING: true,
+  HEAP: true,
+  HIDDEN: true,
+  HOLD: true,
+  HOUR: true,
+  IDENTIFIED: true,
+  IDENTITY: true,
+  IF: true,
+  IGNORE: true,
+  IMMEDIATE: true,
+  IMPORT: true,
+  IN: true,
+  INCLUDING: true,
+  INCLUSIVE: true,
+  INCREMENT: true,
+  INCREMENTAL: true,
+  INDEX: true,
+  INDEXED: true,
+  INDEXES: true,
+  INDICATOR: true,
+  INFINITE: true,
+  INITIALLY: true,
+  INLINE: true,
+  INNER: true,
+  INNTER: true,
+  INOUT: true,
+  INPUT: true,
+  INSENSITIVE: true,
+  INSERT: true,
+  INSTEAD: true,
+  INT: true,
+  INTEGER: true,
+  INTERSECT: true,
+  INTERVAL: true,
+  INTO: true,
+  INVALIDATE: true,
+  IS: true,
+  ISOLATION: true,
+  ITEM: true,
+  ITEMS: true,
+  ITERATE: true,
+  JOIN: true,
+  KEY: true,
+  KEYS: true,
+  LAG: true,
+  LANGUAGE: true,
+  LARGE: true,
+  LAST: true,
+  LATERAL: true,
+  LEAD: true,
+  LEADING: true,
+  LEAVE: true,
+  LEFT: true,
+  LENGTH: true,
+  LESS: true,
+  LEVEL: true,
+  LIKE: true,
+  LIMIT: true,
+  LIMITED: true,
+  LINES: true,
+  LIST: true,
+  LOAD: true,
+  LOCAL: true,
+  LOCALTIME: true,
+  LOCALTIMESTAMP: true,
+  LOCATION: true,
+  LOCATOR: true,
+  LOCK: true,
+  LOCKS: true,
+  LOG: true,
+  LOGED: true,
+  LONG: true,
+  LOOP: true,
+  LOWER: true,
+  MAP: true,
+  MATCH: true,
+  MATERIALIZED: true,
+  MAX: true,
+  MAXLEN: true,
+  MEMBER: true,
+  MERGE: true,
+  METHOD: true,
+  METRICS: true,
+  MIN: true,
+  MINUS: true,
+  MINUTE: true,
+  MISSING: true,
+  MOD: true,
+  MODE: true,
+  MODIFIES: true,
+  MODIFY: true,
+  MODULE: true,
+  MONTH: true,
+  MULTI: true,
+  MULTISET: true,
+  NAME: true,
+  NAMES: true,
+  NATIONAL: true,
+  NATURAL: true,
+  NCHAR: true,
+  NCLOB: true,
+  NEW: true,
+  NEXT: true,
+  NO: true,
+  NONE: true,
+  NOT: true,
+  NULL: true,
+  NULLIF: true,
+  NUMBER: true,
+  NUMERIC: true,
+  OBJECT: true,
+  OF: true,
+  OFFLINE: true,
+  OFFSET: true,
+  OLD: true,
+  ON: true,
+  ONLINE: true,
+  ONLY: true,
+  OPAQUE: true,
+  OPEN: true,
+  OPERATOR: true,
+  OPTION: true,
+  OR: true,
+  ORDER: true,
+  ORDINALITY: true,
+  OTHER: true,
+  OTHERS: true,
+  OUT: true,
+  OUTER: true,
+  OUTPUT: true,
+  OVER: true,
+  OVERLAPS: true,
+  OVERRIDE: true,
+  OWNER: true,
+  PAD: true,
+  PARALLEL: true,
+  PARAMETER: true,
+  PARAMETERS: true,
+  PARTIAL: true,
+  PARTITION: true,
+  PARTITIONED: true,
+  PARTITIONS: true,
+  PATH: true,
+  PERCENT: true,
+  PERCENTILE: true,
+  PERMISSION: true,
+  PERMISSIONS: true,
+  PIPE: true,
+  PIPELINED: true,
+  PLAN: true,
+  POOL: true,
+  POSITION: true,
+  PRECISION: true,
+  PREPARE: true,
+  PRESERVE: true,
+  PRIMARY: true,
+  PRIOR: true,
+  PRIVATE: true,
+  PRIVILEGES: true,
+  PROCEDURE: true,
+  PROCESSED: true,
+  PROJECT: true,
+  PROJECTION: true,
+  PROPERTY: true,
+  PROVISIONING: true,
+  PUBLIC: true,
+  PUT: true,
+  QUERY: true,
+  QUIT: true,
+  QUORUM: true,
+  RAISE: true,
+  RANDOM: true,
+  RANGE: true,
+  RANK: true,
+  RAW: true,
+  READ: true,
+  READS: true,
+  REAL: true,
+  REBUILD: true,
+  RECORD: true,
+  RECURSIVE: true,
+  REDUCE: true,
+  REF: true,
+  REFERENCE: true,
+  REFERENCES: true,
+  REFERENCING: true,
+  REGEXP: true,
+  REGION: true,
+  REINDEX: true,
+  RELATIVE: true,
+  RELEASE: true,
+  REMAINDER: true,
+  RENAME: true,
+  REPEAT: true,
+  REPLACE: true,
+  REQUEST: true,
+  RESET: true,
+  RESIGNAL: true,
+  RESOURCE: true,
+  RESPONSE: true,
+  RESTORE: true,
+  RESTRICT: true,
+  RESULT: true,
+  RETURN: true,
+  RETURNING: true,
+  RETURNS: true,
+  REVERSE: true,
+  REVOKE: true,
+  RIGHT: true,
+  ROLE: true,
+  ROLES: true,
+  ROLLBACK: true,
+  ROLLUP: true,
+  ROUTINE: true,
+  ROW: true,
+  ROWS: true,
+  RULE: true,
+  RULES: true,
+  SAMPLE: true,
+  SATISFIES: true,
+  SAVE: true,
+  SAVEPOINT: true,
+  SCAN: true,
+  SCHEMA: true,
+  SCOPE: true,
+  SCROLL: true,
+  SEARCH: true,
+  SECOND: true,
+  SECTION: true,
+  SEGMENT: true,
+  SEGMENTS: true,
+  SELECT: true,
+  SELF: true,
+  SEMI: true,
+  SENSITIVE: true,
+  SEPARATE: true,
+  SEQUENCE: true,
+  SERIALIZABLE: true,
+  SESSION: true,
+  SET: true,
+  SETS: true,
+  SHARD: true,
+  SHARE: true,
+  SHARED: true,
+  SHORT: true,
+  SHOW: true,
+  SIGNAL: true,
+  SIMILAR: true,
+  SIZE: true,
+  SKEWED: true,
+  SMALLINT: true,
+  SNAPSHOT: true,
+  SOME: true,
+  SOURCE: true,
+  SPACE: true,
+  SPACES: true,
+  SPARSE: true,
+  SPECIFIC: true,
+  SPECIFICTYPE: true,
+  SPLIT: true,
+  SQL: true,
+  SQLCODE: true,
+  SQLERROR: true,
+  SQLEXCEPTION: true,
+  SQLSTATE: true,
+  SQLWARNING: true,
+  START: true,
+  STATE: true,
+  STATIC: true,
+  STATUS: true,
+  STORAGE: true,
+  STORE: true,
+  STORED: true,
+  STREAM: true,
+  STRING: true,
+  STRUCT: true,
+  STYLE: true,
+  SUB: true,
+  SUBMULTISET: true,
+  SUBPARTITION: true,
+  SUBSTRING: true,
+  SUBTYPE: true,
+  SUM: true,
+  SUPER: true,
+  SYMMETRIC: true,
+  SYNONYM: true,
+  SYSTEM: true,
+  TABLE: true,
+  TABLESAMPLE: true,
+  TEMP: true,
+  TEMPORARY: true,
+  TERMINATED: true,
+  TEXT: true,
+  THAN: true,
+  THEN: true,
+  THROUGHPUT: true,
+  TIME: true,
+  TIMESTAMP: true,
+  TIMEZONE: true,
+  TINYINT: true,
+  TO: true,
+  TOKEN: true,
+  TOTAL: true,
+  TOUCH: true,
+  TRAILING: true,
+  TRANSACTION: true,
+  TRANSFORM: true,
+  TRANSLATE: true,
+  TRANSLATION: true,
+  TREAT: true,
+  TRIGGER: true,
+  TRIM: true,
+  TRUE: true,
+  TRUNCATE: true,
+  TTL: true,
+  TUPLE: true,
+  TYPE: true,
+  UNDER: true,
+  UNDO: true,
+  UNION: true,
+  UNIQUE: true,
+  UNIT: true,
+  UNKNOWN: true,
+  UNLOGGED: true,
+  UNNEST: true,
+  UNPROCESSED: true,
+  UNSIGNED: true,
+  UNTIL: true,
+  UPDATE: true,
+  UPPER: true,
+  URL: true,
+  USAGE: true,
+  USE: true,
+  USER: true,
+  USERS: true,
+  USING: true,
+  UUID: true,
+  VACUUM: true,
+  VALUE: true,
+  VALUED: true,
+  VALUES: true,
+  VARCHAR: true,
+  VARIABLE: true,
+  VARIANCE: true,
+  VARINT: true,
+  VARYING: true,
+  VIEW: true,
+  VIEWS: true,
+  VIRTUAL: true,
+  VOID: true,
+  WAIT: true,
+  WHEN: true,
+  WHENEVER: true,
+  WHERE: true,
+  WHILE: true,
+  WINDOW: true,
+  WITH: true,
+  WITHIN: true,
+  WITHOUT: true,
+  WORK: true,
+  WRAPPED: true,
+  WRITE: true,
+  YEAR: true,
+  ZONE: true,
+}
+
+function isReserved(name) {
+  return RESERVED_WORDS[name.toUpperCase()] != null
 }

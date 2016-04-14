@@ -10,7 +10,11 @@ exports.MAX_SIZE = 409600
 exports.create = create
 exports.lazy = lazyStream
 exports.validateKey = validateKey
+exports.validateKeyPiece = validateKeyPiece
+exports.validateKeyPaths = validateKeyPaths
 exports.validateItem = validateItem
+exports.traverseKey = traverseKey
+exports.traverseIndexes = traverseIndexes
 exports.toLexiStr = toLexiStr
 exports.hashPrefix = hashPrefix
 exports.itemCompare = itemCompare
@@ -19,6 +23,10 @@ exports.checkConditional = checkConditional
 exports.itemSize = itemSize
 exports.capacityUnits = capacityUnits
 exports.matchesFilter = matchesFilter
+exports.matchesExprFilter = matchesExprFilter
+exports.compare = compare
+exports.mapPaths = mapPaths
+exports.mapPath = mapPath
 
 function create(options) {
   options = options || {}
@@ -104,48 +112,91 @@ function lazyStream(stream, errHandler) {
   return streamAsLazy
 }
 
-function validateKey(dataKey, table) {
-  if (table.KeySchema.length != Object.keys(dataKey).length) return validationError()
+function validateKey(dataKey, table, keySchema) {
+  if (keySchema == null) keySchema = table.KeySchema
+  if (keySchema.length != Object.keys(dataKey).length) return validationError()
 
-  var keyStr, i, j, attr, type, sizeError
-  for (i = 0; i < table.KeySchema.length; i++) {
-    attr = table.KeySchema[i].AttributeName
-    if (dataKey[attr] == null) return validationError()
-    for (j = 0; j < table.AttributeDefinitions.length; j++) {
-      if (table.AttributeDefinitions[j].AttributeName != attr) continue
-      type = table.AttributeDefinitions[j].AttributeType
-      if (dataKey[attr][type] == null) return validationError()
-      sizeError = checkKeySize(dataKey[attr][type], type, !i)
-      if (sizeError) return sizeError
-      if (!keyStr) keyStr = hashPrefix(dataKey[attr][type], type)
-      keyStr += '~' + toLexiStr(dataKey[attr][type], type)
-      break
+  var keyStr, err
+  err = traverseKey(table, keySchema, function(attr, type, isHash) {
+    var err = validateKeyPiece(dataKey, attr, type, isHash)
+    if (err) return err
+    if (!keyStr) keyStr = hashPrefix(dataKey[attr][type], type)
+    keyStr += '~' + toLexiStr(dataKey[attr][type], type)
+  })
+  return err || keyStr
+}
+
+function validateKeyPiece(key, attr, type, isHash) {
+  if (key[attr] == null) return validationError()
+  if (key[attr][type] == null) return validationError()
+  return checkKeySize(key[attr][type], type, isHash)
+}
+
+function validateKeyPaths(paths, table) {
+  var err = traverseKey(table, function(attr) {
+    for (var i = 0; i < paths.length; i++) {
+      if (paths[i].length > 1 && paths[i][0] == attr) {
+        return validationError('Key attributes must be scalars; ' +
+          'list random access \'[]\' and map lookup \'.\' are not allowed: Key: ' + attr)
+      }
     }
-  }
-  return keyStr
+  })
+  if (err) return err
+  return traverseIndexes(table, function(attr) {
+    for (var i = 0; i < paths.length; i++) {
+      if (paths[i].length > 1 && paths[i][0] == attr) {
+        return validationError('Key attributes must be scalars; ' +
+          'list random access \'[]\' and map lookup \'.\' are not allowed: IndexKey: ' + attr)
+      }
+    }
+  })
 }
 
 function validateItem(dataItem, table) {
-  var keyStr, i, j, k, attr, type, sizeError
-  for (i = 0; i < table.KeySchema.length; i++) {
-    attr = table.KeySchema[i].AttributeName
-    if (dataItem[attr] == null)
+  var keyStr, err
+  err = traverseKey(table, function(attr, type, isHash) {
+    if (dataItem[attr] == null) {
       return validationError('One or more parameter values were invalid: ' +
         'Missing the key ' + attr + ' in the item')
+    }
+    if (dataItem[attr][type] == null) {
+      return validationError('One or more parameter values were invalid: ' +
+        'Type mismatch for key ' + attr + ' expected: ' + type +
+        ' actual: ' + Object.keys(dataItem[attr])[0])
+    }
+    err = checkKeySize(dataItem[attr][type], type, isHash)
+    if (err) return err
+    if (!keyStr) keyStr = hashPrefix(dataItem[attr][type], type)
+    keyStr += '~' + toLexiStr(dataItem[attr][type], type)
+  })
+  if (err) return err
+  err = traverseIndexes(table, function(attr, type, indexName) {
+    if (dataItem[attr] != null && dataItem[attr][type] == null) {
+      return validationError('One or more parameter values were invalid: ' +
+        'Type mismatch for Index Key ' + attr + ' Expected: ' + type +
+        ' Actual: ' + Object.keys(dataItem[attr])[0] + ' IndexName: ' + indexName)
+    }
+  })
+  return err || keyStr
+}
+
+function traverseKey(table, keySchema, visitKey) {
+  if (typeof keySchema == 'function') { visitKey = keySchema; keySchema = table.KeySchema }
+  var i, j, attr, type, err
+  for (i = 0; i < keySchema.length; i++) {
+    attr = keySchema[i].AttributeName
     for (j = 0; j < table.AttributeDefinitions.length; j++) {
       if (table.AttributeDefinitions[j].AttributeName != attr) continue
       type = table.AttributeDefinitions[j].AttributeType
-      if (dataItem[attr][type] == null)
-        return validationError('One or more parameter values were invalid: ' +
-          'Type mismatch for key ' + attr + ' expected: ' + table.AttributeDefinitions[j].AttributeType +
-          ' actual: ' + Object.keys(dataItem[attr])[0])
-      sizeError = checkKeySize(dataItem[attr][type], type, !i)
-      if (sizeError) return sizeError
-      if (!keyStr) keyStr = hashPrefix(dataItem[attr][type], type)
-      keyStr += '~' + toLexiStr(dataItem[attr][type], type)
       break
     }
+    err = visitKey(attr, type, !i)
+    if (err) return err
   }
+}
+
+function traverseIndexes(table, visitIndex) {
+  var i, j, k, attr, type, err
   if (table.GlobalSecondaryIndexes) {
     for (i = table.GlobalSecondaryIndexes.length - 1; i >= 0; i--) {
       for (k = 0; k < table.GlobalSecondaryIndexes[i].KeySchema.length; k++) {
@@ -153,11 +204,10 @@ function validateItem(dataItem, table) {
         for (j = 0; j < table.AttributeDefinitions.length; j++) {
           if (table.AttributeDefinitions[j].AttributeName != attr) continue
           type = table.AttributeDefinitions[j].AttributeType
-          if (dataItem[attr] && !dataItem[attr][type])
-            return validationError('One or more parameter values were invalid: ' +
-              'Type mismatch for Index Key ' + attr + ' Expected: ' + type + ' Actual: ' +
-              Object.keys(dataItem[attr])[0] + ' IndexName: ' + table.GlobalSecondaryIndexes[i].IndexName)
+          break
         }
+        err = visitIndex(attr, type, table.GlobalSecondaryIndexes[i].IndexName)
+        if (err) return err
       }
     }
   }
@@ -167,14 +217,12 @@ function validateItem(dataItem, table) {
       for (j = 0; j < table.AttributeDefinitions.length; j++) {
         if (table.AttributeDefinitions[j].AttributeName != attr) continue
         type = table.AttributeDefinitions[j].AttributeType
-        if (dataItem[attr] && !dataItem[attr][type])
-          return validationError('One or more parameter values were invalid: ' +
-            'Type mismatch for Index Key ' + attr + ' Expected: ' + type + ' Actual: ' +
-            Object.keys(dataItem[attr])[0] + ' IndexName: ' + table.LocalSecondaryIndexes[i].IndexName)
+        break
       }
+      err = visitIndex(attr, type, table.LocalSecondaryIndexes[i].IndexName)
+      if (err) return err
     }
   }
-  return keyStr
 }
 
 function checkKeySize(keyPiece, type, isHash) {
@@ -307,12 +355,17 @@ function itemCompare(rangeKey, table) {
 }
 
 function checkConditional(data, existingItem) {
-  var expected = data.Expected
-  if (!expected) return null
-
   existingItem = existingItem || {}
 
-  if (!matchesFilter(existingItem, expected, data.ConditionalOperator)) {
+  if (data._conditionExpression) {
+    if (!matchesExprFilter(existingItem, data._conditionExpression.expression)) {
+      return conditionalError()
+    }
+    return null
+  } else if (!data.Expected) {
+    return null
+  }
+  if (!matchesFilter(existingItem, data.Expected, data.ConditionalOperator)) {
     return conditionalError()
   }
 }
@@ -388,112 +441,218 @@ function valsEqual(val1, val2) {
 }
 
 function matchesFilter(val, filter, conditionalOperator) {
-  var results = Object.keys(filter).map(function(attr) {
+  for (var attr in filter) {
     var comp = filter[attr].Exists != null ? (filter[attr].Exists ? 'NOT_NULL' : 'NULL') :
-          filter[attr].ComparisonOperator || 'EQ',
-        compVals = filter[attr].AttributeValueList || (filter[attr].Value ? [filter[attr].Value] : null),
-        compType = compVals ? Object.keys(compVals[0])[0] : null,
-        compVal = compVals ? compVals[0][compType] : null,
-        attrType = val[attr] ? Object.keys(val[attr])[0] : null,
-        attrVal = val[attr] ? val[attr][attrType] : null
+      filter[attr].ComparisonOperator || 'EQ'
+    var result = compare(comp, val[attr], filter[attr].AttributeValueList || filter[attr].Value)
+    if (!result) {
+      return false
+    } else if (conditionalOperator == 'OR') {
+      return true
+    }
+  }
+  return true
+}
 
-    switch (comp) {
-      case 'EQ':
-        if (compType != attrType || !valsEqual(attrVal, compVal)) return false
-        break
-      case 'NE':
-        if (compType == attrType && valsEqual(attrVal, compVal)) return false
-        break
-      case 'LE':
-        if (compType != attrType ||
-          (attrType == 'N' && !new Big(attrVal).lte(compVal)) ||
-          (attrType != 'N' && toLexiStr(attrVal, attrType) > toLexiStr(compVal, attrType))) return false
-        break
-      case 'LT':
-        if (compType != attrType ||
-          (attrType == 'N' && !new Big(attrVal).lt(compVal)) ||
-          (attrType != 'N' && toLexiStr(attrVal, attrType) >= toLexiStr(compVal, attrType))) return false
-        break
-      case 'GE':
-        if (compType != attrType ||
-          (attrType == 'N' && !new Big(attrVal).gte(compVal)) ||
-          (attrType != 'N' && toLexiStr(attrVal, attrType) < toLexiStr(compVal, attrType))) return false
-        break
-      case 'GT':
-        if (compType != attrType ||
-          (attrType == 'N' && !new Big(attrVal).gt(compVal)) ||
-          (attrType != 'N' && toLexiStr(attrVal, attrType) <= toLexiStr(compVal, attrType))) return false
-        break
-      case 'NOT_NULL':
-        if (attrVal == null) return false
-        break
-      case 'NULL':
-        if (attrVal != null) return false
-        break
-      case 'CONTAINS':
-        if (compType == 'S') {
-          if (attrType != 'S' && attrType != 'SS') return false
-          if (!~attrVal.indexOf(compVal)) return false
-        }
-        if (compType == 'N') {
-          if (attrType != 'NS') return false
-          if (!~attrVal.indexOf(compVal)) return false
-        }
-        if (compType == 'B') {
-          if (attrType != 'B' && attrType != 'BS') return false
-          if (attrType == 'B') {
-            attrVal = new Buffer(attrVal, 'base64').toString()
-            compVal = new Buffer(compVal, 'base64').toString()
-          }
-          if (!~attrVal.indexOf(compVal)) return false
-        }
-        break
-      case 'NOT_CONTAINS':
-        if (compType == 'S' && (attrType == 'S' || attrType == 'SS') &&
-            ~attrVal.indexOf(compVal)) return false
-        if (compType == 'N' && attrType == 'NS' &&
-            ~attrVal.indexOf(compVal)) return false
-        if (compType == 'B') {
-          if (attrType == 'B') {
-            attrVal = new Buffer(attrVal, 'base64').toString()
-            compVal = new Buffer(compVal, 'base64').toString()
-          }
-          if ((attrType == 'B' || attrType == 'BS') &&
-              ~attrVal.indexOf(compVal)) return false
-        }
-        break
-      case 'BEGINS_WITH':
-        if (compType != attrType) return false
-        if (compType == 'B') {
+function matchesExprFilter(item, expr) {
+  if (expr.type == 'and') {
+    return matchesExprFilter(item, expr.args[0]) && matchesExprFilter(item, expr.args[1])
+  } else if (expr.type == 'or') {
+    return matchesExprFilter(item, expr.args[0]) || matchesExprFilter(item, expr.args[1])
+  } else if (expr.type == 'not') {
+    return !matchesExprFilter(item, expr.args[0])
+  }
+  var args = expr.args.map(function(arg) { return resolveArg(arg, item) })
+  return compare(expr.type == 'function' ? expr.name : expr.type, args[0], args.slice(1))
+}
+
+function resolveArg(arg, item) {
+  if (Array.isArray(arg)) {
+    return mapPath(arg, item)
+  } else if (arg.type == 'function' && arg.name == 'size') {
+    var args = arg.args.map(function(arg) { return resolveArg(arg, item) })
+    var val = args[0], length
+    if (!val) {
+      return null
+    } else if (val.S) {
+      length = val.S.length
+    } else if (val.B) {
+      length = new Buffer(val.B, 'base64').length
+    } else if (val.SS || val.BS || val.NS || val.L) {
+      length = (val.SS || val.BS || val.NS || val.L).length
+    } else if (val.M) {
+      length = Object.keys(val.M).length
+    }
+    return length != null ? {N: length.toString()} : null
+  } else {
+    return arg
+  }
+}
+
+function compare(comp, val, compVals) {
+  if (!Array.isArray(compVals)) compVals = [compVals]
+
+  var attrType = val ? Object.keys(val)[0] : null
+  var attrVal = attrType ? val[attrType] : null
+  var compType = compVals && compVals[0] ? Object.keys(compVals[0])[0] : null
+  var compVal = compType ? compVals[0][compType] : null
+
+  switch (comp) {
+    case 'EQ':
+    case '=':
+      if (compType != attrType || !valsEqual(attrVal, compVal)) return false
+      break
+    case 'NE':
+    case '<>':
+      if (compType == attrType && valsEqual(attrVal, compVal)) return false
+      break
+    case 'LE':
+    case '<=':
+      if (compType != attrType ||
+        (attrType == 'N' && !new Big(attrVal).lte(compVal)) ||
+        (attrType != 'N' && toLexiStr(attrVal, attrType) > toLexiStr(compVal, attrType))) return false
+      break
+    case 'LT':
+    case '<':
+      if (compType != attrType ||
+        (attrType == 'N' && !new Big(attrVal).lt(compVal)) ||
+        (attrType != 'N' && toLexiStr(attrVal, attrType) >= toLexiStr(compVal, attrType))) return false
+      break
+    case 'GE':
+    case '>=':
+      if (compType != attrType ||
+        (attrType == 'N' && !new Big(attrVal).gte(compVal)) ||
+        (attrType != 'N' && toLexiStr(attrVal, attrType) < toLexiStr(compVal, attrType))) return false
+      break
+    case 'GT':
+    case '>':
+      if (compType != attrType ||
+        (attrType == 'N' && !new Big(attrVal).gt(compVal)) ||
+        (attrType != 'N' && toLexiStr(attrVal, attrType) <= toLexiStr(compVal, attrType))) return false
+      break
+    case 'NOT_NULL':
+    case 'attribute_exists':
+      if (attrVal == null) return false
+      break
+    case 'NULL':
+    case 'attribute_not_exists':
+      if (attrVal != null) return false
+      break
+    case 'CONTAINS':
+    case 'contains':
+      if (compType == 'S') {
+        if (attrType != 'S' && attrType != 'SS') return false
+        if (!~attrVal.indexOf(compVal)) return false
+      }
+      if (compType == 'N') {
+        if (attrType != 'NS') return false
+        if (!~attrVal.indexOf(compVal)) return false
+      }
+      if (compType == 'B') {
+        if (attrType != 'B' && attrType != 'BS') return false
+        if (attrType == 'B') {
           attrVal = new Buffer(attrVal, 'base64').toString()
           compVal = new Buffer(compVal, 'base64').toString()
         }
-        if (attrVal.indexOf(compVal) !== 0) return false
-        break
-      case 'IN':
-        if (!attrVal) return false
-        if (!compVals.some(function(compVal) {
-          compType = Object.keys(compVal)[0]
-          compVal = compVal[compType]
-          return compType == attrType && attrVal == compVal
-        })) return false
-        break
-      case 'BETWEEN':
-        if (!attrVal || compType != attrType ||
-          (attrType == 'N' && (!new Big(attrVal).gte(compVal) || !new Big(attrVal).lte(compVals[1].N))) ||
-          (attrType != 'N' && (toLexiStr(attrVal, attrType) < toLexiStr(compVal, attrType) ||
-            toLexiStr(attrVal, attrType) > toLexiStr(compVals[1][compType], attrType)))) return false
-    }
-    return true
-  })
-
-  var passed = results.reduce(function(memo, result) {
-    if (result) memo++
-    return memo
-  }, 0)
-
-  if (conditionalOperator && conditionalOperator === 'OR') {
-    if (passed === 0) return false
-  } else if (passed < Object.keys(filter).length) return false
+        if (!~attrVal.indexOf(compVal)) return false
+      }
+      break
+    case 'NOT_CONTAINS':
+      if (compType == 'S' && (attrType == 'S' || attrType == 'SS') &&
+          ~attrVal.indexOf(compVal)) return false
+      if (compType == 'N' && attrType == 'NS' &&
+          ~attrVal.indexOf(compVal)) return false
+      if (compType == 'B') {
+        if (attrType == 'B') {
+          attrVal = new Buffer(attrVal, 'base64').toString()
+          compVal = new Buffer(compVal, 'base64').toString()
+        }
+        if ((attrType == 'B' || attrType == 'BS') &&
+            ~attrVal.indexOf(compVal)) return false
+      }
+      break
+    case 'BEGINS_WITH':
+    case 'begins_with':
+      if (compType != attrType) return false
+      if (compType == 'B') {
+        attrVal = new Buffer(attrVal, 'base64').toString()
+        compVal = new Buffer(compVal, 'base64').toString()
+      }
+      if (attrVal.indexOf(compVal) !== 0) return false
+      break
+    case 'IN':
+    case 'in':
+      if (!attrVal) return false
+      if (!compVals.some(function(compVal) {
+        compType = Object.keys(compVal)[0]
+        compVal = compVal[compType]
+        return compType == attrType && valsEqual(attrVal, compVal)
+      })) return false
+      break
+    case 'BETWEEN':
+    case 'between':
+      if (!attrVal || compType != attrType ||
+        (attrType == 'N' && (!new Big(attrVal).gte(compVal) || !new Big(attrVal).lte(compVals[1].N))) ||
+        (attrType != 'N' && (toLexiStr(attrVal, attrType) < toLexiStr(compVal, attrType) ||
+          toLexiStr(attrVal, attrType) > toLexiStr(compVals[1][compType], attrType)))) return false
+      break
+    case 'attribute_type':
+      if (!attrVal || !valsEqual(attrType, compVal)) return false
+  }
   return true
+}
+
+function mapPaths(paths, item) {
+  var returnItem = Object.create(null), toSquash = []
+  for (var i = 0; i < paths.length; i++) {
+    var path = paths[i]
+    var resolved = mapPath(path, item)
+    if (resolved == null) {
+      continue
+    }
+    var curItem = {M: returnItem}
+    for (var j = 0; j < paths[i].length; j++) {
+      var piece = path[j]
+      if (typeof piece == 'number') {
+        curItem.L = curItem.L || []
+        if (piece > curItem.L.length && !~toSquash.indexOf(curItem)) {
+          toSquash.push(curItem)
+        }
+        if (j < paths[i].length - 1) {
+          curItem.L[piece] = curItem.L[piece] || {}
+          curItem = curItem.L[piece]
+        } else {
+          curItem.L[piece] = resolved
+        }
+      } else {
+        curItem.M = curItem.M || {}
+        if (j < paths[i].length - 1) {
+          curItem.M[piece] = curItem.M[piece] || {}
+          curItem = curItem.M[piece]
+        } else {
+          curItem.M[piece] = resolved
+        }
+      }
+    }
+  }
+  toSquash.forEach(function(obj) { obj.L = obj.L.filter(Boolean) })
+  return returnItem
+}
+
+function mapPath(path, item) {
+  var resolved = {M: item}
+  for (var i = 0; i < path.length; i++) {
+    var piece = path[i]
+    if (typeof piece == 'number' && resolved.L) {
+      resolved = resolved.L[piece]
+    } else if (resolved.M) {
+      resolved = resolved.M[piece]
+    } else {
+      resolved = null
+    }
+    if (resolved == null) {
+      break
+    }
+  }
+  return resolved
 }
