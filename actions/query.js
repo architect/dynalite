@@ -9,7 +9,7 @@ module.exports = function query(store, data, cb) {
   store.getTable(data.TableName, function(err, table) {
     if (err) return cb(err)
 
-    var i, keySchema, key, comparisonOperator, hashKey, rangeKey, projectionType, indexAttrs, type, isLocal,
+    var i, keySchema, comparisonOperator, hashKey, rangeKey, projectionType, indexAttrs, type, isLocal,
         tableHashKey = table.KeySchema[0].AttributeName, tableHashType, tableHashVal,
         opts = {}, vals, itemDb = store.getItemDb(data.TableName),
         size = 0, capacitySize = 0, count = 0, scannedCount = 0, lastItem, em, limited = false
@@ -170,7 +170,7 @@ module.exports = function query(store, data, cb) {
       }
     }
 
-    if (data.Select == 'ALL_ATTRIBUTES' && !isLocal && projectionType != 'ALL') {
+    if (data.IndexName && data.Select == 'ALL_ATTRIBUTES' && !isLocal && projectionType != 'ALL') {
       return cb(db.validationError('One or more parameter values were invalid: ' +
         'Select type ALL_ATTRIBUTES is not supported for global secondary index ' +
         data.IndexName + ' because its projection type is not ALL'))

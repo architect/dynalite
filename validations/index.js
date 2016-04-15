@@ -1,5 +1,4 @@
 var Big = require('big.js'),
-    db = require('../db'),
     conditionParser = require('../db/conditionParser'),
     projectionParser = require('../db/projectionParser'),
     updateParser = require('../db/updateParser')

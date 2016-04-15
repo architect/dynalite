@@ -8,7 +8,7 @@ module.exports = function scan(store, data, cb) {
     if (err) return cb(err)
 
     var i, keySchema, projectionType, indexAttrs, isLocal, opts = {},
-        hashKey, rangeKey, type, vals, scannedCount = 0, itemDb = store.getItemDb(data.TableName),
+        vals, scannedCount = 0, itemDb = store.getItemDb(data.TableName),
         size = 0, capacitySize = 0, filterFn, lastItem
 
     if (data.TotalSegments > 1) {
@@ -116,9 +116,6 @@ module.exports = function scan(store, data, cb) {
       if (err) return cb(err)
     }
 
-    hashKey = keySchema[0].AttributeName
-    if (keySchema[1]) rangeKey = keySchema[1].AttributeName
-
     if (data._projectionPaths) {
       err = db.validateKeyPaths(data._projectionPaths, table)
       if (err) return cb(err)
@@ -148,6 +145,12 @@ module.exports = function scan(store, data, cb) {
     }
     if (filterFn) {
       vals = vals.filter(filterFn)
+    }
+
+    if (indexAttrs && data.Select != 'ALL_ATTRIBUTES') {
+      data.AttributesToGet = indexAttrs
+        .concat(keySchema.map(function(schemaPiece) { return schemaPiece.AttributeName }))
+        .concat(table.KeySchema.map(function(schemaPiece) { return schemaPiece.AttributeName }))
     }
 
     if (data._projectionPaths) {

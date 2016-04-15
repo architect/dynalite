@@ -1846,7 +1846,6 @@ describe('query', function() {
           'because its projection type is not ALL', cb)
       }, done)
     })
-
   })
 
   describe('functionality', function() {
@@ -1859,7 +1858,10 @@ describe('query', function() {
         ExpressionAttributeValues: {':a': {S: helpers.randomString()}},
       }], function(queryOpts, cb) {
         queryOpts.TableName = helpers.testHashTable
-        queryOpts.ConsistentRead = true
+        queryOpts.ConsistentRead = false
+        queryOpts.ReturnConsumedCapacity = 'NONE'
+        queryOpts.ScanIndexForward = true
+        queryOpts.Select = 'ALL_ATTRIBUTES'
         request(opts(queryOpts), function(err, res) {
           if (err) return cb(err)
           res.statusCode.should.equal(200)

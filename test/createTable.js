@@ -429,9 +429,9 @@ describe('createTable', function() {
         AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}, {AttributeName: 'b', AttributeType: 'S'}],
         KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}],
         LocalSecondaryIndexes: [{
-          IndexName: 'h;', KeySchema: [], Projection: {}
+          IndexName: 'h;', KeySchema: [], Projection: {},
         }, {
-          IndexName: name, KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}], Projection: {}
+          IndexName: name, KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}], Projection: {},
         }],
         ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},
         '4 validation errors detected: ' +
@@ -746,9 +746,9 @@ describe('createTable', function() {
         AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}, {AttributeName: 'b', AttributeType: 'S'}],
         KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}],
         GlobalSecondaryIndexes: [{
-          IndexName: 'h;', KeySchema: [], Projection: {}, ProvisionedThroughput: {ReadCapacityUnits: 0, WriteCapacityUnits: 0}
+          IndexName: 'h;', KeySchema: [], Projection: {}, ProvisionedThroughput: {ReadCapacityUnits: 0, WriteCapacityUnits: 0},
         }, {
-          IndexName: name, KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}], Projection: {}, ProvisionedThroughput: {}
+          IndexName: name, KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}], Projection: {}, ProvisionedThroughput: {},
         }],
         ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},
         '8 validation errors detected: ' +
@@ -1320,5 +1320,3 @@ describe('createTable', function() {
   })
 
 })
-
-

@@ -70,7 +70,7 @@ describe('deleteTable', function() {
           KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}],
           ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
           Projection: {ProjectionType: 'KEYS_ONLY'},
-        }]
+        }],
       }
       request(helpers.opts('CreateTable', table), function(err, res) {
         if (err) return done(err)
@@ -104,5 +104,3 @@ describe('deleteTable', function() {
   })
 
 })
-
-
