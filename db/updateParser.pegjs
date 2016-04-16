@@ -318,10 +318,11 @@ PathExpression
         return prop
       }
     )* {
-      if (tail.length) {
-        nestedPaths[head] = true
+      var path = [head].concat(tail)
+      if (path.length > 1) {
+        nestedPaths[path[0]] = true
       }
-      return [head].concat(tail)
+      return path
     }
 
 Identifier

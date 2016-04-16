@@ -22,6 +22,7 @@ exports.validationError = validationError
 exports.checkConditional = checkConditional
 exports.itemSize = itemSize
 exports.capacityUnits = capacityUnits
+exports.addConsumedCapacity = addConsumedCapacity
 exports.matchesFilter = matchesFilter
 exports.matchesExprFilter = matchesExprFilter
 exports.compare = compare
@@ -114,7 +115,9 @@ function lazyStream(stream, errHandler) {
 
 function validateKey(dataKey, table, keySchema) {
   if (keySchema == null) keySchema = table.KeySchema
-  if (keySchema.length != Object.keys(dataKey).length) return validationError()
+  if (keySchema.length != Object.keys(dataKey).length) {
+    return validationError('The provided key element does not match the schema')
+  }
 
   var keyStr, err
   err = traverseKey(table, keySchema, function(attr, type, isHash) {
@@ -127,27 +130,22 @@ function validateKey(dataKey, table, keySchema) {
 }
 
 function validateKeyPiece(key, attr, type, isHash) {
-  if (key[attr] == null) return validationError()
-  if (key[attr][type] == null) return validationError()
+  if (key[attr] == null || key[attr][type] == null) {
+    return validationError('The provided key element does not match the schema')
+  }
   return checkKeySize(key[attr][type], type, isHash)
 }
 
-function validateKeyPaths(paths, table) {
-  var err = traverseKey(table, function(attr) {
-    for (var i = 0; i < paths.length; i++) {
-      if (paths[i].length > 1 && paths[i][0] == attr) {
-        return validationError('Key attributes must be scalars; ' +
-          'list random access \'[]\' and map lookup \'.\' are not allowed: Key: ' + attr)
-      }
+function validateKeyPaths(nestedPaths, table) {
+  return traverseKey(table, function(attr) {
+    if (nestedPaths[attr]) {
+      return validationError('Key attributes must be scalars; ' +
+        'list random access \'[]\' and map lookup \'.\' are not allowed: Key: ' + attr)
     }
-  })
-  if (err) return err
-  return traverseIndexes(table, function(attr) {
-    for (var i = 0; i < paths.length; i++) {
-      if (paths[i].length > 1 && paths[i][0] == attr) {
-        return validationError('Key attributes must be scalars; ' +
-          'list random access \'[]\' and map lookup \'.\' are not allowed: IndexKey: ' + attr)
-      }
+  }) || traverseIndexes(table, function(attr) {
+    if (nestedPaths[attr]) {
+      return validationError('Key attributes must be scalars; ' +
+        'list random access \'[]\' and map lookup \'.\' are not allowed: IndexKey: ' + attr)
     }
   })
 }
@@ -170,11 +168,11 @@ function validateItem(dataItem, table) {
     keyStr += '~' + toLexiStr(dataItem[attr][type], type)
   })
   if (err) return err
-  err = traverseIndexes(table, function(attr, type, indexName) {
+  err = traverseIndexes(table, function(attr, type, index) {
     if (dataItem[attr] != null && dataItem[attr][type] == null) {
       return validationError('One or more parameter values were invalid: ' +
         'Type mismatch for Index Key ' + attr + ' Expected: ' + type +
-        ' Actual: ' + Object.keys(dataItem[attr])[0] + ' IndexName: ' + indexName)
+        ' Actual: ' + Object.keys(dataItem[attr])[0] + ' IndexName: ' + index.IndexName)
     }
   })
   return err || keyStr
@@ -182,7 +180,7 @@ function validateItem(dataItem, table) {
 
 function traverseKey(table, keySchema, visitKey) {
   if (typeof keySchema == 'function') { visitKey = keySchema; keySchema = table.KeySchema }
-  var i, j, attr, type, err
+  var i, j, attr, type, found
   for (i = 0; i < keySchema.length; i++) {
     attr = keySchema[i].AttributeName
     for (j = 0; j < table.AttributeDefinitions.length; j++) {
@@ -190,13 +188,13 @@ function traverseKey(table, keySchema, visitKey) {
       type = table.AttributeDefinitions[j].AttributeType
       break
     }
-    err = visitKey(attr, type, !i)
-    if (err) return err
+    found = visitKey(attr, type, !i)
+    if (found) return found
   }
 }
 
 function traverseIndexes(table, visitIndex) {
-  var i, j, k, attr, type, err
+  var i, j, k, attr, type, found
   if (table.GlobalSecondaryIndexes) {
     for (i = table.GlobalSecondaryIndexes.length - 1; i >= 0; i--) {
       for (k = 0; k < table.GlobalSecondaryIndexes[i].KeySchema.length; k++) {
@@ -206,8 +204,8 @@ function traverseIndexes(table, visitIndex) {
           type = table.AttributeDefinitions[j].AttributeType
           break
         }
-        err = visitIndex(attr, type, table.GlobalSecondaryIndexes[i].IndexName)
-        if (err) return err
+        found = visitIndex(attr, type, table.GlobalSecondaryIndexes[i], true)
+        if (found) return found
       }
     }
   }
@@ -219,8 +217,8 @@ function traverseIndexes(table, visitIndex) {
         type = table.AttributeDefinitions[j].AttributeType
         break
       }
-      err = visitIndex(attr, type, table.LocalSecondaryIndexes[i].IndexName)
-      if (err) return err
+      found = visitIndex(attr, type, table.LocalSecondaryIndexes[i], false)
+      if (found) return found
     }
   }
 }
@@ -357,8 +355,8 @@ function itemCompare(rangeKey, table) {
 function checkConditional(data, existingItem) {
   existingItem = existingItem || {}
 
-  if (data._conditionExpression) {
-    if (!matchesExprFilter(existingItem, data._conditionExpression.expression)) {
+  if (data._condition) {
+    if (!matchesExprFilter(existingItem, data._condition.expression)) {
       return conditionalError()
     }
     return null
@@ -371,7 +369,6 @@ function checkConditional(data, existingItem) {
 }
 
 function validationError(msg) {
-  if (msg == null) msg = 'The provided key element does not match the schema'
   var err = new Error(msg)
   err.statusCode = 400
   err.body = {
@@ -429,6 +426,20 @@ function itemSize(item, skipAttr) {
 function capacityUnits(item, isRead, isConsistent) {
   var size = item ? Math.ceil(itemSize(item) / 1024 / (isRead ? 4 : 1)) : 1
   return size / (!isRead || isConsistent ? 1 : 2)
+}
+
+function addConsumedCapacity(data, isRead, newItem, oldItem) {
+  if (~['TOTAL', 'INDEXES'].indexOf(data.ReturnConsumedCapacity)) {
+    var capacity = capacityUnits(newItem, isRead, data.ConsistentRead)
+    if (oldItem != null) {
+      capacity = Math.max(capacity, capacityUnits(oldItem, isRead, data.ConsistentRead))
+    }
+    return {
+      CapacityUnits: capacity,
+      TableName: data.TableName,
+      Table: data.ReturnConsumedCapacity == 'INDEXES' ? {CapacityUnits: capacity} : undefined,
+    }
+  }
 }
 
 function valsEqual(val1, val2) {

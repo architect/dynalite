@@ -133,10 +133,11 @@ module.exports = (function() {
                 return prop
               },
         peg$c46 = function(head, tail) {
-              if (tail.length) {
-                nestedPaths[head] = true
+              var path = [head].concat(tail)
+              if (path.length > 1) {
+                nestedPaths[path[0]] = true
               }
-              return [head].concat(tail)
+              return path
             },
         peg$c47 = function(head, tail) {
               var name = head + tail.join('')
@@ -2167,11 +2168,11 @@ module.exports = (function() {
       }
 
       function resolveAttrName(name) {
-        if (errors.attrNameVal) {
+        if (errors.attrName) {
           return
         }
         if (!attrNames[name]) {
-          errors.attrNameVal = 'An expression attribute name used in the document path is not defined; attribute name: ' + name
+          errors.attrName = 'An expression attribute name used in the document path is not defined; attribute name: ' + name
           return
         }
         delete unusedAttrNames[name]
@@ -2179,11 +2180,11 @@ module.exports = (function() {
       }
 
       function resolveAttrVal(name) {
-        if (errors.attrNameVal) {
+        if (errors.attrVal) {
           return
         }
         if (!attrVals[name]) {
-          errors.attrNameVal = 'An expression attribute value used in expression is not defined; attribute value: ' + name
+          errors.attrVal = 'An expression attribute value used in expression is not defined; attribute value: ' + name
           return
         }
         delete unusedAttrVals[name]
@@ -2262,8 +2263,8 @@ module.exports = (function() {
       }
 
       function checkErrors() {
-        var errorOrder = ['reserved', 'unknownFunction', 'section', 'attrNameVal',
-          'pathOverlap', 'pathConflict', 'operand', 'function']
+        var errorOrder = ['reserved', 'unknownFunction', 'section', 'attrName',
+          'attrVal', 'pathOverlap', 'pathConflict', 'operand', 'function']
         for (var i = 0; i < errorOrder.length; i++) {
           if (errors[errorOrder[i]]) return errors[errorOrder[i]]
         }

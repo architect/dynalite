@@ -7,6 +7,7 @@
   var isReserved = context.isReserved
   var errors = {}
   var paths = []
+  var nestedPaths = Object.create(null)
 
   function checkReserved(name) {
     if (isReserved(name) && !errors.reserved) {
@@ -73,7 +74,7 @@
 Start
   = _ paths:PathList _ {
       paths.forEach(checkPath)
-      return checkErrors() || paths
+      return checkErrors() || {paths: paths, nestedPaths: nestedPaths}
     }
 
 PathList
@@ -114,5 +115,9 @@ PathExpression
         return prop
       }
     )* {
-      return [head].concat(tail)
+      var path = [head].concat(tail)
+      if (path.length > 1) {
+        nestedPaths[path[0]] = true
+      }
+      return path
     }

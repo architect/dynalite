@@ -1828,7 +1828,7 @@ describe('query', function() {
         QueryFilter: {a: {ComparisonOperator: 'EQ', AttributeValueList: [{N: '1'}]}},
       }, {
         KeyConditionExpression: 'c = :a',
-        FilterExpression: 'a = :b',
+        FilterExpression: 'a = :b and a.b = :a',
         ExpressionAttributeValues: {':a': {S: 'a'}, ':b': {N: '1'}},
       }], function(queryOpts, cb) {
         assertValidation({

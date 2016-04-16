@@ -37,7 +37,7 @@ module.exports = (function() {
         peg$startRuleFunction  = peg$parseStart,
 
         peg$c0 = function(expression) {
-              return checkErrors() || {expression: expression, paths: paths, nestedPaths: nestedPaths}
+              return checkErrors() || {expression: expression, nestedPaths: nestedPaths, pathHeads: pathHeads}
             },
         peg$c1 = function(x, token, y) {
               return {type: 'or', args: [x, y]}
@@ -130,12 +130,12 @@ module.exports = (function() {
                 return prop
               },
         peg$c48 = function(head, tail) {
-              if (!Array.isArray(head)) head = [head]
-              if (tail.length && head.length == 1) {
-                nestedPaths[head[0]] = true
+              var path = (Array.isArray(head) ? head : [head]).concat(tail)
+              if (path.length > 1) {
+                nestedPaths[path[0]] = true
               }
-              paths.push(head.concat(tail))
-              return head.concat(tail)
+              pathHeads[path[0]] = true
+              return path
             },
         peg$c49 = function(path) {
               checkParens(path)
@@ -1812,8 +1812,8 @@ module.exports = (function() {
       var unusedAttrVals = context.unusedAttrVals || {}
       var isReserved = context.isReserved
       var errors = Object.create(null)
-      var paths = []
       var nestedPaths = Object.create(null)
+      var pathHeads = Object.create(null)
 
       function checkReserved(name) {
         if (isReserved(name) && !errors.reserved) {

@@ -67,7 +67,7 @@ module.exports = function batchGetItem(store, data, cb) {
         key = req.Keys[i]
 
         options = {TableName: tableName, Key: key}
-        if (req._projectionPaths) options._projectionPaths = req._projectionPaths
+        if (req._projection) options._projection = req._projection
         if (req.AttributesToGet) options.AttributesToGet = req.AttributesToGet
         if (req.ConsistentRead) options.ConsistentRead = req.ConsistentRead
         if (data.ReturnConsumedCapacity) options.ReturnConsumedCapacity = data.ReturnConsumedCapacity

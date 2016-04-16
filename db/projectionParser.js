@@ -38,7 +38,7 @@ module.exports = (function() {
 
         peg$c0 = function(paths) {
               paths.forEach(checkPath)
-              return checkErrors() || paths
+              return checkErrors() || {paths: paths, nestedPaths: nestedPaths}
             },
         peg$c1 = ",",
         peg$c2 = { type: "literal", value: ",", description: "\",\"" },
@@ -77,6 +77,13 @@ module.exports = (function() {
         peg$c25 = function(head, prop) {
                 return prop
               },
+        peg$c26 = function(head, tail) {
+              var path = [head].concat(tail)
+              if (path.length > 1) {
+                nestedPaths[path[0]] = true
+              }
+              return path
+            },
 
         peg$currPos          = 0,
         peg$savedPos         = 0,
@@ -752,7 +759,7 @@ module.exports = (function() {
         }
         if (s2 !== peg$FAILED) {
           peg$savedPos = s0;
-          s1 = peg$c4(s1, s2);
+          s1 = peg$c26(s1, s2);
           s0 = s1;
         } else {
           peg$currPos = s0;
@@ -775,6 +782,7 @@ module.exports = (function() {
       var isReserved = context.isReserved
       var errors = {}
       var paths = []
+      var nestedPaths = Object.create(null)
 
       function checkReserved(name) {
         if (isReserved(name) && !errors.reserved) {
@@ -783,11 +791,11 @@ module.exports = (function() {
       }
 
       function resolveAttrName(name) {
-        if (errors.attrName) {
+        if (errors.attrNameVal) {
           return
         }
         if (!attrNames[name]) {
-          errors.attrName = 'An expression attribute name used in the document path is not defined; attribute name: ' + name
+          errors.attrNameVal = 'An expression attribute name used in the document path is not defined; attribute name: ' + name
           return
         }
         delete unusedAttrNames[name]
@@ -830,7 +838,7 @@ module.exports = (function() {
       }
 
       function checkErrors() {
-        var errorOrder = ['reserved', 'attrName', 'pathOverlap', 'pathConflict']
+        var errorOrder = ['reserved', 'attrNameVal', 'pathOverlap', 'pathConflict']
         for (var i = 0; i < errorOrder.length; i++) {
           if (errors[errorOrder[i]]) return errors[errorOrder[i]]
         }

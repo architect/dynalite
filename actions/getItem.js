@@ -8,8 +8,8 @@ module.exports = function getItem(store, data, cb) {
     var key = db.validateKey(data.Key, table), itemDb = store.getItemDb(data.TableName)
     if (key instanceof Error) return cb(key)
 
-    if (data._projectionPaths) {
-      err = db.validateKeyPaths(data._projectionPaths, table)
+    if (data._projection) {
+      err = db.validateKeyPaths(data._projection.nestedPaths, table)
       if (err) return cb(err)
     }
 
@@ -19,8 +19,8 @@ module.exports = function getItem(store, data, cb) {
       var returnObj = {}
 
       if (item) {
-        if (data._projectionPaths) {
-          returnObj.Item = db.mapPaths(data._projectionPaths, item)
+        if (data._projection) {
+          returnObj.Item = db.mapPaths(data._projection.paths, item)
         } else if (data.AttributesToGet) {
           returnObj.Item = data.AttributesToGet.reduce(function(returnItem, attr) {
             if (item[attr] != null) returnItem[attr] = item[attr]
@@ -31,13 +31,7 @@ module.exports = function getItem(store, data, cb) {
         }
       }
 
-      if (~['TOTAL', 'INDEXES'].indexOf(data.ReturnConsumedCapacity))
-        returnObj.ConsumedCapacity = {
-          CapacityUnits: db.capacityUnits(item, true, data.ConsistentRead),
-          TableName: data.TableName,
-          Table: data.ReturnConsumedCapacity == 'INDEXES' ?
-            {CapacityUnits: db.capacityUnits(item, true, data.ConsistentRead)} : undefined,
-        }
+      returnObj.ConsumedCapacity = db.addConsumedCapacity(data, true, item)
 
       cb(null, returnObj)
     })

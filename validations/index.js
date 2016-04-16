@@ -586,7 +586,7 @@ function validateExpressions(data) {
     if (typeof result == 'string') {
       return 'Invalid ConditionExpression: ' + result
     }
-    data._conditionExpression = result
+    data._condition = result
   }
 
   if (data.KeyConditionExpression != null) {
@@ -595,7 +595,7 @@ function validateExpressions(data) {
     if (typeof result == 'string') {
       return 'Invalid KeyConditionExpression: ' + result
     }
-    data._keyConditionExpression = result
+    data._keyCondition = result
   }
 
   if (data.FilterExpression != null) {
@@ -603,7 +603,7 @@ function validateExpressions(data) {
     if (typeof result == 'string') {
       return 'Invalid FilterExpression: ' + result
     }
-    data._filterExpression = result
+    data._filter = result
   }
 
   if (data.ProjectionExpression != null) {
@@ -611,7 +611,7 @@ function validateExpressions(data) {
     if (typeof result == 'string') {
       return 'Invalid ProjectionExpression: ' + result
     }
-    data._projectionPaths = result
+    data._projection = result
   }
 
   if (Object.keys(context.unusedAttrNames).length) {
@@ -635,11 +635,9 @@ function parse(str, parser, context) {
   }
 }
 
-function convertKeyCondition(keyCondExpr) {
+function convertKeyCondition(expression) {
   var keyConds = Object.create(null)
-  var errMsg = checkExpr(keyCondExpr.expression, keyConds)
-  if (errMsg) return errMsg
-  return keyConds
+  return checkExpr(expression, keyConds) || keyConds
 }
 
 function checkExpr(expr, keyConds) {

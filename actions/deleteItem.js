@@ -21,14 +21,7 @@ module.exports = function deleteItem(store, data, cb) {
         if (existingItem && data.ReturnValues == 'ALL_OLD')
           returnObj.Attributes = existingItem
 
-        if (~['TOTAL', 'INDEXES'].indexOf(data.ReturnConsumedCapacity)) {
-          returnObj.ConsumedCapacity = {
-            CapacityUnits: db.capacityUnits(existingItem),
-            TableName: data.TableName,
-            Table: data.ReturnConsumedCapacity == 'INDEXES' ?
-              {CapacityUnits: db.capacityUnits(existingItem)} : undefined,
-          }
-        }
+        returnObj.ConsumedCapacity = db.addConsumedCapacity(data, false, existingItem)
 
         itemDb.del(key, function(err) {
           if (err) return cb(err)

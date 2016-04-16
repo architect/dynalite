@@ -177,8 +177,8 @@ exports.custom = function(data) {
   msg = validateExpressions(data)
   if (msg) return msg
 
-  if (data._keyConditionExpression != null) {
-    data.KeyConditions = convertKeyCondition(data._keyConditionExpression)
+  if (data._keyCondition != null) {
+    data.KeyConditions = convertKeyCondition(data._keyCondition.expression)
     if (typeof data.KeyConditions == 'string') {
       return data.KeyConditions
     }
