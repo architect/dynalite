@@ -81,6 +81,7 @@ TODO
 - Implement `ReturnItemCollectionMetrics` on all remaining endpoints
 - Implement size info for tables and indexes
 - Is the `ListTables` limit of names returned 100 if no `Limit` supplied?
+- See [open issues](https://github.com/mhart/dynalite/issues) for an up to date list of outstanding features
 
 Problems with Amazon's DynamoDB Local
 -------------------------------------
