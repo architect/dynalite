@@ -2278,8 +2278,7 @@ describe('query', function() {
       })
     })
 
-    // TODO: index capacities aren't calculated correctly
-    it.skip('should return all attributes when specified for secondary indexes', function(done) {
+    it('should return all attributes when specified for secondary indexes', function(done) {
       var item = {a: {S: helpers.randomString()}, b: {S: 'b1'}, c: {S: 'c1'}, d: {S: 'd1'}},
           item2 = {a: item.a, b: {S: 'b2'}},
           item3 = {a: item.a, b: {S: 'b3'}, d: {S: 'd3'}, e: {M: {e3: {S: new Array(4062).join('e')}}}, f: {L: [{S: 'f3'}, {S: 'ff3'}]}},
