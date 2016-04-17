@@ -18,6 +18,7 @@ if (argv.help) {
     '--createTableMs <ms>  Amount of time tables stay in CREATING state (default: 500)',
     '--deleteTableMs <ms>  Amount of time tables stay in DELETING state (default: 500)',
     '--updateTableMs <ms>  Amount of time tables stay in UPDATING state (default: 500)',
+    '--maxItemSizeKb <kb>  Maximum item size (default: 400)',
     '',
     'Report bugs at github.com/mhart/dynalite/issues',
   ].join('\n'))

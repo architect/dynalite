@@ -601,7 +601,7 @@ describe('batchGetItem', function() {
     it.skip('should return all items if just under limit', function(done) {
       this.timeout(200000)
 
-      var i, item, items = [], b = new Array(db.MAX_SIZE - 6).join('b'),
+      var i, item, items = [], b = new Array(helpers.MAX_SIZE - 6).join('b'),
           batchReq = {RequestItems: {}, ReturnConsumedCapacity: 'TOTAL'}
       for (i = 0; i < 4; i++) {
         if (i < 3) {
@@ -630,7 +630,7 @@ describe('batchGetItem', function() {
     it.skip('should return an unprocessed item if just over limit', function(done) {
       this.timeout(200000)
 
-      var i, item, items = [], b = new Array(db.MAX_SIZE - 6).join('b'),
+      var i, item, items = [], b = new Array(helpers.MAX_SIZE - 6).join('b'),
           batchReq = {RequestItems: {}, ReturnConsumedCapacity: 'TOTAL'}
       for (i = 0; i < 4; i++) {
         if (i < 3) {
@@ -668,7 +668,7 @@ describe('batchGetItem', function() {
     it.skip('should return many unprocessed items if very over the limit', function(done) {
       this.timeout(200000)
 
-      var i, item, items = [], b = new Array(db.MAX_SIZE - 3).join('b'),
+      var i, item, items = [], b = new Array(helpers.MAX_SIZE - 3).join('b'),
           batchReq = {RequestItems: {}, ReturnConsumedCapacity: 'TOTAL'}
       for (i = 0; i < 20; i++) {
         if (i < 3) {

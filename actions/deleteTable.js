@@ -31,7 +31,7 @@ module.exports = function deleteTable(store, data, cb) {
             // eslint-disable-next-line no-console
             if (err && !/Database is not open/.test(err)) console.error(err.stack || err)
           })
-        }, store.deleteTableMs)
+        }, store.options.deleteTableMs)
 
         cb(null, {TableDescription: table})
       })
@@ -39,5 +39,3 @@ module.exports = function deleteTable(store, data, cb) {
   })
 
 }
-
-

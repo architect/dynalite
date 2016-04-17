@@ -92,7 +92,7 @@ module.exports = function updateItem(store, data, cb) {
           applyAttributeUpdates(data.AttributeUpdates, table, item)
         if (err) return cb(err)
 
-        if (db.itemSize(item) > db.MAX_SIZE)
+        if (db.itemSize(item) > store.options.maxItemSize)
           return cb(db.validationError('Item size to update has exceeded the maximum allowed size'))
 
         if (data.ReturnValues == 'ALL_NEW') {

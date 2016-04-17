@@ -187,7 +187,7 @@ function checkTypes(data, types) {
 
 var validateFns = {}
 
-function checkValidations(data, validations, custom) {
+function checkValidations(data, validations, custom, store) {
   var attr, msg, errors = []
   function validationError(msg) {
     var err = new Error(msg)
@@ -249,7 +249,7 @@ function checkValidations(data, validations, custom) {
     throw validationError(errors.length + ' validation error' + (errors.length > 1 ? 's' : '') + ' detected: ' + errors.join('; '))
 
   if (custom) {
-    msg = custom(data)
+    msg = custom(data, store)
     if (msg) throw validationError(msg)
   }
 }

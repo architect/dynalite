@@ -61,7 +61,7 @@ module.exports = function createTable(store, data, cb) {
             if (err && !/Database is not open/.test(err)) console.error(err.stack || err)
           })
 
-        }, store.createTableMs)
+        }, store.options.createTableMs)
 
         cb(null, {TableDescription: data})
       })
@@ -69,5 +69,3 @@ module.exports = function createTable(store, data, cb) {
   })
 
 }
-
-

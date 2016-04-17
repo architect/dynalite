@@ -54,7 +54,7 @@ exports.types = {
   },
 }
 
-exports.custom = function(data) {
+exports.custom = function(data, store) {
   var table, i, request, key, msg
   for (table in data.RequestItems) {
     if (data.RequestItems[table].some(function(item) { return !Object.keys(item).length })) // eslint-disable-line no-loop-func
@@ -67,7 +67,7 @@ exports.custom = function(data) {
           msg = validateAttributeValue(request.PutRequest.Item[key])
           if (msg) return msg
         }
-        if (db.itemSize(request.PutRequest.Item) > db.MAX_SIZE)
+        if (db.itemSize(request.PutRequest.Item) > store.options.maxItemSize)
           return 'Item size has exceeded the maximum allowed size'
       } else if (request.DeleteRequest) {
         for (key in request.DeleteRequest.Key) {
@@ -78,4 +78,3 @@ exports.custom = function(data) {
     }
   }
 }
-

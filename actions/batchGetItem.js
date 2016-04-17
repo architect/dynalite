@@ -21,7 +21,7 @@ module.exports = function batchGetItem(store, data, cb) {
         if (tableRes.Item) {
           // TODO: This is totally inefficient - should fix this
           var newSize = totalSize + db.itemSize(tableRes.Item)
-          if (newSize > (1024 * 1024 + db.MAX_SIZE - 3)) {
+          if (newSize > (1024 * 1024 + store.options.maxItemSize - 3)) {
             if (!res.UnprocessedKeys[table]) {
               res.UnprocessedKeys[table] = {Keys: []}
               if (data.RequestItems[table].AttributesToGet)

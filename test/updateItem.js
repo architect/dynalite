@@ -995,7 +995,7 @@ describe('updateItem', function() {
     it('should return ValidationException if update item is too big', function(done) {
       var key = {a: {S: helpers.randomString()}}
       var updates = {
-        b: {Action: 'PUT', Value: {S: new Array(db.MAX_SIZE).join('a')}},
+        b: {Action: 'PUT', Value: {S: new Array(helpers.MAX_SIZE).join('a')}},
         c: {Action: 'PUT', Value: {N: new Array(38 + 1).join('1') + new Array(89).join('0')}},
       }
       assertValidation({TableName: helpers.testHashTable, Key: key, AttributeUpdates: updates},

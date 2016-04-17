@@ -33,6 +33,7 @@ Options:
 --createTableMs <ms>  Amount of time tables stay in CREATING state (default: 500)
 --deleteTableMs <ms>  Amount of time tables stay in DELETING state (default: 500)
 --updateTableMs <ms>  Amount of time tables stay in UPDATING state (default: 500)
+--maxItemSizeKb <kb>  Maximum item size (default: 400)
 
 Report bugs at github.com/mhart/dynalite/issues
 ```
@@ -74,14 +75,10 @@ $ npm install -g dynalite
 TODO
 ----
 
-- Add ProvisionedThroughput checking
-- Add config settings to turn on/off strict checking
-- Use efficient range scans for `Query` calls
-- Explore edge cases with `Query` and `ScanIndexForward: false` (combine with above)
 - Implement `ReturnItemCollectionMetrics` on all remaining endpoints
 - Implement size info for tables and indexes
-- Is the `ListTables` limit of names returned 100 if no `Limit` supplied?
-- See [open issues](https://github.com/mhart/dynalite/issues) for an up to date list of outstanding features
+- Add ProvisionedThroughput checking
+- See [open issues](https://github.com/mhart/dynalite/issues) for an up-to-date list of outstanding features
 
 Problems with Amazon's DynamoDB Local
 -------------------------------------

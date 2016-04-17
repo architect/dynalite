@@ -251,7 +251,7 @@ function httpHandler(store, req, res) {
     var actionValidation = actionValidations[action]
     try {
       data = validations.checkTypes(data, actionValidation.types)
-      validations.checkValidations(data, actionValidation.types, actionValidation.custom)
+      validations.checkValidations(data, actionValidation.types, actionValidation.custom, store)
     } catch (e) {
       if (e.statusCode) return sendData(req, res, e.body, e.statusCode)
       throw e
@@ -266,4 +266,3 @@ function httpHandler(store, req, res) {
 }
 
 if (require.main === module) dynalite().listen(4567)
-

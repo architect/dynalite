@@ -6,7 +6,7 @@ var crypto = require('crypto'),
     Lock = require('lock'),
     Big = require('big.js')
 
-exports.MAX_SIZE = 409600
+exports.MAX_SIZE = 409600 // TODO: get rid of this? or leave for backwards compat?
 exports.create = create
 exports.lazy = lazyStream
 exports.validateKey = validateKey
@@ -34,11 +34,13 @@ function create(options) {
   if (options.createTableMs == null) options.createTableMs = 500
   if (options.deleteTableMs == null) options.deleteTableMs = 500
   if (options.updateTableMs == null) options.updateTableMs = 500
+  if (options.maxItemSizeKb == null) options.maxItemSizeKb = exports.MAX_SIZE / 1024
+  options.maxItemSize = options.maxItemSizeKb * 1024
 
   var db = levelup(options.path || '/does/not/matter', options.path ? {} : {db: memdown}),
       sublevelDb = sublevel(db),
       tableDb = sublevelDb.sublevel('table', {valueEncoding: 'json'}),
-      itemDbs = []
+      subDbs = Object.create(null)
 
   tableDb.lock = new Lock()
 
@@ -47,18 +49,26 @@ function create(options) {
   tableDb.awsRegion = process.env.AWS_REGION || process.env.AWS_DEFAULT_REGION || 'us-east-1'
 
   function getItemDb(name) {
-    if (!itemDbs[name]) {
-      itemDbs[name] = sublevelDb.sublevel('item-' + name, {valueEncoding: 'json'})
-      itemDbs[name].lock = new Lock()
-    }
-    return itemDbs[name]
+    return getSubDb('item-' + name)
   }
 
   function deleteItemDb(name, cb) {
-    var itemDb = getItemDb(name)
-    delete itemDbs[name]
-    lazyStream(itemDb.createKeyStream(), cb).join(function(keys) {
-      itemDb.batch(keys.map(function(key) { return {type: 'del', key: key} }), cb)
+    deleteSubDb('item-' + name, cb)
+  }
+
+  function getSubDb(name) {
+    if (!subDbs[name]) {
+      subDbs[name] = sublevelDb.sublevel(name, {valueEncoding: 'json'})
+      subDbs[name].lock = new Lock()
+    }
+    return subDbs[name]
+  }
+
+  function deleteSubDb(name, cb) {
+    var subDb = getSubDb(name)
+    delete subDbs[name]
+    lazyStream(subDb.createKeyStream(), cb).join(function(keys) {
+      subDb.batch(keys.map(function(key) { return {type: 'del', key: key} }), cb)
     })
   }
 
@@ -94,9 +104,7 @@ function create(options) {
   }
 
   return {
-    createTableMs: options.createTableMs,
-    deleteTableMs: options.deleteTableMs,
-    updateTableMs: options.updateTableMs,
+    options: options,
     db: db,
     tableDb: tableDb,
     getItemDb: getItemDb,

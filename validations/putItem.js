@@ -64,7 +64,7 @@ exports.types = {
   },
 }
 
-exports.custom = function(data) {
+exports.custom = function(data, store) {
 
   var msg = validateExpressionParams(data, ['ConditionExpression'], ['Expected'])
   if (msg) return msg
@@ -77,7 +77,7 @@ exports.custom = function(data) {
   if (data.ReturnValues && data.ReturnValues != 'ALL_OLD' && data.ReturnValues != 'NONE')
     return 'ReturnValues can only be ALL_OLD or NONE'
 
-  if (db.itemSize(data.Item) > db.MAX_SIZE)
+  if (db.itemSize(data.Item) > store.options.maxItemSize)
     return 'Item size has exceeded the maximum allowed size'
 
   msg = validateAttributeConditions(data)
