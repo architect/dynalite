@@ -548,32 +548,72 @@ describe('getItem', function() {
     })
 
     it('should return ConsumedCapacity for small item with ConsistentRead', function(done) {
-      var a = helpers.randomString(), b = new Array(4082 - a.length).join('b'),
-        item = {a: {S: a}, b: {S: b}, c: {N: '12.3456'}, d: {B: 'AQI='}, e: {BS: ['AQI=', 'Ag==', 'AQ==']}}
-      request(helpers.opts('PutItem', {TableName: helpers.testHashTable, Item: item}), function(err, res) {
+      var batchReq = {RequestItems: {}}
+      var items = [{
+        a: {S: helpers.randomString()},
+        bb: {S: new Array(4000).join('b')},
+        ccc: {N: '12.3456'},
+        dddd: {B: 'AQI='},
+        eeeee: {BS: ['AQI=', 'Ag==', 'AQ==']},
+        ffffff: {NULL: true},
+        ggggggg: {BOOL: false},
+        hhhhhhhh: {L: [{S: 'a'}, {S: 'aa'}, {S: 'bb'}, {S: 'ccc'}]},
+        iiiiiiiii: {M: {aa: {S: 'aa'}, bbb: {S: 'bbb'}}},
+      }, {
+        a: {S: helpers.randomString()},
+        ab: {S: new Array(4027).join('b')},
+        abc: {NULL: true},
+        abcd: {BOOL: true},
+        abcde: {L: [{S: 'aa'}, {N: '12.3456'}, {B: 'AQI='}]},
+        abcdef: {M: {aa: {S: 'aa'}, bbb: {N: '12.3456'}, cccc: {B: 'AQI='}}},
+      }]
+      batchReq.RequestItems[helpers.testHashTable] = items.map(function(item) { return {PutRequest: {Item: item}} })
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        request(opts({TableName: helpers.testHashTable, Key: {a: item.a}, ReturnConsumedCapacity: 'TOTAL', ConsistentRead: true}), function(err, res) {
-          if (err) return done(err)
-          res.statusCode.should.equal(200)
-          res.body.ConsumedCapacity.should.eql({CapacityUnits: 1, TableName: helpers.testHashTable})
-          done()
-        })
+        async.forEach(items, function(item, cb) {
+          request(opts({TableName: helpers.testHashTable, Key: {a: item.a}, ReturnConsumedCapacity: 'TOTAL', ConsistentRead: true}), function(err, res) {
+            if (err) return cb(err)
+            res.statusCode.should.equal(200)
+            res.body.ConsumedCapacity.should.eql({CapacityUnits: 1, TableName: helpers.testHashTable})
+            cb()
+          })
+        }, done)
       })
     })
 
     it('should return ConsumedCapacity for larger item with ConsistentRead', function(done) {
-      var a = helpers.randomString(), b = new Array(4084 - a.length).join('b'),
-        item = {a: {S: a}, b: {S: b}, c: {N: '12.3456'}, d: {B: 'AQI='}, e: {BS: ['AQI=', 'Ag==']}}
-      request(helpers.opts('PutItem', {TableName: helpers.testHashTable, Item: item}), function(err, res) {
+      var batchReq = {RequestItems: {}}
+      var items = [{
+        a: {S: helpers.randomString()},
+        bb: {S: new Array(4001).join('b')},
+        ccc: {N: '12.3456'},
+        dddd: {B: 'AQI='},
+        eeeee: {BS: ['AQI=', 'Ag==', 'AQ==']},
+        ffffff: {NULL: true},
+        ggggggg: {BOOL: false},
+        hhhhhhhh: {L: [{S: 'a'}, {S: 'aa'}, {S: 'bb'}, {S: 'ccc'}]},
+        iiiiiiiii: {M: {aa: {S: 'aa'}, bbb: {S: 'bbb'}}},
+      }, {
+        a: {S: helpers.randomString()},
+        ab: {S: new Array(4028).join('b')},
+        abc: {NULL: true},
+        abcd: {BOOL: true},
+        abcde: {L: [{S: 'aa'}, {N: '12.3456'}, {B: 'AQI='}]},
+        abcdef: {M: {aa: {S: 'aa'}, bbb: {N: '12.3456'}, cccc: {B: 'AQI='}}},
+      }]
+      batchReq.RequestItems[helpers.testHashTable] = items.map(function(item) { return {PutRequest: {Item: item}} })
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        request(opts({TableName: helpers.testHashTable, Key: {a: item.a}, ReturnConsumedCapacity: 'TOTAL', ConsistentRead: true}), function(err, res) {
-          if (err) return done(err)
-          res.statusCode.should.equal(200)
-          res.body.ConsumedCapacity.should.eql({CapacityUnits: 2, TableName: helpers.testHashTable})
-          done()
-        })
+        async.forEach(items, function(item, cb) {
+          request(opts({TableName: helpers.testHashTable, Key: {a: item.a}, ReturnConsumedCapacity: 'TOTAL', ConsistentRead: true}), function(err, res) {
+            if (err) return cb(err)
+            res.statusCode.should.equal(200)
+            res.body.ConsumedCapacity.should.eql({CapacityUnits: 2, TableName: helpers.testHashTable})
+            cb()
+          })
+        }, done)
       })
     })
 

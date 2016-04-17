@@ -390,37 +390,40 @@ function conditionalError(msg) {
 }
 
 function itemSize(item, skipAttr) {
-  var size = 0, attr, type, val
-  for (attr in item) {
-    type = Object.keys(item[attr])[0]
-    val = item[attr][type]
-    size += skipAttr ? 2 : attr.length
-    switch (type) {
-      case 'S':
-        size += val.length
-        break
-      case 'B':
-        size += new Buffer(val, 'base64').length
-        break
-      case 'N':
-        val = new Big(val)
-        size += Math.ceil(val.c.length / 2) + (val.e % 2 ? 1 : 2)
-        break
-      case 'SS':
-        size += val.reduce(function(sum, x) { return sum + x.length }, skipAttr ? val.length : 0) // eslint-disable-line no-loop-func
-        break
-      case 'BS':
-        size += val.reduce(function(sum, x) { return sum + new Buffer(x, 'base64').length }, skipAttr ? val.length : 0) // eslint-disable-line no-loop-func
-        break
-      case 'NS':
-        size += val.reduce(function(sum, x) { // eslint-disable-line no-loop-func
-          x = new Big(x)
-          return sum + Math.ceil(x.c.length / 2) + (x.e % 2 ? 1 : 2)
-        }, skipAttr ? val.length : 0)
-        break
-    }
+  return Object.keys(item).reduce(function(sum, attr) {
+    return sum + (skipAttr ? 2 : attr.length) + valSize(item[attr], skipAttr)
+  }, 0)
+}
+
+function valSize(itemAttr, skipAttr) {
+  var type = Object.keys(itemAttr)[0]
+  var val = itemAttr[type]
+  switch (type) {
+    case 'S':
+      return val.length
+    case 'B':
+      return new Buffer(val, 'base64').length
+    case 'N':
+      val = new Big(val)
+      return Math.ceil(val.c.length / 2) + (val.e % 2 ? 1 : 2)
+    case 'SS':
+      return val.reduce(function(sum, x) { return sum + x.length }, skipAttr ? val.length : 0) // eslint-disable-line no-loop-func
+    case 'BS':
+      return val.reduce(function(sum, x) { return sum + new Buffer(x, 'base64').length }, skipAttr ? val.length : 0) // eslint-disable-line no-loop-func
+    case 'NS':
+      return val.reduce(function(sum, x) { // eslint-disable-line no-loop-func
+        x = new Big(x)
+        return sum + Math.ceil(x.c.length / 2) + (x.e % 2 ? 1 : 2)
+      }, skipAttr ? val.length : 0)
+    case 'NULL':
+      return 1
+    case 'BOOL':
+      return 1
+    case 'L':
+      return 3 + val.reduce(function(sum, val) { return sum + 1 + valSize(val, skipAttr) }, 0)
+    case 'M':
+      return 3 + Object.keys(val).length + itemSize(val, skipAttr)
   }
-  return size
 }
 
 function capacityUnits(item, isRead, isConsistent) {
