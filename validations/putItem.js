@@ -1,8 +1,5 @@
-var db = require('../db'),
-    validateAttributeValue = require('./index').validateAttributeValue,
-    validateAttributeConditions = require('./index').validateAttributeConditions,
-    validateExpressionParams = require('./index').validateExpressionParams,
-    validateExpressions = require('./index').validateExpressions
+var validations = require('./index'),
+    db = require('../db')
 
 exports.types = {
   ReturnConsumedCapacity: {
@@ -66,11 +63,11 @@ exports.types = {
 
 exports.custom = function(data, store) {
 
-  var msg = validateExpressionParams(data, ['ConditionExpression'], ['Expected'])
+  var msg = validations.validateExpressionParams(data, ['ConditionExpression'], ['Expected'])
   if (msg) return msg
 
   for (var key in data.Item) {
-    msg = validateAttributeValue(data.Item[key])
+    msg = validations.validateAttributeValue(data.Item[key])
     if (msg) return msg
   }
 
@@ -80,9 +77,9 @@ exports.custom = function(data, store) {
   if (db.itemSize(data.Item) > store.options.maxItemSize)
     return 'Item size has exceeded the maximum allowed size'
 
-  msg = validateAttributeConditions(data)
+  msg = validations.validateAttributeConditions(data)
   if (msg) return msg
 
-  msg = validateExpressions(data)
+  msg = validations.validateExpressions(data)
   if (msg) return msg
 }

@@ -3113,12 +3113,15 @@ describe('query', function() {
     })
 
     // TODO: Need high capacity to run this (~100 runs quickly)
-    it.skip('should not return LastEvaluatedKey if just under limit', function(done) {
+    it('should not return LastEvaluatedKey if just under limit', function(done) {
       this.timeout(200000)
 
-      var i, items = [], id = helpers.randomString(), e = new Array(41646).join('e')
-      for (i = 0; i < 25; i++)
-        items.push({a: {S: id}, b: {S: ('0' + i).slice(-2)}, e: {S: e}})
+      var i, items = [], id = helpers.randomString(), e = new Array(41646).join('e'), eAttr = e.slice(0, 255)
+      for (i = 0; i < 25; i++) {
+        var item = {a: {S: id}, b: {S: ('0' + i).slice(-2)}}
+        item[eAttr] = {S: e}
+        items.push(item)
+      }
 
       helpers.replaceTable(helpers.testRangeTable, ['a', 'b'], items, function(err) {
         if (err) return done(err)
@@ -3127,14 +3130,19 @@ describe('query', function() {
           TableName: helpers.testRangeTable,
           KeyConditions: {a: {ComparisonOperator: 'EQ', AttributeValueList: [{S: id}]}},
           Select: 'COUNT',
-          ReturnConsumedCapacity: 'TOTAL',
+          ReturnConsumedCapacity: 'INDEXES',
+          Limit: 26, // Limit of 25 includes LastEvaluatedKey, leaving this out does not
         }), function(err, res) {
           if (err) return done(err)
           res.statusCode.should.equal(200)
           res.body.should.eql({
             Count: 25,
             ScannedCount: 25,
-            ConsumedCapacity: {CapacityUnits: 127.5, TableName: helpers.testRangeTable},
+            ConsumedCapacity: {
+              CapacityUnits: 128,
+              Table: {CapacityUnits: 128},
+              TableName: helpers.testRangeTable,
+            },
           })
           helpers.clearTable(helpers.testRangeTable, ['a', 'b'], done)
         })
@@ -3142,7 +3150,7 @@ describe('query', function() {
     })
 
     // TODO: Need high capacity to run this (~100 runs quickly)
-    it.skip('should return LastEvaluatedKey if just over limit', function(done) {
+    it('should return LastEvaluatedKey if just over limit', function(done) {
       this.timeout(200000)
 
       var i, items = [], id = helpers.randomString(), e = new Array(41646).join('e')
@@ -3157,14 +3165,18 @@ describe('query', function() {
           TableName: helpers.testRangeTable,
           KeyConditions: {a: {ComparisonOperator: 'EQ', AttributeValueList: [{S: id}]}},
           Select: 'COUNT',
-          ReturnConsumedCapacity: 'TOTAL',
+          ReturnConsumedCapacity: 'INDEXES',
         }), function(err, res) {
           if (err) return done(err)
           res.statusCode.should.equal(200)
           res.body.should.eql({
             Count: 25,
             ScannedCount: 25,
-            ConsumedCapacity: {CapacityUnits: 127.5, TableName: helpers.testRangeTable},
+            ConsumedCapacity: {
+              CapacityUnits: 127.5,
+              Table: {CapacityUnits: 127.5},
+              TableName: helpers.testRangeTable,
+            },
             LastEvaluatedKey: {a: items[24].a, b: items[24].b},
           })
           helpers.clearTable(helpers.testRangeTable, ['a', 'b'], done)
@@ -3173,14 +3185,17 @@ describe('query', function() {
     })
 
     // TODO: Need high capacity to run this (~100 runs quickly)
-    it.skip('should return all if just under limit', function(done) {
+    it('should return all if just under limit', function(done) {
       this.timeout(200000)
 
-      var i, items = [], id = helpers.randomString(), e = new Array(43373).join('e')
-      for (i = 0; i < 25; i++)
-        items.push({a: {S: id}, b: {S: ('0' + i).slice(-2)}, e: {S: e}})
-      items[23].e.S = new Array(43388).join('e')
-      items[24].e.S = new Array(45000).join('e')
+      var i, items = [], id = helpers.randomString(), e = new Array(43373).join('e'), eAttr = e.slice(0, 255)
+      for (i = 0; i < 25; i++) {
+        var item = {a: {S: id}, b: {S: ('0' + i).slice(-2)}}
+        item[eAttr] = {S: e}
+        items.push(item)
+      }
+      items[23][eAttr].S = new Array(43388).join('e')
+      items[24][eAttr].S = new Array(45000).join('e')
 
       helpers.replaceTable(helpers.testRangeTable, ['a', 'b'], items, function(err) {
         if (err) return done(err)
@@ -3196,7 +3211,7 @@ describe('query', function() {
           res.body.should.eql({
             Count: 25,
             ScannedCount: 25,
-            ConsumedCapacity: {CapacityUnits: 133, TableName: helpers.testRangeTable},
+            ConsumedCapacity: {CapacityUnits: 133.5, TableName: helpers.testRangeTable},
             LastEvaluatedKey: {a: items[24].a, b: items[24].b},
           })
           helpers.clearTable(helpers.testRangeTable, ['a', 'b'], done)
@@ -3205,7 +3220,7 @@ describe('query', function() {
     })
 
     // TODO: Need high capacity to run this (~100 runs quickly)
-    it.skip('should return one less than all if just over limit', function(done) {
+    it('should return one less than all if just over limit', function(done) {
       this.timeout(200000)
 
       var i, items = [], id = helpers.randomString(), e = new Array(43373).join('e')

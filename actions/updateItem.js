@@ -6,57 +6,11 @@ module.exports = function updateItem(store, data, cb) {
   store.getTable(data.TableName, function(err, table) {
     if (err) return cb(err)
 
-    var key = db.validateKey(data.Key, table)
-    if (key instanceof Error) return cb(key)
+    if ((err = db.validateKey(data.Key, table)) != null) return cb(err)
 
-    if (data.AttributeUpdates || data._updates) {
-      err = db.traverseKey(table, function(attr) {
-        var hasKey = false
-        if (data._updates) {
-          var sections = data._updates.sections
-          for (var j = 0; j < sections.length; j++) {
-            if (sections[j].path[0] == attr) {
-              hasKey = true
-              break
-            }
-          }
-        } else {
-          hasKey = data.AttributeUpdates[attr] != null
-        }
-        if (hasKey) {
-          return db.validationError('One or more parameter values were invalid: ' +
-            'Cannot update attribute ' + attr + '. This attribute is part of the key')
-        }
-      })
-      if (err) return cb(err)
-      err = db.traverseIndexes(table, function(attr, type, index) {
-        var actualType
-        if (data._updates) {
-          var sections = data._updates.sections
-          for (var i = 0; i < sections.length; i++) {
-            var section = sections[i]
-            if (section.path.length == 1 && section.path[0] == attr) {
-              actualType = section.attrType
-              break
-            }
-          }
-        } else {
-          actualType = data.AttributeUpdates[attr] ? Object.keys(data.AttributeUpdates[attr].Value)[0] : null
-        }
-        if (actualType != null && actualType != type) {
-          return db.validationError('One or more parameter values were invalid: ' +
-            'Type mismatch for Index Key ' + attr + ' Expected: ' + type +
-            ' Actual: ' + actualType + ' IndexName: ' + index.IndexName)
-        }
-      })
-      if (err) return cb(err)
-    }
+    if ((err = db.validateUpdates(data.AttributeUpdates, data._updates, table)) != null) return cb(err)
 
-    if (data._updates && (err = db.validateKeyPaths(data._updates.nestedPaths, table)) != null) {
-      return cb(err)
-    }
-
-    var itemDb = store.getItemDb(data.TableName)
+    var itemDb = store.getItemDb(data.TableName), key = db.createKey(data.Key, table)
 
     itemDb.lock(key, function(release) {
       cb = release(cb)
@@ -66,7 +20,8 @@ module.exports = function updateItem(store, data, cb) {
 
         if ((err = db.checkConditional(data, oldItem)) != null) return cb(err)
 
-        var returnObj = {}, item = data.Key
+        var returnObj = {}, item = data.Key,
+          paths = data._updates ? data._updates.paths : Object.keys(data.AttributeUpdates || {})
 
         if (oldItem) {
           for (var attr in oldItem) {
@@ -75,16 +30,7 @@ module.exports = function updateItem(store, data, cb) {
           if (data.ReturnValues == 'ALL_OLD') {
             returnObj.Attributes = oldItem
           } else if (data.ReturnValues == 'UPDATED_OLD') {
-            if (data._updates) {
-              returnObj.Attributes = db.mapPaths(data._updates.paths, oldItem)
-            } else {
-              returnObj.Attributes = {}
-              for (attr in data.AttributeUpdates) {
-                if (oldItem[attr] != null) {
-                  returnObj.Attributes[attr] = oldItem[attr]
-                }
-              }
-            }
+            returnObj.Attributes = db.mapPaths(paths, oldItem)
           }
         }
 
@@ -98,23 +44,18 @@ module.exports = function updateItem(store, data, cb) {
         if (data.ReturnValues == 'ALL_NEW') {
           returnObj.Attributes = item
         } else if (data.ReturnValues == 'UPDATED_NEW') {
-          if (data._updates) {
-            returnObj.Attributes = db.mapPaths(data._updates.paths, item)
-          } else {
-            returnObj.Attributes = {}
-            for (attr in data.AttributeUpdates) {
-              if (item[attr] != null) {
-                returnObj.Attributes[attr] = item[attr]
-              }
-            }
-          }
+          returnObj.Attributes = db.mapPaths(paths, item)
         }
 
         returnObj.ConsumedCapacity = db.addConsumedCapacity(data, false, oldItem, item)
 
-        itemDb.put(key, item, function(err) {
+        db.updateIndexes(store, table, oldItem, item, function(err) {
           if (err) return cb(err)
-          cb(null, returnObj)
+
+          itemDb.put(key, item, function(err) {
+            if (err) return cb(err)
+            cb(null, returnObj)
+          })
         })
       })
     })

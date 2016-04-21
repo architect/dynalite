@@ -1,5 +1,5 @@
-var db = require('../db'),
-    validateAttributeValue = require('./index').validateAttributeValue
+var validations = require('./index'),
+    db = require('../db')
 
 exports.types = {
   ReturnConsumedCapacity: {
@@ -64,14 +64,14 @@ exports.custom = function(data, store) {
       request = data.RequestItems[table][i]
       if (request.PutRequest) {
         for (key in request.PutRequest.Item) {
-          msg = validateAttributeValue(request.PutRequest.Item[key])
+          msg = validations.validateAttributeValue(request.PutRequest.Item[key])
           if (msg) return msg
         }
         if (db.itemSize(request.PutRequest.Item) > store.options.maxItemSize)
           return 'Item size has exceeded the maximum allowed size'
       } else if (request.DeleteRequest) {
         for (key in request.DeleteRequest.Key) {
-          msg = validateAttributeValue(request.DeleteRequest.Key[key])
+          msg = validations.validateAttributeValue(request.DeleteRequest.Key[key])
           if (msg) return msg
         }
       }

@@ -1,6 +1,4 @@
-var validateAttributeValue = require('./index').validateAttributeValue,
-    validateExpressionParams = require('./index').validateExpressionParams,
-    validateExpressions = require('./index').validateExpressions,
+var validations = require('./index'),
     db = require('../db')
 
 exports.types = {
@@ -50,25 +48,25 @@ exports.types = {
 }
 
 exports.custom = function(data) {
-  var numReqs = 0, table, i, key, msg, attrs, tableData, seenKeys
+  var numReqs = 0
 
-  for (table in data.RequestItems) {
-    tableData = data.RequestItems[table]
+  for (var table in data.RequestItems) {
+    var tableData = data.RequestItems[table]
 
-    msg = validateExpressionParams(tableData, ['ProjectionExpression'], ['AttributesToGet'])
+    var msg = validations.validateExpressionParams(tableData, ['ProjectionExpression'], ['AttributesToGet'])
     if (msg) return msg
 
-    seenKeys = {}
-    for (i = 0; i < tableData.Keys.length; i++) {
-      for (key in tableData.Keys[i]) {
-        msg = validateAttributeValue(tableData.Keys[i][key])
+    var seenKeys = Object.create(null)
+    for (var i = 0; i < tableData.Keys.length; i++) {
+      var key = tableData.Keys[i]
+
+      for (var attr in key) {
+        msg = validations.validateAttributeValue(key[attr])
         if (msg) return msg
       }
+
       // TODO: this is unnecessarily expensive
-      var keyStr = Object.keys(tableData.Keys[i]).sort().reduce(function(str, key) {
-        var type = Object.keys(tableData.Keys[i][key])[0]
-        return str + '~' + db.toLexiStr(tableData.Keys[i][key][type], type)
-      }, '')
+      var keyStr = Object.keys(key).sort().map(function(attr) { return db.toRangeStr(key[attr]) }).join('/')
       if (seenKeys[keyStr])
         return 'Provided list of item keys contains duplicates'
       seenKeys[keyStr] = true
@@ -79,16 +77,11 @@ exports.custom = function(data) {
     }
 
     if (tableData.AttributesToGet) {
-      attrs = Object.create(null)
-      for (i = 0; i < tableData.AttributesToGet.length; i++) {
-        if (attrs[tableData.AttributesToGet[i]])
-          return 'One or more parameter values were invalid: Duplicate value in attribute name: ' +
-            tableData.AttributesToGet[i]
-        attrs[tableData.AttributesToGet[i]] = true
-      }
+      msg = validations.findDuplicate(tableData.AttributesToGet)
+      if (msg) return 'One or more parameter values were invalid: Duplicate value in attribute name: ' + msg
     }
 
-    msg = validateExpressions(tableData)
+    msg = validations.validateExpressions(tableData)
     if (msg) return msg
   }
 }

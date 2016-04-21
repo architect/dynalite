@@ -1,7 +1,4 @@
-var validateAttributeValue = require('./index').validateAttributeValue,
-    validateAttributeConditions = require('./index').validateAttributeConditions,
-    validateExpressionParams = require('./index').validateExpressionParams,
-    validateExpressions = require('./index').validateExpressions
+var validations = require('./index')
 
 exports.types = {
   ReturnConsumedCapacity: {
@@ -78,19 +75,19 @@ exports.types = {
 
 exports.custom = function(data) {
 
-  var msg = validateExpressionParams(data,
+  var msg = validations.validateExpressionParams(data,
     ['UpdateExpression', 'ConditionExpression'],
     ['AttributeUpdates', 'Expected'])
   if (msg) return msg
 
   for (var key in data.Key) {
-    msg = validateAttributeValue(data.Key[key])
+    msg = validations.validateAttributeValue(data.Key[key])
     if (msg) return msg
   }
 
   for (key in data.AttributeUpdates) {
     if (data.AttributeUpdates[key].Value != null) {
-      msg = validateAttributeValue(data.AttributeUpdates[key].Value)
+      msg = validations.validateAttributeValue(data.AttributeUpdates[key].Value)
       if (msg) return msg
     }
     if (data.AttributeUpdates[key].Value == null && data.AttributeUpdates[key].Action != 'DELETE')
@@ -110,9 +107,9 @@ exports.custom = function(data) {
     }
   }
 
-  msg = validateAttributeConditions(data)
+  msg = validations.validateAttributeConditions(data)
   if (msg) return msg
 
-  msg = validateExpressions(data)
+  msg = validations.validateExpressions(data)
   if (msg) return msg
 }

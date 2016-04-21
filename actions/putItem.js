@@ -5,8 +5,9 @@ module.exports = function putItem(store, data, cb) {
   store.getTable(data.TableName, function(err, table) {
     if (err) return cb(err)
 
-    var key = db.validateItem(data.Item, table), itemDb = store.getItemDb(data.TableName)
-    if (key instanceof Error) return cb(key)
+    if ((err = db.validateItem(data.Item, table)) != null) return cb(err)
+
+    var itemDb = store.getItemDb(data.TableName), key = db.createKey(data.Item, table)
 
     itemDb.lock(key, function(release) {
       cb = release(cb)
@@ -23,9 +24,13 @@ module.exports = function putItem(store, data, cb) {
 
         returnObj.ConsumedCapacity = db.addConsumedCapacity(data, false, existingItem, data.Item)
 
-        itemDb.put(key, data.Item, function(err) {
+        db.updateIndexes(store, table, existingItem, data.Item, function(err) {
           if (err) return cb(err)
-          cb(null, returnObj)
+
+          itemDb.put(key, data.Item, function(err) {
+            if (err) return cb(err)
+            cb(null, returnObj)
+          })
         })
       })
     })

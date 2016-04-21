@@ -6,7 +6,7 @@ module.exports = function listTables(store, data, cb) {
   var opts, limit = data.Limit || 100
 
   if (data.ExclusiveStartTableName)
-    opts = {start: data.ExclusiveStartTableName + '\x00'}
+    opts = {gt: data.ExclusiveStartTableName}
 
   db.lazy(store.tableDb.createKeyStream(opts), cb)
     .take(limit + 1)

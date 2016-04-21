@@ -31,6 +31,8 @@ exports.strDecrement = strDecrement
 exports.randomString = randomString
 exports.randomNumber = randomNumber
 exports.randomName = randomName
+exports.readCapacity = 10
+exports.writeCapacity = 5
 exports.testHashTable = randomName()
 exports.testHashNTable = randomName()
 exports.testRangeTable = randomName()
@@ -121,16 +123,17 @@ function randomName() {
 }
 
 function createTestTables(done) {
+  var readCapacity = exports.readCapacity, writeCapacity = exports.writeCapacity
   var tables = [{
     TableName: exports.testHashTable,
     AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}],
     KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}],
-    ProvisionedThroughput: {ReadCapacityUnits: 2, WriteCapacityUnits: 2},
+    ProvisionedThroughput: {ReadCapacityUnits: readCapacity, WriteCapacityUnits: writeCapacity},
   }, {
     TableName: exports.testHashNTable,
     AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'N'}],
     KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}],
-    ProvisionedThroughput: {ReadCapacityUnits: 2, WriteCapacityUnits: 2},
+    ProvisionedThroughput: {ReadCapacityUnits: readCapacity, WriteCapacityUnits: writeCapacity},
   }, {
     TableName: exports.testRangeTable,
     AttributeDefinitions: [
@@ -140,7 +143,7 @@ function createTestTables(done) {
       {AttributeName: 'd', AttributeType: 'S'},
     ],
     KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}, {KeyType: 'RANGE', AttributeName: 'b'}],
-    ProvisionedThroughput: {ReadCapacityUnits: 2, WriteCapacityUnits: 2},
+    ProvisionedThroughput: {ReadCapacityUnits: readCapacity, WriteCapacityUnits: writeCapacity},
     LocalSecondaryIndexes: [{
       IndexName: 'index1',
       KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'c', KeyType: 'RANGE'}],
@@ -153,24 +156,24 @@ function createTestTables(done) {
     GlobalSecondaryIndexes: [{
       IndexName: 'index3',
       KeySchema: [{AttributeName: 'c', KeyType: 'HASH'}],
-      ProvisionedThroughput: {ReadCapacityUnits: 2, WriteCapacityUnits: 2},
+      ProvisionedThroughput: {ReadCapacityUnits: readCapacity, WriteCapacityUnits: writeCapacity},
       Projection: {ProjectionType: 'ALL'},
     }, {
       IndexName: 'index4',
       KeySchema: [{AttributeName: 'c', KeyType: 'HASH'}, {AttributeName: 'd', KeyType: 'RANGE'}],
-      ProvisionedThroughput: {ReadCapacityUnits: 2, WriteCapacityUnits: 2},
+      ProvisionedThroughput: {ReadCapacityUnits: readCapacity, WriteCapacityUnits: writeCapacity},
       Projection: {ProjectionType: 'INCLUDE', NonKeyAttributes: ['e']},
     }],
   }, {
     TableName: exports.testRangeNTable,
     AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}, {AttributeName: 'b', AttributeType: 'N'}],
     KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}, {KeyType: 'RANGE', AttributeName: 'b'}],
-    ProvisionedThroughput: {ReadCapacityUnits: 2, WriteCapacityUnits: 2},
+    ProvisionedThroughput: {ReadCapacityUnits: readCapacity, WriteCapacityUnits: writeCapacity},
   }, {
     TableName: exports.testRangeBTable,
     AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}, {AttributeName: 'b', AttributeType: 'B'}],
     KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}, {KeyType: 'RANGE', AttributeName: 'b'}],
-    ProvisionedThroughput: {ReadCapacityUnits: 2, WriteCapacityUnits: 2},
+    ProvisionedThroughput: {ReadCapacityUnits: readCapacity, WriteCapacityUnits: writeCapacity},
   }]
   async.forEach(tables, createAndWait, done)
 }
@@ -259,7 +262,12 @@ function clearTable(name, keyNames, segments, done) {
   function scanSegmentAndDelete(n, cb) {
     request(opts('Scan', {TableName: name, AttributesToGet: keyNames, Segment: n, TotalSegments: segments}), function(err, res) {
       if (err) return cb(err)
-      if (res.statusCode != 200) return cb(new Error(res.statusCode + ': ' + JSON.stringify(res.body)))
+      if (/ProvisionedThroughputExceededException/.test(res.body.__type)) {
+        console.log('ProvisionedThroughputExceededException') // eslint-disable-line no-console
+        return setTimeout(scanSegmentAndDelete, 2000, n, cb)
+      } else if (res.statusCode != 200) {
+        return cb(new Error(res.statusCode + ': ' + JSON.stringify(res.body)))
+      }
       if (!res.body.ScannedCount) return cb(null, false)
 
       var keys = res.body.Items, batchDeletes

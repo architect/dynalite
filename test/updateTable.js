@@ -228,8 +228,10 @@ describe('updateTable', function() {
 
     it('should triple rates and then reduce if requested', function(done) {
       this.timeout(200000)
-      var oldRate = 2, newRate = 6, increase = Date.now() / 1000,
-        throughput = {ReadCapacityUnits: newRate, WriteCapacityUnits: newRate}
+      exports.writeCapacity
+      var oldRead = helpers.readCapacity, oldWrite = helpers.writeCapacity,
+        newRead = oldRead * 3, newWrite = oldWrite * 3, increase = Date.now() / 1000,
+        throughput = {ReadCapacityUnits: newRead, WriteCapacityUnits: newWrite}
       request(opts({TableName: helpers.testHashTable, ProvisionedThroughput: throughput}), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
@@ -241,8 +243,8 @@ describe('updateTable', function() {
         desc.KeySchema.should.eql([{AttributeName: 'a', KeyType: 'HASH'}])
         desc.ProvisionedThroughput.LastIncreaseDateTime.should.be.above(increase - 5)
         desc.ProvisionedThroughput.NumberOfDecreasesToday.should.be.above(-1)
-        desc.ProvisionedThroughput.ReadCapacityUnits.should.equal(oldRate)
-        desc.ProvisionedThroughput.WriteCapacityUnits.should.equal(oldRate)
+        desc.ProvisionedThroughput.ReadCapacityUnits.should.equal(oldRead)
+        desc.ProvisionedThroughput.WriteCapacityUnits.should.equal(oldWrite)
         desc.TableName.should.equal(helpers.testHashTable)
         desc.TableSizeBytes.should.be.above(-1)
         desc.TableStatus.should.equal('UPDATING')
@@ -255,13 +257,13 @@ describe('updateTable', function() {
 
           var decrease = Date.now() / 1000
           desc = res.body.Table
-          desc.ProvisionedThroughput.ReadCapacityUnits.should.equal(newRate)
-          desc.ProvisionedThroughput.WriteCapacityUnits.should.equal(newRate)
+          desc.ProvisionedThroughput.ReadCapacityUnits.should.equal(newRead)
+          desc.ProvisionedThroughput.WriteCapacityUnits.should.equal(newWrite)
           desc.ProvisionedThroughput.LastIncreaseDateTime.should.be.above(increase)
 
           increase = desc.ProvisionedThroughput.LastIncreaseDateTime
 
-          throughput = {ReadCapacityUnits: oldRate, WriteCapacityUnits: oldRate}
+          throughput = {ReadCapacityUnits: oldRead, WriteCapacityUnits: oldWrite}
           request(opts({TableName: helpers.testHashTable, ProvisionedThroughput: throughput}), function(err, res) {
             if (err) return done(err)
             res.statusCode.should.equal(200)
@@ -270,8 +272,8 @@ describe('updateTable', function() {
             desc.ProvisionedThroughput.LastIncreaseDateTime.should.equal(increase)
             desc.ProvisionedThroughput.LastDecreaseDateTime.should.be.above(decrease - 5)
             desc.ProvisionedThroughput.NumberOfDecreasesToday.should.equal(numDecreases)
-            desc.ProvisionedThroughput.ReadCapacityUnits.should.equal(newRate)
-            desc.ProvisionedThroughput.WriteCapacityUnits.should.equal(newRate)
+            desc.ProvisionedThroughput.ReadCapacityUnits.should.equal(newRead)
+            desc.ProvisionedThroughput.WriteCapacityUnits.should.equal(newWrite)
             desc.TableStatus.should.equal('UPDATING')
 
             decrease = desc.ProvisionedThroughput.LastDecreaseDateTime
@@ -283,8 +285,8 @@ describe('updateTable', function() {
               desc.ProvisionedThroughput.LastIncreaseDateTime.should.equal(increase)
               desc.ProvisionedThroughput.LastDecreaseDateTime.should.be.above(decrease)
               desc.ProvisionedThroughput.NumberOfDecreasesToday.should.equal(numDecreases + 1)
-              desc.ProvisionedThroughput.ReadCapacityUnits.should.equal(oldRate)
-              desc.ProvisionedThroughput.WriteCapacityUnits.should.equal(oldRate)
+              desc.ProvisionedThroughput.ReadCapacityUnits.should.equal(oldRead)
+              desc.ProvisionedThroughput.WriteCapacityUnits.should.equal(oldWrite)
 
               done()
             })

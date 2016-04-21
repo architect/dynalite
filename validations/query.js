@@ -1,8 +1,4 @@
-var validateAttributeValue = require('./index').validateAttributeValue,
-    validateExpressionParams = require('./index').validateExpressionParams,
-    validateExpressions = require('./index').validateExpressions,
-    convertKeyCondition = require('./index').convertKeyCondition,
-    validateConditions = require('./index').validateConditions
+var validations = require('./index')
 
 exports.types = {
   Limit: {
@@ -101,27 +97,22 @@ exports.types = {
 
 exports.custom = function(data) {
 
-  var msg = validateExpressionParams(data,
+  var msg = validations.validateExpressionParams(data,
     ['ProjectionExpression', 'FilterExpression', 'KeyConditionExpression'],
     ['AttributesToGet', 'QueryFilter', 'ConditionalOperator', 'KeyConditions'])
   if (msg) return msg
 
   var i, key
-  msg = validateConditions(data.QueryFilter)
+  msg = validations.validateConditions(data.QueryFilter)
   if (msg) return msg
 
   if (data.AttributesToGet) {
-    var attrs = Object.create(null)
-    for (i = 0; i < data.AttributesToGet.length; i++) {
-      if (attrs[data.AttributesToGet[i]])
-        return 'One or more parameter values were invalid: Duplicate value in attribute name: ' +
-          data.AttributesToGet[i]
-      attrs[data.AttributesToGet[i]] = true
-    }
+    msg = validations.findDuplicate(data.AttributesToGet)
+    if (msg) return 'One or more parameter values were invalid: Duplicate value in attribute name: ' + msg
   }
 
   for (key in data.ExclusiveStartKey) {
-    msg = validateAttributeValue(data.ExclusiveStartKey[key])
+    msg = validations.validateAttributeValue(data.ExclusiveStartKey[key])
     if (msg) return 'The provided starting key is invalid: ' + msg
   }
 
@@ -129,17 +120,17 @@ exports.custom = function(data) {
     return 'Either the KeyConditions or KeyConditionExpression parameter must be specified in the request.'
   }
 
-  msg = validateExpressions(data)
+  msg = validations.validateExpressions(data)
   if (msg) return msg
 
   if (data._keyCondition != null) {
-    data.KeyConditions = convertKeyCondition(data._keyCondition.expression)
+    data.KeyConditions = validations.convertKeyCondition(data._keyCondition.expression)
     if (typeof data.KeyConditions == 'string') {
       return data.KeyConditions
     }
   }
 
-  msg = validateConditions(data.KeyConditions)
+  msg = validations.validateConditions(data.KeyConditions)
   if (msg) return msg
 
   var numConditions = Object.keys(data.KeyConditions || {}).length

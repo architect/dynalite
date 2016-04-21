@@ -66,15 +66,14 @@ module.exports = function batchGetItem(store, data, cb) {
       for (i = 0; i < req.Keys.length; i++) {
         key = req.Keys[i]
 
+        if ((err = db.validateKey(key, table)) != null) return cb(err)
+
         options = {TableName: tableName, Key: key}
         if (req._projection) options._projection = req._projection
         if (req.AttributesToGet) options.AttributesToGet = req.AttributesToGet
         if (req.ConsistentRead) options.ConsistentRead = req.ConsistentRead
         if (data.ReturnConsumedCapacity) options.ReturnConsumedCapacity = data.ReturnConsumedCapacity
         gets.push(options)
-
-        key = db.validateKey(key, table)
-        if (key instanceof Error) return cb(key)
       }
 
       requests[tableName] = async.map.bind(async, gets, function(data, cb) { return getItem(store, data, cb) })

@@ -7,6 +7,7 @@ var Big = require('big.js'),
 exports.checkTypes = checkTypes
 exports.checkValidations = checkValidations
 exports.toLowerFirst = toLowerFirst
+exports.findDuplicate = findDuplicate
 exports.validateAttributeValue = validateAttributeValue
 exports.validateConditions = validateConditions
 exports.validateAttributeConditions = validateAttributeConditions
@@ -376,13 +377,13 @@ function validateAttributeValue(value) {
       }
     }
 
-    if (type == 'SS' && hasDuplicates(value[type]))
+    if (type == 'SS' && findDuplicate(value[type]))
       return 'One or more parameter values were invalid: Input collection ' + valueStr(value[type]) + ' contains duplicates.'
 
-    if (type == 'NS' && hasDuplicates(value[type]))
+    if (type == 'NS' && findDuplicate(value[type]))
       return 'Input collection contains duplicates'
 
-    if (type == 'BS' && hasDuplicates(value[type]))
+    if (type == 'BS' && findDuplicate(value[type]))
       return 'One or more parameter values were invalid: Input collection ' + valueStr(value[type]) + 'of type BS contains duplicates.'
 
     if (type == 'M') {
@@ -429,13 +430,13 @@ function valueStr(data) {
     typeof data == 'object' ? JSON.stringify(data) : data
 }
 
-function hasDuplicates(array) {
-  var setObj = {}
-  return array.some(function(val) {
-    if (setObj[val]) return true
-    setObj[val] = true
-    return false
-  })
+function findDuplicate(arr) {
+  if (!arr) return null
+  var vals = Object.create(null)
+  for (var i = 0; i < arr.length; i++) {
+    if (vals[arr[i]]) return arr[i]
+    vals[arr[i]] = true
+  }
 }
 
 function validateAttributeConditions(data) {

@@ -1074,7 +1074,20 @@ describe('updateItem', function() {
       })
     })
 
-    // TODO: do example with nested projections and UPDATED_OLD
+    it('should return updated old nested values when they exist', function(done) {
+      var key = {a: {S: helpers.randomString()}}, updates = {b: {Value: {M: {a: {S: 'a'}, b: {L: []}}}}, c: {Value: {S: 'a'}}}
+      request(opts({TableName: helpers.testHashTable, Key: key, AttributeUpdates: updates}), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        updates.b.Value.M.a.S = 'b'
+        request(opts({TableName: helpers.testHashTable, Key: key, AttributeUpdates: updates, ReturnValues: 'UPDATED_OLD'}), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.should.eql({Attributes: {b: {M: {a: {S: 'a'}, b: {L: []}}}, c: {S: 'a'}}})
+          done()
+        })
+      })
+    })
 
     it('should return all new values when they exist', function(done) {
       var key = {a: {S: helpers.randomString()}}, updates = {b: {Value: {S: 'a'}}}
@@ -1393,23 +1406,19 @@ describe('updateItem', function() {
     })
 
     it('should update when boolean value expect matches', function(done) {
-      async.forEach([
-        {
-          Expected: {active: {Value: {BOOL: false}, Exists: true}},
-          AttributeUpdates: {active: {Action: 'PUT', Value: {BOOL: true}}},
-        },
-        {
-          ConditionExpression: 'active = :a',
-          UpdateExpression: 'SET active = :b',
-          ExpressionAttributeValues: {':a': {BOOL: false}, ':b': {BOOL: true}},
-        },
-        {
-          ConditionExpression: '#a = :a',
-          UpdateExpression: 'SET #b = :b',
-          ExpressionAttributeNames: {'#a': 'active', '#b': 'active'},
-          ExpressionAttributeValues: {':a': {BOOL: false}, ':b': {BOOL: true}},
-        },
-      ], function(updateOpts, cb) {
+      async.forEach([{
+        Expected: {active: {Value: {BOOL: false}, Exists: true}},
+        AttributeUpdates: {active: {Action: 'PUT', Value: {BOOL: true}}},
+      }, {
+        ConditionExpression: 'active = :a',
+        UpdateExpression: 'SET active = :b',
+        ExpressionAttributeValues: {':a': {BOOL: false}, ':b': {BOOL: true}},
+      }, {
+        ConditionExpression: '#a = :a',
+        UpdateExpression: 'SET #b = :b',
+        ExpressionAttributeNames: {'#a': 'active', '#b': 'active'},
+        ExpressionAttributeValues: {':a': {BOOL: false}, ':b': {BOOL: true}},
+      }], function(updateOpts, cb) {
         var item = {a: {S: helpers.randomString()}, active: {BOOL: false}}
         request(helpers.opts('PutItem', {TableName: helpers.testHashTable, Item: item}), function(err, res) {
           if (err) return cb(err)
@@ -1476,5 +1485,130 @@ describe('updateItem', function() {
         })
       })
     })
+
+    it('should update indexed attributes', function(done) {
+      var key = {a: {S: helpers.randomString()}, b: {S: helpers.randomString()}}
+      request(opts({
+        TableName: helpers.testRangeTable,
+        Key: key,
+        UpdateExpression: 'set c = a, d = b, e = a, f = b',
+        ReturnValues: 'UPDATED_NEW',
+      }), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        res.body.should.eql({Attributes: {c: key.a, d: key.b, e: key.a, f: key.b}})
+        request(helpers.opts('Query', {
+          TableName: helpers.testRangeTable,
+          ConsistentRead: true,
+          IndexName: 'index1',
+          KeyConditions: {
+            a: {ComparisonOperator: 'EQ', AttributeValueList: [key.a]},
+            c: {ComparisonOperator: 'EQ', AttributeValueList: [key.a]},
+          },
+        }), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.Items.should.eql([{a: key.a, b: key.b, c: key.a, d: key.b, e: key.a, f: key.b}])
+          request(helpers.opts('Query', {
+            TableName: helpers.testRangeTable,
+            ConsistentRead: true,
+            IndexName: 'index2',
+            KeyConditions: {
+              a: {ComparisonOperator: 'EQ', AttributeValueList: [key.a]},
+              d: {ComparisonOperator: 'EQ', AttributeValueList: [key.b]},
+            },
+          }), function(err, res) {
+            if (err) return done(err)
+            res.statusCode.should.equal(200)
+            res.body.Items.should.eql([{a: key.a, b: key.b, c: key.a, d: key.b}])
+            request(opts({
+              TableName: helpers.testRangeTable,
+              Key: key,
+              UpdateExpression: 'set c = b, d = a, e = b, f = a',
+            }), function(err, res) {
+              if (err) return done(err)
+              res.statusCode.should.equal(200)
+              request(helpers.opts('Query', {
+                TableName: helpers.testRangeTable,
+                ConsistentRead: true,
+                IndexName: 'index1',
+                KeyConditions: {
+                  a: {ComparisonOperator: 'EQ', AttributeValueList: [key.a]},
+                  c: {ComparisonOperator: 'EQ', AttributeValueList: [key.a]},
+                },
+              }), function(err, res) {
+                if (err) return done(err)
+                res.statusCode.should.equal(200)
+                res.body.Items.should.eql([])
+                request(helpers.opts('Query', {
+                  TableName: helpers.testRangeTable,
+                  ConsistentRead: true,
+                  IndexName: 'index2',
+                  KeyConditions: {
+                    a: {ComparisonOperator: 'EQ', AttributeValueList: [key.a]},
+                    d: {ComparisonOperator: 'EQ', AttributeValueList: [key.b]},
+                  },
+                }), function(err, res) {
+                  if (err) return done(err)
+                  res.statusCode.should.equal(200)
+                  res.body.Items.should.eql([])
+                  request(helpers.opts('Query', {
+                    TableName: helpers.testRangeTable,
+                    ConsistentRead: true,
+                    IndexName: 'index1',
+                    KeyConditions: {
+                      a: {ComparisonOperator: 'EQ', AttributeValueList: [key.a]},
+                      c: {ComparisonOperator: 'EQ', AttributeValueList: [key.b]},
+                    },
+                  }), function(err, res) {
+                    if (err) return done(err)
+                    res.statusCode.should.equal(200)
+                    res.body.Items.should.eql([{a: key.a, b: key.b, c: key.b, d: key.a, e: key.b, f: key.a}])
+                    request(helpers.opts('Query', {
+                      TableName: helpers.testRangeTable,
+                      ConsistentRead: true,
+                      IndexName: 'index2',
+                      KeyConditions: {
+                        a: {ComparisonOperator: 'EQ', AttributeValueList: [key.a]},
+                        d: {ComparisonOperator: 'EQ', AttributeValueList: [key.a]},
+                      },
+                    }), function(err, res) {
+                      if (err) return done(err)
+                      res.statusCode.should.equal(200)
+                      res.body.Items.should.eql([{a: key.a, b: key.b, c: key.b, d: key.a}])
+                      request(helpers.opts('Query', {
+                        TableName: helpers.testRangeTable,
+                        IndexName: 'index3',
+                        KeyConditions: {
+                          c: {ComparisonOperator: 'EQ', AttributeValueList: [key.b]},
+                        },
+                      }), function(err, res) {
+                        if (err) return done(err)
+                        res.statusCode.should.equal(200)
+                        res.body.Items.should.eql([{a: key.a, b: key.b, c: key.b, d: key.a, e: key.b, f: key.a}])
+                        request(helpers.opts('Query', {
+                          TableName: helpers.testRangeTable,
+                          IndexName: 'index4',
+                          KeyConditions: {
+                            c: {ComparisonOperator: 'EQ', AttributeValueList: [key.b]},
+                            d: {ComparisonOperator: 'EQ', AttributeValueList: [key.a]},
+                          },
+                        }), function(err, res) {
+                          if (err) return done(err)
+                          res.statusCode.should.equal(200)
+                          res.body.Items.should.eql([{a: key.a, b: key.b, c: key.b, d: key.a, e: key.b}])
+                          done()
+                        })
+                      })
+                    })
+                  })
+                })
+              })
+            })
+          })
+        })
+      })
+    })
+
   })
 })

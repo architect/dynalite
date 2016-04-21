@@ -11,7 +11,6 @@ module.exports = function batchWriteItem(store, data, cb) {
     async.parallel.bind(async, actions),
   ], function(err, responses) {
     if (err) {
-      // TODO: This is a hack... fix this!
       if (err.body && (/Missing the key/.test(err.body.message) || /Type mismatch for key/.test(err.body.message)))
         err.body.message = 'The provided key element does not match the schema'
       return cb(err)
@@ -50,19 +49,22 @@ module.exports = function batchWriteItem(store, data, cb) {
 
         if (req.PutRequest) {
 
+          if ((err = db.validateItem(req.PutRequest.Item, table)) != null) return cb(err)
+
           options.Item = req.PutRequest.Item
           actions.push(putItem.bind(null, store, options))
 
-          key = db.validateItem(req.PutRequest.Item, table)
+          key = db.createKey(options.Item, table)
 
         } else if (req.DeleteRequest) {
+
+          if ((err = db.validateKey(req.DeleteRequest.Key, table) != null)) return cb(err)
 
           options.Key = req.DeleteRequest.Key
           actions.push(deleteItem.bind(null, store, options))
 
-          key = db.validateKey(req.DeleteRequest.Key, table)
+          key = db.createKey(options.Key, table)
         }
-        if (key instanceof Error) return cb(key)
         if (seenKeys[key])
           return cb(db.validationError('Provided list of item keys contains duplicates'))
         seenKeys[key] = true
@@ -72,4 +74,3 @@ module.exports = function batchWriteItem(store, data, cb) {
     })
   }
 }
-

@@ -1,3 +1,4 @@
+var async = require('async')
 
 module.exports = function deleteTable(store, data, cb) {
 
@@ -18,12 +19,21 @@ module.exports = function deleteTable(store, data, cb) {
     }
 
     table.TableStatus = 'DELETING'
+
+    var deletes = [store.deleteItemDb.bind(store, key)]
+    ;['Local', 'Global'].forEach(function(indexType) {
+      var indexes = table[indexType + 'SecondaryIndexes'] || []
+      deletes = deletes.concat(indexes.map(function(index) {
+        return store.deleteIndexDb.bind(store, indexType, table.TableName, index.IndexName)
+      }))
+    })
+
     delete table.GlobalSecondaryIndexes
 
     tableDb.put(key, table, function(err) {
       if (err) return cb(err)
 
-      store.deleteItemDb(key, function(err) {
+      async.parallel(deletes, function(err) {
         if (err) return cb(err)
 
         setTimeout(function() {

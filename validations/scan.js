@@ -1,7 +1,4 @@
-var validateAttributeValue = require('./index').validateAttributeValue,
-    validateExpressionParams = require('./index').validateExpressionParams,
-    validateExpressions = require('./index').validateExpressions,
-    validateConditions = require('./index').validateConditions
+var validations = require('./index')
 
 exports.types = {
   Limit: {
@@ -86,26 +83,21 @@ exports.types = {
 
 exports.custom = function(data) {
 
-  var msg = validateExpressionParams(data,
+  var msg = validations.validateExpressionParams(data,
     ['ProjectionExpression', 'FilterExpression'],
     ['AttributesToGet', 'ScanFilter', 'ConditionalOperator'])
   if (msg) return msg
 
   if (data.AttributesToGet) {
-    var attrs = Object.create(null)
-    for (var i = 0; i < data.AttributesToGet.length; i++) {
-      if (attrs[data.AttributesToGet[i]])
-        return 'One or more parameter values were invalid: Duplicate value in attribute name: ' +
-          data.AttributesToGet[i]
-      attrs[data.AttributesToGet[i]] = true
-    }
+    msg = validations.findDuplicate(data.AttributesToGet)
+    if (msg) return 'One or more parameter values were invalid: Duplicate value in attribute name: ' + msg
   }
 
-  msg = validateConditions(data.ScanFilter)
+  msg = validations.validateConditions(data.ScanFilter)
   if (msg) return msg
 
   for (var key in data.ExclusiveStartKey) {
-    msg = validateAttributeValue(data.ExclusiveStartKey[key])
+    msg = validations.validateAttributeValue(data.ExclusiveStartKey[key])
     if (msg) return 'The provided starting key is invalid: ' + msg
   }
 
@@ -123,6 +115,6 @@ exports.custom = function(data) {
     }
   }
 
-  msg = validateExpressions(data, ['ProjectionExpression', 'FilterExpression'])
+  msg = validations.validateExpressions(data, ['ProjectionExpression', 'FilterExpression'])
   if (msg) return msg
 }
