@@ -28,7 +28,7 @@ you'll probably be better off sticking with it! Originally, however, DynamoDB Lo
 didn't exist, and when it did, differed a lot from the live instances in ways that caused
 my company issues. Most of those issues have been addressed in time, but DynamoDB Local
 does still differ in a number of ways from the live DynamoDB instances –
-([see below](#problems-with-amazons-dynamodb-local)) for details.
+([see below](#problems-with-amazons-dynamodb-local-updated-2016-04-19)) for details.
 
 Example
 -------
