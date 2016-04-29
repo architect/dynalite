@@ -9,6 +9,15 @@ An implementation of Amazon's DynamoDB, focussed on correctness and performance,
 This project aims to match the live DynamoDB instances as closely as possible
 (and is tested against them in various regions), including all limits and error messages.
 
+NB: Schema changes in v1.x
+--------------------------
+
+If you've been using v0.x with a saved path on your filesystem, you should note
+that the schema has been changed to separate out indexes. This means that if
+you have tables with indexes on the old schema, you'll need to update them –
+this should just be a matter of getting each item and writing it again – a
+Scan/BatchWriteItem loop should suffice to populate the indexes correctly.
+
 Why not Amazon's DynamoDB Local?
 --------------------------------
 
