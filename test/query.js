@@ -713,6 +713,20 @@ describe('query', function() {
       }, done)
     })
 
+    it('should return ValidationException if AttributeValueList has different types', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        KeyConditions: {a: {ComparisonOperator: 'IN', AttributeValueList: [{S: 'b'}, {N: '1'}]}},
+      }, 'One or more parameter values were invalid: AttributeValues inside AttributeValueList must be of same type', done)
+    })
+
+    it('should return ValidationException if BETWEEN arguments are in the incorrect order', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        KeyConditions: {a: {ComparisonOperator: 'BETWEEN', AttributeValueList: [{S: 'b'}, {S: 'a'}]}},
+      }, 'The BETWEEN condition was provided a range where the lower bound is greater than the upper bound', done)
+    })
+
     it('should return ValidationException for empty ExpressionAttributeNames', function(done) {
       assertValidation({
         TableName: 'abc',
@@ -933,6 +947,24 @@ describe('query', function() {
           ExpressionAttributeValues: {':a': {N: '1'}},
         }, 'KeyConditionExpressions must only contain one condition per key', cb)
       }, done)
+    })
+
+    it('should return ValidationException if KeyConditionExpression BETWEEN args have different types', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        KeyConditionExpression: 'a between :b and :a',
+        ExpressionAttributeValues: {':a': {S: 'a'}, ':b': {N: '1'}},
+      }, 'Invalid KeyConditionExpression: The BETWEEN operator requires same data type for lower and upper bounds; ' +
+        'lower bound operand: AttributeValue: {N:1}, upper bound operand: AttributeValue: {S:a}', done)
+    })
+
+    it('should return ValidationException if KeyConditionExpression BETWEEN args are in the incorrect order', function(done) {
+      assertValidation({
+        TableName: 'abc',
+        KeyConditionExpression: 'a between :b and :a',
+        ExpressionAttributeValues: {':a': {S: 'a'}, ':b': {S: 'b'}},
+      }, 'Invalid KeyConditionExpression: The BETWEEN operator requires upper bound to be greater than or equal to lower bound; ' +
+        'lower bound operand: AttributeValue: {S:b}, upper bound operand: AttributeValue: {S:a}', done)
     })
 
     it('should check table exists before checking key validity', function(done) {

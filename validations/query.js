@@ -1,7 +1,8 @@
 var validateAttributeValue = require('./index').validateAttributeValue,
     validateExpressionParams = require('./index').validateExpressionParams,
     validateExpressions = require('./index').validateExpressions,
-    convertKeyCondition = require('./index').convertKeyCondition
+    convertKeyCondition = require('./index').convertKeyCondition,
+    validateConditions = require('./index').validateConditions
 
 exports.types = {
   Limit: {
@@ -105,55 +106,9 @@ exports.custom = function(data) {
     ['AttributesToGet', 'QueryFilter', 'ConditionalOperator', 'KeyConditions'])
   if (msg) return msg
 
-  var i, key, comparisonOperator, attrValList, lengths = {
-    NULL: 0,
-    NOT_NULL: 0,
-    EQ: 1,
-    NE: 1,
-    LE: 1,
-    LT: 1,
-    GE: 1,
-    GT: 1,
-    CONTAINS: 1,
-    NOT_CONTAINS: 1,
-    BEGINS_WITH: 1,
-    IN: [1],
-    BETWEEN: 2,
-  }
-  var types = {
-    EQ: ['S', 'N', 'B', 'SS', 'NS', 'BS'],
-    NE: ['S', 'N', 'B', 'SS', 'NS', 'BS'],
-    LE: ['S', 'N', 'B'],
-    LT: ['S', 'N', 'B'],
-    GE: ['S', 'N', 'B'],
-    GT: ['S', 'N', 'B'],
-    CONTAINS: ['S', 'N', 'B'],
-    NOT_CONTAINS: ['S', 'N', 'B'],
-    BEGINS_WITH: ['S', 'B'],
-    IN: ['S', 'N', 'B'],
-    BETWEEN: ['S', 'N', 'B'],
-  }
-  for (key in data.QueryFilter) {
-    comparisonOperator = data.QueryFilter[key].ComparisonOperator
-    attrValList = data.QueryFilter[key].AttributeValueList || []
-    for (i = 0; i < attrValList.length; i++) {
-      msg = validateAttributeValue(attrValList[i])
-      if (msg) return msg
-    }
-
-    if ((typeof lengths[comparisonOperator] == 'number' && attrValList.length != lengths[comparisonOperator]) ||
-        (attrValList.length < lengths[comparisonOperator][0] || attrValList.length > lengths[comparisonOperator][1]))
-      return 'One or more parameter values were invalid: Invalid number of argument(s) for the ' +
-        comparisonOperator + ' ComparisonOperator'
-
-    if (types[comparisonOperator]) {
-      for (i = 0; i < attrValList.length; i++) {
-        if (!~types[comparisonOperator].indexOf(Object.keys(attrValList[i])[0]))
-          return 'One or more parameter values were invalid: ComparisonOperator ' + comparisonOperator +
-            ' is not valid for ' + Object.keys(attrValList[i])[0] + ' AttributeValue type'
-      }
-    }
-  }
+  var i, key
+  msg = validateConditions(data.QueryFilter)
+  if (msg) return msg
 
   if (data.AttributesToGet) {
     var attrs = Object.create(null)
@@ -184,29 +139,10 @@ exports.custom = function(data) {
     }
   }
 
-  var numConditions = 0
-  for (key in data.KeyConditions) {
-    comparisonOperator = data.KeyConditions[key].ComparisonOperator
-    attrValList = data.KeyConditions[key].AttributeValueList || []
-    for (i = 0; i < attrValList.length; i++) {
-      msg = validateAttributeValue(attrValList[i])
-      if (msg) return msg
-    }
+  msg = validateConditions(data.KeyConditions)
+  if (msg) return msg
 
-    if ((typeof lengths[comparisonOperator] == 'number' && attrValList.length != lengths[comparisonOperator]) ||
-        (attrValList.length < lengths[comparisonOperator][0] || attrValList.length > lengths[comparisonOperator][1]))
-      return 'One or more parameter values were invalid: Invalid number of argument(s) for the ' +
-        comparisonOperator + ' ComparisonOperator'
-
-    if (types[comparisonOperator]) {
-      for (i = 0; i < attrValList.length; i++) {
-        if (!~types[comparisonOperator].indexOf(Object.keys(attrValList[i])[0]))
-          return 'One or more parameter values were invalid: ComparisonOperator ' + comparisonOperator +
-            ' is not valid for ' + Object.keys(attrValList[i])[0] + ' AttributeValue type'
-      }
-    }
-    numConditions++
-  }
+  var numConditions = Object.keys(data.KeyConditions || {}).length
   if (numConditions != 1 && numConditions != 2) {
     return 'Conditions can be of length 1 or 2 only'
   }

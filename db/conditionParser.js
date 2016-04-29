@@ -67,7 +67,8 @@ module.exports = (function() {
             },
         peg$c11 = function(x, y, z) {
               checkMisusedFunction([x, y, z])
-              return {type: 'between', args: [x, y, z]} // and(compareExpr('>=', x, y), compareExpr('<=', x, z))
+              checkBetweenArgs(y, z)
+              return {type: 'between', args: [x, y, z]}
             },
         peg$c12 = function(x, token, args) {
               checkMisusedFunction([x].concat(args))
@@ -1960,6 +1961,25 @@ module.exports = (function() {
         }
         errors.distinct = 'The first operand must be distinct from the remaining operands for this operator or function; operator: ' +
           name + ', first operand: ' + pathStr(args[0])
+      }
+
+      function checkBetweenArgs(x, y) {
+        if (errors.function) {
+          return
+        }
+        var type1 = getImmediateType(x)
+        var type2 = getImmediateType(y)
+        if (type1 && type2) {
+          if (type1 != type2) {
+            errors.function = 'The BETWEEN operator requires same data type for lower and upper bounds; ' +
+              'lower bound operand: AttributeValue: {' + type1 + ':' + x[type1] + '}, ' +
+              'upper bound operand: AttributeValue: {' + type2 + ':' + y[type2] + '}'
+          } else if (context.compare('GT', x, y)) {
+            errors.function = 'The BETWEEN operator requires upper bound to be greater than or equal to lower bound; ' +
+              'lower bound operand: AttributeValue: {' + type1 + ':' + x[type1] + '}, ' +
+              'upper bound operand: AttributeValue: {' + type2 + ':' + y[type2] + '}'
+          }
+        }
       }
 
       function pathStr(path) {

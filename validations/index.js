@@ -1,4 +1,5 @@
 var Big = require('big.js'),
+    db = require('../db'),
     conditionParser = require('../db/conditionParser'),
     projectionParser = require('../db/projectionParser'),
     updateParser = require('../db/updateParser')
@@ -7,6 +8,7 @@ exports.checkTypes = checkTypes
 exports.checkValidations = checkValidations
 exports.toLowerFirst = toLowerFirst
 exports.validateAttributeValue = validateAttributeValue
+exports.validateConditions = validateConditions
 exports.validateAttributeConditions = validateAttributeConditions
 exports.validateExpressionParams = validateExpressionParams
 exports.validateExpressions = validateExpressions
@@ -437,73 +439,144 @@ function hasDuplicates(array) {
 }
 
 function validateAttributeConditions(data) {
-  if (data.Expected) {
-    for (var key in data.Expected) {
-      var condition = data.Expected[key]
+  for (var key in data.Expected) {
+    var condition = data.Expected[key]
 
-      if ('AttributeValueList' in condition && 'Value' in condition)
+    if ('AttributeValueList' in condition && 'Value' in condition)
+      return 'One or more parameter values were invalid: ' +
+        'Value and AttributeValueList cannot be used together for Attribute: ' + key
+
+    if ('ComparisonOperator' in condition) {
+      if ('Exists' in condition)
         return 'One or more parameter values were invalid: ' +
-          'Value and AttributeValueList cannot be used together for Attribute: ' + key
+          'Exists and ComparisonOperator cannot be used together for Attribute: ' + key
 
-      if ('ComparisonOperator' in condition) {
-        if ('Exists' in condition)
-          return 'One or more parameter values were invalid: ' +
-            'Exists and ComparisonOperator cannot be used together for Attribute: ' + key
+      if (condition.ComparisonOperator != 'NULL' && condition.ComparisonOperator != 'NOT_NULL' &&
+          !('AttributeValueList' in condition) && !('Value' in condition))
+        return 'One or more parameter values were invalid: ' +
+          'Value or AttributeValueList must be used with ComparisonOperator: ' + condition.ComparisonOperator +
+          ' for Attribute: ' + key
 
-        if (condition.ComparisonOperator != 'NULL' && condition.ComparisonOperator != 'NOT_NULL' &&
-            !('AttributeValueList' in condition) && !('Value' in condition))
-          return 'One or more parameter values were invalid: ' +
-            'Value or AttributeValueList must be used with ComparisonOperator: ' + condition.ComparisonOperator +
-            ' for Attribute: ' + key
+      var values = condition.AttributeValueList ?
+        condition.AttributeValueList.length : condition.Value ? 1 : 0
+      var validAttrCount = false
 
-        var values = condition.AttributeValueList ?
-          condition.AttributeValueList.length : condition.Value ? 1 : 0
-        var validAttrCount = false
+      switch (condition.ComparisonOperator) {
+        case 'EQ':
+        case 'NE':
+        case 'LE':
+        case 'LT':
+        case 'GE':
+        case 'GT':
+        case 'CONTAINS':
+        case 'NOT_CONTAINS':
+        case 'BEGINS_WITH':
+          if (values === 1) validAttrCount = true
+          break
+        case 'NOT_NULL':
+        case 'NULL':
+          if (values === 0) validAttrCount = true
+          break
+        case 'IN':
+          if (values > 0) validAttrCount = true
+          break
+        case 'BETWEEN':
+          if (values === 2) validAttrCount = true
+          break
+      }
+      if (!validAttrCount)
+        return 'One or more parameter values were invalid: ' +
+          'Invalid number of argument(s) for the ' + condition.ComparisonOperator + ' ComparisonOperator'
 
-        switch (condition.ComparisonOperator) {
-          case 'EQ':
-          case 'NE':
-          case 'LE':
-          case 'LT':
-          case 'GE':
-          case 'GT':
-          case 'CONTAINS':
-          case 'NOT_CONTAINS':
-          case 'BEGINS_WITH':
-            if (values === 1) validAttrCount = true
-            break
-          case 'NOT_NULL':
-          case 'NULL':
-            if (values === 0) validAttrCount = true
-            break
-          case 'IN':
-            if (values > 0) validAttrCount = true
-            break
-          case 'BETWEEN':
-            if (values === 2) validAttrCount = true
-            break
+      if (condition.AttributeValueList && condition.AttributeValueList.length) {
+        var type = Object.keys(condition.AttributeValueList[0])[0]
+        if (condition.AttributeValueList.some(function(attr) { return Object.keys(attr)[0] != type })) {
+          return 'One or more parameter values were invalid: AttributeValues inside AttributeValueList must be of same type'
         }
-        if (!validAttrCount)
-          return 'One or more parameter values were invalid: ' +
-            'Invalid number of argument(s) for the ' + condition.ComparisonOperator + ' ComparisonOperator'
-      } else if ('AttributeValueList' in condition) {
-        return 'One or more parameter values were invalid: ' +
-          'AttributeValueList can only be used with a ComparisonOperator for Attribute: ' + key
-      } else {
-        var exists = condition.Exists == null || condition.Exists
-        if (exists && condition.Value == null)
-          return 'One or more parameter values were invalid: ' +
-            'Value must be provided when Exists is ' +
-            (condition.Exists == null ? 'null' : condition.Exists) +
-            ' for Attribute: ' + key
-        else if (!exists && condition.Value != null)
-          return 'One or more parameter values were invalid: ' +
-            'Value cannot be used when Exists is false for Attribute: ' + key
-        if (condition.Value != null) {
-          var msg = validateAttributeValue(condition.Value)
-          if (msg) return msg
+        if (condition.ComparisonOperator == 'BETWEEN' && db.compare('GT', condition.AttributeValueList[0], condition.AttributeValueList[1])) {
+          return 'The BETWEEN condition was provided a range where the lower bound is greater than the upper bound'
         }
       }
+    } else if ('AttributeValueList' in condition) {
+      return 'One or more parameter values were invalid: ' +
+        'AttributeValueList can only be used with a ComparisonOperator for Attribute: ' + key
+    } else {
+      var exists = condition.Exists == null || condition.Exists
+      if (exists && condition.Value == null)
+        return 'One or more parameter values were invalid: ' +
+          'Value must be provided when Exists is ' +
+          (condition.Exists == null ? 'null' : condition.Exists) +
+          ' for Attribute: ' + key
+      else if (!exists && condition.Value != null)
+        return 'One or more parameter values were invalid: ' +
+          'Value cannot be used when Exists is false for Attribute: ' + key
+      if (condition.Value != null) {
+        var msg = validateAttributeValue(condition.Value)
+        if (msg) return msg
+      }
+    }
+  }
+}
+
+function validateConditions(conditions) {
+  var lengths = {
+    NULL: 0,
+    NOT_NULL: 0,
+    EQ: 1,
+    NE: 1,
+    LE: 1,
+    LT: 1,
+    GE: 1,
+    GT: 1,
+    CONTAINS: 1,
+    NOT_CONTAINS: 1,
+    BEGINS_WITH: 1,
+    IN: [1],
+    BETWEEN: 2,
+  }
+  var types = {
+    EQ: ['S', 'N', 'B', 'SS', 'NS', 'BS'],
+    NE: ['S', 'N', 'B', 'SS', 'NS', 'BS'],
+    LE: ['S', 'N', 'B'],
+    LT: ['S', 'N', 'B'],
+    GE: ['S', 'N', 'B'],
+    GT: ['S', 'N', 'B'],
+    CONTAINS: ['S', 'N', 'B'],
+    NOT_CONTAINS: ['S', 'N', 'B'],
+    BEGINS_WITH: ['S', 'B'],
+    IN: ['S', 'N', 'B'],
+    BETWEEN: ['S', 'N', 'B'],
+  }
+  for (var key in conditions) {
+    var comparisonOperator = conditions[key].ComparisonOperator
+    var attrValList = conditions[key].AttributeValueList || []
+    for (var i = 0; i < attrValList.length; i++) {
+      var msg = validateAttributeValue(attrValList[i])
+      if (msg) return msg
+    }
+
+    if ((typeof lengths[comparisonOperator] == 'number' && attrValList.length != lengths[comparisonOperator]) ||
+        (attrValList.length < lengths[comparisonOperator][0] || attrValList.length > lengths[comparisonOperator][1]))
+      return 'One or more parameter values were invalid: Invalid number of argument(s) for the ' +
+        comparisonOperator + ' ComparisonOperator'
+
+    if (attrValList.length) {
+      var type = Object.keys(attrValList[0])[0]
+      if (attrValList.some(function(attr) { return Object.keys(attr)[0] != type })) {
+        return 'One or more parameter values were invalid: AttributeValues inside AttributeValueList must be of same type'
+      }
+    }
+
+    if (types[comparisonOperator]) {
+      for (i = 0; i < attrValList.length; i++) {
+        if (!~types[comparisonOperator].indexOf(Object.keys(attrValList[i])[0]))
+          return 'One or more parameter values were invalid: ComparisonOperator ' + comparisonOperator +
+            ' is not valid for ' + Object.keys(attrValList[i])[0] + ' AttributeValue type'
+      }
+    }
+
+    if (comparisonOperator == 'BETWEEN' && db.compare('GT', attrValList[0], attrValList[1])) {
+      return 'The BETWEEN condition was provided a range where the lower bound is greater than the upper bound'
     }
   }
 }
@@ -628,6 +701,7 @@ function validateExpressions(data) {
 function parse(str, parser, context) {
   if (str == '') return 'The expression can not be empty;'
   context.isReserved = isReserved
+  context.compare = db.compare
   try {
     return parser.parse(str, {context: context})
   } catch (e) {

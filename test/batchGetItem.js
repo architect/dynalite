@@ -1,6 +1,5 @@
 var async = require('async'),
-    helpers = require('./helpers'),
-    db = require('../db')
+    helpers = require('./helpers')
 
 var target = 'BatchGetItem',
     request = helpers.request,

@@ -402,6 +402,42 @@ describe('deleteItem', function() {
         'One or more parameter values were invalid: Invalid number of argument(s) for the NULL ComparisonOperator', done)
     })
 
+    it('should return ValidationException if AttributeValueList has different types', function(done) {
+      assertValidation({
+        TableName: 'aaa',
+        Key: {},
+        Expected: {a: {ComparisonOperator: 'IN', AttributeValueList: [{S: 'b'}, {N: '1'}]}},
+      }, 'One or more parameter values were invalid: AttributeValues inside AttributeValueList must be of same type', done)
+    })
+
+    it('should return ValidationException if BETWEEN arguments are in the incorrect order', function(done) {
+      assertValidation({
+        TableName: 'aaa',
+        Key: {},
+        Expected: {a: {ComparisonOperator: 'BETWEEN', AttributeValueList: [{S: 'b'}, {S: 'a'}]}},
+      }, 'The BETWEEN condition was provided a range where the lower bound is greater than the upper bound', done)
+    })
+
+    it('should return ValidationException if ConditionExpression BETWEEN args have different types', function(done) {
+      assertValidation({
+        TableName: 'aaa',
+        Key: {},
+        ConditionExpression: 'a between :b and :a',
+        ExpressionAttributeValues: {':a': {S: 'a'}, ':b': {N: '1'}},
+      }, 'Invalid ConditionExpression: The BETWEEN operator requires same data type for lower and upper bounds; ' +
+        'lower bound operand: AttributeValue: {N:1}, upper bound operand: AttributeValue: {S:a}', done)
+    })
+
+    it('should return ValidationException if ConditionExpression BETWEEN args are in the incorrect order', function(done) {
+      assertValidation({
+        TableName: 'aaa',
+        Key: {},
+        ConditionExpression: 'a between :b and :a',
+        ExpressionAttributeValues: {':a': {S: 'a'}, ':b': {S: 'b'}},
+      }, 'Invalid ConditionExpression: The BETWEEN operator requires upper bound to be greater than or equal to lower bound; ' +
+        'lower bound operand: AttributeValue: {S:b}, upper bound operand: AttributeValue: {S:a}', done)
+    })
+
     it('should return ValidationException if key does not match schema', function(done) {
       async.forEach([
         {},
