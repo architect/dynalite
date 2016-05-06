@@ -24,9 +24,7 @@ module.exports = function updateItem(store, data, cb) {
           paths = data._updates ? data._updates.paths : Object.keys(data.AttributeUpdates || {})
 
         if (oldItem) {
-          for (var attr in oldItem) {
-            item[attr] = oldItem[attr]
-          }
+          item = deepClone(oldItem)
           if (data.ReturnValues == 'ALL_OLD') {
             returnObj.Attributes = oldItem
           } else if (data.ReturnValues == 'UPDATED_OLD') {
@@ -60,6 +58,24 @@ module.exports = function updateItem(store, data, cb) {
       })
     })
   })
+}
+
+// Relatively fast deep clone of simple objects/arrays
+function deepClone(obj) {
+  if (typeof obj != 'object' || obj == null) return obj
+  var result
+  if (Array.isArray(obj)) {
+    result = new Array(obj.length)
+    for (var i = 0; i < obj.length; i++) {
+      result[i] = deepClone(obj[i])
+    }
+  } else {
+    result = Object.create(null)
+    for (var attr in obj) {
+      result[attr] = deepClone(obj[attr])
+    }
+  }
+  return result
 }
 
 function applyAttributeUpdates(updates, table, item) {

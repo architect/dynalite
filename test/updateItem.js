@@ -1075,15 +1075,19 @@ describe('updateItem', function() {
     })
 
     it('should return updated old nested values when they exist', function(done) {
-      var key = {a: {S: helpers.randomString()}}, updates = {b: {Value: {M: {a: {S: 'a'}, b: {L: []}}}}, c: {Value: {S: 'a'}}}
+      var key = {a: {S: helpers.randomString()}}, updates = {
+        b: {Value: {M: {a: {S: 'a'}, b: {L: []}}}},
+        c: {Value: {N: '1'}},
+      }
       request(opts({TableName: helpers.testHashTable, Key: key, AttributeUpdates: updates}), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
         updates.b.Value.M.a.S = 'b'
+        updates.c.Action = 'ADD'
         request(opts({TableName: helpers.testHashTable, Key: key, AttributeUpdates: updates, ReturnValues: 'UPDATED_OLD'}), function(err, res) {
           if (err) return done(err)
           res.statusCode.should.equal(200)
-          res.body.should.eql({Attributes: {b: {M: {a: {S: 'a'}, b: {L: []}}}, c: {S: 'a'}}})
+          res.body.should.eql({Attributes: {b: {M: {a: {S: 'a'}, b: {L: []}}}, c: {N: '1'}}})
           done()
         })
       })
