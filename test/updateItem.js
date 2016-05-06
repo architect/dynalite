@@ -276,40 +276,40 @@ describe('updateItem', function() {
         'Only DELETE action is allowed when no attribute value is specified', done)
     })
 
-    it('should return ValidationException if trying to delete type S', function(done) {
-      assertValidation({
-        TableName: 'abc',
-        Key: {},
-        AttributeUpdates: {a: {Action: 'DELETE', Value: {S: helpers.randomString()}}},
-      }, 'One or more parameter values were invalid: ' +
-        'DELETE action with value is not supported for the type S', done)
+    it('should return ValidationException if trying to delete incorrect types', function(done) {
+      async.forEach([
+        {S: '1'},
+        {N: '1'},
+        {B: 'Yg=='},
+        {NULL: true},
+        {BOOL: true},
+        {M: {}},
+        {L: []},
+      ], function(val, cb) {
+        assertValidation({
+          TableName: 'abc',
+          Key: {},
+          AttributeUpdates: {a: {Action: 'DELETE', Value: val}},
+        }, 'One or more parameter values were invalid: ' +
+          'DELETE action with value is not supported for the type ' + Object.keys(val)[0], cb)
+      }, done)
     })
 
-    it('should return ValidationException if trying to delete type N', function(done) {
-      assertValidation({
-        TableName: 'abc',
-        Key: {},
-        AttributeUpdates: {a: {Action: 'DELETE', Value: {N: helpers.randomNumber()}}},
-      }, 'One or more parameter values were invalid: ' +
-        'DELETE action with value is not supported for the type N', done)
-    })
-
-    it('should return ValidationException if trying to delete type B', function(done) {
-      assertValidation({
-        TableName: 'abc',
-        Key: {},
-        AttributeUpdates: {a: {Action: 'DELETE', Value: {B: 'Yg=='}}},
-      }, 'One or more parameter values were invalid: ' +
-        'DELETE action with value is not supported for the type B', done)
-    })
-
-    it('should return ValidationException if trying to add type S', function(done) {
-      assertValidation({
-        TableName: 'abc',
-        Key: {},
-        AttributeUpdates: {a: {Action: 'ADD', Value: {S: helpers.randomString()}}},
-      }, 'One or more parameter values were invalid: ' +
-        'ADD action is not supported for the type S', done)
+    it('should return ValidationException if trying to add incorrect types', function(done) {
+      async.forEach([
+        {S: '1'},
+        {B: 'Yg=='},
+        {NULL: true},
+        {BOOL: true},
+        {M: {}},
+      ], function(val, cb) {
+        assertValidation({
+          TableName: 'abc',
+          Key: {},
+          AttributeUpdates: {a: {Action: 'ADD', Value: val}},
+        }, 'One or more parameter values were invalid: ' +
+          'ADD action is not supported for the type ' + Object.keys(val)[0], cb)
+      }, done)
     })
 
     it('should return ValidationException if trying to add type B', function(done) {
@@ -1135,14 +1135,15 @@ describe('updateItem', function() {
           c: {Action: 'DELETE', Value: {SS: ['a', 'b']}},
           d: {Action: 'ADD', Value: {N: '5'}},
           e: {Action: 'ADD', Value: {SS: ['a', 'b']}},
+          f: {Action: 'ADD', Value: {L: [{S: 'a'}, {N: '1'}]}},
         },
       }, {
-        UpdateExpression: 'REMOVE b DELETE c :c ADD d :d, e :e',
-        ExpressionAttributeValues: {':c': {SS: ['a', 'b']}, ':d': {N: '5'}, ':e': {SS: ['a', 'b']}},
+        UpdateExpression: 'REMOVE b DELETE c :c ADD d :d, e :e SET f = :f',
+        ExpressionAttributeValues: {':c': {SS: ['a', 'b']}, ':d': {N: '5'}, ':e': {SS: ['a', 'b']}, ':f': {L: [{S: 'a'}, {N: '1'}]}},
       }, {
-        UpdateExpression: 'ADD #e :e,#d :d DELETE #c :c REMOVE #b',
-        ExpressionAttributeValues: {':c': {SS: ['a', 'b']}, ':d': {N: '5'}, ':e': {SS: ['a', 'b']}},
-        ExpressionAttributeNames: {'#b': 'b', '#c': 'c', '#d': 'd', '#e': 'e'},
+        UpdateExpression: 'ADD #e :e,#d :d DELETE #c :c REMOVE #b SET #f = :f',
+        ExpressionAttributeValues: {':c': {SS: ['a', 'b']}, ':d': {N: '5'}, ':e': {SS: ['a', 'b']}, ':f': {L: [{S: 'a'}, {N: '1'}]}},
+        ExpressionAttributeNames: {'#b': 'b', '#c': 'c', '#d': 'd', '#e': 'e', '#f': 'f'},
       }], function(updateOpts, cb) {
         var key = {a: {S: helpers.randomString()}}
         updateOpts.TableName = helpers.testHashTable
@@ -1151,11 +1152,11 @@ describe('updateItem', function() {
         request(opts(updateOpts), function(err, res) {
           if (err) return cb(err)
           res.statusCode.should.equal(200)
-          res.body.should.eql({Attributes: {d: {N: '5'}, e: {SS: ['a', 'b']}}})
+          res.body.should.eql({Attributes: {d: {N: '5'}, e: {SS: ['a', 'b']}, f: {L: [{S: 'a'}, {N: '1'}]}}})
           request(helpers.opts('GetItem', {TableName: helpers.testHashTable, Key: key, ConsistentRead: true}), function(err, res) {
             if (err) return cb(err)
             res.statusCode.should.equal(200)
-            res.body.should.eql({Item: {a: key.a, d: {N: '5'}, e: {SS: ['a', 'b']}}})
+            res.body.should.eql({Item: {a: key.a, d: {N: '5'}, e: {SS: ['a', 'b']}, f: {L: [{S: 'a'}, {N: '1'}]}}})
             cb()
           })
         })
@@ -1251,6 +1252,26 @@ describe('updateItem', function() {
             if (err) return done(err)
             res.statusCode.should.equal(200)
             res.body.should.eql({Item: {a: key.a, b: {SS: ['a', 'b', 'c', 'd']}}})
+            done()
+          })
+        })
+      })
+    })
+
+    it('should add list value and return updated new', function(done) {
+      var key = {a: {S: helpers.randomString()}}, updates = {b: {Value: {L: [{S: 'a'}, {N: '1'}]}}}
+      request(opts({TableName: helpers.testHashTable, Key: key, AttributeUpdates: updates}), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        updates.b = {Action: 'ADD', Value: {L: [{S: 'b'}, {N: '2'}]}}
+        request(opts({TableName: helpers.testHashTable, Key: key, AttributeUpdates: updates, ReturnValues: 'UPDATED_NEW'}), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.should.eql({Attributes: {b: {L: [{S: 'a'}, {N: '1'}, {S: 'b'}, {N: '2'}]}}})
+          request(helpers.opts('GetItem', {TableName: helpers.testHashTable, Key: key, ConsistentRead: true}), function(err, res) {
+            if (err) return done(err)
+            res.statusCode.should.equal(200)
+            res.body.should.eql({Item: {a: key.a, b: {L: [{S: 'a'}, {N: '1'}, {S: 'b'}, {N: '2'}]}}})
             done()
           })
         })

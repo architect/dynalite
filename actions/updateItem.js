@@ -95,9 +95,10 @@ function applyAttributeUpdates(updates, table, item) {
           return db.validationError('Type mismatch for attribute to update')
         if (!item[attr]) item[attr] = {}
         if (!item[attr][type]) item[attr][type] = []
-        item[attr][type] = item[attr][type].concat(update.Value[type].filter(function(a) { // eslint-disable-line no-loop-func
+        var val = type == 'L' ? update.Value[type] : update.Value[type].filter(function(a) { // eslint-disable-line no-loop-func
           return !~item[attr][type].indexOf(a)
-        }))
+        })
+        item[attr][type] = item[attr][type].concat(val)
       }
     } else if (update.Action == 'DELETE') {
       if (update.Value) {

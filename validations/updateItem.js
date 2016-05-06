@@ -101,7 +101,7 @@ exports.custom = function(data) {
     }
     if (data.AttributeUpdates[key].Value != null && data.AttributeUpdates[key].Action == 'ADD') {
       type = Object.keys(data.AttributeUpdates[key].Value)[0]
-      if (type != 'SS' && type != 'NS' && type != 'BS' && type != 'N')
+      if (type != 'L' && type != 'SS' && type != 'NS' && type != 'BS' && type != 'N')
         return 'One or more parameter values were invalid: ' +
           'ADD action is not supported for the type ' + type
     }
