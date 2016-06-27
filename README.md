@@ -1,8 +1,6 @@
 dynalite
 --------
 
-Test change to see if it builds
-
 [![Build Status](https://secure.travis-ci.org/mhart/dynalite.png?branch=master)](http://travis-ci.org/mhart/dynalite)
 
 An implementation of Amazon's DynamoDB, focussed on correctness and performance, and built on LevelDB
