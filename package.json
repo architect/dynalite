@@ -1,6 +1,6 @@
 {
   "name": "dynalite",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "An implementation of Amazon's DynamoDB built on LevelDB",
   "main": "index.js",
   "bin": "cli.js",
