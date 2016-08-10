@@ -136,10 +136,10 @@ module.exports = function query(store, data, cb) {
       } else if (comp == 'LT') {
         opts.lt = opts.gte + rangeStr
       } else if (comp == 'LE') {
-        opts.lte = opts.gte + rangeStr
+        opts.lte = opts.gte + rangeStr + '~'
         delete opts.lt
       } else if (comp == 'GT') {
-        opts.gt = opts.gte + rangeStr
+        opts.gt = opts.gte + rangeStr + '~'
         delete opts.gte
       } else if (comp == 'GE') {
         opts.gte += rangeStr
@@ -147,7 +147,7 @@ module.exports = function query(store, data, cb) {
         opts.lt = opts.gte + rangeStrPrefix + '~'
         opts.gte += rangeStr
       } else if (comp == 'BETWEEN') {
-        opts.lte = opts.gte + db.toRangeStr(data.KeyConditions[rangeKey].AttributeValueList[1]) + '/'
+        opts.lte = opts.gte + db.toRangeStr(data.KeyConditions[rangeKey].AttributeValueList[1]) + '/~'
         opts.gte += rangeStr
         delete opts.lt
       }

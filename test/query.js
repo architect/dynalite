@@ -2595,6 +2595,89 @@ describe('query', function() {
       })
     })
 
+    it('should calculate comparisons correctly for secondary indexes', function(done) {
+      var item = {a: {S: helpers.randomString()}, b: {S: '1'}, c: {S: '1'}, d: {S: '1'}},
+          item2 = {a: item.a, b: {S: '2'}, c: {S: '2'}},
+          item3 = {a: item.a, b: {S: '3'}, c: {S: '10'}},
+          item4 = {a: item.a, b: {S: '4'}, c: {S: 'a'}},
+          item5 = {a: item.a, b: {S: '5'}, c: {S: 'b'}},
+          item6 = {a: item.a, b: {S: '6'}, c: {S: 'aa'}, e: {S: '6'}},
+          item7 = {a: item.a, b: {S: '7'}, c: {S: 'ab'}},
+          item8 = {a: item.a, b: {S: '8'}, c: {S: 'A'}},
+          item9 = {a: item.a, b: {S: '9'}, c: {S: 'B'}},
+          items = [item, item2, item3, item4, item5, item6, item7, item8, item9]
+      helpers.batchBulkPut(helpers.testRangeTable, items, function(err) {
+        if (err) return done(err)
+        var req = {
+          TableName: helpers.testRangeTable,
+          IndexName: 'index1',
+          KeyConditionExpression: 'a = :a AND c <= :c',
+          ExpressionAttributeValues: {':a': item.a, ':c': item4.c},
+        }
+        request(opts(req), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.should.eql({
+            Count: 6,
+            ScannedCount: 6,
+            Items: [item, item3, item2, item8, item9, item4],
+          })
+          req.KeyConditionExpression = 'a = :a AND c = :c'
+          request(opts(req), function(err, res) {
+            if (err) return done(err)
+            res.statusCode.should.equal(200)
+            res.body.should.eql({
+              Count: 1,
+              ScannedCount: 1,
+              Items: [item4],
+            })
+            req.KeyConditionExpression = 'a = :a AND c >= :c'
+            request(opts(req), function(err, res) {
+              if (err) return done(err)
+              res.statusCode.should.equal(200)
+              res.body.should.eql({
+                Count: 4,
+                ScannedCount: 4,
+                Items: [item4, item6, item7, item5],
+              })
+              req.KeyConditionExpression = 'a = :a AND c > :c'
+              request(opts(req), function(err, res) {
+                if (err) return done(err)
+                res.statusCode.should.equal(200)
+                res.body.should.eql({
+                  Count: 3,
+                  ScannedCount: 3,
+                  Items: [item6, item7, item5],
+                })
+                req.KeyConditionExpression = 'a = :a AND c < :c'
+                request(opts(req), function(err, res) {
+                  if (err) return done(err)
+                  res.statusCode.should.equal(200)
+                  res.body.should.eql({
+                    Count: 5,
+                    ScannedCount: 5,
+                    Items: [item, item3, item2, item8, item9],
+                  })
+                  req.KeyConditionExpression = 'a = :a AND c BETWEEN :c AND :d'
+                  req.ExpressionAttributeValues[':d'] = item7.c
+                  request(opts(req), function(err, res) {
+                    if (err) return done(err)
+                    res.statusCode.should.equal(200)
+                    res.body.should.eql({
+                      Count: 3,
+                      ScannedCount: 3,
+                      Items: [item4, item6, item7],
+                    })
+                    done()
+                  })
+                })
+              })
+            })
+          })
+        })
+      })
+    })
+
     it('should return items in order for numbers', function(done) {
       var item = {a: {S: helpers.randomString()}, b: {N: '0'}},
           item2 = {a: item.a, b: {N: '99.1'}},
