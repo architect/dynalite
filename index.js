@@ -19,7 +19,7 @@ var validApis = {},
 
 validApis[dynamoApi] = ['BatchGetItem', 'BatchWriteItem', 'CreateTable', 'DeleteItem', 'DeleteTable',
         'DescribeTable', 'GetItem', 'ListTables', 'PutItem', 'Query', 'Scan', 'UpdateItem', 'UpdateTable']
-validApis[streamsApi] = []
+validApis[streamsApi] = ['ListStreams', 'DescribeStream', 'GetShardIterator', 'GetRecords']
 
 exports.server = dynalite
 exports.dynamoApi = dynamoApi
