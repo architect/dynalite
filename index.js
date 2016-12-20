@@ -10,13 +10,21 @@ var http = require('http'),
 
 var MAX_REQUEST_BYTES = 16 * 1024 * 1024
 
-var validApis = ['DynamoDB_20111205', 'DynamoDB_20120810'],
-    validOperations = ['BatchGetItem', 'BatchWriteItem', 'CreateTable', 'DeleteItem', 'DeleteTable',
-      'DescribeTable', 'GetItem', 'ListTables', 'PutItem', 'Query', 'Scan', 'UpdateItem', 'UpdateTable'],
+var dynamoApi = 'DynamoDB_20120810',
+    streamsApi = 'DynamoDBStreams_20120810'
+
+var validApis = {},
     actions = {},
     actionValidations = {}
 
-module.exports = dynalite
+validApis[dynamoApi] = ['BatchGetItem', 'BatchWriteItem', 'CreateTable', 'DeleteItem', 'DeleteTable',
+        'DescribeTable', 'GetItem', 'ListTables', 'PutItem', 'Query', 'Scan', 'UpdateItem', 'UpdateTable']
+validApis[streamsApi] = []
+
+exports.server = dynalite
+exports.dynamoApi = dynamoApi
+exports.streamsApi = streamsApi
+exports.validApis = validApis
 
 function dynalite(options) {
   options = options || {}
@@ -48,11 +56,15 @@ function dynalite(options) {
   return server
 }
 
-validOperations.forEach(function(action) {
-  action = validations.toLowerFirst(action)
-  actions[action] = require('./actions/' + action)
-  actionValidations[action] = require('./validations/' + action)
-})
+for (var api in validApis) {
+  if (validApis.hasOwnProperty(api)) {
+    validApis[api].forEach(function(action) {
+      action = validations.toLowerFirst(action)
+      actions[action] = require('./actions/' + action)
+      actionValidations[action] = require('./validations/' + action)
+    })
+  }
+}
 
 function rand52CharId() {
   // 39 bytes turns into 52 base64 characters
@@ -113,10 +125,11 @@ function httpHandler(store, req, res) {
 
     if (req.method == 'GET') {
       req.removeAllListeners()
+      body = 'healthy: dynamodb.' + store.tableDb.awsRegion + '.amazonaws.com '
       res.statusCode = 200
-      res.setHeader('x-amz-crc32', 3128867991)
-      res.setHeader('Content-Length', 42)
-      return res.end('healthy: dynamodb.us-east-1.amazonaws.com ')
+      res.setHeader('x-amz-crc32', crc32.unsigned(body))
+      res.setHeader('Content-Length', Buffer.byteLength(body, 'utf8'))
+      return res.end(body)
     }
 
     var contentType = (req.headers['content-type'] || '').split(';')[0].trim()
@@ -146,7 +159,7 @@ function httpHandler(store, req, res) {
 
     var target = (req.headers['x-amz-target'] || '').split('.')
 
-    if (target.length != 2 || !~validApis.indexOf(target[0]) || !~validOperations.indexOf(target[1]))
+    if (target.length != 2 || !validApis[target[0]] || !~validApis[target[0]].indexOf(target[1]))
       return sendData(req, res, {__type: 'com.amazon.coral.service#UnknownOperationException'}, 400)
 
     var authHeader = req.headers.authorization
