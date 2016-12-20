@@ -3051,13 +3051,15 @@ describe('scan', function() {
         if (err) return done(err)
         res.statusCode.should.equal(200)
 
-        request(opts({TableName: helpers.testHashTable, AttributesToGet: ['a'], Limit: 100000}), function(err, res) {
+        request(opts({TableName: helpers.testHashTable, AttributesToGet: ['b'], Limit: 100000}), function(err, res) {
           if (err) return done(err)
           res.statusCode.should.equal(200)
           res.body.Count.should.equal(res.body.ScannedCount)
           should.not.exist(res.body.LastEvaluatedKey)
           for (var i = 0, lastIx = 0; i < res.body.Count; i++) {
-            if (res.body.Items[i].a.S < 5) lastIx = i
+            if (res.body.Items[i]['b'] &&
+                res.body.Items[i].b['S'] &&
+                res.body.Items[i].b.S == b.S) lastIx = i
           }
           var totalItems = res.body.Count
           request(opts({TableName: helpers.testHashTable, ScanFilter: scanFilter, Limit: lastIx}), function(err, res) {
