@@ -90,7 +90,6 @@ $ npm install -g dynalite
 TODO
 ----
 
-- Implement DynamoDB Streams
 - Implement `ReturnItemCollectionMetrics` on all remaining endpoints
 - Implement size info for tables and indexes
 - Add ProvisionedThroughput checking

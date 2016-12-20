@@ -8,7 +8,6 @@ http.globalAgent.maxSockets = Infinity
 
 exports.MAX_SIZE = 409600
 exports.awsRegion = process.env.AWS_REGION || process.env.AWS_DEFAULT_REGION || 'us-east-1'
-exports.version = 'DynamoDB_20120810'
 exports.prefix = '__dynalite_test_'
 exports.request = request
 exports.opts = opts
@@ -45,36 +44,47 @@ exports.testRangeBTable = randomName()
 // exports.testRangeNTable = '__dynalite_test_4'
 // exports.testRangeBTable = '__dynalite_test_5'
 
-var port = 10000 + Math.round(Math.random() * 10000),
-    requestOpts = process.env.REMOTE ?
-      {host: 'dynamodb.us-east-1.amazonaws.com', method: 'POST'} :
-      {host: '127.0.0.1', port: port, method: 'POST'}
+var endpointLocal = {host: '127.0.0.1', port: 10000 + Math.round(Math.random() * 10000), method: 'POST'},
+    endpointDymamo = {host: 'dynamodb.' + exports.awsRegion + '.amazonaws.com', method: 'POST'},
+    endpointStreams = {host: 'streams.dynamodb.' + exports.awsRegion + '.amazonaws.com', method: 'POST'},
+    requestOpts = {}
 
-var dynaliteServer = dynalite({path: process.env.DYNALITE_PATH})
+requestOpts[dynalite.dynamoApi] = process.env.REMOTE ? endpointDymamo : endpointLocal
+requestOpts[dynalite.streamsApi] = process.env.REMOTE ? endpointStreams : endpointLocal
+
+var dynaliteServer = dynalite.server({path: process.env.DYNALITE_PATH})
 
 before(function(done) {
   this.timeout(200000)
-  dynaliteServer.listen(port, function(err) {
-    if (err) return done(err)
+  if (process.env.REMOTE) {
     createTestTables(done)
-    // done()
-  })
+  } else {
+    dynaliteServer.listen(endpointLocal.port, function(err) {
+      if (err) return done(err)
+      createTestTables(done)
+    })
+  }
 })
 
 after(function(done) {
   this.timeout(200000)
   deleteTestTables(function(err) {
     if (err) return done(err)
-    dynaliteServer.close(done)
+    if (process.env.REMOTE) {
+      done()
+    } else {
+      dynaliteServer.close(done)
+    }
   })
 })
 
 function request(opts, cb) {
   if (typeof opts === 'function') { cb = opts; opts = {} }
   cb = once(cb)
-  for (var key in requestOpts) {
+  var api = getApiForOpts(opts)
+  for (var key in requestOpts[api]) {
     if (opts[key] === undefined)
-      opts[key] = requestOpts[key]
+      opts[key] = requestOpts[api][key]
   }
   if (!opts.noSign) {
     aws4.sign(opts)
@@ -104,10 +114,32 @@ function opts(target, data) {
   return {
     headers: {
       'Content-Type': 'application/x-amz-json-1.0',
-      'X-Amz-Target': exports.version + '.' + target,
+      'X-Amz-Target': getApiForTarget(target) + '.' + target,
     },
     body: JSON.stringify(data),
   }
+}
+
+function getApiForTarget(target) {
+  for (var api in dynalite.validApis) {
+    if (dynalite.validApis[api].indexOf(target) !== -1)
+      return api
+  }
+
+  throw new Error('Unsupported target: ' + target)
+}
+
+function getApiForOpts(opts) {
+  if (opts && opts['headers'] && opts.headers['X-Amz-Target']) {
+    var target = opts.headers['X-Amz-Target'].split('.')
+    if (target.length === 2) {
+      var api = target[0]
+      if (dynalite.validApis[api])
+        return api
+    }
+  }
+
+  return dynalite.dynamoApi
 }
 
 function randomString() {

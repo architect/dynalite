@@ -1,4 +1,5 @@
-var db = require('../db')
+var db = require('../db'),
+    streams = require('../db/streams')
 
 module.exports = function deleteItem(store, data, cb) {
 
@@ -29,7 +30,16 @@ module.exports = function deleteItem(store, data, cb) {
 
           itemDb.del(key, function(err) {
             if (err) return cb(err)
-            cb(null, returnObj)
+
+            if (table.LatestStreamArn) {
+              streams.createStreamRecord(store, table, existingItem, null, function(err) {
+                if (err) return cb(err)
+
+                cb(null, returnObj)
+              })
+            } else {
+              cb(null, returnObj)
+            }
           })
         })
       })

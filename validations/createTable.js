@@ -173,6 +173,18 @@ exports.types = {
       },
     },
   },
+  StreamSpecification: {
+    type: 'Structure',
+    children: {
+      StreamEnabled: {
+        type: 'Boolean',
+      },
+      StreamViewType: {
+        type: 'String',
+        enum: ['KEYS_ONLY', 'NEW_IMAGE', 'OLD_IMAGE', 'NEW_AND_OLD_IMAGES'],
+      },
+    },
+  },
 }
 
 exports.custom = function(data) {

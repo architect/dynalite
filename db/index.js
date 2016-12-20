@@ -72,6 +72,14 @@ function create(options) {
     deleteSubDb('index-' + indexType.toLowerCase() + '~' + tableName + '~' + indexName, cb)
   }
 
+  function getStreamDb(streamArn) {
+    return getSubDb('stream-' + streamArn)
+  }
+
+  function deleteStreamDb(streamArn, cb) {
+    deleteSubDb('stream-' + streamArn, cb)
+  }
+
   function getSubDb(name) {
     if (!subDbs[name]) {
       subDbs[name] = sublevelDb.sublevel(name, {valueEncoding: 'json'})
@@ -127,6 +135,8 @@ function create(options) {
     deleteItemDb: deleteItemDb,
     getIndexDb: getIndexDb,
     deleteIndexDb: deleteIndexDb,
+    getStreamDb: getStreamDb,
+    deleteStreamDb: deleteStreamDb,
     getTable: getTable,
     recreate: recreate,
   }

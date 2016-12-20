@@ -1,7 +1,9 @@
 var https = require('https'),
     once = require('once'),
+    crc32 = require('buffer-crc32'),
     dynalite = require('..'),
-    request = require('./helpers').request
+    helpers = require('./helpers'),
+    request = helpers.request
 
 describe('dynalite connections', function() {
 
@@ -73,9 +75,9 @@ describe('dynalite connections', function() {
       request({method: 'GET', noSign: true}, function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        res.body.should.equal('healthy: dynamodb.us-east-1.amazonaws.com ')
-        res.headers['x-amz-crc32'].should.equal('3128867991')
-        res.headers['content-length'].should.equal('42')
+        res.body.should.equal('healthy: dynamodb.' + helpers.awsRegion + '.amazonaws.com ')
+        res.headers['x-amz-crc32'].should.equal(String(crc32.unsigned(res.body)))
+        res.headers['content-length'].should.equal(String(Buffer.byteLength(res.body, 'utf8')))
         res.headers['x-amzn-requestid'].should.match(/^[0-9A-Z]{52}$/)
         done()
       })
@@ -106,7 +108,7 @@ describe('dynalite connections', function() {
     })
 
     it('should connect to SSL', function(done) {
-      var port = 10000 + Math.round(Math.random() * 10000), dynaliteServer = dynalite({ssl: true})
+      var port = 10000 + Math.round(Math.random() * 10000), dynaliteServer = dynalite.server({ssl: true})
 
       dynaliteServer.listen(port, function(err) {
         if (err) return done(err)

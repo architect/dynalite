@@ -42,6 +42,10 @@ module.exports = function createTable(store, data, cb) {
           index.ProvisionedThroughput.NumberOfDecreasesToday = 0
         })
       }
+      if (data.StreamSpecification) {
+        data.LatestStreamLabel = (new Date()).toISOString().replace('Z', '')
+        data.LatestStreamArn = 'arn:aws:dynamodb:' + tableDb.awsRegion + ':' + tableDb.awsAccountId + ':table/' + data.TableName + '/stream/' + data.LatestStreamLabel
+      }
 
       tableDb.put(key, data, function(err) {
         if (err) return cb(err)

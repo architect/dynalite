@@ -1,6 +1,7 @@
 var should = require('should'),
     async = require('async'),
-    helpers = require('./helpers')
+    helpers = require('./helpers'),
+    dynalite = require('..')
 
 var target = 'ListTables',
     request = helpers.request,
@@ -15,7 +16,7 @@ describe('listTables', function() {
   describe('serializations', function() {
 
     it('should return 400 if no body', function(done) {
-      request({headers: {'x-amz-target': helpers.version + '.' + target}}, function(err, res) {
+      request({headers: {'x-amz-target': dynalite.dynamoApi + '.' + target}}, function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(400)
         res.body.should.eql({__type: 'com.amazon.coral.service#SerializationException'})
