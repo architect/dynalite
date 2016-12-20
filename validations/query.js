@@ -102,7 +102,7 @@ exports.custom = function(data) {
     ['AttributesToGet', 'QueryFilter', 'ConditionalOperator', 'KeyConditions'])
   if (msg) return msg
 
-  var i, key
+  var key
   msg = validations.validateConditions(data.QueryFilter)
   if (msg) return msg
 
