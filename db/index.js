@@ -202,7 +202,7 @@ function validateUpdates(attributeUpdates, expressionUpdates, table) {
         }
       }
     } else {
-      actualType = attributeUpdates[attr] ? Object.keys(attributeUpdates[attr].Value)[0] : null
+      actualType = (attributeUpdates[attr] && attributeUpdates[attr]['Action'] != 'DELETE') ? Object.keys(attributeUpdates[attr].Value)[0] : null
     }
     if (actualType != null && actualType != type) {
       return validationError('One or more parameter values were invalid: ' +
