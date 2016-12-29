@@ -1183,6 +1183,26 @@ describe('updateItem', function() {
       })
     })
 
+    it('should delete normal values and return updated on index table', function(done) {
+      var key = {a: {S: helpers.randomString()}, b: {S: helpers.randomString()}}, updates = {c: {Value: {S: 'a'}}, d: {Value: {S: 'a'}}}
+      request(opts({TableName: helpers.testRangeTable, Key: key, AttributeUpdates: updates}), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        updates.c = {Action: 'DELETE'}
+        request(opts({TableName: helpers.testRangeTable, Key: key, AttributeUpdates: updates, ReturnValues: 'UPDATED_NEW'}), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.should.eql({Attributes: {d: {S: 'a'}}})
+          request(helpers.opts('GetItem', {TableName: helpers.testRangeTable, Key: key, ConsistentRead: true}), function(err, res) {
+            if (err) return done(err)
+            res.statusCode.should.equal(200)
+            res.body.should.eql({Item: {a: key.a, b: key.b, d: {S: 'a'}}})
+            done()
+          })
+        })
+      })
+    })
+
     it('should delete set values and return updated new', function(done) {
       var key = {a: {S: helpers.randomString()}}, updates = {b: {Value: {NS: ['1', '2', '3']}}, c: {Value: {S: 'a'}}}
       request(opts({TableName: helpers.testHashTable, Key: key, AttributeUpdates: updates}), function(err, res) {
