@@ -33,7 +33,9 @@ function dynalite(options) {
 
   // Ensure we close DB when we're closing the server too
   var httpServerClose = server.close, httpServerListen = server.listen
+  var streamHandler = {};
   server.close = function(cb) {
+    streamHandler = {};
     store.db.close(function(err) {
       if (err) return cb(err)
       // Recreate the store if the user wants to listen again
@@ -43,6 +45,56 @@ function dynalite(options) {
       }
       httpServerClose.call(server, cb)
     })
+  }
+
+  store.emit = function(tableDef, meh, before, after) {
+    var cause = (Math.random()*100000).toString(16);
+    var table = tableDef.TableName;
+    var key = tableDef.KeySchema.map(function(ks) { return ks.AttributeName }).reduce(function(key, attr) {
+      key[attr] = (before || after)[attr];
+      return key;
+    }, {});
+    var payload = {
+      Records: [{
+        dynamodb: {
+          Keys: key,
+          OldImage: before,
+          NewImage: after
+        },
+        eventName: before === undefined ? 'INSERT' : (after === undefined ? 'REMOVE' : 'MODIFY')
+      }]
+    }
+
+    var handlers = streamHandler[table] || [];
+    handlers.forEach(function(handler, idx) {
+      var id = (Math.random()*10000*(idx+1)).toString(16);
+      handler.pending++;
+      setTimeout(send, 0);
+      function send() {
+        if (handler.running) return setTimeout(send, 0);
+        handler.running = true;
+        handler.fn(payload, {}, function(err) {
+          if (err) throw err;
+          handler.pending--;
+          handler.running = false;
+        });
+      }
+    });
+  }
+
+  server.pendingEvents = function() {
+    return Object.keys(streamHandler).reduce(function(memo, table) {
+      return memo + streamHandler[table].reduce(function(h) { return h.pending; });  
+    }, 0);
+  }
+
+  server.stream = function(table, handler) {
+    streamHandler[table] = streamHandler[table] || []
+    streamHandler[table].push({
+      running: false,
+      pending: 0,
+      fn: handler
+    });
   }
 
   return server

@@ -29,6 +29,7 @@ module.exports = function deleteItem(store, data, cb) {
 
           itemDb.del(key, function(err) {
             if (err) return cb(err)
+            store.emit(table, key, existingItem)
             cb(null, returnObj)
           })
         })
