@@ -24,6 +24,9 @@ if (argv.help) {
   ].join('\n'))
 }
 
+// If we're PID 1, eg in a docker container, SIGINT won't end the process as usual
+if (process.pid == 1) process.on('SIGINT', process.exit)
+
 var server = require('./index.js')(argv).listen(argv.port || 4567, function() {
   var address = server.address(), protocol = argv.ssl ? 'https' : 'http'
   // eslint-disable-next-line no-console
