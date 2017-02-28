@@ -906,19 +906,19 @@ function updateIndexes(store, table, existingItem, item, cb) {
 function getIndexActions(indexes, existingItem, item, table) {
   var puts = [], deletes = [], tableKeys = table.KeySchema.map(function(key) { return key.AttributeName })
   indexes.forEach(function(index) {
-    var indexKeys = index.KeySchema.map(function(key) { return key.AttributeName }), key = null
+    var indexKeys = index.KeySchema.map(function(key) { return key.AttributeName }), key = null, itemPieces = item
 
     if (item && indexKeys.every(function(key) { return item[key] != null })) {
       if (index.Projection.ProjectionType != 'ALL') {
         var indexAttrs = indexKeys.concat(tableKeys, index.Projection.NonKeyAttributes || [])
-        item = indexAttrs.reduce(function(obj, attr) {
+        itemPieces = indexAttrs.reduce(function(obj, attr) {
           obj[attr] = item[attr]
           return obj
         }, Object.create(null))
       }
 
-      key = createIndexKey(item, table, index.KeySchema)
-      puts.push({index: index.IndexName, key: key, item: item})
+      key = createIndexKey(itemPieces, table, index.KeySchema)
+      puts.push({index: index.IndexName, key: key, item: itemPieces})
     }
 
     if (existingItem && indexKeys.every(function(key) { return existingItem[key] != null })) {
