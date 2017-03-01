@@ -45,7 +45,7 @@ function create(options) {
   if (options.maxItemSizeKb == null) options.maxItemSizeKb = exports.MAX_SIZE / 1024
   options.maxItemSize = options.maxItemSizeKb * 1024
 
-  var db = levelup(options.path || '/does/not/matter', options.path ? {} : {db: memdown}),
+  var db = levelup(options.path, options.path ? {} : {db: memdown}),
       sublevelDb = sublevel(db),
       tableDb = sublevelDb.sublevel('table', {valueEncoding: 'json'}),
       subDbs = Object.create(null)
