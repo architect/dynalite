@@ -29,6 +29,7 @@ module.exports = function putItem(store, data, cb) {
 
           itemDb.put(key, data.Item, function(err) {
             if (err) return cb(err)
+            store.emit(table, key, existingItem, data.Item)
             cb(null, returnObj)
           })
         })

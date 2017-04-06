@@ -52,6 +52,7 @@ module.exports = function updateItem(store, data, cb) {
 
           itemDb.put(key, item, function(err) {
             if (err) return cb(err)
+            store.emit(table, key, oldItem, item)
             cb(null, returnObj)
           })
         })
