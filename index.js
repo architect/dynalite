@@ -122,7 +122,7 @@ function httpHandler(store, req, res) {
     var contentType = (req.headers['content-type'] || '').split(';')[0].trim()
 
     if (req.method != 'POST' ||
-        (body && contentType != 'application/json' && contentType != 'application/x-amz-json-1.0')) {
+        (body && contentType != 'application/json' && contentType.indexOf('application/x-amz-json-1.0') < 0)) {
       req.removeAllListeners()
       res.statusCode = 404
       res.setHeader('x-amz-crc32', 3552371480)
