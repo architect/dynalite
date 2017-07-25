@@ -2223,6 +2223,9 @@ describe('scan', function() {
           item4 = {a: {S: helpers.randomString()}, b: {BS: ['abcd', new Buffer('bde').toString('base64')]}, c: item.c},
           item5 = {a: {S: helpers.randomString()}, b: {S: 'bde'}, c: item.c},
           item6 = {a: {S: helpers.randomString()}, b: {S: 'abd'}, c: item.c},
+          item7 = {a: {S: helpers.randomString()}, b: {L: [{'N': '123'}, {'S': 'bde'}]}, c: item.c},
+          item8 = {a: {S: helpers.randomString()}, b: {L: [{'S': 'abd'}]}, c: item.c},
+          item9 = {a: {S: helpers.randomString()}, b: {L: [{'S': 'abde'}]}, c: item.c},
           batchReq = {RequestItems: {}}
       batchReq.RequestItems[helpers.testHashTable] = [
         {PutRequest: {Item: item}},
@@ -2231,6 +2234,9 @@ describe('scan', function() {
         {PutRequest: {Item: item4}},
         {PutRequest: {Item: item5}},
         {PutRequest: {Item: item6}},
+        {PutRequest: {Item: item7}},
+        {PutRequest: {Item: item8}},
+        {PutRequest: {Item: item9}},
       ]
       request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
         if (err) return done(err)
@@ -2251,8 +2257,9 @@ describe('scan', function() {
             res.body.Items.should.containEql(item)
             res.body.Items.should.containEql(item2)
             res.body.Items.should.containEql(item5)
-            res.body.Items.should.have.length(3)
-            res.body.Count.should.equal(3)
+            res.body.Items.should.containEql(item7)
+            res.body.Items.should.have.length(4)
+            res.body.Count.should.equal(4)
             cb()
           })
         }, done)
@@ -2265,6 +2272,9 @@ describe('scan', function() {
           item3 = {a: {S: helpers.randomString()}, b: {B: new Buffer('1234').toString('base64')}, c: item.c},
           item4 = {a: {S: helpers.randomString()}, b: {BS: [new Buffer('234').toString('base64')]}, c: item.c},
           item5 = {a: {S: helpers.randomString()}, b: {SS: ['234']}, c: item.c},
+          item6 = {a: {S: helpers.randomString()}, b: {L: [{'S': 'abd'}, {'N': '234'}]}, c: item.c},
+          item7 = {a: {S: helpers.randomString()}, b: {L: [{'N': '123'}]}, c: item.c},
+          item8 = {a: {S: helpers.randomString()}, b: {L: [{'N': '1234'}]}, c: item.c},
           batchReq = {RequestItems: {}}
       batchReq.RequestItems[helpers.testHashTable] = [
         {PutRequest: {Item: item}},
@@ -2272,6 +2282,9 @@ describe('scan', function() {
         {PutRequest: {Item: item3}},
         {PutRequest: {Item: item4}},
         {PutRequest: {Item: item5}},
+        {PutRequest: {Item: item6}},
+        {PutRequest: {Item: item7}},
+        {PutRequest: {Item: item8}},
       ]
       request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
         if (err) return done(err)
@@ -2289,9 +2302,10 @@ describe('scan', function() {
           request(opts(scanOpts), function(err, res) {
             if (err) return cb(err)
             res.statusCode.should.equal(200)
-            res.body.Items.should.have.lengthOf(1)
-            res.body.Items[0].a.should.eql(item2.a)
-            res.body.Count.should.equal(1)
+            res.body.Items.should.containEql(item2)
+            res.body.Items.should.containEql(item6)
+            res.body.Items.should.have.lengthOf(2)
+            res.body.Count.should.equal(2)
             cb()
           })
         }, done)
@@ -2305,6 +2319,9 @@ describe('scan', function() {
           item4 = {a: {S: helpers.randomString()}, b: {BS: [new Buffer('bde').toString('base64'), 'abcd']}, c: item.c},
           item5 = {a: {S: helpers.randomString()}, b: {B: new Buffer('bde').toString('base64')}, c: item.c},
           item6 = {a: {S: helpers.randomString()}, b: {S: 'abd'}, c: item.c},
+          item7 = {a: {S: helpers.randomString()}, b: {L: [{'N': '123'}, {'B': new Buffer('bde').toString('base64')}]}, c: item.c},
+          item8 = {a: {S: helpers.randomString()}, b: {L: [{'B': new Buffer('abd').toString('base64')}]}, c: item.c},
+          item9 = {a: {S: helpers.randomString()}, b: {L: [{'B': new Buffer('abde').toString('base64')}]}, c: item.c},
           batchReq = {RequestItems: {}}
       batchReq.RequestItems[helpers.testHashTable] = [
         {PutRequest: {Item: item}},
@@ -2313,6 +2330,9 @@ describe('scan', function() {
         {PutRequest: {Item: item4}},
         {PutRequest: {Item: item5}},
         {PutRequest: {Item: item6}},
+        {PutRequest: {Item: item7}},
+        {PutRequest: {Item: item8}},
+        {PutRequest: {Item: item9}},
       ]
       request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
         if (err) return done(err)
@@ -2333,8 +2353,9 @@ describe('scan', function() {
             res.body.Items.should.containEql(item3)
             res.body.Items.should.containEql(item4)
             res.body.Items.should.containEql(item5)
-            res.body.Items.should.have.length(3)
-            res.body.Count.should.equal(3)
+            res.body.Items.should.containEql(item7)
+            res.body.Items.should.have.length(4)
+            res.body.Count.should.equal(4)
             cb()
           })
         }, done)
