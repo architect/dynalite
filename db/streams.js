@@ -25,7 +25,7 @@ function createStreamRecord(store, table, oldItem, newItem, cb) {
     var record = {
       awsRegion: store.tableDb.awsRegion,
       dynamodb: {
-        ApproximateCreationDateTime: Date.now(),
+        ApproximateCreationDateTime: Math.floor(Date.now() / 1000),
         Keys: {},
         SequenceNumber: key,
         SizeBytes: 0,
