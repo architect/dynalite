@@ -837,6 +837,11 @@ function queryTable(store, table, data, opts, isLocal, fetchFromItemDb, startKey
 
   var queryFilter = data.QueryFilter || data.ScanFilter
 
+  var preFilteredItems = []
+  vals.join(function(items) {
+    preFilteredItems = items
+  })
+
   if (data._filter) {
     vals = vals.filter(function(val) { return matchesExprFilter(val, data._filter.expression) })
   } else if (queryFilter) {
@@ -852,9 +857,10 @@ function queryTable(store, table, data, opts, isLocal, fetchFromItemDb, startKey
     var result = {ScannedCount: count}
     if (count >= data.Limit || size >= 1024 * 1024) {
       if (data.Limit) items.splice(data.Limit)
-      if (items.length) {
+      if (preFilteredItems.length) {
         result.LastEvaluatedKey = startKeyNames.reduce(function(key, attr) {
-          key[attr] = items[items.length - 1][attr]
+          key[attr] = preFilteredItems[preFilteredItems.length - 1][attr]
+
           return key
         }, {})
       }
