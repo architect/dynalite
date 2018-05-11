@@ -132,7 +132,7 @@ describe('updateTable', function() {
 
     it('should return ValidationException for empty GlobalSecondaryIndexUpdates', function(done) {
       assertValidation({TableName: 'abc', GlobalSecondaryIndexUpdates: []},
-        'At least one of ProvisionedThroughput, UpdateStreamEnabled or GlobalSecondaryIndexUpdates is required', done)
+        'At least one of ProvisionedThroughput, StreamSpecification or GlobalSecondaryIndexUpdates is required', done)
     })
 
     it('should return ValidationException for empty Update', function(done) {

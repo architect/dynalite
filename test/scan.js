@@ -3038,7 +3038,7 @@ describe('scan', function() {
       })
     })
 
-    it('should not return LastEvaluatedKey if Limit is large', function(done) {
+    it.skip('should not return LastEvaluatedKey if Limit is large', function(done) {
       var i, b = {S: helpers.randomString()}, items = [], batchReq = {RequestItems: {}},
           scanFilter = {b: {ComparisonOperator: 'EQ', AttributeValueList: [b]}}
 

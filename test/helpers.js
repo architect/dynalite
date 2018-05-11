@@ -7,7 +7,6 @@ var http = require('http'),
 http.globalAgent.maxSockets = Infinity
 
 exports.MAX_SIZE = 409600
-exports.awsRegion = process.env.AWS_REGION || process.env.AWS_DEFAULT_REGION || 'us-east-1'
 exports.version = 'DynamoDB_20120810'
 exports.prefix = '__dynalite_test_'
 exports.request = request

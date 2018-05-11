@@ -10,9 +10,10 @@ var http = require('http'),
 
 var MAX_REQUEST_BYTES = 16 * 1024 * 1024
 
-var validApis = ['DynamoDB_20111205', 'DynamoDB_20120810'],
+var validApis = ['DynamoDB_20111205', 'DynamoDB_20120810', 'DynamoDBStreams_20120810'],
     validOperations = ['BatchGetItem', 'BatchWriteItem', 'CreateTable', 'DeleteItem', 'DeleteTable',
-      'DescribeTable', 'GetItem', 'ListTables', 'PutItem', 'Query', 'Scan', 'UpdateItem', 'UpdateTable'],
+      'DescribeTable', 'GetItem', 'ListTables', 'PutItem', 'Query', 'Scan', 'UpdateItem', 'UpdateTable',
+      'DescribeStream', 'GetRecords', 'GetShardIterator', 'ListStreams'],
     actions = {},
     actionValidations = {}
 
@@ -61,7 +62,7 @@ function rand52CharId() {
   return bytes.toString('base64').toUpperCase().replace(/\+|\//g, '0')
 }
 
-function sendData(req, res, data, statusCode) {
+function _sendData(verbose, req, res, data, statusCode) {
   var body = JSON.stringify(data)
   req.removeAllListeners()
   res.statusCode = statusCode || 200
@@ -72,10 +73,18 @@ function sendData(req, res, data, statusCode) {
   // res.setHeader('Connection', '')
   // res.shouldKeepAlive = false
   res.end(body)
+
+  if (verbose) {
+    console.log('[' + req.id + '] Status ' + res.statusCode)
+    console.log('[' + req.id + '] Response: ' + body)
+  }
 }
 
 function httpHandler(store, req, res) {
-  var body
+  var body,
+      sendData = _sendData.bind(null, store.options.verbose)
+
+  req.id = crypto.randomBytes(5).toString('hex')
   req.on('error', function(err) { throw err })
   req.on('data', function(data) {
     var newLength = data.length + (body ? body.length : 0)
@@ -90,6 +99,11 @@ function httpHandler(store, req, res) {
   req.on('end', function() {
 
     body = body ? body.toString() : ''
+
+    if (store.options.verbose) {
+      console.log('[' + req.id + '] ' + req.method + ' ' + req.url + ' (' + req.headers['x-amz-target'] + ')')
+      console.log('[' + req.id + '] Request: ' + body)
+    }
 
     // All responses after this point have a RequestId
     res.setHeader('x-amzn-RequestId', rand52CharId())

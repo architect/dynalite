@@ -1,23 +1,48 @@
+var async = require('async'),
+    kinesaliteCreateStream = require('kinesalite/actions/createStream')
 
 module.exports = function createTable(store, data, cb) {
 
   var key = data.TableName, tableDb = store.tableDb
 
-  tableDb.lock(key, function(release) {
-    cb = release(cb)
-
-    tableDb.get(key, function(err) {
-      if (err && err.name != 'NotFoundError') return cb(err)
-      if (!err) {
-        err = new Error
-        err.statusCode = 400
-        err.body = {
-          __type: 'com.amazonaws.dynamodb.v20120810#ResourceInUseException',
-          message: '',
+  async.auto({
+    lock: function(callback) {
+      tableDb.lock(key, function(release) {
+        callback(null, release)
+      })
+    },
+    checkTable: ['lock', function(results, callback) {
+      tableDb.get(key, function(err) {
+        if (err && err.name != 'NotFoundError') return callback(err)
+        if (!err) {
+          err = new Error
+          err.statusCode = 400
+          err.body = {
+            __type: 'com.amazonaws.dynamodb.v20120810#ResourceInUseException',
+            message: '',
+          }
+          return callback(err)
         }
-        return cb(err)
+
+        callback()
+      })
+    }],
+    streamUpdates: ['checkTable', function(results, callback) {
+      if (!data.StreamSpecification) {
+        return callback()
       }
 
+      kinesaliteCreateStream(store.kinesalite, {StreamName: data.TableName, ShardCount: 1}, function(err) {
+        if (err) return callback(error)
+
+        callback(null, {
+          StreamSpecification: data.StreamSpecification,
+          LatestStreamLabel: (new Date()).toISOString().replace('Z', ''),
+          LatestStreamArn: 'arn:aws:dynamodb:' + tableDb.awsRegion + ':' + tableDb.awsAccountId + ':table/' + data.TableName + '/stream/' + data.LatestStreamLabel,
+        })
+      })
+    }],
+    createTable: ['streamUpdates', function(results, callback) {
       data.TableArn = 'arn:aws:dynamodb:' + tableDb.awsRegion + ':' + tableDb.awsAccountId + ':table/' + data.TableName
       data.CreationDateTime = Date.now() / 1000
       data.ItemCount = 0
@@ -43,29 +68,41 @@ module.exports = function createTable(store, data, cb) {
         })
       }
 
-      tableDb.put(key, data, function(err) {
-        if (err) return cb(err)
+      if (results.streamUpdates) {
+        data.LatestStreamLabel = (new Date()).toISOString().replace('Z', '')
+        data.LatestStreamArn = 'arn:aws:dynamodb:' + tableDb.awsRegion + ':' + tableDb.awsAccountId + ':table/' + data.TableName + '/stream/' + data.LatestStreamLabel
+      }
 
-        setTimeout(function() {
+      tableDb.put(key, data, callback)
+    }],
+    setActive: ['createTable', function(results, callback) {
+      setTimeout(function() {
 
-          // Shouldn't need to lock/fetch as nothing should have changed
-          data.TableStatus = 'ACTIVE'
-          if (data.GlobalSecondaryIndexes) {
-            data.GlobalSecondaryIndexes.forEach(function(index) {
-              index.IndexStatus = 'ACTIVE'
-            })
-          }
-
-          tableDb.put(key, data, function(err) {
-            // eslint-disable-next-line no-console
-            if (err && !/Database is not open/.test(err)) console.error(err.stack || err)
+        // Shouldn't need to lock/fetch as nothing should have changed
+        data.TableStatus = 'ACTIVE'
+        if (data.GlobalSecondaryIndexes) {
+          data.GlobalSecondaryIndexes.forEach(function(index) {
+            index.IndexStatus = 'ACTIVE'
           })
+        }
 
-        }, store.options.createTableMs)
+        tableDb.put(key, data, function(err) {
+          // eslint-disable-next-line no-console
+          if (err && !/Database is not open/.test(err)) console.error(err.stack || err)
+        })
 
-        cb(null, {TableDescription: data})
-      })
-    })
+      }, store.options.createTableMs)
+
+      callback()
+    }],
+  }, function(err, results) {
+    var release = results.lock
+    cb = release(cb)
+
+    if (err) {
+      return cb(err)
+    }
+
+    cb(null, {TableDescription: data})
   })
-
 }

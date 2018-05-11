@@ -12,6 +12,7 @@ if (argv.help) {
     '',
     'Options:',
     '--help                Display this help message and exit',
+    '--verbose             Enable verbose logging',
     '--port <port>         The port to listen on (default: 4567)',
     '--path <path>         The path to use for the LevelDB store (in-memory by default)',
     '--ssl                 Enable SSL for the web server (default: false)',

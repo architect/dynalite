@@ -1,5 +1,6 @@
 var Big = require('big.js'),
-    db = require('../db')
+    db = require('../db'),
+    utils = require('../utils')
 
 module.exports = function updateItem(store, data, cb) {
 
@@ -52,7 +53,16 @@ module.exports = function updateItem(store, data, cb) {
 
           itemDb.put(key, item, function(err) {
             if (err) return cb(err)
-            cb(null, returnObj)
+
+            if (!table.LatestStreamArn) {
+              return cb(null, returnObj)
+            }
+
+            var streamRecord = utils.createStreamRecord(table, oldItem, item)
+            utils.writeStreamRecord(store, data.TableName, streamRecord, function(err) {
+              if (err) return cb(err)
+              cb(null, returnObj)
+            })
           })
         })
       })

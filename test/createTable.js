@@ -1,12 +1,14 @@
 var helpers = require('./helpers'),
-    should = require('should')
+    should = require('should'),
+    utils = require('../utils')
 
 var target = 'CreateTable',
     request = helpers.request,
     randomName = helpers.randomName,
     opts = helpers.opts.bind(null, target),
     assertType = helpers.assertType.bind(null, target),
-    assertValidation = helpers.assertValidation.bind(null, target)
+    assertValidation = helpers.assertValidation.bind(null, target),
+    awsRegion = utils.awsRegion
 
 describe('createTable', function() {
 
@@ -1140,7 +1142,7 @@ describe('createTable', function() {
         desc.CreationDateTime.should.be.above(createdAt - 5)
         delete desc.CreationDateTime
         desc.TableArn.should.match(new RegExp(
-          'arn:aws:dynamodb:' + helpers.awsRegion + ':\\d+:table/' + table.TableName))
+          'arn:aws:dynamodb:' + awsRegion + ':\\d+:table/' + table.TableName))
         delete desc.TableArn
         table.ItemCount = 0
         table.ProvisionedThroughput.NumberOfDecreasesToday = 0
@@ -1211,11 +1213,11 @@ describe('createTable', function() {
         desc.CreationDateTime.should.be.above(createdAt - 5)
         delete desc.CreationDateTime
         desc.TableArn.should.match(new RegExp(
-          'arn:aws:dynamodb:' + helpers.awsRegion + ':\\d+:table/' + table.TableName))
+          'arn:aws:dynamodb:' + awsRegion + ':\\d+:table/' + table.TableName))
         delete desc.TableArn
         desc.LocalSecondaryIndexes.forEach(function(index) {
           index.IndexArn.should.match(new RegExp(
-            'arn:aws:dynamodb:' + helpers.awsRegion + ':\\d+:table/' + table.TableName + '/index/' + index.IndexName))
+            'arn:aws:dynamodb:' + awsRegion + ':\\d+:table/' + table.TableName + '/index/' + index.IndexName))
           delete index.IndexArn
         })
         table.ItemCount = 0
@@ -1279,11 +1281,11 @@ describe('createTable', function() {
         desc.CreationDateTime.should.be.above(createdAt - 5)
         delete desc.CreationDateTime
         desc.TableArn.should.match(new RegExp(
-          'arn:aws:dynamodb:' + helpers.awsRegion + ':\\d+:table/' + table.TableName))
+          'arn:aws:dynamodb:' + awsRegion + ':\\d+:table/' + table.TableName))
         delete desc.TableArn
         desc.GlobalSecondaryIndexes.forEach(function(index) {
           index.IndexArn.should.match(new RegExp(
-            'arn:aws:dynamodb:' + helpers.awsRegion + ':\\d+:table/' + table.TableName + '/index/' + index.IndexName))
+            'arn:aws:dynamodb:' + awsRegion + ':\\d+:table/' + table.TableName + '/index/' + index.IndexName))
           delete index.IndexArn
         })
         table.ItemCount = 0

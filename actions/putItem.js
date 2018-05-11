@@ -1,4 +1,5 @@
-var db = require('../db')
+var db = require('../db'),
+    utils = require('../utils')
 
 module.exports = function putItem(store, data, cb) {
 
@@ -29,7 +30,16 @@ module.exports = function putItem(store, data, cb) {
 
           itemDb.put(key, data.Item, function(err) {
             if (err) return cb(err)
-            cb(null, returnObj)
+
+            if (!table.LatestStreamArn) {
+              return cb(null, returnObj)
+            }
+
+            var streamRecord = utils.createStreamRecord(table, null, data.Item)
+            utils.writeStreamRecord(store, data.TableName, streamRecord, function(err) {
+              if (err) return cb(err)
+              cb(null, returnObj)
+            })
           })
         })
       })
