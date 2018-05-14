@@ -14,7 +14,21 @@ module.exports = function updateTable(store, data, cb) {
       })
     },
     table: ['lock', function(results, callback) {
-      tableDb.get(key, callback)
+      tableDb.get(key, function(err, table) {
+        if (err) return callback(err)
+
+        if (table.TableStatus == 'CREATING') {
+          err = new Error
+          err.statusCode = 400
+          err.body = {
+            __type: 'com.amazonaws.dynamodb.v20120810#ResourceInUseException',
+            message: 'Attempt to change a resource which is still in use: Table is being created: ' + key,
+          }
+          return callback(err)
+        }
+
+        callback(null, table)
+      })
     }],
     streamUpdates: ['table', function(results, callback) {
       var table = results.table

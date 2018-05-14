@@ -4,7 +4,8 @@ var target = 'UpdateTable',
     request = helpers.request,
     opts = helpers.opts.bind(null, target),
     assertType = helpers.assertType.bind(null, target),
-    assertValidation = helpers.assertValidation.bind(null, target)
+    assertValidation = helpers.assertValidation.bind(null, target),
+    assertInUse = helpers.assertInUse.bind(null, target)
 
 describe('updateTable', function() {
 
@@ -225,6 +226,30 @@ describe('updateTable', function() {
   })
 
   describe('functionality', function() {
+
+    it('should reject updates while table is in CREATING state', function(done) {
+      this.timeout(100000)
+      var tableName = helpers.randomName(),
+          table = {
+            TableName: tableName,
+            AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}],
+            KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}],
+            ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
+          }
+
+      request(helpers.opts('CreateTable', table), function(err, res) {
+        if (err) return done(err)
+        res.body.TableDescription.TableStatus.should.equal('CREATING')
+
+        var data = {
+          TableName: tableName,
+          ProvisionedThroughput: {ReadCapacityUnits: 2, WriteCapacityUnits: 2}
+        }
+
+        assertInUse(data, 'Attempt to change a resource which is still in use: ' +
+            'Table is being created: ' + table.TableName, done)
+      })
+    })
 
     it('should triple rates and then reduce if requested', function(done) {
       this.timeout(200000)
