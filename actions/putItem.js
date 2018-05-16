@@ -35,7 +35,7 @@ module.exports = function putItem(store, data, cb) {
               return cb(null, returnObj)
             }
 
-            var streamRecord = utils.createStreamRecord(table, null, data.Item)
+            var streamRecord = utils.createStreamRecord(table, existingItem, data.Item)
             utils.writeStreamRecord(store, data.TableName, streamRecord, function(err) {
               if (err) return cb(err)
               cb(null, returnObj)
