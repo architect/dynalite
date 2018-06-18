@@ -3038,6 +3038,43 @@ describe('scan', function() {
       })
     })
 
+    it('should return LastEvaluatedKey while filtering, even if Limit is smaller than the expected return list', function(done) {
+      var i, items = [], batchReq = {RequestItems: {}}
+
+      // This bug manifests itself when the sought after item is not among the first .Limit number of
+      // items in the scan.  Because we can't guarantee the order of the returned scan items, we can't
+      // guarantee that this test case will produce the bug.  Therefore, we will try to make it very
+      // likely that this bug will be reproduced by adding as many items as we can.  The chances that
+      // the sought after item (to be picked up by the filter) will be among the first .Limit number
+      // of items should be small enough to give us practical assurance of correctness in this one
+      // regard...
+      for (i = 0; i < 25; i++)
+        items.push({a: {S: 'item' + i}})
+
+      batchReq.RequestItems[helpers.testHashTable] = items.map(function(item) { return {PutRequest: {Item: item}} })
+
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+
+        request(opts({
+          TableName: helpers.testHashTable,
+          ExpressionAttributeNames: {'#key': 'a'},
+          ExpressionAttributeValues: {':value': {S: 'item12'}},
+          FilterExpression: '#key = :value',
+          Limit: 2,
+        }), function(err, res) {
+          if (err) return done(err)
+
+          res.statusCode.should.equal(200)
+          res.body.ScannedCount.should.equal(2)
+          res.body.LastEvaluatedKey.a.S.should.not.be.empty // eslint-disable-line no-unused-expressions
+          Object.keys(res.body.LastEvaluatedKey).should.have.length(1)
+          helpers.clearTable(helpers.testHashTable, 'a', done)
+        })
+      })
+    })
+
     it('should not return LastEvaluatedKey if Limit is large', function(done) {
       var i, b = {S: helpers.randomString()}, items = [], batchReq = {RequestItems: {}},
           scanFilter = {b: {ComparisonOperator: 'EQ', AttributeValueList: [b]}}

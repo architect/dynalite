@@ -835,26 +835,28 @@ function queryTable(store, table, data, opts, isLocal, fetchFromItemDb, startKey
     return true
   })
 
-  var queryFilter = data.QueryFilter || data.ScanFilter
-
-  if (data._filter) {
-    vals = vals.filter(function(val) { return matchesExprFilter(val, data._filter.expression) })
-  } else if (queryFilter) {
-    vals = vals.filter(function(val) { return matchesFilter(val, queryFilter, data.ConditionalOperator) })
-  }
-
-  var paths = data._projection ? data._projection.paths : data.AttributesToGet
-  if (paths) {
-    vals = vals.map(mapPaths.bind(this, paths))
-  }
-
   vals.join(function(items) {
+    var lastItem = items[items.length - 1]
+
+    var queryFilter = data.QueryFilter || data.ScanFilter
+
+    if (data._filter) {
+      items = items.filter(function(val) { return matchesExprFilter(val, data._filter.expression) })
+    } else if (queryFilter) {
+      items = items.filter(function(val) { return matchesFilter(val, queryFilter, data.ConditionalOperator) })
+    }
+
+    var paths = data._projection ? data._projection.paths : data.AttributesToGet
+    if (paths) {
+      items = items.map(mapPaths.bind(this, paths))
+    }
+
     var result = {ScannedCount: count}
     if (count >= data.Limit || size >= 1024 * 1024) {
       if (data.Limit) items.splice(data.Limit)
-      if (items.length) {
+      if (lastItem) {
         result.LastEvaluatedKey = startKeyNames.reduce(function(key, attr) {
-          key[attr] = items[items.length - 1][attr]
+          key[attr] = lastItem[attr]
           return key
         }, {})
       }
