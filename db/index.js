@@ -5,7 +5,7 @@ var crypto = require('crypto'),
     levelup = require('levelup'),
     memdown = require('memdown'),
     sublevel = require('level-sublevel'),
-    Lock = require('lock'),
+    lock = require('lock'),
     Big = require('big.js')
 
 exports.MAX_SIZE = 409600 // TODO: get rid of this? or leave for backwards compat?
@@ -45,12 +45,12 @@ function create(options) {
   if (options.maxItemSizeKb == null) options.maxItemSizeKb = exports.MAX_SIZE / 1024
   options.maxItemSize = options.maxItemSizeKb * 1024
 
-  var db = levelup(options.path, options.path ? {} : {db: memdown}),
+  var db = levelup(options.path ? require('leveldown')(options.path) : memdown()),
       sublevelDb = sublevel(db),
       tableDb = sublevelDb.sublevel('table', {valueEncoding: 'json'}),
       subDbs = Object.create(null)
 
-  tableDb.lock = new Lock()
+  tableDb.lock = lock.Lock()
 
   // XXX: Is there a better way to get this?
   tableDb.awsAccountId = (process.env.AWS_ACCOUNT_ID || '0000-0000-0000').replace(/[^\d]/g, '')
@@ -75,7 +75,7 @@ function create(options) {
   function getSubDb(name) {
     if (!subDbs[name]) {
       subDbs[name] = sublevelDb.sublevel(name, {valueEncoding: 'json'})
-      subDbs[name].lock = new Lock()
+      subDbs[name].lock = lock.Lock()
     }
     return subDbs[name]
   }
