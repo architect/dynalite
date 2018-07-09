@@ -4,9 +4,10 @@ var crypto = require('crypto'),
     Lazy = require('lazy'),
     levelup = require('levelup'),
     memdown = require('memdown'),
-    sublevel = require('level-sublevel'),
+    sub = require('subleveldown'),
     lock = require('lock'),
-    Big = require('big.js')
+    Big = require('big.js'),
+    once = require('once')
 
 exports.MAX_SIZE = 409600 // TODO: get rid of this? or leave for backwards compat?
 exports.create = create
@@ -46,8 +47,7 @@ function create(options) {
   options.maxItemSize = options.maxItemSizeKb * 1024
 
   var db = levelup(options.path ? require('leveldown')(options.path) : memdown()),
-      sublevelDb = sublevel(db),
-      tableDb = sublevelDb.sublevel('table', {valueEncoding: 'json'}),
+      tableDb = sub(db, 'table', {valueEncoding: 'json'}),
       subDbs = Object.create(null)
 
   tableDb.lock = lock.Lock()
@@ -74,13 +74,14 @@ function create(options) {
 
   function getSubDb(name) {
     if (!subDbs[name]) {
-      subDbs[name] = sublevelDb.sublevel(name, {valueEncoding: 'json'})
+      subDbs[name] = sub(db, name, {valueEncoding: 'json'})
       subDbs[name].lock = lock.Lock()
     }
     return subDbs[name]
   }
 
   function deleteSubDb(name, cb) {
+    cb = once(cb)
     var subDb = getSubDb(name)
     delete subDbs[name]
     lazyStream(subDb.createKeyStream(), cb).join(function(keys) {
@@ -135,6 +136,8 @@ function create(options) {
 function lazyStream(stream, errHandler) {
   if (errHandler) stream.on('error', errHandler)
   var streamAsLazy = new Lazy(stream)
+  stream.removeAllListeners('readable')
+  stream.on('data', streamAsLazy.emit.bind(streamAsLazy, 'data'))
   if (stream.destroy) streamAsLazy.on('pipe', stream.destroy.bind(stream))
   return streamAsLazy
 }
@@ -774,6 +777,7 @@ function mapPath(path, item) {
 }
 
 function queryTable(store, table, data, opts, isLocal, fetchFromItemDb, startKeyNames, cb) {
+  cb = once(cb)
   var itemDb = store.getItemDb(data.TableName), vals
 
   if (data.IndexName) {
