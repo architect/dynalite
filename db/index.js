@@ -651,37 +651,9 @@ function compare(comp, val, compVals) {
       break
     case 'CONTAINS':
     case 'contains':
-      if (compType == 'S') {
-        if (attrType != 'S' && attrType != 'SS') return false
-        if (!~attrVal.indexOf(compVal)) return false
-      }
-      if (compType == 'N') {
-        if (attrType != 'NS') return false
-        if (!~attrVal.indexOf(compVal)) return false
-      }
-      if (compType == 'B') {
-        if (attrType != 'B' && attrType != 'BS') return false
-        if (attrType == 'B') {
-          attrVal = new Buffer(attrVal, 'base64').toString()
-          compVal = new Buffer(compVal, 'base64').toString()
-        }
-        if (!~attrVal.indexOf(compVal)) return false
-      }
-      break
+      return doContainsComparison(compType, compVal, attrType, attrVal)
     case 'NOT_CONTAINS':
-      if (compType == 'S' && (attrType == 'S' || attrType == 'SS') &&
-          ~attrVal.indexOf(compVal)) return false
-      if (compType == 'N' && attrType == 'NS' &&
-          ~attrVal.indexOf(compVal)) return false
-      if (compType == 'B') {
-        if (attrType == 'B') {
-          attrVal = new Buffer(attrVal, 'base64').toString()
-          compVal = new Buffer(compVal, 'base64').toString()
-        }
-        if ((attrType == 'B' || attrType == 'BS') &&
-            ~attrVal.indexOf(compVal)) return false
-      }
-      break
+      return !doContainsComparison(compType, compVal, attrType, attrVal)
     case 'BEGINS_WITH':
     case 'begins_with':
       if (compType != attrType) return false
@@ -711,6 +683,41 @@ function compare(comp, val, compVals) {
       if (!attrVal || !valsEqual(attrType, compVal)) return false
   }
   return true
+}
+
+function doContainsComparison(compType, compVal, attrType, attrVal) {
+  if (compType === 'S') {
+    if (attrType === 'S') return !!~attrVal.indexOf(compVal)
+    if (attrType === 'SS') return attrVal.some(function(val) {
+      return val === compVal
+    })
+    if (attrType === 'L') return attrVal.some(function(val) {
+      return val && val.S && val.S === compVal
+    })
+    return false
+  }
+  if (compType === 'N') {
+    if (attrType === 'NS') return attrVal.some(function(val) {
+      return val === compVal
+    })
+    if (attrType === 'L') return attrVal.some(function(val) {
+      return val && val.N && val.N === compVal
+    })
+    return false
+  }
+  if (compType === 'B') {
+    if (attrType !== 'B' && attrType !== 'BS' && attrType !== 'L') return false
+    var compValString = new Buffer(compVal, 'base64').toString()
+    if (attrType === 'B') {
+      var attrValString = new Buffer(attrVal, 'base64').toString()
+      return !!~attrValString.indexOf(compValString)
+    }
+    return attrVal.some(function(val) {
+      if (attrType !== 'L') return compValString === new Buffer(val, 'base64').toString()
+      if (attrType === 'L' && val.B) return compValString === new Buffer(val.B, 'base64').toString()
+      return false
+    })
+  }
 }
 
 function mapPaths(paths, item) {
