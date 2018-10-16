@@ -6,7 +6,6 @@ var target = 'ListTables',
     request = helpers.request,
     randomName = helpers.randomName,
     opts = helpers.opts.bind(null, target),
-    assertSerialization = helpers.assertSerialization.bind(null, target),
     assertType = helpers.assertType.bind(null, target),
     assertValidation = helpers.assertValidation.bind(null, target)
 
@@ -32,48 +31,28 @@ describe('listTables', function() {
     it('should return SerializationException when Limit is not an integer', function(done) {
       assertType('Limit', 'Integer', done)
     })
-
-    // TODO: Need to determine serialization order
-    it.skip('should serialize ExclusiveStartTableName before Limit', function(done) {
-      async.parallel([
-        assertSerialization.bind(null, {ExclusiveStartTableName: true, Limit: true},
-          'class java.lang.Boolean can not be converted to an String'),
-        assertSerialization.bind(null, {Limit: true, ExclusiveStartTableName: true},
-          'class java.lang.Boolean can not be converted to an String'),
-      ], done)
-    })
   })
 
   describe('validations', function() {
 
     it('should return ValidationException for empty ExclusiveStartTableName', function(done) {
-      var tableNamePieces = [
+      assertValidation({ExclusiveStartTableName: ''}, [
         'Value \'\' at \'exclusiveStartTableName\' failed to satisfy constraint: ' +
         'Member must satisfy regular expression pattern: [a-zA-Z0-9_.-]+',
         'Value \'\' at \'exclusiveStartTableName\' failed to satisfy constraint: ' +
         'Member must have length greater than or equal to 3',
-      ]
-      assertValidation({ExclusiveStartTableName: ''},
-        tableNamePieces.map(function(piece, ix) {
-          return '2 validation errors detected: ' +
-            [ix, +!ix].map(function(ix) { return tableNamePieces[ix] }).join('; ')
-        }), done)
+      ], done)
     })
 
     it('should return ValidationExceptions for short ExclusiveStartTableName', function(done) {
-      var tableNamePieces = [
+      assertValidation({ExclusiveStartTableName: 'a;', Limit: 500}, [
         'Value \'a;\' at \'exclusiveStartTableName\' failed to satisfy constraint: ' +
         'Member must satisfy regular expression pattern: [a-zA-Z0-9_.-]+',
         'Value \'a;\' at \'exclusiveStartTableName\' failed to satisfy constraint: ' +
         'Member must have length greater than or equal to 3',
-      ]
-      assertValidation({ExclusiveStartTableName: 'a;', Limit: 500},
-        tableNamePieces.map(function(piece, ix) {
-          return '3 validation errors detected: ' +
-            'Value \'500\' at \'limit\' failed to satisfy constraint: ' +
-            'Member must have value less than or equal to 100; ' +
-            [ix, +!ix].map(function(ix) { return tableNamePieces[ix] }).join('; ')
-        }), done)
+        'Value \'500\' at \'limit\' failed to satisfy constraint: ' +
+        'Member must have value less than or equal to 100',
+      ], done)
     })
 
     it('should return ValidationException for long ExclusiveStartTableName', function(done) {

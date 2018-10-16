@@ -15,41 +15,41 @@ describe('batchWriteItem', function() {
   describe('serializations', function() {
 
     it('should return SerializationException when RequestItems is not a map', function(done) {
-      assertType('RequestItems', 'Map', done)
+      assertType('RequestItems', 'Map<java.util.List<com.amazonaws.dynamodb.v20120810.WriteRequest>>', done)
     })
 
     it('should return SerializationException when RequestItems.Attr is not a list', function(done) {
-      assertType('RequestItems.Attr', 'List', done)
+      assertType('RequestItems.Attr', 'ParameterizedList', done)
     })
 
     it('should return SerializationException when RequestItems.Attr.0 is not a struct', function(done) {
-      assertType('RequestItems.Attr.0', 'Structure', done)
+      assertType('RequestItems.Attr.0', 'ValueStruct<WriteRequest>', done)
     })
 
     it('should return SerializationException when RequestItems.Attr.0.DeleteRequest is not a struct', function(done) {
-      assertType('RequestItems.Attr.0.DeleteRequest', 'Structure', done)
+      assertType('RequestItems.Attr.0.DeleteRequest', 'FieldStruct<DeleteRequest>', done)
     })
 
     it('should return SerializationException when RequestItems.Attr.0.DeleteRequest.Key is not a map', function(done) {
-      assertType('RequestItems.Attr.0.DeleteRequest.Key', 'Map', done)
+      assertType('RequestItems.Attr.0.DeleteRequest.Key', 'Map<AttributeValue>', done)
     })
 
     it('should return SerializationException when RequestItems.Attr.0.DeleteRequest.Key.Attr is not an attr struct', function(done) {
       this.timeout(60000)
-      assertType('RequestItems.Attr.0.DeleteRequest.Key.Attr', 'AttrStructure', done)
+      assertType('RequestItems.Attr.0.DeleteRequest.Key.Attr', 'AttrStruct<ValueStruct>', done)
     })
 
     it('should return SerializationException when RequestItems.Attr.0.PutRequest is not a struct', function(done) {
-      assertType('RequestItems.Attr.0.PutRequest', 'Structure', done)
+      assertType('RequestItems.Attr.0.PutRequest', 'FieldStruct<PutRequest>', done)
     })
 
     it('should return SerializationException when RequestItems.Attr.0.PutRequest.Item is not a map', function(done) {
-      assertType('RequestItems.Attr.0.PutRequest.Item', 'Map', done)
+      assertType('RequestItems.Attr.0.PutRequest.Item', 'Map<AttributeValue>', done)
     })
 
     it('should return SerializationException when RequestItems.Attr.0.PutRequest.Item.Attr is not an attr struct', function(done) {
       this.timeout(60000)
-      assertType('RequestItems.Attr.0.PutRequest.Item.Attr', 'AttrStructure', done)
+      assertType('RequestItems.Attr.0.PutRequest.Item.Attr', 'AttrStruct<ValueStruct>', done)
     })
 
     it('should return SerializationException when ReturnConsumedCapacity is not a string', function(done) {
@@ -72,14 +72,14 @@ describe('batchWriteItem', function() {
     })
 
     it('should return ValidationException for missing RequestItems', function(done) {
-      assertValidation({ReturnConsumedCapacity: 'hi', ReturnItemCollectionMetrics: 'hi'},
-        '3 validation errors detected: ' +
+      assertValidation({ReturnConsumedCapacity: 'hi', ReturnItemCollectionMetrics: 'hi'}, [
         'Value \'hi\' at \'returnConsumedCapacity\' failed to satisfy constraint: ' +
-        'Member must satisfy enum value set: [INDEXES, TOTAL, NONE]; ' +
+        'Member must satisfy enum value set: [INDEXES, TOTAL, NONE]',
         'Value \'hi\' at \'returnItemCollectionMetrics\' failed to satisfy constraint: ' +
-        'Member must satisfy enum value set: [SIZE, NONE]; ' +
+        'Member must satisfy enum value set: [SIZE, NONE]',
         'Value null at \'requestItems\' failed to satisfy constraint: ' +
-        'Member must not be null', done)
+        'Member must not be null',
+      ], done)
     })
 
     it('should return ValidationException for empty RequestItems', function(done) {
@@ -90,17 +90,17 @@ describe('batchWriteItem', function() {
     })
 
     it('should return ValidationException for empty list in RequestItems', function(done) {
-      assertValidation({RequestItems: {a: []}},
-        new RegExp('2 validation errors detected: ' +
-          'Value \'{.+}\' at \'requestItems\' failed to satisfy constraint: ' +
+      assertValidation({RequestItems: {a: []}}, [
+        new RegExp('Value \'{.+}\' at \'requestItems\' failed to satisfy constraint: ' +
           'Map keys must satisfy constraint: ' +
           '\\[Member must have length less than or equal to 255, ' +
           'Member must have length greater than or equal to 3, ' +
-          'Member must satisfy regular expression pattern: \\[a-zA-Z0-9_.-\\]\\+\\]; ' +
-          'Value \'{.+}\' at \'requestItems\' failed to satisfy constraint: ' +
+          'Member must satisfy regular expression pattern: \\[a-zA-Z0-9_.-\\]\\+\\]'),
+        new RegExp('Value \'{.+}\' at \'requestItems\' failed to satisfy constraint: ' +
           'Map value must satisfy constraint: ' +
           '\\[Member must have length less than or equal to 25, ' +
-          'Member must have length greater than or equal to 1\\]'), done)
+          'Member must have length greater than or equal to 1\\]'),
+      ], done)
     })
 
     it('should return ValidationException for empty item in RequestItems', function(done) {
@@ -110,40 +110,40 @@ describe('batchWriteItem', function() {
     })
 
     it('should return ValidationException for short table name and missing requests', function(done) {
-      assertValidation({RequestItems: {a: []}, ReturnConsumedCapacity: 'hi', ReturnItemCollectionMetrics: 'hi'},
-        new RegExp('4 validation errors detected: ' +
-          'Value \'hi\' at \'returnConsumedCapacity\' failed to satisfy constraint: ' +
-          'Member must satisfy enum value set: \\[INDEXES, TOTAL, NONE\\]; ' +
-          'Value \'hi\' at \'returnItemCollectionMetrics\' failed to satisfy constraint: ' +
-          'Member must satisfy enum value set: \\[SIZE, NONE\\]; ' +
-          'Value \'{.+}\' at \'requestItems\' failed to satisfy constraint: ' +
+      assertValidation({RequestItems: {a: []}, ReturnConsumedCapacity: 'hi', ReturnItemCollectionMetrics: 'hi'}, [
+        'Value \'hi\' at \'returnConsumedCapacity\' failed to satisfy constraint: ' +
+        'Member must satisfy enum value set: [INDEXES, TOTAL, NONE]',
+        'Value \'hi\' at \'returnItemCollectionMetrics\' failed to satisfy constraint: ' +
+        'Member must satisfy enum value set: [SIZE, NONE]',
+        new RegExp('Value \'{.+}\' at \'requestItems\' failed to satisfy constraint: ' +
           'Map keys must satisfy constraint: ' +
           '\\[Member must have length less than or equal to 255, ' +
           'Member must have length greater than or equal to 3, ' +
-          'Member must satisfy regular expression pattern: \\[a-zA-Z0-9_.-\\]\\+\\]; ' +
-          'Value \'{.+}\' at \'requestItems\' failed to satisfy constraint: ' +
+          'Member must satisfy regular expression pattern: \\[a-zA-Z0-9_.-\\]\\+\\]'),
+        new RegExp('Value \'{.+}\' at \'requestItems\' failed to satisfy constraint: ' +
           'Map value must satisfy constraint: ' +
           '\\[Member must have length less than or equal to 25, ' +
-          'Member must have length greater than or equal to 1\\]'), done)
+          'Member must have length greater than or equal to 1\\]'),
+      ], done)
     })
 
     it('should return ValidationException for incorrect attributes', function(done) {
       assertValidation({RequestItems: {'aa;': [{PutRequest: {}, DeleteRequest: {}}]},
-        ReturnConsumedCapacity: 'hi', ReturnItemCollectionMetrics: 'hi'},
-        new RegExp('5 validation errors detected: ' +
+        ReturnConsumedCapacity: 'hi', ReturnItemCollectionMetrics: 'hi'}, [
           'Value \'hi\' at \'returnConsumedCapacity\' failed to satisfy constraint: ' +
-          'Member must satisfy enum value set: \\[INDEXES, TOTAL, NONE\\]; ' +
+          'Member must satisfy enum value set: [INDEXES, TOTAL, NONE]',
           'Value \'hi\' at \'returnItemCollectionMetrics\' failed to satisfy constraint: ' +
-          'Member must satisfy enum value set: \\[SIZE, NONE\\]; ' +
-          'Value \'{.+}\' at \'requestItems\' ' +
-          'failed to satisfy constraint: Map keys must satisfy constraint: ' +
-          '\\[Member must have length less than or equal to 255, ' +
-          'Member must have length greater than or equal to 3, ' +
-          'Member must satisfy regular expression pattern: \\[a-zA-Z0-9_.-\\]\\+\\]; ' +
+          'Member must satisfy enum value set: [SIZE, NONE]',
+          new RegExp('Value \'{.+}\' at \'requestItems\' ' +
+            'failed to satisfy constraint: Map keys must satisfy constraint: ' +
+            '\\[Member must have length less than or equal to 255, ' +
+            'Member must have length greater than or equal to 3, ' +
+            'Member must satisfy regular expression pattern: \\[a-zA-Z0-9_.-\\]\\+\\]'),
           'Value null at \'requestItems.aa;.member.1.member.deleteRequest.key\' failed to satisfy constraint: ' +
-          'Member must not be null; ' +
+          'Member must not be null',
           'Value null at \'requestItems.aa;.member.1.member.putRequest.item\' failed to satisfy constraint: ' +
-          'Member must not be null'), done)
+          'Member must not be null',
+        ], done)
     })
 
     it('should return ValidationException when putting more than 25 items', function(done) {
@@ -384,8 +384,8 @@ describe('batchWriteItem', function() {
       var batchReq = {RequestItems: {}}
       batchReq.RequestItems[helpers.testRangeTable] = [{PutRequest: {Item: {a: {S: 'a'}, b: {S: 'a'}, c: {N: '1'}}}}]
       assertValidation(batchReq,
-        'One or more parameter values were invalid: ' +
-        'Type mismatch for Index Key c Expected: S Actual: N IndexName: index4', done)
+        new RegExp('^One or more parameter values were invalid: ' +
+          'Type mismatch for Index Key c Expected: S Actual: N IndexName: index\\d$'), done)
     })
 
     it('should return ValidationException if hash key is too big', function(done) {

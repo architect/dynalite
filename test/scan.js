@@ -18,12 +18,12 @@ describe('scan', function() {
     })
 
     it('should return SerializationException when ExclusiveStartKey is not a map', function(done) {
-      assertType('ExclusiveStartKey', 'Map', done)
+      assertType('ExclusiveStartKey', 'Map<AttributeValue>', done)
     })
 
     it('should return SerializationException when ExclusiveStartKey.Attr is not an attr struct', function(done) {
       this.timeout(60000)
-      assertType('ExclusiveStartKey.Attr', 'AttrStructure', done)
+      assertType('ExclusiveStartKey.Attr', 'AttrStruct<ValueStruct>', done)
     })
 
     it('should return SerializationException when AttributesToGet is not a list', function(done) {
@@ -55,11 +55,11 @@ describe('scan', function() {
     })
 
     it('should return SerializationException when ScanFilter is not a map', function(done) {
-      assertType('ScanFilter', 'Map', done)
+      assertType('ScanFilter', 'Map<Condition>', done)
     })
 
     it('should return SerializationException when ScanFilter.Attr is not a struct', function(done) {
-      assertType('ScanFilter.Attr', 'Structure', done)
+      assertType('ScanFilter.Attr', 'ValueStruct<Condition>', done)
     })
 
     it('should return SerializationException when ScanFilter.Attr.ComparisonOperator is not a string', function(done) {
@@ -72,7 +72,7 @@ describe('scan', function() {
 
     it('should return SerializationException when ScanFilter.Attr.AttributeValueList.0 is not an attr struct', function(done) {
       this.timeout(60000)
-      assertType('ScanFilter.Attr.AttributeValueList.0', 'AttrStructure', done)
+      assertType('ScanFilter.Attr.AttributeValueList.0', 'AttrStruct<ValueStruct>', done)
     })
 
     it('should return SerializationException when FilterExpression is not a string', function(done) {
@@ -80,16 +80,16 @@ describe('scan', function() {
     })
 
     it('should return SerializationException when ExpressionAttributeValues is not a map', function(done) {
-      assertType('ExpressionAttributeValues', 'Map', done)
+      assertType('ExpressionAttributeValues', 'Map<AttributeValue>', done)
     })
 
     it('should return SerializationException when ExpressionAttributeValues.Attr is not an attr struct', function(done) {
       this.timeout(60000)
-      assertType('ExpressionAttributeValues.Attr', 'AttrStructure', done)
+      assertType('ExpressionAttributeValues.Attr', 'AttrStruct<ValueStruct>', done)
     })
 
     it('should return SerializationException when ExpressionAttributeNames is not a map', function(done) {
-      assertType('ExpressionAttributeNames', 'Map', done)
+      assertType('ExpressionAttributeNames', 'Map<java.lang.String>', done)
     })
 
     it('should return SerializationException when ExpressionAttributeNames.Attr is not a string', function(done) {
@@ -116,31 +116,21 @@ describe('scan', function() {
     })
 
     it('should return ValidationException for empty TableName', function(done) {
-      var tableNamePieces = [
+      assertValidation({TableName: ''}, [
         'Value \'\' at \'tableName\' failed to satisfy constraint: ' +
         'Member must satisfy regular expression pattern: [a-zA-Z0-9_.-]+',
         'Value \'\' at \'tableName\' failed to satisfy constraint: ' +
         'Member must have length greater than or equal to 3',
-      ]
-      assertValidation({TableName: ''},
-        tableNamePieces.map(function(piece, ix) {
-          return '2 validation errors detected: ' +
-            [ix, +!ix].map(function(ix) { return tableNamePieces[ix] }).join('; ')
-        }), done)
+      ], done)
     })
 
     it('should return ValidationException for short TableName', function(done) {
-      var tableNamePieces = [
+      assertValidation({TableName: 'a;'}, [
         'Value \'a;\' at \'tableName\' failed to satisfy constraint: ' +
         'Member must satisfy regular expression pattern: [a-zA-Z0-9_.-]+',
         'Value \'a;\' at \'tableName\' failed to satisfy constraint: ' +
         'Member must have length greater than or equal to 3',
-      ]
-      assertValidation({TableName: 'a;'},
-        tableNamePieces.map(function(piece, ix) {
-          return '2 validation errors detected: ' +
-            [ix, +!ix].map(function(ix) { return tableNamePieces[ix] }).join('; ')
-        }), done)
+      ], done)
     })
 
     it('should return ValidationException for long TableName', function(done) {
@@ -154,28 +144,28 @@ describe('scan', function() {
     it('should return ValidationException for incorrect attributes', function(done) {
       assertValidation({TableName: 'abc;', ReturnConsumedCapacity: 'hi', AttributesToGet: [],
         IndexName: 'abc;', Segment: -1, TotalSegments: -1, Select: 'hi', Limit: -1, ScanFilter: {a: {}, b: {ComparisonOperator: ''}},
-        ConditionalOperator: 'AN', ExpressionAttributeNames: {}, ExpressionAttributeValues: {}, ProjectionExpression: ''},
-        '10 validation errors detected: ' +
-        'Value \'-1\' at \'limit\' failed to satisfy constraint: ' +
-        'Member must have value greater than or equal to 1; ' +
-        'Value \'hi\' at \'returnConsumedCapacity\' failed to satisfy constraint: ' +
-        'Member must satisfy enum value set: [INDEXES, TOTAL, NONE]; ' +
-        'Value \'[]\' at \'attributesToGet\' failed to satisfy constraint: ' +
-        'Member must have length greater than or equal to 1; ' +
-        'Value \'-1\' at \'segment\' failed to satisfy constraint: ' +
-        'Member must have value greater than or equal to 0; ' +
-        'Value \'hi\' at \'select\' failed to satisfy constraint: ' +
-        'Member must satisfy enum value set: [SPECIFIC_ATTRIBUTES, COUNT, ALL_ATTRIBUTES, ALL_PROJECTED_ATTRIBUTES]; ' +
-        'Value \'\' at \'scanFilter.b.member.comparisonOperator\' failed to satisfy constraint: ' +
-        'Member must satisfy enum value set: [IN, NULL, BETWEEN, LT, NOT_CONTAINS, EQ, GT, NOT_NULL, NE, LE, BEGINS_WITH, GE, CONTAINS]; ' +
-        'Value null at \'scanFilter.a.member.comparisonOperator\' failed to satisfy constraint: ' +
-        'Member must not be null; ' +
-        'Value \'AN\' at \'conditionalOperator\' failed to satisfy constraint: ' +
-        'Member must satisfy enum value set: [OR, AND]; ' +
-        'Value \'-1\' at \'totalSegments\' failed to satisfy constraint: ' +
-        'Member must have value greater than or equal to 1; ' +
-        'Value \'abc;\' at \'tableName\' failed to satisfy constraint: ' +
-        'Member must satisfy regular expression pattern: [a-zA-Z0-9_.-]+', done)
+        ConditionalOperator: 'AN', ExpressionAttributeNames: {}, ExpressionAttributeValues: {}, ProjectionExpression: ''}, [
+          'Value \'hi\' at \'select\' failed to satisfy constraint: ' +
+          'Member must satisfy enum value set: [SPECIFIC_ATTRIBUTES, COUNT, ALL_ATTRIBUTES, ALL_PROJECTED_ATTRIBUTES]',
+          'Value \'abc;\' at \'indexName\' failed to satisfy constraint: ' +
+          'Member must satisfy regular expression pattern: [a-zA-Z0-9_.-]+',
+          'Value \'-1\' at \'totalSegments\' failed to satisfy constraint: ' +
+          'Member must have value greater than or equal to 1',
+          'Value \'hi\' at \'returnConsumedCapacity\' failed to satisfy constraint: ' +
+          'Member must satisfy enum value set: [INDEXES, TOTAL, NONE]',
+          'Value \'abc;\' at \'tableName\' failed to satisfy constraint: ' +
+          'Member must satisfy regular expression pattern: [a-zA-Z0-9_.-]+',
+          'Value \'AN\' at \'conditionalOperator\' failed to satisfy constraint: ' +
+          'Member must satisfy enum value set: [OR, AND]',
+          'Value null at \'scanFilter.a.member.comparisonOperator\' failed to satisfy constraint: ' +
+          'Member must not be null',
+          'Value \'\' at \'scanFilter.b.member.comparisonOperator\' failed to satisfy constraint: ' +
+          'Member must satisfy enum value set: [IN, NULL, BETWEEN, LT, NOT_CONTAINS, EQ, GT, NOT_NULL, NE, LE, BEGINS_WITH, GE, CONTAINS]',
+          'Value \'-1\' at \'segment\' failed to satisfy constraint: ' +
+          'Member must have value greater than or equal to 0',
+          'Value \'[]\' at \'attributesToGet\' failed to satisfy constraint: ' +
+          'Member must have length greater than or equal to 1',
+        ], done)
     })
 
     it('should return ValidationException if expression and non-expression', function(done) {
@@ -875,7 +865,7 @@ describe('scan', function() {
           IndexName: 'whatever',
           FilterExpression: 'attribute_exists(a.b.c)',
           ExclusiveStartKey: expr,
-        }, 'The provided starting key is invalid', cb)
+        }, 'The table does not have the specified index: whatever', cb)
       }, done)
     })
 
@@ -892,7 +882,7 @@ describe('scan', function() {
           IndexName: 'whatever',
           FilterExpression: 'attribute_exists(a.b.c)',
           ExclusiveStartKey: expr,
-        }, 'The provided starting key is invalid', cb)
+        }, 'The table does not have the specified index: whatever', cb)
       }, done)
     })
 
@@ -1386,6 +1376,14 @@ describe('scan', function() {
           request(opts(scanOpts), function(err, res) {
             if (err) return cb(err)
             res.statusCode.should.equal(200)
+            res.body.Items.forEach(function(item) {
+              item.b.NS.should.have.length(2)
+              item.b.NS.should.containEql('1')
+              item.b.NS.should.containEql('2')
+              delete item.b
+            })
+            delete item.b
+            delete item2.b
             res.body.Items.should.containEql(item)
             res.body.Items.should.containEql(item2)
             res.body.Items.should.have.length(2)
@@ -3109,13 +3107,13 @@ describe('scan', function() {
         if (err) return done(err)
         res.statusCode.should.equal(200)
 
-        request(opts({TableName: helpers.testHashTable, AttributesToGet: ['a'], Limit: 100000}), function(err, res) {
+        request(opts({TableName: helpers.testHashTable, AttributesToGet: ['a', 'b'], Limit: 100000}), function(err, res) {
           if (err) return done(err)
           res.statusCode.should.equal(200)
           res.body.Count.should.equal(res.body.ScannedCount)
           should.not.exist(res.body.LastEvaluatedKey)
           for (var i = 0, lastIx = 0; i < res.body.Count; i++) {
-            if (res.body.Items[i].a.S < 5) lastIx = i
+            if (res.body.Items[i].b.S == b.S) lastIx = i
           }
           var totalItems = res.body.Count
           request(opts({TableName: helpers.testHashTable, ScanFilter: scanFilter, Limit: lastIx}), function(err, res) {

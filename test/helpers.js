@@ -47,7 +47,7 @@ exports.testRangeBTable = randomName()
 
 var port = 10000 + Math.round(Math.random() * 10000),
     requestOpts = process.env.REMOTE ?
-      {host: 'dynamodb.us-east-1.amazonaws.com', method: 'POST'} :
+      {host: 'dynamodb.' + exports.awsRegion + '.amazonaws.com', method: 'POST'} :
       {host: '127.0.0.1', port: port, method: 'POST'}
 
 var dynaliteServer = dynalite({path: process.env.DYNALITE_PATH})
@@ -69,8 +69,11 @@ after(function(done) {
   })
 })
 
+var MAX_RETRIES = 20
+
 function request(opts, cb) {
   if (typeof opts === 'function') { cb = opts; opts = {} }
+  opts.retries = opts.retries || 0
   cb = once(cb)
   for (var key in requestOpts) {
     if (opts[key] === undefined)
@@ -88,14 +91,19 @@ function request(opts, cb) {
     res.on('data', function(chunk) { res.body += chunk })
     res.on('end', function() {
       try { res.body = JSON.parse(res.body) } catch (e) {} // eslint-disable-line no-empty
-      if (res.body.__type == 'com.amazon.coral.availability#ThrottlingException' ||
-          res.body.__type == 'com.amazonaws.dynamodb.v20120810#LimitExceededException')
+      if (process.env.REMOTE && opts.retries <= MAX_RETRIES &&
+          (res.body.__type == 'com.amazon.coral.availability#ThrottlingException' ||
+          res.body.__type == 'com.amazonaws.dynamodb.v20120810#LimitExceededException')) {
+        opts.retries++
         return setTimeout(request, Math.floor(Math.random() * 1000), opts, cb)
+      }
       cb(null, res)
     })
   }).on('error', function(err) {
-    if (err && ~['ECONNRESET', 'EMFILE', 'ENOTFOUND'].indexOf(err.code))
+    if (err && ~['ECONNRESET', 'EMFILE', 'ENOTFOUND'].indexOf(err.code) && opts.retries <= MAX_RETRIES) {
+      opts.retries++
       return setTimeout(request, Math.floor(Math.random() * 100), opts, cb)
+    }
     cb(err)
   }).end(opts.body)
 }
@@ -344,96 +352,136 @@ function assertSerialization(target, data, msg, done) {
 }
 
 function assertType(target, property, type, done) {
-  var msgs = [], pieces = property.split('.')
+  var msgs = [], pieces = property.split('.'), subtypeMatch = type.match(/(.+?)<(.+)>$/), subtype
+  if (subtypeMatch != null) {
+    type = subtypeMatch[1]
+    subtype = subtypeMatch[2]
+  }
   switch (type) {
     case 'Boolean':
       msgs = [
-        ['23', '\'23\' can not be converted to an Boolean'],
-        [23, 'class com.amazon.coral.value.json.numbers.TruncatingBigNumber can not be converted to an Boolean'],
-        [-2147483648, 'class com.amazon.coral.value.json.numbers.TruncatingBigNumber can not be converted to an Boolean'],
-        [2147483648, 'class com.amazon.coral.value.json.numbers.TruncatingBigNumber can not be converted to an Boolean'],
-        [34.56, 'class com.amazon.coral.value.json.numbers.TruncatingBigNumber can not be converted to an Boolean'],
-        [[], 'Start of list found where not expected'],
-        [{}, 'Start of structure or map found where not expected.'],
+        ['23', 'Unexpected token received from parser'],
+        [23, 'NUMBER_VALUE cannot be converted to Boolean'],
+        [-2147483648, 'NUMBER_VALUE cannot be converted to Boolean'],
+        [2147483648, 'NUMBER_VALUE cannot be converted to Boolean'],
+        [34.56, 'DECIMAL_VALUE cannot be converted to Boolean'],
+        [[], 'Unrecognized collection type class java.lang.Boolean'],
+        [{}, 'Start of structure or map found where not expected'],
       ]
       break
     case 'String':
       msgs = [
-        [true, 'class java.lang.Boolean can not be converted to an String'],
-        [23, 'class com.amazon.coral.value.json.numbers.TruncatingBigNumber can not be converted to an String'],
-        [-2147483648, 'class com.amazon.coral.value.json.numbers.TruncatingBigNumber can not be converted to an String'],
-        [2147483648, 'class com.amazon.coral.value.json.numbers.TruncatingBigNumber can not be converted to an String'],
-        [34.56, 'class com.amazon.coral.value.json.numbers.TruncatingBigNumber can not be converted to an String'],
-        [[], 'Start of list found where not expected'],
-        [{}, 'Start of structure or map found where not expected.'],
+        [true, 'TRUE_VALUE cannot be converted to String'],
+        [false, 'FALSE_VALUE cannot be converted to String'],
+        [23, 'NUMBER_VALUE cannot be converted to String'],
+        [-2147483648, 'NUMBER_VALUE cannot be converted to String'],
+        [2147483648, 'NUMBER_VALUE cannot be converted to String'],
+        [34.56, 'DECIMAL_VALUE cannot be converted to String'],
+        [[], 'Unrecognized collection type class java.lang.String'],
+        [{}, 'Start of structure or map found where not expected'],
       ]
       break
     case 'Integer':
       msgs = [
-        ['23', 'class java.lang.String can not be converted to an Integer'],
-        [true, 'class java.lang.Boolean can not be converted to an Integer'],
-        [[], 'Start of list found where not expected'],
-        [{}, 'Start of structure or map found where not expected.'],
+        ['23', 'STRING_VALUE cannot be converted to Integer'],
+        [true, 'TRUE_VALUE cannot be converted to Integer'],
+        [false, 'FALSE_VALUE cannot be converted to Integer'],
+        [[], 'Unrecognized collection type class java.lang.Integer'],
+        [{}, 'Start of structure or map found where not expected'],
       ]
       break
     case 'Long':
       msgs = [
-        ['23', 'class java.lang.String can not be converted to an Long'],
-        [true, 'class java.lang.Boolean can not be converted to an Long'],
-        [[], 'Start of list found where not expected'],
-        [{}, 'Start of structure or map found where not expected.'],
+        ['23', 'STRING_VALUE cannot be converted to Long'],
+        [true, 'TRUE_VALUE cannot be converted to Long'],
+        [false, 'FALSE_VALUE cannot be converted to Long'],
+        [[], 'Unrecognized collection type class java.lang.Long'],
+        [{}, 'Start of structure or map found where not expected'],
       ]
       break
     case 'Blob':
       msgs = [
-        [true, 'class java.lang.Boolean can not be converted to a Blob'],
-        [23, 'class com.amazon.coral.value.json.numbers.TruncatingBigNumber can not be converted to a Blob'],
-        [-2147483648, 'class com.amazon.coral.value.json.numbers.TruncatingBigNumber can not be converted to a Blob'],
-        [2147483648, 'class com.amazon.coral.value.json.numbers.TruncatingBigNumber can not be converted to a Blob'],
-        [34.56, 'class com.amazon.coral.value.json.numbers.TruncatingBigNumber can not be converted to a Blob'],
-        [[], 'Start of list found where not expected'],
-        [{}, 'Start of structure or map found where not expected.'],
-        ['23456', '\'23456\' can not be converted to a Blob: Base64 encoded length is expected a multiple of 4 bytes but found: 5'],
-        ['=+/=', '\'=+/=\' can not be converted to a Blob: Invalid Base64 character: \'=\''],
-        ['+/+=', '\'+/+=\' can not be converted to a Blob: Invalid last non-pad Base64 character dectected'],
+        [true, 'only base-64-encoded strings are convertible to bytes'],
+        [23, 'only base-64-encoded strings are convertible to bytes'],
+        [-2147483648, 'only base-64-encoded strings are convertible to bytes'],
+        [2147483648, 'only base-64-encoded strings are convertible to bytes'],
+        [34.56, 'only base-64-encoded strings are convertible to bytes'],
+        [[], 'Unrecognized collection type class java.nio.ByteBuffer'],
+        [{}, 'Start of structure or map found where not expected'],
+        ['23456', 'Base64 encoded length is expected a multiple of 4 bytes but found: 5'],
+        ['=+/=', 'Invalid last non-pad Base64 character dectected'],
+        ['+/+=', 'Invalid last non-pad Base64 character dectected'],
       ]
       break
     case 'List':
       msgs = [
-        ['23', 'Expected list or null'],
-        [true, 'Expected list or null'],
-        [23, 'Expected list or null'],
-        [-2147483648, 'Expected list or null'],
-        [2147483648, 'Expected list or null'],
-        [34.56, 'Expected list or null'],
-        [{}, 'Start of structure or map found where not expected.'],
+        ['23', 'Unexpected field type'],
+        [true, 'Unexpected field type'],
+        [23, 'Unexpected field type'],
+        [-2147483648, 'Unexpected field type'],
+        [2147483648, 'Unexpected field type'],
+        [34.56, 'Unexpected field type'],
+        [{}, 'Start of structure or map found where not expected'],
+      ]
+      break
+    case 'ParameterizedList':
+      msgs = [
+        ['23', 'sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl cannot be cast to java.lang.Class'],
+        [true, 'sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl cannot be cast to java.lang.Class'],
+        [23, 'sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl cannot be cast to java.lang.Class'],
+        [-2147483648, 'sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl cannot be cast to java.lang.Class'],
+        [2147483648, 'sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl cannot be cast to java.lang.Class'],
+        [34.56, 'sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl cannot be cast to java.lang.Class'],
+        [{}, 'Start of structure or map found where not expected'],
       ]
       break
     case 'Map':
       msgs = [
-        ['23', 'Expected map or null'],
-        [true, 'Expected map or null'],
-        [23, 'Expected map or null'],
-        [-2147483648, 'Expected map or null'],
-        [2147483648, 'Expected map or null'],
-        [34.56, 'Expected map or null'],
-        [[], 'Start of list found where not expected'],
+        ['23', 'Unexpected field type'],
+        [true, 'Unexpected field type'],
+        [23, 'Unexpected field type'],
+        [-2147483648, 'Unexpected field type'],
+        [2147483648, 'Unexpected field type'],
+        [34.56, 'Unexpected field type'],
+        [[], 'Unrecognized collection type java.util.Map<java.lang.String, ' + (~subtype.indexOf('.') ? subtype : 'com.amazonaws.dynamodb.v20120810.' + subtype) + '>'],
       ]
       break
-    case 'Structure':
+    case 'ParameterizedMap':
       msgs = [
-        ['23', 'Expected null'],
-        [true, 'Expected null'],
-        [23, 'Expected null'],
-        [-2147483648, 'Expected null'],
-        [2147483648, 'Expected null'],
-        [34.56, 'Expected null'],
-        [[], 'Start of list found where not expected'],
+        ['23', 'sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl cannot be cast to java.lang.Class'],
+        [true, 'sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl cannot be cast to java.lang.Class'],
+        [23, 'sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl cannot be cast to java.lang.Class'],
+        [-2147483648, 'sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl cannot be cast to java.lang.Class'],
+        [2147483648, 'sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl cannot be cast to java.lang.Class'],
+        [34.56, 'sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl cannot be cast to java.lang.Class'],
+        [[], 'Unrecognized collection type java.util.Map<java.lang.String, com.amazonaws.dynamodb.v20120810.AttributeValue>'],
       ]
       break
-    case 'AttrStructure':
+    case 'ValueStruct':
+      msgs = [
+        ['23', 'Unexpected value type in payload'],
+        [true, 'Unexpected value type in payload'],
+        [23, 'Unexpected value type in payload'],
+        [-2147483648, 'Unexpected value type in payload'],
+        [2147483648, 'Unexpected value type in payload'],
+        [34.56, 'Unexpected value type in payload'],
+        [[], 'Unrecognized collection type class com.amazonaws.dynamodb.v20120810.' + subtype],
+      ]
+      break
+    case 'FieldStruct':
+      msgs = [
+        ['23', 'Unexpected field type'],
+        [true, 'Unexpected field type'],
+        [23, 'Unexpected field type'],
+        [-2147483648, 'Unexpected field type'],
+        [2147483648, 'Unexpected field type'],
+        [34.56, 'Unexpected field type'],
+        [[], 'Unrecognized collection type class com.amazonaws.dynamodb.v20120810.' + subtype],
+      ]
+      break
+    case 'AttrStruct':
       async.forEach([
-        [property, 'Structure'],
+        [property, subtype + '<AttributeValue>'],
         [property + '.S', 'String'],
         [property + '.N', 'String'],
         [property + '.B', 'Blob'],
@@ -446,11 +494,11 @@ function assertType(target, property, type, done) {
         [property + '.BS', 'List'],
         [property + '.BS.0', 'Blob'],
         [property + '.L', 'List'],
-        [property + '.L.0', 'Structure'],
+        [property + '.L.0', 'ValueStruct<AttributeValue>'],
         [property + '.L.0.BS', 'List'],
         [property + '.L.0.BS.0', 'Blob'],
-        [property + '.M', 'Map'],
-        [property + '.M.a', 'Structure'],
+        [property + '.M', 'Map<AttributeValue>'],
+        [property + '.M.a', 'ValueStruct<AttributeValue>'],
         [property + '.M.a.BS', 'List'],
         [property + '.M.a.BS.0', 'Blob'],
       ], function(test, cb) { assertType(target, test[0], test[1], cb) }, done)
@@ -474,17 +522,21 @@ function assertValidation(target, data, msg, done) {
   request(opts(target, data), function(err, res) {
     if (err) return done(err)
     res.statusCode.should.equal(400)
+    if (typeof res.body !== 'object') {
+      return done(new Error('Not JSON: ' + res.body))
+    }
+    res.body.__type.should.equal('com.amazon.coral.validate#ValidationException')
     if (msg instanceof RegExp) {
-      res.body.__type.should.equal('com.amazon.coral.validate#ValidationException')
       res.body.message.should.match(msg)
     } else if (Array.isArray(msg)) {
-      res.body.__type.should.equal('com.amazon.coral.validate#ValidationException')
-      res.body.message.should.equalOneOf(msg)
+      var prefix = msg.length + ' validation error' + (msg.length === 1 ? '' : 's') + ' detected: '
+      res.body.message.should.startWith(prefix)
+      var errors = res.body.message.slice(prefix.length).split('; ')
+      for (var i = 0; i < msg.length; i++) {
+        errors.should.matchAny(msg[i])
+      }
     } else {
-      res.body.should.eql({
-        __type: 'com.amazon.coral.validate#ValidationException',
-        message: msg,
-      })
+      res.body.message.should.equal(msg)
     }
     done()
   })
