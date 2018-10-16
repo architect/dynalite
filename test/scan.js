@@ -1731,11 +1731,11 @@ describe('scan', function() {
     })
 
     it('should scan by LE on type B', function(done) {
-      var item = {a: {S: helpers.randomString()}, b: {B: new Buffer('ce', 'hex').toString('base64')}, c: {S: helpers.randomString()}},
-          item2 = {a: {S: helpers.randomString()}, b: {B: new Buffer('d0', 'hex').toString('base64')}, c: item.c},
-          item3 = {a: {S: helpers.randomString()}, b: {B: new Buffer('cf', 'hex').toString('base64')}, c: item.c},
-          item4 = {a: {S: helpers.randomString()}, b: {B: new Buffer('d000', 'hex').toString('base64')}, c: item.c},
-          item5 = {a: {S: helpers.randomString()}, b: {B: new Buffer('cfff', 'hex').toString('base64')}, c: item.c},
+      var item = {a: {S: helpers.randomString()}, b: {B: Buffer.from('ce', 'hex').toString('base64')}, c: {S: helpers.randomString()}},
+          item2 = {a: {S: helpers.randomString()}, b: {B: Buffer.from('d0', 'hex').toString('base64')}, c: item.c},
+          item3 = {a: {S: helpers.randomString()}, b: {B: Buffer.from('cf', 'hex').toString('base64')}, c: item.c},
+          item4 = {a: {S: helpers.randomString()}, b: {B: Buffer.from('d000', 'hex').toString('base64')}, c: item.c},
+          item5 = {a: {S: helpers.randomString()}, b: {B: Buffer.from('cfff', 'hex').toString('base64')}, c: item.c},
           batchReq = {RequestItems: {}}
       batchReq.RequestItems[helpers.testHashTable] = [
         {PutRequest: {Item: item}},
@@ -1855,11 +1855,11 @@ describe('scan', function() {
     })
 
     it('should scan by LT on type B', function(done) {
-      var item = {a: {S: helpers.randomString()}, b: {B: new Buffer('ce', 'hex').toString('base64')}, c: {S: helpers.randomString()}},
-          item2 = {a: {S: helpers.randomString()}, b: {B: new Buffer('d0', 'hex').toString('base64')}, c: item.c},
-          item3 = {a: {S: helpers.randomString()}, b: {B: new Buffer('cf', 'hex').toString('base64')}, c: item.c},
-          item4 = {a: {S: helpers.randomString()}, b: {B: new Buffer('d000', 'hex').toString('base64')}, c: item.c},
-          item5 = {a: {S: helpers.randomString()}, b: {B: new Buffer('cfff', 'hex').toString('base64')}, c: item.c},
+      var item = {a: {S: helpers.randomString()}, b: {B: Buffer.from('ce', 'hex').toString('base64')}, c: {S: helpers.randomString()}},
+          item2 = {a: {S: helpers.randomString()}, b: {B: Buffer.from('d0', 'hex').toString('base64')}, c: item.c},
+          item3 = {a: {S: helpers.randomString()}, b: {B: Buffer.from('cf', 'hex').toString('base64')}, c: item.c},
+          item4 = {a: {S: helpers.randomString()}, b: {B: Buffer.from('d000', 'hex').toString('base64')}, c: item.c},
+          item5 = {a: {S: helpers.randomString()}, b: {B: Buffer.from('cfff', 'hex').toString('base64')}, c: item.c},
           batchReq = {RequestItems: {}}
       batchReq.RequestItems[helpers.testHashTable] = [
         {PutRequest: {Item: item}},
@@ -1979,11 +1979,11 @@ describe('scan', function() {
     })
 
     it('should scan by GE on type B', function(done) {
-      var item = {a: {S: helpers.randomString()}, b: {B: new Buffer('ce', 'hex').toString('base64')}, c: {S: helpers.randomString()}},
-          item2 = {a: {S: helpers.randomString()}, b: {B: new Buffer('d0', 'hex').toString('base64')}, c: item.c},
-          item3 = {a: {S: helpers.randomString()}, b: {B: new Buffer('cf', 'hex').toString('base64')}, c: item.c},
-          item4 = {a: {S: helpers.randomString()}, b: {B: new Buffer('d000', 'hex').toString('base64')}, c: item.c},
-          item5 = {a: {S: helpers.randomString()}, b: {B: new Buffer('cfff', 'hex').toString('base64')}, c: item.c},
+      var item = {a: {S: helpers.randomString()}, b: {B: Buffer.from('ce', 'hex').toString('base64')}, c: {S: helpers.randomString()}},
+          item2 = {a: {S: helpers.randomString()}, b: {B: Buffer.from('d0', 'hex').toString('base64')}, c: item.c},
+          item3 = {a: {S: helpers.randomString()}, b: {B: Buffer.from('cf', 'hex').toString('base64')}, c: item.c},
+          item4 = {a: {S: helpers.randomString()}, b: {B: Buffer.from('d000', 'hex').toString('base64')}, c: item.c},
+          item5 = {a: {S: helpers.randomString()}, b: {B: Buffer.from('cfff', 'hex').toString('base64')}, c: item.c},
           batchReq = {RequestItems: {}}
       batchReq.RequestItems[helpers.testHashTable] = [
         {PutRequest: {Item: item}},
@@ -2102,11 +2102,11 @@ describe('scan', function() {
     })
 
     it('should scan by GT on type B', function(done) {
-      var item = {a: {S: helpers.randomString()}, b: {B: new Buffer('ce', 'hex').toString('base64')}, c: {S: helpers.randomString()}},
-          item2 = {a: {S: helpers.randomString()}, b: {B: new Buffer('d0', 'hex').toString('base64')}, c: item.c},
-          item3 = {a: {S: helpers.randomString()}, b: {B: new Buffer('cf', 'hex').toString('base64')}, c: item.c},
-          item4 = {a: {S: helpers.randomString()}, b: {B: new Buffer('d000', 'hex').toString('base64')}, c: item.c},
-          item5 = {a: {S: helpers.randomString()}, b: {B: new Buffer('cfff', 'hex').toString('base64')}, c: item.c},
+      var item = {a: {S: helpers.randomString()}, b: {B: Buffer.from('ce', 'hex').toString('base64')}, c: {S: helpers.randomString()}},
+          item2 = {a: {S: helpers.randomString()}, b: {B: Buffer.from('d0', 'hex').toString('base64')}, c: item.c},
+          item3 = {a: {S: helpers.randomString()}, b: {B: Buffer.from('cf', 'hex').toString('base64')}, c: item.c},
+          item4 = {a: {S: helpers.randomString()}, b: {B: Buffer.from('d000', 'hex').toString('base64')}, c: item.c},
+          item5 = {a: {S: helpers.randomString()}, b: {B: Buffer.from('cfff', 'hex').toString('base64')}, c: item.c},
           batchReq = {RequestItems: {}}
       batchReq.RequestItems[helpers.testHashTable] = [
         {PutRequest: {Item: item}},
@@ -2217,8 +2217,8 @@ describe('scan', function() {
     it('should scan by CONTAINS on type S', function(done) {
       var item = {a: {S: helpers.randomString()}, b: {S: 'abdef'}, c: {S: helpers.randomString()}},
           item2 = {a: {S: helpers.randomString()}, b: {SS: ['abd', 'bde']}, c: item.c},
-          item3 = {a: {S: helpers.randomString()}, b: {B: new Buffer('abdef').toString('base64')}, c: item.c},
-          item4 = {a: {S: helpers.randomString()}, b: {BS: ['abcd', new Buffer('bde').toString('base64')]}, c: item.c},
+          item3 = {a: {S: helpers.randomString()}, b: {B: Buffer.from('abdef').toString('base64')}, c: item.c},
+          item4 = {a: {S: helpers.randomString()}, b: {BS: ['abcd', Buffer.from('bde').toString('base64')]}, c: item.c},
           item5 = {a: {S: helpers.randomString()}, b: {S: 'bde'}, c: item.c},
           item6 = {a: {S: helpers.randomString()}, b: {S: 'abd'}, c: item.c},
           item7 = {a: {S: helpers.randomString()}, b: {L: [{'N': '123'}, {'S': 'bde'}]}, c: item.c},
@@ -2267,8 +2267,8 @@ describe('scan', function() {
     it('should scan by CONTAINS on type N', function(done) {
       var item = {a: {S: helpers.randomString()}, b: {N: '1234'}, c: {S: helpers.randomString()}},
           item2 = {a: {S: helpers.randomString()}, b: {NS: ['123', '234']}, c: item.c},
-          item3 = {a: {S: helpers.randomString()}, b: {B: new Buffer('1234').toString('base64')}, c: item.c},
-          item4 = {a: {S: helpers.randomString()}, b: {BS: [new Buffer('234').toString('base64')]}, c: item.c},
+          item3 = {a: {S: helpers.randomString()}, b: {B: Buffer.from('1234').toString('base64')}, c: item.c},
+          item4 = {a: {S: helpers.randomString()}, b: {BS: [Buffer.from('234').toString('base64')]}, c: item.c},
           item5 = {a: {S: helpers.randomString()}, b: {SS: ['234']}, c: item.c},
           item6 = {a: {S: helpers.randomString()}, b: {L: [{'S': 'abd'}, {'N': '234'}]}, c: item.c},
           item7 = {a: {S: helpers.randomString()}, b: {L: [{'N': '123'}]}, c: item.c},
@@ -2313,13 +2313,13 @@ describe('scan', function() {
     it('should scan by CONTAINS on type B', function(done) {
       var item = {a: {S: helpers.randomString()}, b: {S: 'abdef'}, c: {S: helpers.randomString()}},
           item2 = {a: {S: helpers.randomString()}, b: {SS: ['abd', 'bde']}, c: item.c},
-          item3 = {a: {S: helpers.randomString()}, b: {B: new Buffer('abdef').toString('base64')}, c: item.c},
-          item4 = {a: {S: helpers.randomString()}, b: {BS: [new Buffer('bde').toString('base64'), 'abcd']}, c: item.c},
-          item5 = {a: {S: helpers.randomString()}, b: {B: new Buffer('bde').toString('base64')}, c: item.c},
+          item3 = {a: {S: helpers.randomString()}, b: {B: Buffer.from('abdef').toString('base64')}, c: item.c},
+          item4 = {a: {S: helpers.randomString()}, b: {BS: [Buffer.from('bde').toString('base64'), 'abcd']}, c: item.c},
+          item5 = {a: {S: helpers.randomString()}, b: {B: Buffer.from('bde').toString('base64')}, c: item.c},
           item6 = {a: {S: helpers.randomString()}, b: {S: 'abd'}, c: item.c},
-          item7 = {a: {S: helpers.randomString()}, b: {L: [{'N': '123'}, {'B': new Buffer('bde').toString('base64')}]}, c: item.c},
-          item8 = {a: {S: helpers.randomString()}, b: {L: [{'B': new Buffer('abd').toString('base64')}]}, c: item.c},
-          item9 = {a: {S: helpers.randomString()}, b: {L: [{'B': new Buffer('abde').toString('base64')}]}, c: item.c},
+          item7 = {a: {S: helpers.randomString()}, b: {L: [{'N': '123'}, {'B': Buffer.from('bde').toString('base64')}]}, c: item.c},
+          item8 = {a: {S: helpers.randomString()}, b: {L: [{'B': Buffer.from('abd').toString('base64')}]}, c: item.c},
+          item9 = {a: {S: helpers.randomString()}, b: {L: [{'B': Buffer.from('abde').toString('base64')}]}, c: item.c},
           batchReq = {RequestItems: {}}
       batchReq.RequestItems[helpers.testHashTable] = [
         {PutRequest: {Item: item}},
@@ -2363,8 +2363,8 @@ describe('scan', function() {
     it('should scan by NOT_CONTAINS on type S', function(done) {
       var item = {a: {S: helpers.randomString()}, b: {S: 'abdef'}, c: {S: helpers.randomString()}},
           item2 = {a: {S: helpers.randomString()}, b: {SS: ['abd', 'bde']}, c: item.c},
-          item3 = {a: {S: helpers.randomString()}, b: {B: new Buffer('abdef').toString('base64')}, c: item.c},
-          item4 = {a: {S: helpers.randomString()}, b: {BS: [new Buffer('bde').toString('base64'), 'abcd']}, c: item.c},
+          item3 = {a: {S: helpers.randomString()}, b: {B: Buffer.from('abdef').toString('base64')}, c: item.c},
+          item4 = {a: {S: helpers.randomString()}, b: {BS: [Buffer.from('bde').toString('base64'), 'abcd']}, c: item.c},
           item5 = {a: {S: helpers.randomString()}, b: {S: 'bde'}, c: item.c},
           item6 = {a: {S: helpers.randomString()}, b: {S: 'abd'}, c: item.c},
           batchReq = {RequestItems: {}}
@@ -2406,8 +2406,8 @@ describe('scan', function() {
     it('should scan by NOT_CONTAINS on type N', function(done) {
       var item = {a: {S: helpers.randomString()}, b: {N: '1234'}, c: {S: helpers.randomString()}},
           item2 = {a: {S: helpers.randomString()}, b: {NS: ['123', '234']}, c: item.c},
-          item3 = {a: {S: helpers.randomString()}, b: {B: new Buffer('1234').toString('base64')}, c: item.c},
-          item4 = {a: {S: helpers.randomString()}, b: {BS: [new Buffer('234').toString('base64')]}, c: item.c},
+          item3 = {a: {S: helpers.randomString()}, b: {B: Buffer.from('1234').toString('base64')}, c: item.c},
+          item4 = {a: {S: helpers.randomString()}, b: {BS: [Buffer.from('234').toString('base64')]}, c: item.c},
           item5 = {a: {S: helpers.randomString()}, b: {SS: ['234']}, c: item.c},
           batchReq = {RequestItems: {}}
       batchReq.RequestItems[helpers.testHashTable] = [
@@ -2448,9 +2448,9 @@ describe('scan', function() {
     it('should scan by NOT_CONTAINS on type B', function(done) {
       var item = {a: {S: helpers.randomString()}, b: {S: 'abdef'}, c: {S: helpers.randomString()}},
           item2 = {a: {S: helpers.randomString()}, b: {SS: ['abd', 'bde']}, c: item.c},
-          item3 = {a: {S: helpers.randomString()}, b: {B: new Buffer('abdef').toString('base64')}, c: item.c},
-          item4 = {a: {S: helpers.randomString()}, b: {BS: [new Buffer('bde').toString('base64'), 'abcd']}, c: item.c},
-          item5 = {a: {S: helpers.randomString()}, b: {B: new Buffer('bde').toString('base64')}, c: item.c},
+          item3 = {a: {S: helpers.randomString()}, b: {B: Buffer.from('abdef').toString('base64')}, c: item.c},
+          item4 = {a: {S: helpers.randomString()}, b: {BS: [Buffer.from('bde').toString('base64'), 'abcd']}, c: item.c},
+          item5 = {a: {S: helpers.randomString()}, b: {B: Buffer.from('bde').toString('base64')}, c: item.c},
           item6 = {a: {S: helpers.randomString()}, b: {S: 'abd'}, c: item.c},
           batchReq = {RequestItems: {}}
       batchReq.RequestItems[helpers.testHashTable] = [
@@ -2491,7 +2491,7 @@ describe('scan', function() {
     it('should scan by BEGINS_WITH on type S', function(done) {
       var item = {a: {S: helpers.randomString()}, b: {S: 'abdef'}, c: {S: helpers.randomString()}},
           item2 = {a: {S: helpers.randomString()}, b: {SS: ['abd', 'bde']}, c: item.c},
-          item3 = {a: {S: helpers.randomString()}, b: {B: new Buffer('abdef').toString('base64')}, c: item.c},
+          item3 = {a: {S: helpers.randomString()}, b: {B: Buffer.from('abdef').toString('base64')}, c: item.c},
           item4 = {a: {S: helpers.randomString()}, b: {S: 'ab'}, c: item.c},
           item5 = {a: {S: helpers.randomString()}, b: {S: 'abd'}, c: item.c},
           batchReq = {RequestItems: {}}
@@ -2531,9 +2531,9 @@ describe('scan', function() {
     it('should scan by BEGINS_WITH on type B', function(done) {
       var item = {a: {S: helpers.randomString()}, b: {S: 'abdef'}, c: {S: helpers.randomString()}},
           item2 = {a: {S: helpers.randomString()}, b: {SS: ['abd', 'bde']}, c: item.c},
-          item3 = {a: {S: helpers.randomString()}, b: {B: new Buffer('abdef').toString('base64')}, c: item.c},
+          item3 = {a: {S: helpers.randomString()}, b: {B: Buffer.from('abdef').toString('base64')}, c: item.c},
           item4 = {a: {S: helpers.randomString()}, b: {S: 'ab'}, c: item.c},
-          item5 = {a: {S: helpers.randomString()}, b: {B: new Buffer('abd').toString('base64')}, c: item.c},
+          item5 = {a: {S: helpers.randomString()}, b: {B: Buffer.from('abd').toString('base64')}, c: item.c},
           batchReq = {RequestItems: {}}
       batchReq.RequestItems[helpers.testHashTable] = [
         {PutRequest: {Item: item}},
@@ -2571,7 +2571,7 @@ describe('scan', function() {
     it('should scan by IN on type S', function(done) {
       var item = {a: {S: helpers.randomString()}, b: {S: 'abdef'}, c: {S: helpers.randomString()}},
           item2 = {a: {S: helpers.randomString()}, b: {SS: ['abd', 'bde']}, c: item.c},
-          item3 = {a: {S: helpers.randomString()}, b: {B: new Buffer('abdef').toString('base64')}, c: item.c},
+          item3 = {a: {S: helpers.randomString()}, b: {B: Buffer.from('abdef').toString('base64')}, c: item.c},
           item4 = {a: {S: helpers.randomString()}, b: {S: 'ab'}, c: item.c},
           item5 = {a: {S: helpers.randomString()}, b: {S: 'abd'}, c: item.c},
           batchReq = {RequestItems: {}}
@@ -2611,7 +2611,7 @@ describe('scan', function() {
     it('should scan by IN on type N', function(done) {
       var item = {a: {S: helpers.randomString()}, b: {S: '1234'}, c: {S: helpers.randomString()}},
           item2 = {a: {S: helpers.randomString()}, b: {NS: ['1234']}, c: item.c},
-          item3 = {a: {S: helpers.randomString()}, b: {B: new Buffer('1234').toString('base64')}, c: item.c},
+          item3 = {a: {S: helpers.randomString()}, b: {B: Buffer.from('1234').toString('base64')}, c: item.c},
           item4 = {a: {S: helpers.randomString()}, b: {N: '1234'}, c: item.c},
           item5 = {a: {S: helpers.randomString()}, b: {N: '123.45'}, c: item.c},
           batchReq = {RequestItems: {}}
@@ -2650,10 +2650,10 @@ describe('scan', function() {
 
     it('should scan by IN on type B', function(done) {
       var item = {a: {S: helpers.randomString()}, b: {S: '1234'}, c: {S: helpers.randomString()}},
-          item2 = {a: {S: helpers.randomString()}, b: {BS: [new Buffer('1234').toString('base64')]}, c: item.c},
-          item3 = {a: {S: helpers.randomString()}, b: {B: new Buffer('1234').toString('base64')}, c: item.c},
+          item2 = {a: {S: helpers.randomString()}, b: {BS: [Buffer.from('1234').toString('base64')]}, c: item.c},
+          item3 = {a: {S: helpers.randomString()}, b: {B: Buffer.from('1234').toString('base64')}, c: item.c},
           item4 = {a: {S: helpers.randomString()}, b: {N: '1234'}, c: item.c},
-          item5 = {a: {S: helpers.randomString()}, b: {B: new Buffer('12345').toString('base64')}, c: item.c},
+          item5 = {a: {S: helpers.randomString()}, b: {B: Buffer.from('12345').toString('base64')}, c: item.c},
           batchReq = {RequestItems: {}}
       batchReq.RequestItems[helpers.testHashTable] = [
         {PutRequest: {Item: item}},
@@ -2771,11 +2771,11 @@ describe('scan', function() {
     })
 
     it('should scan by BETWEEN on type B', function(done) {
-      var item = {a: {S: helpers.randomString()}, b: {B: new Buffer('ce', 'hex').toString('base64')}, c: {S: helpers.randomString()}},
-          item2 = {a: {S: helpers.randomString()}, b: {B: new Buffer('d0', 'hex').toString('base64')}, c: item.c},
-          item3 = {a: {S: helpers.randomString()}, b: {B: new Buffer('cf', 'hex').toString('base64')}, c: item.c},
-          item4 = {a: {S: helpers.randomString()}, b: {B: new Buffer('d000', 'hex').toString('base64')}, c: item.c},
-          item5 = {a: {S: helpers.randomString()}, b: {B: new Buffer('cfff', 'hex').toString('base64')}, c: item.c},
+      var item = {a: {S: helpers.randomString()}, b: {B: Buffer.from('ce', 'hex').toString('base64')}, c: {S: helpers.randomString()}},
+          item2 = {a: {S: helpers.randomString()}, b: {B: Buffer.from('d0', 'hex').toString('base64')}, c: item.c},
+          item3 = {a: {S: helpers.randomString()}, b: {B: Buffer.from('cf', 'hex').toString('base64')}, c: item.c},
+          item4 = {a: {S: helpers.randomString()}, b: {B: Buffer.from('d000', 'hex').toString('base64')}, c: item.c},
+          item5 = {a: {S: helpers.randomString()}, b: {B: Buffer.from('cfff', 'hex').toString('base64')}, c: item.c},
           batchReq = {RequestItems: {}}
       batchReq.RequestItems[helpers.testHashTable] = [
         {PutRequest: {Item: item}},

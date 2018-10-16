@@ -303,7 +303,7 @@ function traverseIndexes(table, visitIndex) {
 function checkKeySize(keyPiece, type, isHash) {
   // Numbers are always fine
   if (type == 'N') return null
-  if (type == 'B') keyPiece = new Buffer(keyPiece, 'base64')
+  if (type == 'B') keyPiece = Buffer.from(keyPiece, 'base64')
   if (isHash && keyPiece.length > 2048)
     return validationError('One or more parameter values were invalid: ' +
       'Size of hashkey has exceeded the maximum size limit of2048 bytes')
@@ -317,7 +317,7 @@ function toRangeStr(keyPiece, type) {
     type = Object.keys(keyPiece)[0]
     keyPiece = keyPiece[type]
   }
-  if (type == 'S') return new Buffer(keyPiece, 'utf8').toString('hex')
+  if (type == 'S') return Buffer.from(keyPiece, 'utf8').toString('hex')
   return toLexiStr(keyPiece, type)
 }
 
@@ -337,7 +337,7 @@ function toLexiStr(keyPiece, type) {
     type = Object.keys(keyPiece)[0]
     keyPiece = keyPiece[type]
   }
-  if (type == 'B') return new Buffer(keyPiece, 'base64').toString('hex')
+  if (type == 'B') return Buffer.from(keyPiece, 'base64').toString('hex')
   if (type != 'N') return keyPiece
   var bigNum = new Big(keyPiece), digits,
       exp = !bigNum.c[0] ? 0 : bigNum.s == -1 ? 125 - bigNum.e : 130 + bigNum.e
@@ -352,29 +352,29 @@ function toLexiStr(keyPiece, type) {
 
 function hashPrefix(hashKey, hashType, rangeKey, rangeType) {
   if (hashType == 'S') {
-    hashKey = new Buffer(hashKey, 'utf8')
+    hashKey = Buffer.from(hashKey, 'utf8')
   } else if (hashType == 'N') {
     hashKey = numToBuffer(hashKey)
   } else if (hashType == 'B') {
-    hashKey = new Buffer(hashKey, 'base64')
+    hashKey = Buffer.from(hashKey, 'base64')
   }
   if (rangeKey) {
     if (rangeType == 'S') {
-      rangeKey = new Buffer(rangeKey, 'utf8')
+      rangeKey = Buffer.from(rangeKey, 'utf8')
     } else if (rangeType == 'N') {
       rangeKey = numToBuffer(rangeKey)
     } else if (rangeType == 'B') {
-      rangeKey = new Buffer(rangeKey, 'base64')
+      rangeKey = Buffer.from(rangeKey, 'base64')
     }
   } else {
-    rangeKey = new Buffer(0)
+    rangeKey = Buffer.from([])
   }
   // TODO: Can use the whole hash if we deem it important - for now just first six chars
   return crypto.createHash('md5').update('Outliers').update(hashKey).update(rangeKey).digest('hex').slice(0, 6)
 }
 
 function numToBuffer(num) {
-  if (+num === 0) return new Buffer([-128])
+  if (+num === 0) return Buffer.from([-128])
 
   num = new Big(num)
 
@@ -412,7 +412,7 @@ function numToBuffer(num) {
     }
   }
 
-  return new Buffer(byteArray)
+  return Buffer.from(byteArray)
 }
 
 function checkConditional(data, existingItem) {
@@ -511,7 +511,7 @@ function valSize(val, type, compress) {
     case 'S':
       return val.length
     case 'B':
-      return new Buffer(val, 'base64').length
+      return Buffer.from(val, 'base64').length
     case 'N':
       val = new Big(val)
       var numDigits = val.c.length
@@ -599,7 +599,7 @@ function resolveArg(arg, item) {
     } else if (val.S) {
       length = val.S.length
     } else if (val.B) {
-      length = new Buffer(val.B, 'base64').length
+      length = Buffer.from(val.B, 'base64').length
     } else if (val.SS || val.BS || val.NS || val.L) {
       length = (val.SS || val.BS || val.NS || val.L).length
     } else if (val.M) {
@@ -669,8 +669,8 @@ function compare(comp, val, compVals) {
     case 'begins_with':
       if (compType != attrType) return false
       if (compType == 'B') {
-        attrVal = new Buffer(attrVal, 'base64').toString()
-        compVal = new Buffer(compVal, 'base64').toString()
+        attrVal = Buffer.from(attrVal, 'base64').toString()
+        compVal = Buffer.from(compVal, 'base64').toString()
       }
       if (attrVal.indexOf(compVal) !== 0) return false
       break
@@ -718,14 +718,14 @@ function contains(compType, compVal, attrType, attrVal) {
   }
   if (compType === 'B') {
     if (attrType !== 'B' && attrType !== 'BS' && attrType !== 'L') return false
-    var compValString = new Buffer(compVal, 'base64').toString()
+    var compValString = Buffer.from(compVal, 'base64').toString()
     if (attrType === 'B') {
-      var attrValString = new Buffer(attrVal, 'base64').toString()
+      var attrValString = Buffer.from(attrVal, 'base64').toString()
       return !!~attrValString.indexOf(compValString)
     }
     return attrVal.some(function(val) {
-      if (attrType !== 'L') return compValString === new Buffer(val, 'base64').toString()
-      if (attrType === 'L' && val.B) return compValString === new Buffer(val.B, 'base64').toString()
+      if (attrType !== 'L') return compValString === Buffer.from(val, 'base64').toString()
+      if (attrType === 'L' && val.B) return compValString === Buffer.from(val.B, 'base64').toString()
       return false
     })
   }
