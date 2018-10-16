@@ -2793,6 +2793,24 @@ describe('query', function() {
       })
     })
 
+    it('should return items in reverse order with ExclusiveStartKey for strings', function(done) {
+      var item = {a: {S: helpers.randomString()}, b: {S: '1'}},
+          item2 = {a: item.a, b: {S: '2'}},
+          item3 = {a: item.a, b: {S: '10'}},
+          items = [item, item2, item3]
+      helpers.batchBulkPut(helpers.testRangeTable, items, function(err) {
+        if (err) return done(err)
+        request(opts({TableName: helpers.testRangeTable, ConsistentRead: true, KeyConditions: {
+          a: {ComparisonOperator: 'EQ', AttributeValueList: [item.a]},
+        }, ScanIndexForward: false, ExclusiveStartKey: item2}), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.should.eql({Count: 2, ScannedCount: 2, Items: [item3, item]})
+          done()
+        })
+      })
+    })
+
     it('should return items in reverse order for numbers', function(done) {
       var item = {a: {S: helpers.randomString()}, b: {N: '0'}},
           item2 = {a: item.a, b: {N: '99.1'}},
