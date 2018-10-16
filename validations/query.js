@@ -1,57 +1,28 @@
 var validations = require('./index')
 
 exports.types = {
-  Limit: {
-    type: 'Integer',
-    greaterThanOrEqual: 1,
+  Select: {
+    type: 'String',
+    enum: ['SPECIFIC_ATTRIBUTES', 'COUNT', 'ALL_ATTRIBUTES', 'ALL_PROJECTED_ATTRIBUTES'],
   },
-  ExclusiveStartKey: {
-    type: 'Map',
-    children: 'AttrStructure',
+  IndexName: {
+    type: 'String',
+    regex: '[a-zA-Z0-9_.-]+',
+    lengthGreaterThanOrEqual: 3,
+    lengthLessThanOrEqual: 255,
   },
   ReturnConsumedCapacity: {
     type: 'String',
     enum: ['INDEXES', 'TOTAL', 'NONE'],
   },
-  AttributesToGet: {
-    type: 'List',
-    lengthGreaterThanOrEqual: 1,
-    lengthLessThanOrEqual: 255,
-    children: 'String',
-  },
   QueryFilter: {
-    type: 'Map',
+    type: 'Map<Condition>',
     children: {
-      type: 'Structure',
+      type: 'ValueStruct<Condition>',
       children: {
         AttributeValueList: {
           type: 'List',
-          children: 'AttrStructure',
-        },
-        ComparisonOperator: {
-          type: 'String',
-          notNull: true,
-          enum: ['IN', 'NULL', 'BETWEEN', 'LT', 'NOT_CONTAINS', 'EQ', 'GT', 'NOT_NULL', 'NE', 'LE', 'BEGINS_WITH', 'GE', 'CONTAINS'],
-        },
-      },
-    },
-  },
-  Select: {
-    type: 'String',
-    enum: ['SPECIFIC_ATTRIBUTES', 'COUNT', 'ALL_ATTRIBUTES', 'ALL_PROJECTED_ATTRIBUTES'],
-  },
-  ConditionalOperator: {
-    type: 'String',
-    enum: ['OR', 'AND'],
-  },
-  KeyConditions: {
-    type: 'Map',
-    children: {
-      type: 'Structure',
-      children: {
-        AttributeValueList: {
-          type: 'List',
-          children: 'AttrStructure',
+          children: 'AttrStruct<ValueStruct>',
         },
         ComparisonOperator: {
           type: 'String',
@@ -68,13 +39,42 @@ exports.types = {
     lengthGreaterThanOrEqual: 3,
     lengthLessThanOrEqual: 255,
   },
-  ConsistentRead: 'Boolean',
-  IndexName: {
+  ConditionalOperator: {
     type: 'String',
-    regex: '[a-zA-Z0-9_.-]+',
-    lengthGreaterThanOrEqual: 3,
-    lengthLessThanOrEqual: 255,
+    enum: ['OR', 'AND'],
   },
+  AttributesToGet: {
+    type: 'List',
+    lengthGreaterThanOrEqual: 1,
+    lengthLessThanOrEqual: 255,
+    children: 'String',
+  },
+  Limit: {
+    type: 'Integer',
+    greaterThanOrEqual: 1,
+  },
+  KeyConditions: {
+    type: 'Map<Condition>',
+    children: {
+      type: 'ValueStruct<Condition>',
+      children: {
+        ComparisonOperator: {
+          type: 'String',
+          notNull: true,
+          enum: ['IN', 'NULL', 'BETWEEN', 'LT', 'NOT_CONTAINS', 'EQ', 'GT', 'NOT_NULL', 'NE', 'LE', 'BEGINS_WITH', 'GE', 'CONTAINS'],
+        },
+        AttributeValueList: {
+          type: 'List',
+          children: 'AttrStruct<ValueStruct>',
+        },
+      },
+    },
+  },
+  ExclusiveStartKey: {
+    type: 'Map<AttributeValue>',
+    children: 'AttrStruct<ValueStruct>',
+  },
+  ConsistentRead: 'Boolean',
   ScanIndexForward: 'Boolean',
   KeyConditionExpression: {
     type: 'String',
@@ -86,11 +86,11 @@ exports.types = {
     type: 'String',
   },
   ExpressionAttributeValues: {
-    type: 'Map',
-    children: 'AttrStructure',
+    type: 'Map<AttributeValue>',
+    children: 'AttrStruct<ValueStruct>',
   },
   ExpressionAttributeNames: {
-    type: 'Map',
+    type: 'Map<java.lang.String>',
     children: 'String',
   },
 }
@@ -102,7 +102,7 @@ exports.custom = function(data) {
     ['AttributesToGet', 'QueryFilter', 'ConditionalOperator', 'KeyConditions'])
   if (msg) return msg
 
-  var i, key
+  var key
   msg = validations.validateConditions(data.QueryFilter)
   if (msg) return msg
 

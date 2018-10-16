@@ -25,6 +25,7 @@ exports.toRangeStr = toRangeStr
 exports.toLexiStr = toLexiStr
 exports.hashPrefix = hashPrefix
 exports.validationError = validationError
+exports.limitError = limitError
 exports.checkConditional = checkConditional
 exports.itemSize = itemSize
 exports.capacityUnits = capacityUnits
@@ -272,7 +273,7 @@ function traverseKey(table, keySchema, visitKey) {
 function traverseIndexes(table, visitIndex) {
   var i, j, k, attr, type, found
   if (table.GlobalSecondaryIndexes) {
-    for (i = table.GlobalSecondaryIndexes.length - 1; i >= 0; i--) {
+    for (i = 0; i < table.GlobalSecondaryIndexes.length; i++) {
       for (k = 0; k < table.GlobalSecondaryIndexes[i].KeySchema.length; k++) {
         attr = table.GlobalSecondaryIndexes[i].KeySchema[k].AttributeName
         for (j = 0; j < table.AttributeDefinitions.length; j++) {
@@ -286,7 +287,7 @@ function traverseIndexes(table, visitIndex) {
     }
   }
   if (table.LocalSecondaryIndexes) {
-    for (i = table.LocalSecondaryIndexes.length - 1; i >= 0; i--) {
+    for (i = 0; i < table.LocalSecondaryIndexes.length; i++) {
       attr = table.LocalSecondaryIndexes[i].KeySchema[1].AttributeName
       for (j = 0; j < table.AttributeDefinitions.length; j++) {
         if (table.AttributeDefinitions[j].AttributeName != attr) continue
@@ -446,6 +447,16 @@ function conditionalError(msg) {
   err.statusCode = 400
   err.body = {
     __type: 'com.amazonaws.dynamodb.v20120810#ConditionalCheckFailedException',
+    message: msg,
+  }
+  return err
+}
+
+function limitError(msg) {
+  var err = new Error(msg)
+  err.statusCode = 400
+  err.body = {
+    __type: 'com.amazonaws.dynamodb.v20120810#LimitExceededException',
     message: msg,
   }
   return err
@@ -651,9 +662,9 @@ function compare(comp, val, compVals) {
       break
     case 'CONTAINS':
     case 'contains':
-      return doContainsComparison(compType, compVal, attrType, attrVal)
+      return contains(compType, compVal, attrType, attrVal)
     case 'NOT_CONTAINS':
-      return !doContainsComparison(compType, compVal, attrType, attrVal)
+      return !contains(compType, compVal, attrType, attrVal)
     case 'BEGINS_WITH':
     case 'begins_with':
       if (compType != attrType) return false
@@ -685,7 +696,7 @@ function compare(comp, val, compVals) {
   return true
 }
 
-function doContainsComparison(compType, compVal, attrType, attrVal) {
+function contains(compType, compVal, attrType, attrVal) {
   if (compType === 'S') {
     if (attrType === 'S') return !!~attrVal.indexOf(compVal)
     if (attrType === 'SS') return attrVal.some(function(val) {

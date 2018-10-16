@@ -44,46 +44,51 @@ function checkTypes(data, types) {
     var children = type.children
     if (typeof children == 'string') children = {type: children}
     if (type.type) type = type.type
+    var subtypeMatch = type.match(/(.+?)<(.+)>$/), subtype
+    if (subtypeMatch != null) {
+      type = subtypeMatch[1]
+      subtype = subtypeMatch[2]
+    }
 
-    if (type == 'AttrStructure') {
-      type = 'Structure'
-      children = {
-        S: 'String',
-        B: 'Blob',
-        N: 'String',
-        BOOL: 'Boolean',
-        NULL: 'Boolean',
-        BS: {
-          type: 'List',
-          children: 'Blob',
+    if (type == 'AttrStruct') {
+      return checkType(val, {
+        type: subtype + '<AttributeValue>',
+        children: {
+          S: 'String',
+          B: 'Blob',
+          N: 'String',
+          BOOL: 'Boolean',
+          NULL: 'Boolean',
+          BS: {
+            type: 'List',
+            children: 'Blob',
+          },
+          NS: {
+            type: 'List',
+            children: 'String',
+          },
+          SS: {
+            type: 'List',
+            children: 'String',
+          },
+          L: {
+            type: 'List',
+            children: 'AttrStruct<ValueStruct>',
+          },
+          M: {
+            type: 'Map<AttributeValue>',
+            children: 'AttrStruct<ValueStruct>',
+          },
         },
-        NS: {
-          type: 'List',
-          children: 'String',
-        },
-        SS: {
-          type: 'List',
-          children: 'String',
-        },
-        L: {
-          type: 'List',
-          children: 'AttrStructure',
-        },
-        M: {
-          type: 'Map',
-          children: 'AttrStructure',
-        },
-      }
+      })
     }
 
     switch (type) {
       case 'Boolean':
         switch (typeof val) {
           case 'number':
-            throw typeError('class com.amazon.coral.value.json.numbers.TruncatingBigNumber can not be converted to an Boolean')
+            throw typeError((val % 1 === 0 ? 'NUMBER_VALUE' : 'DECIMAL_VALUE') + ' cannot be converted to ' + type)
           case 'string':
-            // "\'HELLOWTF\' can not be converted to an Boolean"
-            // seems to convert to uppercase
             // 'true'/'false'/'1'/'0'/'no'/'yes' seem to convert fine
             val = val.toUpperCase()
             if (~['TRUE', '1', 'YES'].indexOf(val)) {
@@ -91,12 +96,12 @@ function checkTypes(data, types) {
             } else if (~['FALSE', '0', 'NO'].indexOf(val)) {
               val = false
             } else {
-              throw typeError('\'' + val + '\' can not be converted to an Boolean')
+              throw typeError('Unexpected token received from parser')
             }
             break
           case 'object':
-            if (Array.isArray(val)) throw typeError('Start of list found where not expected')
-            throw typeError('Start of structure or map found where not expected.')
+            if (Array.isArray(val)) throw typeError('Unrecognized collection type class java.lang.' + type)
+            throw typeError('Start of structure or map found where not expected')
         }
         return val
       case 'Short':
@@ -105,81 +110,110 @@ function checkTypes(data, types) {
       case 'Double':
         switch (typeof val) {
           case 'boolean':
-            throw typeError('class java.lang.Boolean can not be converted to an ' + type)
+            throw typeError((val ? 'TRUE_VALUE' : 'FALSE_VALUE') + ' cannot be converted to ' + type)
           case 'number':
             if (type != 'Double') val = Math.floor(val)
             break
           case 'string':
-            throw typeError('class java.lang.String can not be converted to an ' + type)
+            throw typeError('STRING_VALUE cannot be converted to ' + type)
           case 'object':
-            if (Array.isArray(val)) throw typeError('Start of list found where not expected')
-            throw typeError('Start of structure or map found where not expected.')
+            if (Array.isArray(val)) throw typeError('Unrecognized collection type class java.lang.' + type)
+            throw typeError('Start of structure or map found where not expected')
         }
         return val
       case 'String':
         switch (typeof val) {
           case 'boolean':
-            throw typeError('class java.lang.Boolean can not be converted to an String')
+            throw typeError((val ? 'TRUE_VALUE' : 'FALSE_VALUE') + ' cannot be converted to ' + type)
           case 'number':
-            throw typeError('class com.amazon.coral.value.json.numbers.TruncatingBigNumber can not be converted to an String')
+            throw typeError((val % 1 === 0 ? 'NUMBER_VALUE' : 'DECIMAL_VALUE') + ' cannot be converted to ' + type)
           case 'object':
-            if (Array.isArray(val)) throw typeError('Start of list found where not expected')
-            throw typeError('Start of structure or map found where not expected.')
+            if (Array.isArray(val)) throw typeError('Unrecognized collection type class java.lang.' + type)
+            throw typeError('Start of structure or map found where not expected')
         }
         return val
       case 'Blob':
         switch (typeof val) {
           case 'boolean':
-            throw typeError('class java.lang.Boolean can not be converted to a Blob')
           case 'number':
-            throw typeError('class com.amazon.coral.value.json.numbers.TruncatingBigNumber can not be converted to a Blob')
+            throw typeError('only base-64-encoded strings are convertible to bytes')
           case 'object':
-            if (Array.isArray(val)) throw typeError('Start of list found where not expected')
-            throw typeError('Start of structure or map found where not expected.')
+            if (Array.isArray(val)) throw typeError('Unrecognized collection type class java.nio.ByteBuffer')
+            throw typeError('Start of structure or map found where not expected')
         }
         if (val.length % 4)
-          throw typeError('\'' + val + '\' can not be converted to a Blob: ' +
-            'Base64 encoded length is expected a multiple of 4 bytes but found: ' + val.length)
-        var match = val.match(/[^a-zA-Z0-9+/=]|\=[^=]/)
-        if (match)
-          throw typeError('\'' + val + '\' can not be converted to a Blob: ' +
-            'Invalid Base64 character: \'' + match[0][0] + '\'')
+          throw typeError('Base64 encoded length is expected a multiple of 4 bytes but found: ' + val.length)
         // TODO: need a better check than this...
-        if (new Buffer(val, 'base64').toString('base64') != val)
-          throw typeError('\'' + val + '\' can not be converted to a Blob: ' +
-            'Invalid last non-pad Base64 character dectected')
+        if (Buffer.from(val, 'base64').toString('base64') != val)
+          throw typeError('Invalid last non-pad Base64 character dectected')
         return val
       case 'List':
         switch (typeof val) {
           case 'boolean':
           case 'number':
           case 'string':
-            throw typeError('Expected list or null')
+            throw typeError('Unexpected field type')
           case 'object':
-            if (!Array.isArray(val)) throw typeError('Start of structure or map found where not expected.')
+            if (!Array.isArray(val)) throw typeError('Start of structure or map found where not expected')
         }
         return val.map(function(child) { return checkType(child, children) })
-      case 'Map':
+      case 'ParameterizedList':
         switch (typeof val) {
           case 'boolean':
           case 'number':
           case 'string':
-            throw typeError('Expected map or null')
+            throw typeError('sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl cannot be cast to java.lang.Class')
           case 'object':
-            if (Array.isArray(val)) throw typeError('Start of list found where not expected')
+            if (!Array.isArray(val)) throw typeError('Start of structure or map found where not expected')
+        }
+        return val.map(function(child) { return checkType(child, children) })
+      case 'ParameterizedMap':
+        switch (typeof val) {
+          case 'boolean':
+          case 'number':
+          case 'string':
+            throw typeError('sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl cannot be cast to java.lang.Class')
+          case 'object':
+            if (Array.isArray(val)) throw typeError('Unrecognized collection type java.util.Map<java.lang.String, com.amazonaws.dynamodb.v20120810.AttributeValue>')
         }
         return Object.keys(val).reduce(function(newVal, key) {
           newVal[key] = checkType(val[key], children)
           return newVal
         }, {})
-      case 'Structure':
+      case 'Map':
         switch (typeof val) {
           case 'boolean':
           case 'number':
           case 'string':
-            throw typeError('Expected null')
+            throw typeError('Unexpected field type')
           case 'object':
-            if (Array.isArray(val)) throw typeError('Start of list found where not expected')
+            if (Array.isArray(val)) {
+              throw typeError('Unrecognized collection type java.util.Map<java.lang.String, ' +
+                (~subtype.indexOf('.') ? subtype : 'com.amazonaws.dynamodb.v20120810.' + subtype) + '>')
+            }
+        }
+        return Object.keys(val).reduce(function(newVal, key) {
+          newVal[key] = checkType(val[key], children)
+          return newVal
+        }, {})
+      case 'ValueStruct':
+        switch (typeof val) {
+          case 'boolean':
+          case 'number':
+          case 'string':
+            throw typeError('Unexpected value type in payload')
+          case 'object':
+            if (Array.isArray(val)) throw typeError('Unrecognized collection type class com.amazonaws.dynamodb.v20120810.' + subtype)
+        }
+        return checkTypes(val, children)
+      case 'FieldStruct':
+        switch (typeof val) {
+          case 'boolean':
+          case 'number':
+          case 'string':
+            throw typeError('Unexpected field type')
+          case 'object':
+            if (Array.isArray(val)) throw typeError('Unrecognized collection type class com.amazonaws.dynamodb.v20120810.' + subtype)
         }
         return checkTypes(val, children)
       default:
@@ -192,23 +226,14 @@ var validateFns = {}
 
 function checkValidations(data, validations, custom, store) {
   var attr, msg, errors = []
-  function validationError(msg) {
-    var err = new Error(msg)
-    err.statusCode = 400
-    err.body = {
-      __type: 'com.amazon.coral.validate#ValidationException',
-      message: msg,
-    }
-    return err
-  }
 
   for (attr in validations) {
     if (validations[attr].required && data[attr] == null) {
-      throw validationError('The parameter \'' + attr + '\' is required but was not present in the request')
+      throw db.validationError('The parameter \'' + attr + '\' is required but was not present in the request')
     }
     if (validations[attr].tableName) {
       msg = validateTableName(attr, data[attr])
-      if (msg) throw validationError(msg)
+      if (msg) throw db.validationError(msg)
     }
   }
 
@@ -227,15 +252,14 @@ function checkValidations(data, validations, custom, store) {
       if (~['type', 'required', 'tableName'].indexOf(validation)) continue
       if (validation != 'notNull' && data == null) continue
       if (validation == 'children') {
-        if (validations.type == 'List') {
+        if (/List$/.test(validations.type)) {
           for (var i = 0; i < data.length; i++) {
             checkNonRequired('member', data[i], validations.children,
               (parent ? parent + '.' : '') + toLowerFirst(attr) + '.' + (i + 1))
           }
           continue
-        } else if (validations.type == 'Map') {
-          // TODO: Always reverse?
-          Object.keys(data).reverse().forEach(function(key) { // eslint-disable-line no-loop-func
+        } else if (/Map/.test(validations.type)) {
+          Object.keys(data).forEach(function(key) { // eslint-disable-line no-loop-func
             checkNonRequired('member', data[key], validations.children,
               (parent ? parent + '.' : '') + toLowerFirst(attr) + '.' + key)
           })
@@ -249,11 +273,11 @@ function checkValidations(data, validations, custom, store) {
   }
 
   if (errors.length)
-    throw validationError(errors.length + ' validation error' + (errors.length > 1 ? 's' : '') + ' detected: ' + errors.join('; '))
+    throw db.validationError(errors.length + ' validation error' + (errors.length > 1 ? 's' : '') + ' detected: ' + errors.join('; '))
 
   if (custom) {
     msg = custom(data, store)
-    if (msg) throw validationError(msg)
+    if (msg) throw db.validationError(msg)
   }
 }
 

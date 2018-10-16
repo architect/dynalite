@@ -7,11 +7,16 @@ module.exports = function updateTable(store, data, cb) {
   tableDb.lock(key, function(release) {
     cb = release(cb)
 
-    tableDb.get(key, function(err, table) {
+    store.getTable(key, false, function(err, table) {
       if (err) return cb(err)
 
-      var updates = getThroughputUpdates(data, table),
-          i, update, dataThroughput, tableThroughput, readDiff, writeDiff
+      var updates, i, update, dataThroughput, tableThroughput, readDiff, writeDiff
+
+      try {
+        updates = getThroughputUpdates(data, table)
+      } catch (err) {
+        return cb(err)
+      }
 
       for (i = 0; i < updates.length; i++) {
         update = updates[i]
@@ -84,18 +89,25 @@ function getThroughputUpdates(data, table) {
       setStatus: function(status) { table.TableStatus = status },
     })
   }
-  if (data.GlobalSecondaryIndexUpdates && table.GlobalSecondaryIndexes) {
-    data.GlobalSecondaryIndexUpdates.forEach(function(update) {
-      table.GlobalSecondaryIndexes.forEach(function(index) {
-        if (update.Update && index.IndexName == update.Update.IndexName) {
-          updates.push({
-            dataThroughput: update.Update.ProvisionedThroughput,
-            tableThroughput: index.ProvisionedThroughput,
-            setStatus: function(status) { index.IndexStatus = status },
-          })
-        }
-      })
+  var globalUpdates = data.GlobalSecondaryIndexUpdates || []
+  if (globalUpdates.length > 5) throw db.limitError('Subscriber limit exceeded: Only 1 online index can be created or deleted simultaneously per table')
+  globalUpdates.forEach(function(update) {
+    var dataThroughput = update.Update && update.Update.ProvisionedThroughput
+    if (!dataThroughput) {
+      return
+    }
+    if (dataThroughput.ReadCapacityUnits > 1000000000000 || dataThroughput.WriteCapacityUnits > 1000000000000) {
+      throw db.validationError('This operation cannot be performed with given input values. Please contact DynamoDB service team for more info: Action Blocked: IndexUpdate')
+    }
+    (table.GlobalSecondaryIndexes || []).forEach(function(index) {
+      if (index.IndexName == update.Update.IndexName) {
+        updates.push({
+          dataThroughput: dataThroughput,
+          tableThroughput: index.ProvisionedThroughput,
+          setStatus: function(status) { index.IndexStatus = status },
+        })
+      }
     })
-  }
+  })
   return updates
 }

@@ -19,16 +19,16 @@ exports.types = {
     lengthLessThanOrEqual: 255,
   },
   Key: {
-    type: 'Map',
+    type: 'Map<AttributeValue>',
     notNull: true,
-    children: 'AttrStructure',
+    children: 'AttrStruct<ValueStruct>',
   },
   ConsistentRead: 'Boolean',
   ProjectionExpression: {
     type: 'String',
   },
   ExpressionAttributeNames: {
-    type: 'Map',
+    type: 'Map<java.lang.String>',
     children: 'String',
   },
 }

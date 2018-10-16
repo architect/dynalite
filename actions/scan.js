@@ -18,9 +18,6 @@ module.exports = function scan(store, data, cb) {
         }
       })
       if (index == null) {
-        if (data.ExclusiveStartKey) {
-          return cb(db.validationError('The provided starting key is invalid'))
-        }
         return cb(db.validationError('The table does not have the specified index: ' + data.IndexName))
       }
       if (!isLocal && data.ConsistentRead) {

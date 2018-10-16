@@ -11,7 +11,7 @@ exports.types = {
     enum: ['SIZE', 'NONE'],
   },
   RequestItems: {
-    type: 'Map',
+    type: 'Map<java.util.List<com.amazonaws.dynamodb.v20120810.WriteRequest>>',
     notNull: true,
     lengthGreaterThanOrEqual: 1,
     keys: {
@@ -24,27 +24,27 @@ exports.types = {
       lengthGreaterThanOrEqual: 1,
     },
     children: {
-      type: 'List',
+      type: 'ParameterizedList',
       children: {
-        type: 'Structure',
+        type: 'ValueStruct<WriteRequest>',
         children: {
           DeleteRequest: {
-            type: 'Structure',
+            type: 'FieldStruct<DeleteRequest>',
             children: {
               Key: {
-                type: 'Map',
+                type: 'Map<AttributeValue>',
                 notNull: true,
-                children: 'AttrStructure',
+                children: 'AttrStruct<ValueStruct>',
               },
             },
           },
           PutRequest: {
-            type: 'Structure',
+            type: 'FieldStruct<PutRequest>',
             children: {
               Item: {
-                type: 'Map',
+                type: 'Map<AttributeValue>',
                 notNull: true,
-                children: 'AttrStructure',
+                children: 'AttrStruct<ValueStruct>',
               },
             },
           },

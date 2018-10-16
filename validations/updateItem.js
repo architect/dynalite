@@ -21,39 +21,39 @@ exports.types = {
     enum: ['ALL_NEW', 'UPDATED_OLD', 'ALL_OLD', 'NONE', 'UPDATED_NEW'],
   },
   Key: {
-    type: 'Map',
+    type: 'Map<AttributeValue>',
     notNull: true,
-    children: 'AttrStructure',
+    children: 'AttrStruct<ValueStruct>',
   },
   ConditionalOperator: {
     type: 'String',
     enum: ['OR', 'AND'],
   },
   Expected: {
-    type: 'Map',
+    type: 'Map<ExpectedAttributeValue>',
     children: {
-      type: 'Structure',
+      type: 'ValueStruct<ExpectedAttributeValue>',
       children: {
         AttributeValueList: {
           type: 'List',
-          children: 'AttrStructure',
+          children: 'AttrStruct<ValueStruct>',
         },
         ComparisonOperator: {
           type: 'String',
           enum: ['IN', 'NULL', 'BETWEEN', 'LT', 'NOT_CONTAINS', 'EQ', 'GT', 'NOT_NULL', 'NE', 'LE', 'BEGINS_WITH', 'GE', 'CONTAINS'],
         },
         Exists: 'Boolean',
-        Value: 'AttrStructure',
+        Value: 'AttrStruct<FieldStruct>',
       },
     },
   },
   AttributeUpdates: {
-    type: 'Map',
+    type: 'Map<AttributeValueUpdate>',
     children: {
-      type: 'Structure',
+      type: 'ValueStruct<AttributeValueUpdate>',
       children: {
         Action: 'String',
-        Value: 'AttrStructure',
+        Value: 'AttrStruct<FieldStruct>',
       },
     },
   },
@@ -64,11 +64,11 @@ exports.types = {
     type: 'String',
   },
   ExpressionAttributeValues: {
-    type: 'Map',
-    children: 'AttrStructure',
+    type: 'Map<AttributeValue>',
+    children: 'AttrStruct<ValueStruct>',
   },
   ExpressionAttributeNames: {
-    type: 'Map',
+    type: 'Map<java.lang.String>',
     children: 'String',
   },
 }
