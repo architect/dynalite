@@ -23,24 +23,24 @@
   "license": "MIT",
   "dependencies": {
     "async": "^2.1.4",
-    "big.js": "^5.1.2",
+    "big.js": "^5.2.1",
     "buffer-crc32": "^0.2.13",
     "lazy": "^1.0.11",
-    "levelup": "^3.1.0",
+    "levelup": "^3.1.1",
     "lock": "^1.1.0",
     "memdown": "^3.0.0",
     "minimist": "^1.2.0",
     "once": "^1.4.0",
-    "subleveldown": "^3.0.0"
+    "subleveldown": "^3.0.1"
   },
   "optionalDependencies": {
     "leveldown": "^4.0.1"
   },
   "devDependencies": {
-    "aws4": "^1.5.0",
+    "aws4": "^1.8.0",
     "istanbul": "^0.4.5",
     "mocha": "^5.2.0",
     "pegjs": "^0.10.0",
-    "should": "^13.2.1"
+    "should": "^13.2.3"
   }
 }
