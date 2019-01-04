@@ -23,7 +23,7 @@
   "license": "MIT",
   "dependencies": {
     "async": "^2.1.4",
-    "big.js": "^5.2.1",
+    "big.js": "^5.2.2",
     "buffer-crc32": "^0.2.13",
     "lazy": "^1.0.11",
     "levelup": "^3.1.1",
