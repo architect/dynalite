@@ -644,6 +644,10 @@ describe('scan', function() {
         'a=a and a > ((views))',
         '(a)between(((b.c)).d)and(c)',
         'a > whatever((:things), ((a)))',
+        'a=a AND ((a=a AND a=a)) AND a=a',
+        'a=a OR ((a=a OR a=a)) OR a=a',
+        'a=a AND ((a=a AND (a=a AND a=a)))',
+        'a=a OR ((a=a OR (a=a OR a=a)))',
       ]
       async.forEach(expressions, function(expression, cb) {
         assertValidation({
@@ -824,6 +828,8 @@ describe('scan', function() {
         ['a = a AND #a = b AND :views > a', '=', '[a]'],
         ['#a <> a', '<>', '[a]'],
         ['a > #a', '>', '[a]'],
+        ['((a=a) OR (a=a))', '=', '[a]'],
+        ['((a=a) AND (a=a))', '=', '[a]'],
         ['contains(ab.bc[1].a, ab.bc[1].#a)', 'contains', '[ab, bc, [1], a]'],
         ['attribute_type(ab.bc[1].#a, ab.bc[1].a)', 'attribute_type', '[ab, bc, [1], a]'],
         ['begins_with(ab.bc[1].a, ab.bc[1].#a)', 'begins_with', '[ab, bc, [1], a]'],
