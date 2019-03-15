@@ -1,7 +1,8 @@
 var https = require('https'),
     once = require('once'),
     dynalite = require('..'),
-    helpers = require('./helpers')
+    helpers = require('./helpers'),
+    utils = require('../utils')
 
 var request = helpers.request
 
@@ -75,7 +76,7 @@ describe('dynalite connections', function() {
       request({method: 'GET', noSign: true}, function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        res.body.should.equal('healthy: dynamodb.' + helpers.awsRegion + '.amazonaws.com ')
+        res.body.should.equal('healthy: dynamodb.' + utils.awsRegion + '.amazonaws.com ')
         res.headers['x-amz-crc32'].should.match(/^[0-9]+$/)
         res.headers['content-length'].should.equal(res.body.length.toString())
         res.headers['x-amzn-requestid'].should.match(/^[0-9A-Z]{52}$/)

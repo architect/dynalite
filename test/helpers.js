@@ -2,7 +2,8 @@ var http = require('http'),
     aws4 = require('aws4'),
     async = require('async'),
     once = require('once'),
-    dynalite = require('..')
+    dynalite = require('..'),
+    utils = require('../utils')
 
 http.globalAgent.maxSockets = Infinity
 
@@ -46,7 +47,7 @@ exports.testRangeBTable = randomName()
 
 var port = 10000 + Math.round(Math.random() * 10000),
     requestOpts = process.env.REMOTE ?
-      {host: 'dynamodb.' + exports.awsRegion + '.amazonaws.com', method: 'POST'} :
+      {host: 'dynamodb.' + utils.awsRegion + '.amazonaws.com', method: 'POST'} :
       {host: '127.0.0.1', port: port, method: 'POST'}
 
 var dynaliteServer = dynalite({path: process.env.DYNALITE_PATH})

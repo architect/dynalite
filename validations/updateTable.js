@@ -148,7 +148,7 @@ exports.custom = function(data) {
 
   if (!data.ProvisionedThroughput && !data.StreamSpecification && !data.UpdateStreamEnabled &&
       (!data.GlobalSecondaryIndexUpdates || !data.GlobalSecondaryIndexUpdates.length) && !data.SSESpecification) {
-    return 'At least one of ProvisionedThroughput, StreamSpecification, UpdateStreamEnabled, GlobalSecondaryIndexUpdates or SSESpecification is required'
+    return 'At least one of ProvisionedThroughput, BillingMode, UpdateStreamEnabled, GlobalSecondaryIndexUpdates or SSESpecification is required'
   }
 
   if (data.ProvisionedThroughput) {

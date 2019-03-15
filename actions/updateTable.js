@@ -81,7 +81,7 @@ module.exports = function updateTable(store, data, cb) {
       try {
         updates = getThroughputUpdates(data, table)
       } catch (err) {
-        return cb(err)
+        return callback(err)
       }
 
       for (i = 0; i < updates.length; i++) {
