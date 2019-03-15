@@ -5,9 +5,10 @@ var crypto = require('crypto'),
     levelup = require('levelup'),
     kinesaliteDb = require('kinesalite/db'),
     memdown = require('memdown'),
-    sublevel = require('level-sublevel'),
-    Lock = require('lock'),
+    sub = require('subleveldown'),
+    lock = require('lock'),
     Big = require('big.js'),
+    once = require('once'),
     utils = require('../utils')
 
 exports.MAX_SIZE = 409600 // TODO: get rid of this? or leave for backwards compat?
@@ -26,6 +27,7 @@ exports.toRangeStr = toRangeStr
 exports.toLexiStr = toLexiStr
 exports.hashPrefix = hashPrefix
 exports.validationError = validationError
+exports.limitError = limitError
 exports.checkConditional = checkConditional
 exports.itemSize = itemSize
 exports.capacityUnits = capacityUnits
@@ -47,11 +49,11 @@ function create(options) {
   if (options.maxItemSizeKb == null) options.maxItemSizeKb = exports.MAX_SIZE / 1024
   options.maxItemSize = options.maxItemSizeKb * 1024
 
-  var db = levelup(options.path, options.path ? {} : {db: memdown}),
-      sublevelDb = sublevel(db),
-      tableDb = sublevelDb.sublevel('table', {valueEncoding: 'json'}),
+  var db = levelup(options.path ? require('leveldown')(options.path) : memdown()),
+      tableDb = sub(db, 'table', {valueEncoding: 'json'}),
       subDbs = Object.create(null),
-      kinesaliteOptions = {}
+      kinesaliteOptions = {},
+      kinesaliteStore
 
   if (options.path) {
     kinesaliteOptions.path = options.path + '/kinesalite'
@@ -59,7 +61,7 @@ function create(options) {
 
   var kinesaliteStore = kinesaliteDb.create(kinesaliteOptions)
 
-  tableDb.lock = new Lock()
+  tableDb.lock = lock.Lock()
 
   // XXX: Is there a better way to get this?
   tableDb.awsAccountId = (process.env.AWS_ACCOUNT_ID || '0000-0000-0000').replace(/[^\d]/g, '')
@@ -83,13 +85,14 @@ function create(options) {
 
   function getSubDb(name) {
     if (!subDbs[name]) {
-      subDbs[name] = sublevelDb.sublevel(name, {valueEncoding: 'json'})
-      subDbs[name].lock = new Lock()
+      subDbs[name] = sub(db, name, {valueEncoding: 'json'})
+      subDbs[name].lock = lock.Lock()
     }
     return subDbs[name]
   }
 
   function deleteSubDb(name, cb) {
+    cb = once(cb)
     var subDb = getSubDb(name)
     delete subDbs[name]
     lazyStream(subDb.createKeyStream(), cb).join(function(keys) {
@@ -145,6 +148,8 @@ function create(options) {
 function lazyStream(stream, errHandler) {
   if (errHandler) stream.on('error', errHandler)
   var streamAsLazy = new Lazy(stream)
+  stream.removeAllListeners('readable')
+  stream.on('data', streamAsLazy.emit.bind(streamAsLazy, 'data'))
   if (stream.destroy) streamAsLazy.on('pipe', stream.destroy.bind(stream))
   return streamAsLazy
 }
@@ -279,7 +284,7 @@ function traverseKey(table, keySchema, visitKey) {
 function traverseIndexes(table, visitIndex) {
   var i, j, k, attr, type, found
   if (table.GlobalSecondaryIndexes) {
-    for (i = table.GlobalSecondaryIndexes.length - 1; i >= 0; i--) {
+    for (i = 0; i < table.GlobalSecondaryIndexes.length; i++) {
       for (k = 0; k < table.GlobalSecondaryIndexes[i].KeySchema.length; k++) {
         attr = table.GlobalSecondaryIndexes[i].KeySchema[k].AttributeName
         for (j = 0; j < table.AttributeDefinitions.length; j++) {
@@ -293,7 +298,7 @@ function traverseIndexes(table, visitIndex) {
     }
   }
   if (table.LocalSecondaryIndexes) {
-    for (i = table.LocalSecondaryIndexes.length - 1; i >= 0; i--) {
+    for (i = 0; i < table.LocalSecondaryIndexes.length; i++) {
       attr = table.LocalSecondaryIndexes[i].KeySchema[1].AttributeName
       for (j = 0; j < table.AttributeDefinitions.length; j++) {
         if (table.AttributeDefinitions[j].AttributeName != attr) continue
@@ -309,7 +314,7 @@ function traverseIndexes(table, visitIndex) {
 function checkKeySize(keyPiece, type, isHash) {
   // Numbers are always fine
   if (type == 'N') return null
-  if (type == 'B') keyPiece = new Buffer(keyPiece, 'base64')
+  if (type == 'B') keyPiece = Buffer.from(keyPiece, 'base64')
   if (isHash && keyPiece.length > 2048)
     return validationError('One or more parameter values were invalid: ' +
       'Size of hashkey has exceeded the maximum size limit of2048 bytes')
@@ -323,7 +328,7 @@ function toRangeStr(keyPiece, type) {
     type = Object.keys(keyPiece)[0]
     keyPiece = keyPiece[type]
   }
-  if (type == 'S') return new Buffer(keyPiece, 'utf8').toString('hex')
+  if (type == 'S') return Buffer.from(keyPiece, 'utf8').toString('hex')
   return toLexiStr(keyPiece, type)
 }
 
@@ -343,7 +348,7 @@ function toLexiStr(keyPiece, type) {
     type = Object.keys(keyPiece)[0]
     keyPiece = keyPiece[type]
   }
-  if (type == 'B') return new Buffer(keyPiece, 'base64').toString('hex')
+  if (type == 'B') return Buffer.from(keyPiece, 'base64').toString('hex')
   if (type != 'N') return keyPiece
   var bigNum = new Big(keyPiece), digits,
       exp = !bigNum.c[0] ? 0 : bigNum.s == -1 ? 125 - bigNum.e : 130 + bigNum.e
@@ -358,29 +363,29 @@ function toLexiStr(keyPiece, type) {
 
 function hashPrefix(hashKey, hashType, rangeKey, rangeType) {
   if (hashType == 'S') {
-    hashKey = new Buffer(hashKey, 'utf8')
+    hashKey = Buffer.from(hashKey, 'utf8')
   } else if (hashType == 'N') {
     hashKey = numToBuffer(hashKey)
   } else if (hashType == 'B') {
-    hashKey = new Buffer(hashKey, 'base64')
+    hashKey = Buffer.from(hashKey, 'base64')
   }
   if (rangeKey) {
     if (rangeType == 'S') {
-      rangeKey = new Buffer(rangeKey, 'utf8')
+      rangeKey = Buffer.from(rangeKey, 'utf8')
     } else if (rangeType == 'N') {
       rangeKey = numToBuffer(rangeKey)
     } else if (rangeType == 'B') {
-      rangeKey = new Buffer(rangeKey, 'base64')
+      rangeKey = Buffer.from(rangeKey, 'base64')
     }
   } else {
-    rangeKey = new Buffer(0)
+    rangeKey = Buffer.from([])
   }
   // TODO: Can use the whole hash if we deem it important - for now just first six chars
   return crypto.createHash('md5').update('Outliers').update(hashKey).update(rangeKey).digest('hex').slice(0, 6)
 }
 
 function numToBuffer(num) {
-  if (+num === 0) return new Buffer([-128])
+  if (+num === 0) return Buffer.from([-128])
 
   num = new Big(num)
 
@@ -418,7 +423,7 @@ function numToBuffer(num) {
     }
   }
 
-  return new Buffer(byteArray)
+  return Buffer.from(byteArray)
 }
 
 function checkConditional(data, existingItem) {
@@ -453,6 +458,16 @@ function conditionalError(msg) {
   err.statusCode = 400
   err.body = {
     __type: 'com.amazonaws.dynamodb.v20120810#ConditionalCheckFailedException',
+    message: msg,
+  }
+  return err
+}
+
+function limitError(msg) {
+  var err = new Error(msg)
+  err.statusCode = 400
+  err.body = {
+    __type: 'com.amazonaws.dynamodb.v20120810#LimitExceededException',
     message: msg,
   }
   return err
@@ -507,7 +522,7 @@ function valSize(val, type, compress) {
     case 'S':
       return val.length
     case 'B':
-      return new Buffer(val, 'base64').length
+      return Buffer.from(val, 'base64').length
     case 'N':
       val = new Big(val)
       var numDigits = val.c.length
@@ -595,7 +610,7 @@ function resolveArg(arg, item) {
     } else if (val.S) {
       length = val.S.length
     } else if (val.B) {
-      length = new Buffer(val.B, 'base64').length
+      length = Buffer.from(val.B, 'base64').length
     } else if (val.SS || val.BS || val.NS || val.L) {
       length = (val.SS || val.BS || val.NS || val.L).length
     } else if (val.M) {
@@ -658,43 +673,15 @@ function compare(comp, val, compVals) {
       break
     case 'CONTAINS':
     case 'contains':
-      if (compType == 'S') {
-        if (attrType != 'S' && attrType != 'SS') return false
-        if (!~attrVal.indexOf(compVal)) return false
-      }
-      if (compType == 'N') {
-        if (attrType != 'NS') return false
-        if (!~attrVal.indexOf(compVal)) return false
-      }
-      if (compType == 'B') {
-        if (attrType != 'B' && attrType != 'BS') return false
-        if (attrType == 'B') {
-          attrVal = new Buffer(attrVal, 'base64').toString()
-          compVal = new Buffer(compVal, 'base64').toString()
-        }
-        if (!~attrVal.indexOf(compVal)) return false
-      }
-      break
+      return contains(compType, compVal, attrType, attrVal)
     case 'NOT_CONTAINS':
-      if (compType == 'S' && (attrType == 'S' || attrType == 'SS') &&
-          ~attrVal.indexOf(compVal)) return false
-      if (compType == 'N' && attrType == 'NS' &&
-          ~attrVal.indexOf(compVal)) return false
-      if (compType == 'B') {
-        if (attrType == 'B') {
-          attrVal = new Buffer(attrVal, 'base64').toString()
-          compVal = new Buffer(compVal, 'base64').toString()
-        }
-        if ((attrType == 'B' || attrType == 'BS') &&
-            ~attrVal.indexOf(compVal)) return false
-      }
-      break
+      return !contains(compType, compVal, attrType, attrVal)
     case 'BEGINS_WITH':
     case 'begins_with':
       if (compType != attrType) return false
       if (compType == 'B') {
-        attrVal = new Buffer(attrVal, 'base64').toString()
-        compVal = new Buffer(compVal, 'base64').toString()
+        attrVal = Buffer.from(attrVal, 'base64').toString()
+        compVal = Buffer.from(compVal, 'base64').toString()
       }
       if (attrVal.indexOf(compVal) !== 0) return false
       break
@@ -718,6 +705,41 @@ function compare(comp, val, compVals) {
       if (!attrVal || !valsEqual(attrType, compVal)) return false
   }
   return true
+}
+
+function contains(compType, compVal, attrType, attrVal) {
+  if (compType === 'S') {
+    if (attrType === 'S') return !!~attrVal.indexOf(compVal)
+    if (attrType === 'SS') return attrVal.some(function(val) {
+      return val === compVal
+    })
+    if (attrType === 'L') return attrVal.some(function(val) {
+      return val && val.S && val.S === compVal
+    })
+    return false
+  }
+  if (compType === 'N') {
+    if (attrType === 'NS') return attrVal.some(function(val) {
+      return val === compVal
+    })
+    if (attrType === 'L') return attrVal.some(function(val) {
+      return val && val.N && val.N === compVal
+    })
+    return false
+  }
+  if (compType === 'B') {
+    if (attrType !== 'B' && attrType !== 'BS' && attrType !== 'L') return false
+    var compValString = Buffer.from(compVal, 'base64').toString()
+    if (attrType === 'B') {
+      var attrValString = Buffer.from(attrVal, 'base64').toString()
+      return !!~attrValString.indexOf(compValString)
+    }
+    return attrVal.some(function(val) {
+      if (attrType !== 'L') return compValString === Buffer.from(val, 'base64').toString()
+      if (attrType === 'L' && val.B) return compValString === Buffer.from(val.B, 'base64').toString()
+      return false
+    })
+  }
 }
 
 function mapPaths(paths, item) {
@@ -784,6 +806,7 @@ function mapPath(path, item) {
 }
 
 function queryTable(store, table, data, opts, isLocal, fetchFromItemDb, startKeyNames, cb) {
+  cb = once(cb)
   var itemDb = store.getItemDb(data.TableName), vals
 
   if (data.IndexName) {
@@ -845,30 +868,33 @@ function queryTable(store, table, data, opts, isLocal, fetchFromItemDb, startKey
     return true
   })
 
-  var queryFilter = data.QueryFilter || data.ScanFilter
-
-  if (data._filter) {
-    vals = vals.filter(function(val) { return matchesExprFilter(val, data._filter.expression) })
-  } else if (queryFilter) {
-    vals = vals.filter(function(val) { return matchesFilter(val, queryFilter, data.ConditionalOperator) })
-  }
-
-  var paths = data._projection ? data._projection.paths : data.AttributesToGet
-  if (paths) {
-    vals = vals.map(mapPaths.bind(this, paths))
-  }
-
   vals.join(function(items) {
+    var lastItem = items[items.length - 1]
+
+    var queryFilter = data.QueryFilter || data.ScanFilter
+
+    if (data._filter) {
+      items = items.filter(function(val) { return matchesExprFilter(val, data._filter.expression) })
+    } else if (queryFilter) {
+      items = items.filter(function(val) { return matchesFilter(val, queryFilter, data.ConditionalOperator) })
+    }
+
     var result = {ScannedCount: count}
     if (count >= data.Limit || size >= 1024 * 1024) {
       if (data.Limit) items.splice(data.Limit)
-      if (items.length) {
+      if (lastItem) {
         result.LastEvaluatedKey = startKeyNames.reduce(function(key, attr) {
-          key[attr] = items[items.length - 1][attr]
+          key[attr] = lastItem[attr]
           return key
         }, {})
       }
     }
+
+    var paths = data._projection ? data._projection.paths : data.AttributesToGet
+    if (paths) {
+      items = items.map(mapPaths.bind(this, paths))
+    }
+
     result.Count = items.length
     if (data.Select != 'COUNT') result.Items = items
     if (calculateCapacity) {

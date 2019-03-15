@@ -35,7 +35,7 @@ describe('createTable', function() {
     })
 
     it('should return SerializationException when ProvisionedThroughput is not a struct', function(done) {
-      assertType('ProvisionedThroughput', 'Structure', done)
+      assertType('ProvisionedThroughput', 'FieldStruct<ProvisionedThroughput>', done)
     })
 
     it('should return SerializationException when ProvisionedThroughput.WriteCapacityUnits is not a long', function(done) {
@@ -47,7 +47,7 @@ describe('createTable', function() {
     })
 
     it('should return SerializationException when KeySchema.0 is not a struct', function(done) {
-      assertType('KeySchema.0', 'Structure', done)
+      assertType('KeySchema.0', 'ValueStruct<KeySchemaElement>', done)
     })
 
     it('should return SerializationException when KeySchema.0.KeyType is not a string', function(done) {
@@ -59,7 +59,7 @@ describe('createTable', function() {
     })
 
     it('should return SerializationException when AttributeDefinitions.0 is not a struct', function(done) {
-      assertType('AttributeDefinitions.0', 'Structure', done)
+      assertType('AttributeDefinitions.0', 'ValueStruct<AttributeDefinition>', done)
     })
 
     it('should return SerializationException when AttributeDefinitions.0.AttributeName is not a string', function(done) {
@@ -71,7 +71,7 @@ describe('createTable', function() {
     })
 
     it('should return SerializationException when LocalSecondaryIndexes.0 is not a struct', function(done) {
-      assertType('LocalSecondaryIndexes.0', 'Structure', done)
+      assertType('LocalSecondaryIndexes.0', 'ValueStruct<LocalSecondaryIndex>', done)
     })
 
     it('should return SerializationException when LocalSecondaryIndexes.0.IndexName is not a string', function(done) {
@@ -83,11 +83,11 @@ describe('createTable', function() {
     })
 
     it('should return SerializationException when LocalSecondaryIndexes.0.Projection is not a struct', function(done) {
-      assertType('LocalSecondaryIndexes.0.Projection', 'Structure', done)
+      assertType('LocalSecondaryIndexes.0.Projection', 'FieldStruct<Projection>', done)
     })
 
     it('should return SerializationException when LocalSecondaryIndexes.0.KeySchema.0 is not a struct', function(done) {
-      assertType('LocalSecondaryIndexes.0.KeySchema.0', 'Structure', done)
+      assertType('LocalSecondaryIndexes.0.KeySchema.0', 'ValueStruct<KeySchemaElement>', done)
     })
 
     it('should return SerializationException when LocalSecondaryIndexes.0.KeySchema.0.AttributeName is not a string', function(done) {
@@ -111,7 +111,7 @@ describe('createTable', function() {
     })
 
     it('should return SerializationException when GlobalSecondaryIndexes.0 is not a struct', function(done) {
-      assertType('GlobalSecondaryIndexes.0', 'Structure', done)
+      assertType('GlobalSecondaryIndexes.0', 'ValueStruct<GlobalSecondaryIndex>', done)
     })
 
     it('should return SerializationException when GlobalSecondaryIndexes.0.IndexName is not a string', function(done) {
@@ -123,11 +123,11 @@ describe('createTable', function() {
     })
 
     it('should return SerializationException when GlobalSecondaryIndexes.0.Projection is not a struct', function(done) {
-      assertType('GlobalSecondaryIndexes.0.Projection', 'Structure', done)
+      assertType('GlobalSecondaryIndexes.0.Projection', 'FieldStruct<Projection>', done)
     })
 
     it('should return SerializationException when GlobalSecondaryIndexes.0.KeySchema.0 is not a struct', function(done) {
-      assertType('GlobalSecondaryIndexes.0.KeySchema.0', 'Structure', done)
+      assertType('GlobalSecondaryIndexes.0.KeySchema.0', 'ValueStruct<KeySchemaElement>', done)
     })
 
     it('should return SerializationException when GlobalSecondaryIndexes.0.KeySchema.0.AttributeName is not a string', function(done) {
@@ -151,7 +151,7 @@ describe('createTable', function() {
     })
 
     it('should return SerializationException when GlobalSecondaryIndexes.0.ProvisionedThroughput is not a struct', function(done) {
-      assertType('GlobalSecondaryIndexes.0.ProvisionedThroughput', 'Structure', done)
+      assertType('GlobalSecondaryIndexes.0.ProvisionedThroughput', 'FieldStruct<ProvisionedThroughput>', done)
     })
 
     it('should return SerializationException when GlobalSecondaryIndexes.0.ProvisionedThroughput.WriteCapacityUnits is not a long', function(done) {
@@ -187,71 +187,72 @@ describe('createTable', function() {
     })
 
     it('should return ValidationException for null attributes', function(done) {
-      assertValidation({TableName: 'abc;'},
-        '4 validation errors detected: ' +
+      assertValidation({TableName: 'abc;'}, [
         'Value null at \'attributeDefinitions\' failed to satisfy constraint: ' +
-        'Member must not be null; ' +
+        'Member must not be null',
         'Value \'abc;\' at \'tableName\' failed to satisfy constraint: ' +
-        'Member must satisfy regular expression pattern: [a-zA-Z0-9_.-]+; ' +
-        'Value null at \'provisionedThroughput\' failed to satisfy constraint: ' +
-        'Member must not be null; ' +
+        'Member must satisfy regular expression pattern: [a-zA-Z0-9_.-]+',
         'Value null at \'keySchema\' failed to satisfy constraint: ' +
-        'Member must not be null', done)
+        'Member must not be null',
+      ], done)
     })
 
     it('should return ValidationException for empty AttributeDefinitions', function(done) {
-      assertValidation({TableName: 'abc', AttributeDefinitions: []},
-        '2 validation errors detected: ' +
-        'Value null at \'provisionedThroughput\' failed to satisfy constraint: ' +
-        'Member must not be null; ' +
+      assertValidation({TableName: 'abc', AttributeDefinitions: []}, [
         'Value null at \'keySchema\' failed to satisfy constraint: ' +
-        'Member must not be null', done)
+        'Member must not be null',
+      ], done)
     })
 
     it('should return ValidationException for empty ProvisionedThroughput', function(done) {
-      assertValidation({TableName: 'abc', AttributeDefinitions: [], ProvisionedThroughput: {}},
-        '3 validation errors detected: ' +
+      assertValidation({TableName: 'abc', AttributeDefinitions: [], ProvisionedThroughput: {}}, [
         'Value null at \'provisionedThroughput.writeCapacityUnits\' failed to satisfy constraint: ' +
-        'Member must not be null; ' +
+        'Member must not be null',
         'Value null at \'provisionedThroughput.readCapacityUnits\' failed to satisfy constraint: ' +
-        'Member must not be null; ' +
+        'Member must not be null',
         'Value null at \'keySchema\' failed to satisfy constraint: ' +
-        'Member must not be null', done)
+        'Member must not be null',
+      ], done)
     })
 
     it('should return ValidationException for low ProvisionedThroughput.WriteCapacityUnits', function(done) {
       assertValidation({TableName: 'abc', AttributeDefinitions: [], KeySchema: [],
-        ProvisionedThroughput: {ReadCapacityUnits: -1, WriteCapacityUnits: -1}},
-        '3 validation errors detected: ' +
-        'Value \'-1\' at \'provisionedThroughput.writeCapacityUnits\' failed to satisfy constraint: ' +
-        'Member must have value greater than or equal to 1; ' +
-        'Value \'-1\' at \'provisionedThroughput.readCapacityUnits\' failed to satisfy constraint: ' +
-        'Member must have value greater than or equal to 1; ' +
-        'Value \'[]\' at \'keySchema\' failed to satisfy constraint: ' +
-        'Member must have length greater than or equal to 1', done)
+        ProvisionedThroughput: {ReadCapacityUnits: -1, WriteCapacityUnits: -1}}, [
+          'Value \'-1\' at \'provisionedThroughput.writeCapacityUnits\' failed to satisfy constraint: ' +
+          'Member must have value greater than or equal to 1',
+          'Value \'-1\' at \'provisionedThroughput.readCapacityUnits\' failed to satisfy constraint: ' +
+          'Member must have value greater than or equal to 1',
+          'Value \'[]\' at \'keySchema\' failed to satisfy constraint: ' +
+          'Member must have length greater than or equal to 1',
+        ], done)
     })
 
     it('should return ValidationException for key element names', function(done) {
       assertValidation({TableName: 'abc', AttributeDefinitions: [],
         KeySchema: [{KeyType: 'HASH'}, {AttributeName: 'a'}, {KeyType: 'Woop', AttributeName: 'a'}],
-        ProvisionedThroughput: {ReadCapacityUnits: 1000000000001, WriteCapacityUnits: 1000000000001}},
-        new RegExp('4 validation errors detected: ' +
-          'Value \'\\[.+\\]\' at \'keySchema\' failed to satisfy constraint: ' +
-          'Member must have length less than or equal to 2; ' +
+        ProvisionedThroughput: {ReadCapacityUnits: 1000000000001, WriteCapacityUnits: 1000000000001}}, [
+          new RegExp('Value \'\\[.+\\]\' at \'keySchema\' failed to satisfy constraint: ' +
+            'Member must have length less than or equal to 2'),
           'Value null at \'keySchema.1.member.attributeName\' failed to satisfy constraint: ' +
-          'Member must not be null; ' +
+          'Member must not be null',
           'Value null at \'keySchema.2.member.keyType\' failed to satisfy constraint: ' +
-          'Member must not be null; ' +
+          'Member must not be null',
           'Value \'Woop\' at \'keySchema.3.member.keyType\' failed to satisfy constraint: ' +
-          'Member must satisfy enum value set: \\[HASH, RANGE\\]'), done)
+          'Member must satisfy enum value set: [HASH, RANGE]',
+        ], done)
     })
 
     it('should return ValidationException for high ProvisionedThroughput.ReadCapacityUnits and neg', function(done) {
       assertValidation({TableName: 'abc', AttributeDefinitions: [], KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}],
-        ProvisionedThroughput: {ReadCapacityUnits: 1000000000001, WriteCapacityUnits: -1}},
-        '1 validation error detected: ' +
-        'Value \'-1\' at \'provisionedThroughput.writeCapacityUnits\' failed to satisfy constraint: ' +
-        'Member must have value greater than or equal to 1', done)
+        ProvisionedThroughput: {ReadCapacityUnits: 1000000000001, WriteCapacityUnits: -1}}, [
+          'Value \'-1\' at \'provisionedThroughput.writeCapacityUnits\' failed to satisfy constraint: ' +
+          'Member must have value greater than or equal to 1',
+        ], done)
+    })
+
+    it('should return ValidationException for missing ProvisionedThroughput', function(done) {
+      assertValidation({TableName: 'abc', AttributeDefinitions: [], KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}]},
+        'One or more parameter values were invalid: Missing required parameter in input: "ProvisionedThroughput"', done)
     })
 
     it('should return ValidationException for high ProvisionedThroughput.ReadCapacityUnits', function(done) {
@@ -282,12 +283,12 @@ describe('createTable', function() {
     it('should return ValidationException for attribute definitions member nulls', function(done) {
       assertValidation({TableName: 'abc', AttributeDefinitions: [{}],
         KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}, {KeyType: 'HASH', AttributeName: 'a'}],
-        ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},
-        '2 validation errors detected: ' +
-        'Value null at \'attributeDefinitions.1.member.attributeName\' failed to satisfy constraint: ' +
-        'Member must not be null; ' +
-        'Value null at \'attributeDefinitions.1.member.attributeType\' failed to satisfy constraint: ' +
-        'Member must not be null', done)
+        ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}}, [
+          'Value null at \'attributeDefinitions.1.member.attributeName\' failed to satisfy constraint: ' +
+          'Member must not be null',
+          'Value null at \'attributeDefinitions.1.member.attributeType\' failed to satisfy constraint: ' +
+          'Member must not be null',
+        ], done)
     })
 
     it('should return ValidationException for SS in attr definition', function(done) {
@@ -401,28 +402,28 @@ describe('createTable', function() {
         AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}, {AttributeName: 'b', AttributeType: 'S'}],
         KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}, {KeyType: 'RANGE', AttributeName: 'b'}],
         LocalSecondaryIndexes: [{}, {}, {}, {}, {}, {}, {}, {}, {}],
-        ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},
-        '10 validation errors detected: ' +
-        'Value null at \'localSecondaryIndexes.1.member.projection\' failed to satisfy constraint: ' +
-        'Member must not be null; ' +
-        'Value null at \'localSecondaryIndexes.1.member.indexName\' failed to satisfy constraint: ' +
-        'Member must not be null; ' +
-        'Value null at \'localSecondaryIndexes.1.member.keySchema\' failed to satisfy constraint: ' +
-        'Member must not be null; ' +
-        'Value null at \'localSecondaryIndexes.2.member.projection\' failed to satisfy constraint: ' +
-        'Member must not be null; ' +
-        'Value null at \'localSecondaryIndexes.2.member.indexName\' failed to satisfy constraint: ' +
-        'Member must not be null; ' +
-        'Value null at \'localSecondaryIndexes.2.member.keySchema\' failed to satisfy constraint: ' +
-        'Member must not be null; ' +
-        'Value null at \'localSecondaryIndexes.3.member.projection\' failed to satisfy constraint: ' +
-        'Member must not be null; ' +
-        'Value null at \'localSecondaryIndexes.3.member.indexName\' failed to satisfy constraint: ' +
-        'Member must not be null; ' +
-        'Value null at \'localSecondaryIndexes.3.member.keySchema\' failed to satisfy constraint: ' +
-        'Member must not be null; ' +
-        'Value null at \'localSecondaryIndexes.4.member.projection\' failed to satisfy constraint: ' +
-        'Member must not be null', done)
+        ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}}, [
+          'Value null at \'localSecondaryIndexes.1.member.keySchema\' failed to satisfy constraint: ' +
+          'Member must not be null',
+          'Value null at \'localSecondaryIndexes.1.member.projection\' failed to satisfy constraint: ' +
+          'Member must not be null',
+          'Value null at \'localSecondaryIndexes.1.member.indexName\' failed to satisfy constraint: ' +
+          'Member must not be null',
+          'Value null at \'localSecondaryIndexes.2.member.keySchema\' failed to satisfy constraint: ' +
+          'Member must not be null',
+          'Value null at \'localSecondaryIndexes.2.member.projection\' failed to satisfy constraint: ' +
+          'Member must not be null',
+          'Value null at \'localSecondaryIndexes.2.member.indexName\' failed to satisfy constraint: ' +
+          'Member must not be null',
+          'Value null at \'localSecondaryIndexes.3.member.keySchema\' failed to satisfy constraint: ' +
+          'Member must not be null',
+          'Value null at \'localSecondaryIndexes.3.member.projection\' failed to satisfy constraint: ' +
+          'Member must not be null',
+          'Value null at \'localSecondaryIndexes.3.member.indexName\' failed to satisfy constraint: ' +
+          'Member must not be null',
+          'Value null at \'localSecondaryIndexes.4.member.keySchema\' failed to satisfy constraint: ' +
+          'Member must not be null',
+        ], done)
     })
 
     it('should return ValidationException for bad LocalSecondaryIndex names', function(done) {
@@ -435,16 +436,16 @@ describe('createTable', function() {
         }, {
           IndexName: name, KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}], Projection: {},
         }],
-        ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},
-        '4 validation errors detected: ' +
-        'Value \'h;\' at \'localSecondaryIndexes.1.member.indexName\' failed to satisfy constraint: ' +
-        'Member must satisfy regular expression pattern: [a-zA-Z0-9_.-]+; ' +
-        'Value \'h;\' at \'localSecondaryIndexes.1.member.indexName\' failed to satisfy constraint: ' +
-        'Member must have length greater than or equal to 3; ' +
-        'Value \'[]\' at \'localSecondaryIndexes.1.member.keySchema\' failed to satisfy constraint: ' +
-        'Member must have length greater than or equal to 1; ' +
-        'Value \'' + name + '\' at \'localSecondaryIndexes.2.member.indexName\' failed to satisfy constraint: ' +
-        'Member must have length less than or equal to 255', done)
+        ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}}, [
+          'Value \'h;\' at \'localSecondaryIndexes.1.member.indexName\' failed to satisfy constraint: ' +
+          'Member must satisfy regular expression pattern: [a-zA-Z0-9_.-]+',
+          'Value \'h;\' at \'localSecondaryIndexes.1.member.indexName\' failed to satisfy constraint: ' +
+          'Member must have length greater than or equal to 3',
+          'Value \'[]\' at \'localSecondaryIndexes.1.member.keySchema\' failed to satisfy constraint: ' +
+          'Member must have length greater than or equal to 1',
+          'Value \'' + name + '\' at \'localSecondaryIndexes.2.member.indexName\' failed to satisfy constraint: ' +
+          'Member must have length less than or equal to 255',
+        ], done)
     })
 
     it('should return ValidationException for no range key with LocalSecondaryIndex', function(done) {
@@ -565,12 +566,12 @@ describe('createTable', function() {
           KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
           Projection: {NonKeyAttributes: [], ProjectionType: 'abc'},
         }],
-        ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},
-        '2 validation errors detected: ' +
-        'Value \'abc\' at \'localSecondaryIndexes.1.member.projection.projectionType\' failed to satisfy constraint: ' +
-        'Member must satisfy enum value set: [ALL, INCLUDE, KEYS_ONLY]; ' +
-        'Value \'[]\' at \'localSecondaryIndexes.1.member.projection.nonKeyAttributes\' failed to satisfy constraint: ' +
-        'Member must have length greater than or equal to 1', done)
+        ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}}, [
+          'Value \'abc\' at \'localSecondaryIndexes.1.member.projection.projectionType\' failed to satisfy constraint: ' +
+          'Member must satisfy enum value set: [ALL, INCLUDE, KEYS_ONLY]',
+          'Value \'[]\' at \'localSecondaryIndexes.1.member.projection.nonKeyAttributes\' failed to satisfy constraint: ' +
+          'Member must have length greater than or equal to 1',
+        ], done)
     })
 
     it('should return ValidationException for missing ProjectionType in LocalSecondaryIndex', function(done) {
@@ -660,14 +661,14 @@ describe('createTable', function() {
           KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
           Projection: {ProjectionType: 'ALL'},
         }, {}],
-        ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},
-        '3 validation errors detected: ' +
-        'Value null at \'localSecondaryIndexes.7.member.projection\' failed to satisfy constraint: ' +
-        'Member must not be null; ' +
-        'Value null at \'localSecondaryIndexes.7.member.indexName\' failed to satisfy constraint: ' +
-        'Member must not be null; ' +
-        'Value null at \'localSecondaryIndexes.7.member.keySchema\' failed to satisfy constraint: ' +
-        'Member must not be null', done)
+        ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}}, [
+          'Value null at \'localSecondaryIndexes.7.member.projection\' failed to satisfy constraint: ' +
+          'Member must not be null',
+          'Value null at \'localSecondaryIndexes.7.member.indexName\' failed to satisfy constraint: ' +
+          'Member must not be null',
+          'Value null at \'localSecondaryIndexes.7.member.keySchema\' failed to satisfy constraint: ' +
+          'Member must not be null',
+        ], done)
     })
 
     it('should return ValidationException for more than five valid LocalSecondaryIndexes', function(done) {
@@ -718,28 +719,28 @@ describe('createTable', function() {
         AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}, {AttributeName: 'b', AttributeType: 'S'}],
         KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}, {KeyType: 'RANGE', AttributeName: 'b'}],
         GlobalSecondaryIndexes: [{}, {}, {}, {}, {}, {}, {}, {}, {}],
-        ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},
-        '10 validation errors detected: ' +
-        'Value null at \'globalSecondaryIndexes.1.member.projection\' failed to satisfy constraint: ' +
-        'Member must not be null; ' +
-        'Value null at \'globalSecondaryIndexes.1.member.indexName\' failed to satisfy constraint: ' +
-        'Member must not be null; ' +
-        'Value null at \'globalSecondaryIndexes.1.member.provisionedThroughput\' failed to satisfy constraint: ' +
-        'Member must not be null; ' +
-        'Value null at \'globalSecondaryIndexes.1.member.keySchema\' failed to satisfy constraint: ' +
-        'Member must not be null; ' +
-        'Value null at \'globalSecondaryIndexes.2.member.projection\' failed to satisfy constraint: ' +
-        'Member must not be null; ' +
-        'Value null at \'globalSecondaryIndexes.2.member.indexName\' failed to satisfy constraint: ' +
-        'Member must not be null; ' +
-        'Value null at \'globalSecondaryIndexes.2.member.provisionedThroughput\' failed to satisfy constraint: ' +
-        'Member must not be null; ' +
-        'Value null at \'globalSecondaryIndexes.2.member.keySchema\' failed to satisfy constraint: ' +
-        'Member must not be null; ' +
-        'Value null at \'globalSecondaryIndexes.3.member.projection\' failed to satisfy constraint: ' +
-        'Member must not be null; ' +
-        'Value null at \'globalSecondaryIndexes.3.member.indexName\' failed to satisfy constraint: ' +
-        'Member must not be null', done)
+        ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}}, [
+          'Value null at \'globalSecondaryIndexes.1.member.keySchema\' failed to satisfy constraint: ' +
+          'Member must not be null',
+          'Value null at \'globalSecondaryIndexes.1.member.projection\' failed to satisfy constraint: ' +
+          'Member must not be null',
+          'Value null at \'globalSecondaryIndexes.1.member.indexName\' failed to satisfy constraint: ' +
+          'Member must not be null',
+          'Value null at \'globalSecondaryIndexes.2.member.keySchema\' failed to satisfy constraint: ' +
+          'Member must not be null',
+          'Value null at \'globalSecondaryIndexes.2.member.projection\' failed to satisfy constraint: ' +
+          'Member must not be null',
+          'Value null at \'globalSecondaryIndexes.2.member.indexName\' failed to satisfy constraint: ' +
+          'Member must not be null',
+          'Value null at \'globalSecondaryIndexes.3.member.keySchema\' failed to satisfy constraint: ' +
+          'Member must not be null',
+          'Value null at \'globalSecondaryIndexes.3.member.projection\' failed to satisfy constraint: ' +
+          'Member must not be null',
+          'Value null at \'globalSecondaryIndexes.3.member.indexName\' failed to satisfy constraint: ' +
+          'Member must not be null',
+          'Value null at \'globalSecondaryIndexes.4.member.keySchema\' failed to satisfy constraint: ' +
+          'Member must not be null',
+        ], done)
     })
 
     it('should return ValidationException for bad GlobalSecondaryIndex names', function(done) {
@@ -752,24 +753,24 @@ describe('createTable', function() {
         }, {
           IndexName: name, KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}], Projection: {}, ProvisionedThroughput: {},
         }],
-        ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},
-        '8 validation errors detected: ' +
-        'Value \'h;\' at \'globalSecondaryIndexes.1.member.indexName\' failed to satisfy constraint: ' +
-        'Member must satisfy regular expression pattern: [a-zA-Z0-9_.-]+; ' +
-        'Value \'h;\' at \'globalSecondaryIndexes.1.member.indexName\' failed to satisfy constraint: ' +
-        'Member must have length greater than or equal to 3; ' +
-        'Value \'0\' at \'globalSecondaryIndexes.1.member.provisionedThroughput.writeCapacityUnits\' failed to satisfy constraint: ' +
-        'Member must have value greater than or equal to 1; ' +
-        'Value \'0\' at \'globalSecondaryIndexes.1.member.provisionedThroughput.readCapacityUnits\' failed to satisfy constraint: ' +
-        'Member must have value greater than or equal to 1; ' +
-        'Value \'[]\' at \'globalSecondaryIndexes.1.member.keySchema\' failed to satisfy constraint: ' +
-        'Member must have length greater than or equal to 1; ' +
-        'Value \'' + name + '\' at \'globalSecondaryIndexes.2.member.indexName\' failed to satisfy constraint: ' +
-        'Member must have length less than or equal to 255; ' +
-        'Value null at \'globalSecondaryIndexes.2.member.provisionedThroughput.writeCapacityUnits\' failed to satisfy constraint: ' +
-        'Member must not be null; ' +
-        'Value null at \'globalSecondaryIndexes.2.member.provisionedThroughput.readCapacityUnits\' failed to satisfy constraint: ' +
-        'Member must not be null', done)
+        ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}}, [
+          'Value \'h;\' at \'globalSecondaryIndexes.1.member.indexName\' failed to satisfy constraint: ' +
+          'Member must satisfy regular expression pattern: [a-zA-Z0-9_.-]+',
+          'Value \'h;\' at \'globalSecondaryIndexes.1.member.indexName\' failed to satisfy constraint: ' +
+          'Member must have length greater than or equal to 3',
+          'Value \'0\' at \'globalSecondaryIndexes.1.member.provisionedThroughput.writeCapacityUnits\' failed to satisfy constraint: ' +
+          'Member must have value greater than or equal to 1',
+          'Value \'0\' at \'globalSecondaryIndexes.1.member.provisionedThroughput.readCapacityUnits\' failed to satisfy constraint: ' +
+          'Member must have value greater than or equal to 1',
+          'Value \'[]\' at \'globalSecondaryIndexes.1.member.keySchema\' failed to satisfy constraint: ' +
+          'Member must have length greater than or equal to 1',
+          'Value \'' + name + '\' at \'globalSecondaryIndexes.2.member.indexName\' failed to satisfy constraint: ' +
+          'Member must have length less than or equal to 255',
+          'Value null at \'globalSecondaryIndexes.2.member.provisionedThroughput.writeCapacityUnits\' failed to satisfy constraint: ' +
+          'Member must not be null',
+          'Value null at \'globalSecondaryIndexes.2.member.provisionedThroughput.readCapacityUnits\' failed to satisfy constraint: ' +
+          'Member must not be null',
+        ], done)
     })
 
     it('should return ValidationException for missing attribute definition with only range key with GlobalSecondaryIndex', function(done) {
@@ -928,12 +929,12 @@ describe('createTable', function() {
           ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
           Projection: {NonKeyAttributes: [], ProjectionType: 'abc'},
         }],
-        ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},
-        '2 validation errors detected: ' +
-        'Value \'abc\' at \'globalSecondaryIndexes.1.member.projection.projectionType\' failed to satisfy constraint: ' +
-        'Member must satisfy enum value set: [ALL, INCLUDE, KEYS_ONLY]; ' +
-        'Value \'[]\' at \'globalSecondaryIndexes.1.member.projection.nonKeyAttributes\' failed to satisfy constraint: ' +
-        'Member must have length greater than or equal to 1', done)
+        ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}}, [
+          'Value \'abc\' at \'globalSecondaryIndexes.1.member.projection.projectionType\' failed to satisfy constraint: ' +
+          'Member must satisfy enum value set: [ALL, INCLUDE, KEYS_ONLY]',
+          'Value \'[]\' at \'globalSecondaryIndexes.1.member.projection.nonKeyAttributes\' failed to satisfy constraint: ' +
+          'Member must have length greater than or equal to 1',
+        ], done)
     })
 
     it('should return ValidationException for missing ProjectionType in GlobalSecondaryIndex', function(done) {
@@ -1034,16 +1035,14 @@ describe('createTable', function() {
           ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
           Projection: {ProjectionType: 'ALL'},
         }, {}],
-        ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},
-        '4 validation errors detected: ' +
-        'Value null at \'globalSecondaryIndexes.7.member.projection\' failed to satisfy constraint: ' +
-        'Member must not be null; ' +
-        'Value null at \'globalSecondaryIndexes.7.member.indexName\' failed to satisfy constraint: ' +
-        'Member must not be null; ' +
-        'Value null at \'globalSecondaryIndexes.7.member.provisionedThroughput\' failed to satisfy constraint: ' +
-        'Member must not be null; ' +
-        'Value null at \'globalSecondaryIndexes.7.member.keySchema\' failed to satisfy constraint: ' +
-        'Member must not be null', done)
+        ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}}, [
+          'Value null at \'globalSecondaryIndexes.7.member.projection\' failed to satisfy constraint: ' +
+          'Member must not be null',
+          'Value null at \'globalSecondaryIndexes.7.member.indexName\' failed to satisfy constraint: ' +
+          'Member must not be null',
+          'Value null at \'globalSecondaryIndexes.7.member.keySchema\' failed to satisfy constraint: ' +
+          'Member must not be null',
+        ], done)
     })
 
     it('should return ValidationException for more than five valid GlobalSecondaryIndexes', function(done) {
@@ -1139,6 +1138,8 @@ describe('createTable', function() {
         res.statusCode.should.equal(200)
         should.exist(res.body.TableDescription)
         var desc = res.body.TableDescription
+        desc.TableId.should.match(/[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[0-9a-f]{4}-[0-9a-f]{8}/)
+        delete desc.TableId
         desc.CreationDateTime.should.be.above(createdAt - 5)
         delete desc.CreationDateTime
         desc.TableArn.should.match(new RegExp(
@@ -1210,6 +1211,8 @@ describe('createTable', function() {
         res.statusCode.should.equal(200)
         should.exist(res.body.TableDescription)
         var desc = res.body.TableDescription
+        desc.TableId.should.match(/[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[0-9a-f]{4}-[0-9a-f]{8}/)
+        delete desc.TableId
         desc.CreationDateTime.should.be.above(createdAt - 5)
         delete desc.CreationDateTime
         desc.TableArn.should.match(new RegExp(
@@ -1240,7 +1243,7 @@ describe('createTable', function() {
     })
 
     it('should succeed for multiple GlobalSecondaryIndexes', function(done) {
-      this.timeout(200000)
+      this.timeout(300000)
       var table = {
         TableName: randomName(),
         AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}, {AttributeName: 'b', AttributeType: 'S'}],
@@ -1278,6 +1281,8 @@ describe('createTable', function() {
         res.statusCode.should.equal(200)
         should.exist(res.body.TableDescription)
         var desc = res.body.TableDescription
+        desc.TableId.should.match(/[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[0-9a-f]{4}-[0-9a-f]{8}/)
+        delete desc.TableId
         desc.CreationDateTime.should.be.above(createdAt - 5)
         delete desc.CreationDateTime
         desc.TableArn.should.match(new RegExp(

@@ -14,11 +14,11 @@ describe('batchGetItem', function() {
   describe('serializations', function() {
 
     it('should return SerializationException when RequestItems is not a map', function(done) {
-      assertType('RequestItems', 'Map', done)
+      assertType('RequestItems', 'Map<KeysAndAttributes>', done)
     })
 
     it('should return SerializationException when RequestItems.Attr is not a struct', function(done) {
-      assertType('RequestItems.Attr', 'Structure', done)
+      assertType('RequestItems.Attr', 'ValueStruct<KeysAndAttributes>', done)
     })
 
     it('should return SerializationException when RequestItems.Attr.Keys is not a list', function(done) {
@@ -26,12 +26,12 @@ describe('batchGetItem', function() {
     })
 
     it('should return SerializationException when RequestItems.Attr.Keys.0 is not a map', function(done) {
-      assertType('RequestItems.Attr.Keys.0', 'Map', done)
+      assertType('RequestItems.Attr.Keys.0', 'ParameterizedMap', done)
     })
 
     it('should return SerializationException when RequestItems.Attr.Keys.0.Attr is not an attr struct', function(done) {
       this.timeout(60000)
-      assertType('RequestItems.Attr.Keys.0.Attr', 'AttrStructure', done)
+      assertType('RequestItems.Attr.Keys.0.Attr', 'AttrStruct<ValueStruct>', done)
     })
 
     it('should return SerializationException when RequestItems.Attr.AttributesToGet is not a list', function(done) {
@@ -43,7 +43,7 @@ describe('batchGetItem', function() {
     })
 
     it('should return SerializationException when RequestItems.Attr.ExpressionAttributeNames is not a map', function(done) {
-      assertType('RequestItems.Attr.ExpressionAttributeNames', 'Map', done)
+      assertType('RequestItems.Attr.ExpressionAttributeNames', 'Map<java.lang.String>', done)
     })
 
     it('should return SerializationException when RequestItems.Attr.ExpressionAttributeNames.Attr is not a string', function(done) {
@@ -70,12 +70,12 @@ describe('batchGetItem', function() {
     })
 
     it('should return ValidationException for missing RequestItems', function(done) {
-      assertValidation({ReturnConsumedCapacity: 'hi', ReturnItemCollectionMetrics: 'hi'},
-        '2 validation errors detected: ' +
+      assertValidation({ReturnConsumedCapacity: 'hi', ReturnItemCollectionMetrics: 'hi'}, [
         'Value \'hi\' at \'returnConsumedCapacity\' failed to satisfy constraint: ' +
-        'Member must satisfy enum value set: [INDEXES, TOTAL, NONE]; ' +
+        'Member must satisfy enum value set: [INDEXES, TOTAL, NONE]',
         'Value null at \'requestItems\' failed to satisfy constraint: ' +
-        'Member must not be null', done)
+        'Member must not be null',
+      ], done)
     })
 
     it('should return ValidationException for empty RequestItems', function(done) {
@@ -86,43 +86,43 @@ describe('batchGetItem', function() {
     })
 
     it('should return ValidationException for short table name with no keys', function(done) {
-      assertValidation({RequestItems: {a: {}}, ReturnConsumedCapacity: 'hi', ReturnItemCollectionMetrics: 'hi'},
-        new RegExp('3 validation errors detected: ' +
-          'Value \'hi\' at \'returnConsumedCapacity\' failed to satisfy constraint: ' +
-          'Member must satisfy enum value set: \\[INDEXES, TOTAL, NONE\\]; ' +
-          'Value \'{.+}\' at \'requestItems\' ' +
+      assertValidation({RequestItems: {a: {}}, ReturnConsumedCapacity: 'hi', ReturnItemCollectionMetrics: 'hi'}, [
+        'Value \'hi\' at \'returnConsumedCapacity\' failed to satisfy constraint: ' +
+        'Member must satisfy enum value set: [INDEXES, TOTAL, NONE]',
+        new RegExp('Value \'{.+}\' at \'requestItems\' ' +
           'failed to satisfy constraint: Map keys must satisfy constraint: ' +
           '\\[Member must have length less than or equal to 255, ' +
           'Member must have length greater than or equal to 3, ' +
-          'Member must satisfy regular expression pattern: \\[a-zA-Z0-9_.-\\]\\+\\]; ' +
-          'Value null at \'requestItems.a.member.keys\' failed to satisfy constraint: ' +
-          'Member must not be null'), done)
+          'Member must satisfy regular expression pattern: \\[a-zA-Z0-9_.-\\]\\+\\]'),
+        'Value null at \'requestItems.a.member.keys\' failed to satisfy constraint: ' +
+        'Member must not be null',
+      ], done)
     })
 
     it('should return ValidationException for empty keys', function(done) {
-      assertValidation({RequestItems: {a: {Keys: []}}},
-        new RegExp('2 validation errors detected: ' +
-          'Value \'{.+}\' at \'requestItems\' ' +
+      assertValidation({RequestItems: {a: {Keys: []}}}, [
+        new RegExp('Value \'{.+}\' at \'requestItems\' ' +
           'failed to satisfy constraint: Map keys must satisfy constraint: ' +
           '\\[Member must have length less than or equal to 255, ' +
           'Member must have length greater than or equal to 3, ' +
-          'Member must satisfy regular expression pattern: \\[a-zA-Z0-9_.-\\]\\+\\]; ' +
-          'Value \'\\[\\]\' at \'requestItems.a.member.keys\' failed to satisfy constraint: ' +
-          'Member must have length greater than or equal to 1'), done)
+          'Member must satisfy regular expression pattern: \\[a-zA-Z0-9_.-\\]\\+\\]'),
+        'Value \'[]\' at \'requestItems.a.member.keys\' failed to satisfy constraint: ' +
+        'Member must have length greater than or equal to 1',
+      ], done)
     })
 
     it('should return ValidationException for incorrect attributes', function(done) {
-      assertValidation({RequestItems: {'aa;': {}}, ReturnConsumedCapacity: 'hi'},
-        new RegExp('3 validation errors detected: ' +
-          'Value \'hi\' at \'returnConsumedCapacity\' failed to satisfy constraint: ' +
-          'Member must satisfy enum value set: \\[INDEXES, TOTAL, NONE\\]; ' +
-          'Value \'{.+}\' at \'requestItems\' ' +
+      assertValidation({RequestItems: {'aa;': {}}, ReturnConsumedCapacity: 'hi'}, [
+        'Value \'hi\' at \'returnConsumedCapacity\' failed to satisfy constraint: ' +
+        'Member must satisfy enum value set: [INDEXES, TOTAL, NONE]',
+        new RegExp('Value \'{.+}\' at \'requestItems\' ' +
           'failed to satisfy constraint: Map keys must satisfy constraint: ' +
           '\\[Member must have length less than or equal to 255, ' +
           'Member must have length greater than or equal to 3, ' +
-          'Member must satisfy regular expression pattern: \\[a-zA-Z0-9_.-\\]\\+\\]; ' +
-          'Value null at \'requestItems.aa;.member.keys\' failed to satisfy constraint: ' +
-          'Member must not be null'), done)
+          'Member must satisfy regular expression pattern: \\[a-zA-Z0-9_.-\\]\\+\\]'),
+        'Value null at \'requestItems.aa;.member.keys\' failed to satisfy constraint: ' +
+        'Member must not be null',
+      ], done)
     })
 
     it('should return ValidationException for short table name with keys', function(done) {
@@ -611,16 +611,19 @@ describe('batchGetItem', function() {
         }
         items.push(item)
       }
-      helpers.batchWriteUntilDone(helpers.testHashTable, {puts: items}, function(err) {
+      helpers.clearTable(helpers.testHashTable, 'a', function(err) {
         if (err) return done(err)
-        batchReq.RequestItems[helpers.testHashTable] = {Keys: items.map(function(item) { return {a: item.a} }), ConsistentRead: true}
-        request(opts(batchReq), function(err, res) {
+        helpers.batchWriteUntilDone(helpers.testHashTable, {puts: items}, function(err) {
           if (err) return done(err)
-          res.statusCode.should.equal(200)
-          res.body.UnprocessedKeys.should.eql({})
-          res.body.Responses[helpers.testHashTable].should.have.length(4)
-          res.body.ConsumedCapacity.should.eql([{CapacityUnits: 357, TableName: helpers.testHashTable}])
-          helpers.clearTable(helpers.testHashTable, 'a', done)
+          batchReq.RequestItems[helpers.testHashTable] = {Keys: items.map(function(item) { return {a: item.a} }), ConsistentRead: true}
+          request(opts(batchReq), function(err, res) {
+            if (err) return done(err)
+            res.statusCode.should.equal(200)
+            res.body.ConsumedCapacity.should.eql([{CapacityUnits: 357, TableName: helpers.testHashTable}])
+            res.body.UnprocessedKeys.should.eql({})
+            res.body.Responses[helpers.testHashTable].should.have.length(4)
+            helpers.clearTable(helpers.testHashTable, 'a', done)
+          })
         })
       })
     })

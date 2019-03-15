@@ -1,7 +1,9 @@
 var https = require('https'),
     once = require('once'),
     dynalite = require('..'),
-    request = require('./helpers').request
+    helpers = require('./helpers')
+
+var request = helpers.request
 
 describe('dynalite connections', function() {
 
@@ -37,8 +39,8 @@ describe('dynalite connections', function() {
       }
     }
 
-    it.skip('should return 413 if request too large', function(done) {
-      this.timeout(100000)
+    it('should return 413 if request too large', function(done) {
+      this.timeout(200000)
       var body = Array(16 * 1024 * 1024 + 1), i
       for (i = 0; i < body.length; i++)
         body[i] = 'a'
@@ -51,8 +53,8 @@ describe('dynalite connections', function() {
       })
     })
 
-    it.skip('should not return 413 if request not too large', function(done) {
-      this.timeout(100000)
+    it('should not return 413 if request not too large', function(done) {
+      this.timeout(200000)
       var body = Array(16 * 1024 * 1024), i
       for (i = 0; i < body.length; i++)
         body[i] = 'a'
@@ -73,9 +75,9 @@ describe('dynalite connections', function() {
       request({method: 'GET', noSign: true}, function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
-        res.body.should.equal('healthy: dynamodb.us-east-1.amazonaws.com ')
-        res.headers['x-amz-crc32'].should.equal('3128867991')
-        res.headers['content-length'].should.equal('42')
+        res.body.should.equal('healthy: dynamodb.' + helpers.awsRegion + '.amazonaws.com ')
+        res.headers['x-amz-crc32'].should.match(/^[0-9]+$/)
+        res.headers['content-length'].should.equal(res.body.length.toString())
         res.headers['x-amzn-requestid'].should.match(/^[0-9A-Z]{52}$/)
         done()
       })

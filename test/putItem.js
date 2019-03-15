@@ -19,20 +19,20 @@ describe('putItem', function() {
     })
 
     it('should return SerializationException when Item is not a map', function(done) {
-      assertType('Item', 'Map', done)
+      assertType('Item', 'Map<AttributeValue>', done)
     })
 
     it('should return SerializationException when Item.Attr is not an attr struct', function(done) {
       this.timeout(60000)
-      assertType('Item.Attr', 'AttrStructure', done)
+      assertType('Item.Attr', 'AttrStruct<ValueStruct>', done)
     })
 
     it('should return SerializationException when Expected is not a map', function(done) {
-      assertType('Expected', 'Map', done)
+      assertType('Expected', 'Map<ExpectedAttributeValue>', done)
     })
 
     it('should return SerializationException when Expected.Attr is not a struct', function(done) {
-      assertType('Expected.Attr', 'Structure', done)
+      assertType('Expected.Attr', 'ValueStruct<ExpectedAttributeValue>', done)
     })
 
     it('should return SerializationException when Expected.Attr.Exists is not a boolean', function(done) {
@@ -41,7 +41,7 @@ describe('putItem', function() {
 
     it('should return SerializationException when Expected.Attr.Value is not an attr struct', function(done) {
       this.timeout(60000)
-      assertType('Expected.Attr.Value', 'AttrStructure', done)
+      assertType('Expected.Attr.Value', 'AttrStruct<FieldStruct>', done)
     })
 
     it('should return SerializationException when ReturnConsumedCapacity is not a string', function(done) {
@@ -61,16 +61,16 @@ describe('putItem', function() {
     })
 
     it('should return SerializationException when ExpressionAttributeValues is not a map', function(done) {
-      assertType('ExpressionAttributeValues', 'Map', done)
+      assertType('ExpressionAttributeValues', 'Map<AttributeValue>', done)
     })
 
     it('should return SerializationException when ExpressionAttributeValues.Attr is not an attr struct', function(done) {
       this.timeout(60000)
-      assertType('ExpressionAttributeValues.Attr', 'AttrStructure', done)
+      assertType('ExpressionAttributeValues.Attr', 'AttrStruct<ValueStruct>', done)
     })
 
     it('should return SerializationException when ExpressionAttributeNames is not a map', function(done) {
-      assertType('ExpressionAttributeNames', 'Map', done)
+      assertType('ExpressionAttributeNames', 'Map<java.lang.String>', done)
     })
 
     it('should return SerializationException when ExpressionAttributeNames.Attr is not a string', function(done) {
@@ -82,70 +82,60 @@ describe('putItem', function() {
   describe('validations', function() {
 
     it('should return ValidationException for no TableName', function(done) {
-      assertValidation({},
-        '2 validation errors detected: ' +
+      assertValidation({}, [
         'Value null at \'tableName\' failed to satisfy constraint: ' +
-        'Member must not be null; ' +
+        'Member must not be null',
         'Value null at \'item\' failed to satisfy constraint: ' +
-        'Member must not be null', done)
+        'Member must not be null',
+      ], done)
     })
 
     it('should return ValidationException for empty TableName', function(done) {
-      var tableNamePieces = [
+      assertValidation({TableName: ''}, [
         'Value \'\' at \'tableName\' failed to satisfy constraint: ' +
         'Member must satisfy regular expression pattern: [a-zA-Z0-9_.-]+',
         'Value \'\' at \'tableName\' failed to satisfy constraint: ' +
         'Member must have length greater than or equal to 3',
-      ]
-      assertValidation({TableName: ''},
-        tableNamePieces.map(function(piece, ix) {
-          return '3 validation errors detected: ' +
-            [ix, +!ix].map(function(ix) { return tableNamePieces[ix] }).join('; ') +
-            '; Value null at \'item\' failed to satisfy constraint: ' +
-            'Member must not be null'
-        }), done)
+        'Value null at \'item\' failed to satisfy constraint: ' +
+        'Member must not be null',
+      ], done)
     })
 
     it('should return ValidationException for short TableName', function(done) {
-      var tableNamePieces = [
+      assertValidation({TableName: 'a;'}, [
         'Value \'a;\' at \'tableName\' failed to satisfy constraint: ' +
         'Member must satisfy regular expression pattern: [a-zA-Z0-9_.-]+',
         'Value \'a;\' at \'tableName\' failed to satisfy constraint: ' +
         'Member must have length greater than or equal to 3',
-      ]
-      assertValidation({TableName: 'a;'},
-        tableNamePieces.map(function(piece, ix) {
-          return '3 validation errors detected: ' +
-            [ix, +!ix].map(function(ix) { return tableNamePieces[ix] }).join('; ') +
-            '; Value null at \'item\' failed to satisfy constraint: ' +
-            'Member must not be null'
-        }), done)
+        'Value null at \'item\' failed to satisfy constraint: ' +
+        'Member must not be null',
+      ], done)
     })
 
     it('should return ValidationException for long TableName', function(done) {
       var name = new Array(256 + 1).join('a')
-      assertValidation({TableName: name},
-        '2 validation errors detected: ' +
+      assertValidation({TableName: name}, [
         'Value \'' + name + '\' at \'tableName\' failed to satisfy constraint: ' +
-        'Member must have length less than or equal to 255; ' +
+        'Member must have length less than or equal to 255',
         'Value null at \'item\' failed to satisfy constraint: ' +
-        'Member must not be null', done)
+        'Member must not be null',
+      ], done)
     })
 
     it('should return ValidationException for incorrect attributes', function(done) {
       assertValidation({TableName: 'abc;', ReturnConsumedCapacity: 'hi',
-        ReturnItemCollectionMetrics: 'hi', ReturnValues: 'hi'},
-        '5 validation errors detected: ' +
-        'Value \'hi\' at \'returnConsumedCapacity\' failed to satisfy constraint: ' +
-        'Member must satisfy enum value set: [INDEXES, TOTAL, NONE]; ' +
-        'Value \'abc;\' at \'tableName\' failed to satisfy constraint: ' +
-        'Member must satisfy regular expression pattern: [a-zA-Z0-9_.-]+; ' +
-        'Value null at \'item\' failed to satisfy constraint: ' +
-        'Member must not be null; ' +
-        'Value \'hi\' at \'returnValues\' failed to satisfy constraint: ' +
-        'Member must satisfy enum value set: [ALL_NEW, UPDATED_OLD, ALL_OLD, NONE, UPDATED_NEW]; ' +
-        'Value \'hi\' at \'returnItemCollectionMetrics\' failed to satisfy constraint: ' +
-        'Member must satisfy enum value set: [SIZE, NONE]', done)
+        ReturnItemCollectionMetrics: 'hi', ReturnValues: 'hi'}, [
+          'Value \'hi\' at \'returnConsumedCapacity\' failed to satisfy constraint: ' +
+          'Member must satisfy enum value set: [INDEXES, TOTAL, NONE]',
+          'Value \'abc;\' at \'tableName\' failed to satisfy constraint: ' +
+          'Member must satisfy regular expression pattern: [a-zA-Z0-9_.-]+',
+          'Value null at \'item\' failed to satisfy constraint: ' +
+          'Member must not be null',
+          'Value \'hi\' at \'returnValues\' failed to satisfy constraint: ' +
+          'Member must satisfy enum value set: [ALL_NEW, UPDATED_OLD, ALL_OLD, NONE, UPDATED_NEW]',
+          'Value \'hi\' at \'returnItemCollectionMetrics\' failed to satisfy constraint: ' +
+          'Member must satisfy enum value set: [SIZE, NONE]',
+        ], done)
     })
 
     it('should return ValidationException if expression and non-expression', function(done) {
@@ -521,8 +511,8 @@ describe('putItem', function() {
 
     it('should return ValidationException if secondary index key is incorrect type', function(done) {
       assertValidation({TableName: helpers.testRangeTable, Item: {a: {S: 'a'}, b: {S: 'a'}, c: {N: '1'}}},
-        'One or more parameter values were invalid: ' +
-        'Type mismatch for Index Key c Expected: S Actual: N IndexName: index4', done)
+        new RegExp('^One or more parameter values were invalid: ' +
+          'Type mismatch for Index Key c Expected: S Actual: N IndexName: index\\d$'), done)
     })
 
     it('should return ValidationException if hash key is too big', function(done) {

@@ -18,12 +18,12 @@ describe('query', function() {
     })
 
     it('should return SerializationException when ExclusiveStartKey is not a map', function(done) {
-      assertType('ExclusiveStartKey', 'Map', done)
+      assertType('ExclusiveStartKey', 'Map<AttributeValue>', done)
     })
 
     it('should return SerializationException when ExclusiveStartKey.Attr is not an attr struct', function(done) {
       this.timeout(60000)
-      assertType('ExclusiveStartKey.Attr', 'AttrStructure', done)
+      assertType('ExclusiveStartKey.Attr', 'AttrStruct<ValueStruct>', done)
     })
 
     it('should return SerializationException when AttributesToGet is not a list', function(done) {
@@ -36,6 +36,27 @@ describe('query', function() {
 
     it('should return SerializationException when ReturnConsumedCapacity is not a string', function(done) {
       assertType('ReturnConsumedCapacity', 'String', done)
+    })
+
+    it('should return SerializationException when QueryFilter is not a map', function(done) {
+      assertType('QueryFilter', 'Map<Condition>', done)
+    })
+
+    it('should return SerializationException when QueryFilter.Attr is not a struct', function(done) {
+      assertType('QueryFilter.Attr', 'ValueStruct<Condition>', done)
+    })
+
+    it('should return SerializationException when QueryFilter.Attr.ComparisonOperator is not a string', function(done) {
+      assertType('QueryFilter.Attr.ComparisonOperator', 'String', done)
+    })
+
+    it('should return SerializationException when QueryFilter.Attr.AttributeValueList is not a list', function(done) {
+      assertType('QueryFilter.Attr.AttributeValueList', 'List', done)
+    })
+
+    it('should return SerializationException when QueryFilter.Attr.AttributeValueList.0 is not an attr struct', function(done) {
+      this.timeout(60000)
+      assertType('QueryFilter.Attr.AttributeValueList.0', 'AttrStruct<ValueStruct>', done)
     })
 
     it('should return SerializationException when IndexName is not a string', function(done) {
@@ -59,11 +80,11 @@ describe('query', function() {
     })
 
     it('should return SerializationException when KeyConditions is not a map', function(done) {
-      assertType('KeyConditions', 'Map', done)
+      assertType('KeyConditions', 'Map<Condition>', done)
     })
 
     it('should return SerializationException when KeyConditions.Attr is not a struct', function(done) {
-      assertType('KeyConditions.Attr', 'Structure', done)
+      assertType('KeyConditions.Attr', 'ValueStruct<Condition>', done)
     })
 
     it('should return SerializationException when KeyConditions.Attr.ComparisonOperator is not a string', function(done) {
@@ -76,7 +97,7 @@ describe('query', function() {
 
     it('should return SerializationException when KeyConditions.Attr.AttributeValueList.0 is not an attr struct', function(done) {
       this.timeout(60000)
-      assertType('KeyConditions.Attr.AttributeValueList.0', 'AttrStructure', done)
+      assertType('KeyConditions.Attr.AttributeValueList.0', 'AttrStruct<ValueStruct>', done)
     })
 
     it('should return SerializationException when KeyConditionExpression is not a string', function(done) {
@@ -88,16 +109,16 @@ describe('query', function() {
     })
 
     it('should return SerializationException when ExpressionAttributeValues is not a map', function(done) {
-      assertType('ExpressionAttributeValues', 'Map', done)
+      assertType('ExpressionAttributeValues', 'Map<AttributeValue>', done)
     })
 
     it('should return SerializationException when ExpressionAttributeValues.Attr is not an attr struct', function(done) {
       this.timeout(60000)
-      assertType('ExpressionAttributeValues.Attr', 'AttrStructure', done)
+      assertType('ExpressionAttributeValues.Attr', 'AttrStruct<ValueStruct>', done)
     })
 
     it('should return SerializationException when ExpressionAttributeNames is not a map', function(done) {
-      assertType('ExpressionAttributeNames', 'Map', done)
+      assertType('ExpressionAttributeNames', 'Map<java.lang.String>', done)
     })
 
     it('should return SerializationException when ExpressionAttributeNames.Attr is not a string', function(done) {
@@ -120,31 +141,21 @@ describe('query', function() {
     })
 
     it('should return ValidationException for empty TableName', function(done) {
-      var tableNamePieces = [
+      assertValidation({TableName: ''}, [
         'Value \'\' at \'tableName\' failed to satisfy constraint: ' +
         'Member must satisfy regular expression pattern: [a-zA-Z0-9_.-]+',
         'Value \'\' at \'tableName\' failed to satisfy constraint: ' +
         'Member must have length greater than or equal to 3',
-      ]
-      assertValidation({TableName: ''},
-        tableNamePieces.map(function(piece, ix) {
-          return '2 validation errors detected: ' +
-            [ix, +!ix].map(function(ix) { return tableNamePieces[ix] }).join('; ')
-        }), done)
+      ], done)
     })
 
     it('should return ValidationException for short TableName', function(done) {
-      var tableNamePieces = [
+      assertValidation({TableName: 'a;'}, [
         'Value \'a;\' at \'tableName\' failed to satisfy constraint: ' +
         'Member must satisfy regular expression pattern: [a-zA-Z0-9_.-]+',
         'Value \'a;\' at \'tableName\' failed to satisfy constraint: ' +
         'Member must have length greater than or equal to 3',
-      ]
-      assertValidation({TableName: 'a;'},
-        tableNamePieces.map(function(piece, ix) {
-          return '2 validation errors detected: ' +
-            [ix, +!ix].map(function(ix) { return tableNamePieces[ix] }).join('; ')
-        }), done)
+      ], done)
     })
 
     it('should return ValidationException for long TableName', function(done) {
@@ -156,21 +167,21 @@ describe('query', function() {
     })
 
     it('should return ValidationException for empty IndexName', function(done) {
-      assertValidation({TableName: 'abc', IndexName: ''},
-        '2 validation errors detected: ' +
+      assertValidation({TableName: 'abc', IndexName: ''}, [
         'Value \'\' at \'indexName\' failed to satisfy constraint: ' +
-        'Member must satisfy regular expression pattern: [a-zA-Z0-9_.-]+; ' +
+        'Member must satisfy regular expression pattern: [a-zA-Z0-9_.-]+',
         'Value \'\' at \'indexName\' failed to satisfy constraint: ' +
-        'Member must have length greater than or equal to 3', done)
+        'Member must have length greater than or equal to 3',
+      ], done)
     })
 
     it('should return ValidationException for short IndexName', function(done) {
-      assertValidation({TableName: 'abc', IndexName: 'a;'},
-        '2 validation errors detected: ' +
+      assertValidation({TableName: 'abc', IndexName: 'a;'}, [
         'Value \'a;\' at \'indexName\' failed to satisfy constraint: ' +
-        'Member must satisfy regular expression pattern: [a-zA-Z0-9_.-]+; ' +
+        'Member must satisfy regular expression pattern: [a-zA-Z0-9_.-]+',
         'Value \'a;\' at \'indexName\' failed to satisfy constraint: ' +
-        'Member must have length greater than or equal to 3', done)
+        'Member must have length greater than or equal to 3',
+      ], done)
     })
 
     it('should return ValidationException for long IndexName', function(done) {
@@ -185,28 +196,28 @@ describe('query', function() {
     it('should return ValidationException for incorrect attributes', function(done) {
       assertValidation({TableName: 'abc;', ReturnConsumedCapacity: 'hi', AttributesToGet: [],
         IndexName: 'abc;', Select: 'hi', Limit: -1, KeyConditions: {a: {}, b: {ComparisonOperator: ''}},
-        ConditionalOperator: 'AN', QueryFilter: {a: {}, b: {ComparisonOperator: ''}}},
-        '10 validation errors detected: ' +
-        'Value \'-1\' at \'limit\' failed to satisfy constraint: ' +
-        'Member must have value greater than or equal to 1; ' +
-        'Value \'hi\' at \'returnConsumedCapacity\' failed to satisfy constraint: ' +
-        'Member must satisfy enum value set: [INDEXES, TOTAL, NONE]; ' +
-        'Value \'[]\' at \'attributesToGet\' failed to satisfy constraint: ' +
-        'Member must have length greater than or equal to 1; ' +
-        'Value \'\' at \'queryFilter.b.member.comparisonOperator\' failed to satisfy constraint: ' +
-        'Member must satisfy enum value set: [IN, NULL, BETWEEN, LT, NOT_CONTAINS, EQ, GT, NOT_NULL, NE, LE, BEGINS_WITH, GE, CONTAINS]; ' +
-        'Value null at \'queryFilter.a.member.comparisonOperator\' failed to satisfy constraint: ' +
-        'Member must not be null; ' +
-        'Value \'hi\' at \'select\' failed to satisfy constraint: ' +
-        'Member must satisfy enum value set: [SPECIFIC_ATTRIBUTES, COUNT, ALL_ATTRIBUTES, ALL_PROJECTED_ATTRIBUTES]; ' +
-        'Value \'AN\' at \'conditionalOperator\' failed to satisfy constraint: ' +
-        'Member must satisfy enum value set: [OR, AND]; ' +
-        'Value \'\' at \'keyConditions.b.member.comparisonOperator\' failed to satisfy constraint: ' +
-        'Member must satisfy enum value set: [IN, NULL, BETWEEN, LT, NOT_CONTAINS, EQ, GT, NOT_NULL, NE, LE, BEGINS_WITH, GE, CONTAINS]; ' +
-        'Value null at \'keyConditions.a.member.comparisonOperator\' failed to satisfy constraint: ' +
-        'Member must not be null; ' +
-        'Value \'abc;\' at \'tableName\' failed to satisfy constraint: ' +
-        'Member must satisfy regular expression pattern: [a-zA-Z0-9_.-]+', done)
+        ConditionalOperator: 'AN', QueryFilter: {a: {}, b: {ComparisonOperator: ''}}}, [
+          'Value \'hi\' at \'select\' failed to satisfy constraint: ' +
+          'Member must satisfy enum value set: [SPECIFIC_ATTRIBUTES, COUNT, ALL_ATTRIBUTES, ALL_PROJECTED_ATTRIBUTES]',
+          'Value \'abc;\' at \'indexName\' failed to satisfy constraint: ' +
+          'Member must satisfy regular expression pattern: [a-zA-Z0-9_.-]+',
+          'Value \'hi\' at \'returnConsumedCapacity\' failed to satisfy constraint: ' +
+          'Member must satisfy enum value set: [INDEXES, TOTAL, NONE]',
+          'Value null at \'queryFilter.a.member.comparisonOperator\' failed to satisfy constraint: ' +
+          'Member must not be null',
+          'Value \'\' at \'queryFilter.b.member.comparisonOperator\' failed to satisfy constraint: ' +
+          'Member must satisfy enum value set: [IN, NULL, BETWEEN, LT, NOT_CONTAINS, EQ, GT, NOT_NULL, NE, LE, BEGINS_WITH, GE, CONTAINS]',
+          'Value \'abc;\' at \'tableName\' failed to satisfy constraint: ' +
+          'Member must satisfy regular expression pattern: [a-zA-Z0-9_.-]+',
+          'Value \'AN\' at \'conditionalOperator\' failed to satisfy constraint: ' +
+          'Member must satisfy enum value set: [OR, AND]',
+          'Value \'[]\' at \'attributesToGet\' failed to satisfy constraint: ' +
+          'Member must have length greater than or equal to 1',
+          'Value \'-1\' at \'limit\' failed to satisfy constraint: ' +
+          'Member must have value greater than or equal to 1',
+          'Value null at \'keyConditions.a.member.comparisonOperator\' failed to satisfy constraint: ' +
+          'Member must not be null',
+        ], done)
     })
 
     it('should return ValidationException if all expressions and non-expression', function(done) {
@@ -2777,6 +2788,24 @@ describe('query', function() {
           if (err) return done(err)
           res.statusCode.should.equal(200)
           res.body.should.eql({Count: 2, ScannedCount: 2, Items: [item2, item3], LastEvaluatedKey: item3})
+          done()
+        })
+      })
+    })
+
+    it('should return items in reverse order with ExclusiveStartKey for strings', function(done) {
+      var item = {a: {S: helpers.randomString()}, b: {S: '1'}},
+          item2 = {a: item.a, b: {S: '2'}},
+          item3 = {a: item.a, b: {S: '10'}},
+          items = [item, item2, item3]
+      helpers.batchBulkPut(helpers.testRangeTable, items, function(err) {
+        if (err) return done(err)
+        request(opts({TableName: helpers.testRangeTable, ConsistentRead: true, KeyConditions: {
+          a: {ComparisonOperator: 'EQ', AttributeValueList: [item.a]},
+        }, ScanIndexForward: false, ExclusiveStartKey: item2}), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          res.body.should.eql({Count: 2, ScannedCount: 2, Items: [item3, item]})
           done()
         })
       })

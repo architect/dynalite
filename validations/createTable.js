@@ -3,7 +3,7 @@ exports.types = {
     type: 'List',
     notNull: true,
     children: {
-      type: 'Structure',
+      type: 'ValueStruct<AttributeDefinition>',
       children: {
         AttributeName: {
           type: 'String',
@@ -24,8 +24,7 @@ exports.types = {
     regex: '[a-zA-Z0-9_.-]+',
   },
   ProvisionedThroughput: {
-    type: 'Structure',
-    notNull: true,
+    type: 'FieldStruct<ProvisionedThroughput>',
     children: {
       WriteCapacityUnits: {
         type: 'Long',
@@ -45,7 +44,7 @@ exports.types = {
     lengthGreaterThanOrEqual: 1,
     lengthLessThanOrEqual: 2,
     children: {
-      type: 'Structure',
+      type: 'ValueStruct<KeySchemaElement>',
       children: {
         AttributeName: {
           type: 'String',
@@ -62,10 +61,29 @@ exports.types = {
   LocalSecondaryIndexes: {
     type: 'List',
     children: {
-      type: 'Structure',
+      type: 'ValueStruct<LocalSecondaryIndex>',
       children: {
+        KeySchema: {
+          type: 'List',
+          notNull: true,
+          lengthGreaterThanOrEqual: 1,
+          lengthLessThanOrEqual: 2,
+          children: {
+            type: 'ValueStruct<KeySchemaElement>',
+            children: {
+              AttributeName: {
+                type: 'String',
+                notNull: true,
+              },
+              KeyType: {
+                type: 'String',
+                notNull: true,
+              },
+            },
+          },
+        },
         Projection: {
-          type: 'Structure',
+          type: 'FieldStruct<Projection>',
           notNull: true,
           children: {
             ProjectionType: {
@@ -86,13 +104,21 @@ exports.types = {
           lengthGreaterThanOrEqual: 3,
           lengthLessThanOrEqual: 255,
         },
+      },
+    },
+  },
+  GlobalSecondaryIndexes: {
+    type: 'List',
+    children: {
+      type: 'ValueStruct<GlobalSecondaryIndex>',
+      children: {
         KeySchema: {
           type: 'List',
           notNull: true,
           lengthGreaterThanOrEqual: 1,
           lengthLessThanOrEqual: 2,
           children: {
-            type: 'Structure',
+            type: 'ValueStruct<KeySchemaElement>',
             children: {
               AttributeName: {
                 type: 'String',
@@ -105,16 +131,8 @@ exports.types = {
             },
           },
         },
-      },
-    },
-  },
-  GlobalSecondaryIndexes: {
-    type: 'List',
-    children: {
-      type: 'Structure',
-      children: {
         Projection: {
-          type: 'Structure',
+          type: 'FieldStruct<Projection>',
           notNull: true,
           children: {
             ProjectionType: {
@@ -136,8 +154,7 @@ exports.types = {
           lengthLessThanOrEqual: 255,
         },
         ProvisionedThroughput: {
-          type: 'Structure',
-          notNull: true,
+          type: 'FieldStruct<ProvisionedThroughput>',
           children: {
             WriteCapacityUnits: {
               type: 'Long',
@@ -148,25 +165,6 @@ exports.types = {
               type: 'Long',
               notNull: true,
               greaterThanOrEqual: 1,
-            },
-          },
-        },
-        KeySchema: {
-          type: 'List',
-          notNull: true,
-          lengthGreaterThanOrEqual: 1,
-          lengthLessThanOrEqual: 2,
-          children: {
-            type: 'Structure',
-            children: {
-              AttributeName: {
-                type: 'String',
-                notNull: true,
-              },
-              KeyType: {
-                type: 'String',
-                notNull: true,
-              },
             },
           },
         },
@@ -188,6 +186,9 @@ exports.types = {
 }
 
 exports.custom = function(data) {
+
+  if (!data.ProvisionedThroughput)
+    return 'One or more parameter values were invalid: Missing required parameter in input: "ProvisionedThroughput"'
 
   if (data.ProvisionedThroughput.ReadCapacityUnits > 1000000000000)
     return 'Given value ' + data.ProvisionedThroughput.ReadCapacityUnits + ' for ReadCapacityUnits is out of bounds'

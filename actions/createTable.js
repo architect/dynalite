@@ -1,4 +1,5 @@
 var async = require('async'),
+    crypto = require('crypto'),
     kinesaliteCreateStream = require('kinesalite/actions/createStream')
 
 module.exports = function createTable(store, data, cb) {
@@ -44,6 +45,7 @@ module.exports = function createTable(store, data, cb) {
     }],
     createTable: ['streamUpdates', function(results, callback) {
       data.TableArn = 'arn:aws:dynamodb:' + tableDb.awsRegion + ':' + tableDb.awsAccountId + ':table/' + data.TableName
+      data.TableId = uuidV4()
       data.CreationDateTime = Date.now() / 1000
       data.ItemCount = 0
       data.ProvisionedThroughput.NumberOfDecreasesToday = 0
@@ -105,4 +107,10 @@ module.exports = function createTable(store, data, cb) {
 
     cb(null, {TableDescription: data})
   })
+}
+
+function uuidV4() {
+  var bytes = crypto.randomBytes(14).toString('hex')
+  return bytes.slice(0, 8) + '-' + bytes.slice(8, 12) + '-4' + bytes.slice(13, 16) + '-' +
+    bytes.slice(16, 20) + '-' + bytes.slice(20, 28)
 }

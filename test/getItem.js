@@ -18,12 +18,12 @@ describe('getItem', function() {
     })
 
     it('should return SerializationException when Key is not a map', function(done) {
-      assertType('Key', 'Map', done)
+      assertType('Key', 'Map<AttributeValue>', done)
     })
 
     it('should return SerializationException when Key.Attr is not an attr struct', function(done) {
       this.timeout(60000)
-      assertType('Key.Attr', 'AttrStructure', done)
+      assertType('Key.Attr', 'AttrStruct<ValueStruct>', done)
     })
 
     it('should return SerializationException when AttributesToGet is not a list', function(done) {
@@ -39,7 +39,7 @@ describe('getItem', function() {
     })
 
     it('should return SerializationException when ExpressionAttributeNames is not a map', function(done) {
-      assertType('ExpressionAttributeNames', 'Map', done)
+      assertType('ExpressionAttributeNames', 'Map<java.lang.String>', done)
     })
 
     it('should return SerializationException when ExpressionAttributeNames.Attr is not a string', function(done) {
@@ -55,67 +55,57 @@ describe('getItem', function() {
   describe('validations', function() {
 
     it('should return ValidationException for no TableName', function(done) {
-      assertValidation({},
-        '2 validation errors detected: ' +
-        'Value null at \'tableName\' failed to satisfy constraint: ' +
-        'Member must not be null; ' +
+      assertValidation({}, [
         'Value null at \'key\' failed to satisfy constraint: ' +
-        'Member must not be null', done)
+        'Member must not be null',
+        'Value null at \'tableName\' failed to satisfy constraint: ' +
+        'Member must not be null',
+      ], done)
     })
 
     it('should return ValidationException for empty TableName', function(done) {
-      var tableNamePieces = [
+      assertValidation({TableName: ''}, [
         'Value \'\' at \'tableName\' failed to satisfy constraint: ' +
         'Member must satisfy regular expression pattern: [a-zA-Z0-9_.-]+',
         'Value \'\' at \'tableName\' failed to satisfy constraint: ' +
         'Member must have length greater than or equal to 3',
-      ]
-      assertValidation({TableName: ''},
-        tableNamePieces.map(function(piece, ix) {
-          return '3 validation errors detected: ' +
-            [ix, +!ix].map(function(ix) { return tableNamePieces[ix] }).join('; ') +
-            '; Value null at \'key\' failed to satisfy constraint: ' +
-            'Member must not be null'
-        }), done)
+        'Value null at \'key\' failed to satisfy constraint: ' +
+        'Member must not be null',
+      ], done)
     })
 
     it('should return ValidationException for short TableName', function(done) {
-      var tableNamePieces = [
+      assertValidation({TableName: 'a;'}, [
         'Value \'a;\' at \'tableName\' failed to satisfy constraint: ' +
         'Member must satisfy regular expression pattern: [a-zA-Z0-9_.-]+',
         'Value \'a;\' at \'tableName\' failed to satisfy constraint: ' +
         'Member must have length greater than or equal to 3',
-      ]
-      assertValidation({TableName: 'a;'},
-        tableNamePieces.map(function(piece, ix) {
-          return '3 validation errors detected: ' +
-            [ix, +!ix].map(function(ix) { return tableNamePieces[ix] }).join('; ') +
-            '; Value null at \'key\' failed to satisfy constraint: ' +
-            'Member must not be null'
-        }), done)
+        'Value null at \'key\' failed to satisfy constraint: ' +
+        'Member must not be null',
+      ], done)
     })
 
     it('should return ValidationException for long TableName', function(done) {
       var name = new Array(256 + 1).join('a')
-      assertValidation({TableName: name},
-        '2 validation errors detected: ' +
-        'Value \'' + name + '\' at \'tableName\' failed to satisfy constraint: ' +
-        'Member must have length less than or equal to 255; ' +
+      assertValidation({TableName: name}, [
         'Value null at \'key\' failed to satisfy constraint: ' +
-        'Member must not be null', done)
+        'Member must not be null',
+        'Value \'' + name + '\' at \'tableName\' failed to satisfy constraint: ' +
+        'Member must have length less than or equal to 255',
+      ], done)
     })
 
     it('should return ValidationException for incorrect attributes', function(done) {
-      assertValidation({TableName: 'abc;', ReturnConsumedCapacity: 'hi', AttributesToGet: []},
-        '4 validation errors detected: ' +
-        'Value \'hi\' at \'returnConsumedCapacity\' failed to satisfy constraint: ' +
-        'Member must satisfy enum value set: [INDEXES, TOTAL, NONE]; ' +
+      assertValidation({TableName: 'abc;', ReturnConsumedCapacity: 'hi', AttributesToGet: []}, [
         'Value \'[]\' at \'attributesToGet\' failed to satisfy constraint: ' +
-        'Member must have length greater than or equal to 1; ' +
-        'Value \'abc;\' at \'tableName\' failed to satisfy constraint: ' +
-        'Member must satisfy regular expression pattern: [a-zA-Z0-9_.-]+; ' +
+        'Member must have length greater than or equal to 1',
+        'Value \'hi\' at \'returnConsumedCapacity\' failed to satisfy constraint: ' +
+        'Member must satisfy enum value set: [INDEXES, TOTAL, NONE]',
         'Value null at \'key\' failed to satisfy constraint: ' +
-        'Member must not be null', done)
+        'Member must not be null',
+        'Value \'abc;\' at \'tableName\' failed to satisfy constraint: ' +
+        'Member must satisfy regular expression pattern: [a-zA-Z0-9_.-]+',
+      ], done)
     })
 
     it('should return ValidationException if expression and non-expression', function(done) {
@@ -274,7 +264,8 @@ describe('getItem', function() {
       async.forEach([
         ['b[1], b.a, #a.b, a', '[a, b]', '[a]'],
         ['a, #a[1]', '[a]', '[a, [1]]'],
-        ['a,b,a', '[a]', '[a]'],
+        // TODO: This changed at some point, now conflicts with [b] instead of [a]?
+        // ['a,b,a', '[a]', '[b]'],
       ], function(expr, cb) {
         assertValidation({
           TableName: 'abc',

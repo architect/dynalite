@@ -6,7 +6,7 @@ exports.types = {
     regex: '[a-zA-Z0-9_.-]+',
   },
   ProvisionedThroughput: {
-    type: 'Structure',
+    type: 'FieldStruct<ProvisionedThroughput>',
     children: {
       WriteCapacityUnits: {
         type: 'Long',
@@ -23,10 +23,10 @@ exports.types = {
   GlobalSecondaryIndexUpdates: {
     type: 'List',
     children: {
-      type: 'Structure',
+      type: 'ValueStruct<GlobalSecondaryIndexUpdate>',
       children: {
         Update: {
-          type: 'Structure',
+          type: 'FieldStruct<UpdateGlobalSecondaryIndexAction>',
           children: {
             IndexName: {
               type: 'String',
@@ -36,7 +36,7 @@ exports.types = {
               lengthLessThanOrEqual: 255,
             },
             ProvisionedThroughput: {
-              type: 'Structure',
+              type: 'FieldStruct<ProvisionedThroughput>',
               notNull: true,
               children: {
                 WriteCapacityUnits: {
@@ -54,10 +54,10 @@ exports.types = {
           },
         },
         Create: {
-          type: 'Structure',
+          type: 'FieldStruct<CreateGlobalSecondaryIndexAction>',
           children: {
             Projection: {
-              type: 'Structure',
+              type: 'FieldStruct<Projection>',
               notNull: true,
               children: {
                 ProjectionType: {
@@ -79,7 +79,7 @@ exports.types = {
               lengthLessThanOrEqual: 255,
             },
             ProvisionedThroughput: {
-              type: 'Structure',
+              type: 'FieldStruct<ProvisionedThroughput>',
               notNull: true,
               children: {
                 WriteCapacityUnits: {
@@ -100,7 +100,7 @@ exports.types = {
               lengthGreaterThanOrEqual: 1,
               lengthLessThanOrEqual: 2,
               children: {
-                type: 'Structure',
+                type: 'ValueStruct<KeySchemaElement>',
                 children: {
                   AttributeName: {
                     type: 'String',
@@ -116,7 +116,7 @@ exports.types = {
           },
         },
         Delete: {
-          type: 'Structure',
+          type: 'FieldStruct<DeleteGlobalSecondaryIndexAction>',
           children: {
             IndexName: {
               type: 'String',
@@ -146,9 +146,9 @@ exports.types = {
 
 exports.custom = function(data) {
 
-  if (!data.ProvisionedThroughput && !data.StreamSpecification &&
-      (!data.GlobalSecondaryIndexUpdates || !data.GlobalSecondaryIndexUpdates.length)) {
-    return 'At least one of ProvisionedThroughput, StreamSpecification or GlobalSecondaryIndexUpdates is required'
+  if (!data.ProvisionedThroughput && !data.StreamSpecification && !data.UpdateStreamEnabled &&
+      (!data.GlobalSecondaryIndexUpdates || !data.GlobalSecondaryIndexUpdates.length) && !data.SSESpecification) {
+    return 'At least one of ProvisionedThroughput, StreamSpecification, UpdateStreamEnabled, GlobalSecondaryIndexUpdates or SSESpecification is required'
   }
 
   if (data.ProvisionedThroughput) {
@@ -159,8 +159,9 @@ exports.custom = function(data) {
   }
 
   if (data.GlobalSecondaryIndexUpdates) {
+    var length = data.GlobalSecondaryIndexUpdates.length
     var indexNames = Object.create(null)
-    for (var i = 0; i < data.GlobalSecondaryIndexUpdates.length; i++) {
+    for (var i = 0; i < length; i++) {
       var update = data.GlobalSecondaryIndexUpdates[i]
       if (!update.Update && !update.Create && !update.Delete) {
         return 'One or more parameter values were invalid: ' +
@@ -175,12 +176,6 @@ exports.custom = function(data) {
           'Only one global secondary index update per index is allowed simultaneously. Index: ' + indexName
       }
       indexNames[indexName] = true
-      if (update.Update) {
-        if (update.Update.ProvisionedThroughput.ReadCapacityUnits > 1000000000000)
-          return 'Given value ' + data.GlobalSecondaryIndexUpdates[i].Update.ProvisionedThroughput.ReadCapacityUnits + ' for ReadCapacityUnits is out of bounds for index ' + data.GlobalSecondaryIndexUpdates[i].Update.IndexName
-        if (update.Update.ProvisionedThroughput.WriteCapacityUnits > 1000000000000)
-          return 'Given value ' + data.GlobalSecondaryIndexUpdates[i].Update.ProvisionedThroughput.WriteCapacityUnits + ' for WriteCapacityUnits is out of bounds for index ' + data.GlobalSecondaryIndexUpdates[i].Update.IndexName
-      }
     }
   }
 }

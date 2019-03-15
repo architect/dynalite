@@ -18,12 +18,12 @@ describe('scan', function() {
     })
 
     it('should return SerializationException when ExclusiveStartKey is not a map', function(done) {
-      assertType('ExclusiveStartKey', 'Map', done)
+      assertType('ExclusiveStartKey', 'Map<AttributeValue>', done)
     })
 
     it('should return SerializationException when ExclusiveStartKey.Attr is not an attr struct', function(done) {
       this.timeout(60000)
-      assertType('ExclusiveStartKey.Attr', 'AttrStructure', done)
+      assertType('ExclusiveStartKey.Attr', 'AttrStruct<ValueStruct>', done)
     })
 
     it('should return SerializationException when AttributesToGet is not a list', function(done) {
@@ -55,11 +55,11 @@ describe('scan', function() {
     })
 
     it('should return SerializationException when ScanFilter is not a map', function(done) {
-      assertType('ScanFilter', 'Map', done)
+      assertType('ScanFilter', 'Map<Condition>', done)
     })
 
     it('should return SerializationException when ScanFilter.Attr is not a struct', function(done) {
-      assertType('ScanFilter.Attr', 'Structure', done)
+      assertType('ScanFilter.Attr', 'ValueStruct<Condition>', done)
     })
 
     it('should return SerializationException when ScanFilter.Attr.ComparisonOperator is not a string', function(done) {
@@ -72,7 +72,7 @@ describe('scan', function() {
 
     it('should return SerializationException when ScanFilter.Attr.AttributeValueList.0 is not an attr struct', function(done) {
       this.timeout(60000)
-      assertType('ScanFilter.Attr.AttributeValueList.0', 'AttrStructure', done)
+      assertType('ScanFilter.Attr.AttributeValueList.0', 'AttrStruct<ValueStruct>', done)
     })
 
     it('should return SerializationException when FilterExpression is not a string', function(done) {
@@ -80,16 +80,16 @@ describe('scan', function() {
     })
 
     it('should return SerializationException when ExpressionAttributeValues is not a map', function(done) {
-      assertType('ExpressionAttributeValues', 'Map', done)
+      assertType('ExpressionAttributeValues', 'Map<AttributeValue>', done)
     })
 
     it('should return SerializationException when ExpressionAttributeValues.Attr is not an attr struct', function(done) {
       this.timeout(60000)
-      assertType('ExpressionAttributeValues.Attr', 'AttrStructure', done)
+      assertType('ExpressionAttributeValues.Attr', 'AttrStruct<ValueStruct>', done)
     })
 
     it('should return SerializationException when ExpressionAttributeNames is not a map', function(done) {
-      assertType('ExpressionAttributeNames', 'Map', done)
+      assertType('ExpressionAttributeNames', 'Map<java.lang.String>', done)
     })
 
     it('should return SerializationException when ExpressionAttributeNames.Attr is not a string', function(done) {
@@ -116,31 +116,21 @@ describe('scan', function() {
     })
 
     it('should return ValidationException for empty TableName', function(done) {
-      var tableNamePieces = [
+      assertValidation({TableName: ''}, [
         'Value \'\' at \'tableName\' failed to satisfy constraint: ' +
         'Member must satisfy regular expression pattern: [a-zA-Z0-9_.-]+',
         'Value \'\' at \'tableName\' failed to satisfy constraint: ' +
         'Member must have length greater than or equal to 3',
-      ]
-      assertValidation({TableName: ''},
-        tableNamePieces.map(function(piece, ix) {
-          return '2 validation errors detected: ' +
-            [ix, +!ix].map(function(ix) { return tableNamePieces[ix] }).join('; ')
-        }), done)
+      ], done)
     })
 
     it('should return ValidationException for short TableName', function(done) {
-      var tableNamePieces = [
+      assertValidation({TableName: 'a;'}, [
         'Value \'a;\' at \'tableName\' failed to satisfy constraint: ' +
         'Member must satisfy regular expression pattern: [a-zA-Z0-9_.-]+',
         'Value \'a;\' at \'tableName\' failed to satisfy constraint: ' +
         'Member must have length greater than or equal to 3',
-      ]
-      assertValidation({TableName: 'a;'},
-        tableNamePieces.map(function(piece, ix) {
-          return '2 validation errors detected: ' +
-            [ix, +!ix].map(function(ix) { return tableNamePieces[ix] }).join('; ')
-        }), done)
+      ], done)
     })
 
     it('should return ValidationException for long TableName', function(done) {
@@ -154,28 +144,28 @@ describe('scan', function() {
     it('should return ValidationException for incorrect attributes', function(done) {
       assertValidation({TableName: 'abc;', ReturnConsumedCapacity: 'hi', AttributesToGet: [],
         IndexName: 'abc;', Segment: -1, TotalSegments: -1, Select: 'hi', Limit: -1, ScanFilter: {a: {}, b: {ComparisonOperator: ''}},
-        ConditionalOperator: 'AN', ExpressionAttributeNames: {}, ExpressionAttributeValues: {}, ProjectionExpression: ''},
-        '10 validation errors detected: ' +
-        'Value \'-1\' at \'limit\' failed to satisfy constraint: ' +
-        'Member must have value greater than or equal to 1; ' +
-        'Value \'hi\' at \'returnConsumedCapacity\' failed to satisfy constraint: ' +
-        'Member must satisfy enum value set: [INDEXES, TOTAL, NONE]; ' +
-        'Value \'[]\' at \'attributesToGet\' failed to satisfy constraint: ' +
-        'Member must have length greater than or equal to 1; ' +
-        'Value \'-1\' at \'segment\' failed to satisfy constraint: ' +
-        'Member must have value greater than or equal to 0; ' +
-        'Value \'hi\' at \'select\' failed to satisfy constraint: ' +
-        'Member must satisfy enum value set: [SPECIFIC_ATTRIBUTES, COUNT, ALL_ATTRIBUTES, ALL_PROJECTED_ATTRIBUTES]; ' +
-        'Value \'\' at \'scanFilter.b.member.comparisonOperator\' failed to satisfy constraint: ' +
-        'Member must satisfy enum value set: [IN, NULL, BETWEEN, LT, NOT_CONTAINS, EQ, GT, NOT_NULL, NE, LE, BEGINS_WITH, GE, CONTAINS]; ' +
-        'Value null at \'scanFilter.a.member.comparisonOperator\' failed to satisfy constraint: ' +
-        'Member must not be null; ' +
-        'Value \'AN\' at \'conditionalOperator\' failed to satisfy constraint: ' +
-        'Member must satisfy enum value set: [OR, AND]; ' +
-        'Value \'-1\' at \'totalSegments\' failed to satisfy constraint: ' +
-        'Member must have value greater than or equal to 1; ' +
-        'Value \'abc;\' at \'tableName\' failed to satisfy constraint: ' +
-        'Member must satisfy regular expression pattern: [a-zA-Z0-9_.-]+', done)
+        ConditionalOperator: 'AN', ExpressionAttributeNames: {}, ExpressionAttributeValues: {}, ProjectionExpression: ''}, [
+          'Value \'hi\' at \'select\' failed to satisfy constraint: ' +
+          'Member must satisfy enum value set: [SPECIFIC_ATTRIBUTES, COUNT, ALL_ATTRIBUTES, ALL_PROJECTED_ATTRIBUTES]',
+          'Value \'abc;\' at \'indexName\' failed to satisfy constraint: ' +
+          'Member must satisfy regular expression pattern: [a-zA-Z0-9_.-]+',
+          'Value \'-1\' at \'totalSegments\' failed to satisfy constraint: ' +
+          'Member must have value greater than or equal to 1',
+          'Value \'hi\' at \'returnConsumedCapacity\' failed to satisfy constraint: ' +
+          'Member must satisfy enum value set: [INDEXES, TOTAL, NONE]',
+          'Value \'abc;\' at \'tableName\' failed to satisfy constraint: ' +
+          'Member must satisfy regular expression pattern: [a-zA-Z0-9_.-]+',
+          'Value \'AN\' at \'conditionalOperator\' failed to satisfy constraint: ' +
+          'Member must satisfy enum value set: [OR, AND]',
+          'Value null at \'scanFilter.a.member.comparisonOperator\' failed to satisfy constraint: ' +
+          'Member must not be null',
+          'Value \'\' at \'scanFilter.b.member.comparisonOperator\' failed to satisfy constraint: ' +
+          'Member must satisfy enum value set: [IN, NULL, BETWEEN, LT, NOT_CONTAINS, EQ, GT, NOT_NULL, NE, LE, BEGINS_WITH, GE, CONTAINS]',
+          'Value \'-1\' at \'segment\' failed to satisfy constraint: ' +
+          'Member must have value greater than or equal to 0',
+          'Value \'[]\' at \'attributesToGet\' failed to satisfy constraint: ' +
+          'Member must have length greater than or equal to 1',
+        ], done)
     })
 
     it('should return ValidationException if expression and non-expression', function(done) {
@@ -654,6 +644,10 @@ describe('scan', function() {
         'a=a and a > ((views))',
         '(a)between(((b.c)).d)and(c)',
         'a > whatever((:things), ((a)))',
+        'a=a AND ((a=a AND a=a)) AND a=a',
+        'a=a OR ((a=a OR a=a)) OR a=a',
+        'a=a AND ((a=a AND (a=a AND a=a)))',
+        'a=a OR ((a=a OR (a=a OR a=a)))',
       ]
       async.forEach(expressions, function(expression, cb) {
         assertValidation({
@@ -834,6 +828,8 @@ describe('scan', function() {
         ['a = a AND #a = b AND :views > a', '=', '[a]'],
         ['#a <> a', '<>', '[a]'],
         ['a > #a', '>', '[a]'],
+        ['((a=a) OR (a=a))', '=', '[a]'],
+        ['((a=a) AND (a=a))', '=', '[a]'],
         ['contains(ab.bc[1].a, ab.bc[1].#a)', 'contains', '[ab, bc, [1], a]'],
         ['attribute_type(ab.bc[1].#a, ab.bc[1].a)', 'attribute_type', '[ab, bc, [1], a]'],
         ['begins_with(ab.bc[1].a, ab.bc[1].#a)', 'begins_with', '[ab, bc, [1], a]'],
@@ -875,7 +871,7 @@ describe('scan', function() {
           IndexName: 'whatever',
           FilterExpression: 'attribute_exists(a.b.c)',
           ExclusiveStartKey: expr,
-        }, 'The provided starting key is invalid', cb)
+        }, 'The table does not have the specified index: whatever', cb)
       }, done)
     })
 
@@ -892,7 +888,7 @@ describe('scan', function() {
           IndexName: 'whatever',
           FilterExpression: 'attribute_exists(a.b.c)',
           ExclusiveStartKey: expr,
-        }, 'The provided starting key is invalid', cb)
+        }, 'The table does not have the specified index: whatever', cb)
       }, done)
     })
 
@@ -1386,6 +1382,14 @@ describe('scan', function() {
           request(opts(scanOpts), function(err, res) {
             if (err) return cb(err)
             res.statusCode.should.equal(200)
+            res.body.Items.forEach(function(item) {
+              item.b.NS.should.have.length(2)
+              item.b.NS.should.containEql('1')
+              item.b.NS.should.containEql('2')
+              delete item.b
+            })
+            delete item.b
+            delete item2.b
             res.body.Items.should.containEql(item)
             res.body.Items.should.containEql(item2)
             res.body.Items.should.have.length(2)
@@ -1733,11 +1737,11 @@ describe('scan', function() {
     })
 
     it('should scan by LE on type B', function(done) {
-      var item = {a: {S: helpers.randomString()}, b: {B: new Buffer('ce', 'hex').toString('base64')}, c: {S: helpers.randomString()}},
-          item2 = {a: {S: helpers.randomString()}, b: {B: new Buffer('d0', 'hex').toString('base64')}, c: item.c},
-          item3 = {a: {S: helpers.randomString()}, b: {B: new Buffer('cf', 'hex').toString('base64')}, c: item.c},
-          item4 = {a: {S: helpers.randomString()}, b: {B: new Buffer('d000', 'hex').toString('base64')}, c: item.c},
-          item5 = {a: {S: helpers.randomString()}, b: {B: new Buffer('cfff', 'hex').toString('base64')}, c: item.c},
+      var item = {a: {S: helpers.randomString()}, b: {B: Buffer.from('ce', 'hex').toString('base64')}, c: {S: helpers.randomString()}},
+          item2 = {a: {S: helpers.randomString()}, b: {B: Buffer.from('d0', 'hex').toString('base64')}, c: item.c},
+          item3 = {a: {S: helpers.randomString()}, b: {B: Buffer.from('cf', 'hex').toString('base64')}, c: item.c},
+          item4 = {a: {S: helpers.randomString()}, b: {B: Buffer.from('d000', 'hex').toString('base64')}, c: item.c},
+          item5 = {a: {S: helpers.randomString()}, b: {B: Buffer.from('cfff', 'hex').toString('base64')}, c: item.c},
           batchReq = {RequestItems: {}}
       batchReq.RequestItems[helpers.testHashTable] = [
         {PutRequest: {Item: item}},
@@ -1857,11 +1861,11 @@ describe('scan', function() {
     })
 
     it('should scan by LT on type B', function(done) {
-      var item = {a: {S: helpers.randomString()}, b: {B: new Buffer('ce', 'hex').toString('base64')}, c: {S: helpers.randomString()}},
-          item2 = {a: {S: helpers.randomString()}, b: {B: new Buffer('d0', 'hex').toString('base64')}, c: item.c},
-          item3 = {a: {S: helpers.randomString()}, b: {B: new Buffer('cf', 'hex').toString('base64')}, c: item.c},
-          item4 = {a: {S: helpers.randomString()}, b: {B: new Buffer('d000', 'hex').toString('base64')}, c: item.c},
-          item5 = {a: {S: helpers.randomString()}, b: {B: new Buffer('cfff', 'hex').toString('base64')}, c: item.c},
+      var item = {a: {S: helpers.randomString()}, b: {B: Buffer.from('ce', 'hex').toString('base64')}, c: {S: helpers.randomString()}},
+          item2 = {a: {S: helpers.randomString()}, b: {B: Buffer.from('d0', 'hex').toString('base64')}, c: item.c},
+          item3 = {a: {S: helpers.randomString()}, b: {B: Buffer.from('cf', 'hex').toString('base64')}, c: item.c},
+          item4 = {a: {S: helpers.randomString()}, b: {B: Buffer.from('d000', 'hex').toString('base64')}, c: item.c},
+          item5 = {a: {S: helpers.randomString()}, b: {B: Buffer.from('cfff', 'hex').toString('base64')}, c: item.c},
           batchReq = {RequestItems: {}}
       batchReq.RequestItems[helpers.testHashTable] = [
         {PutRequest: {Item: item}},
@@ -1981,11 +1985,11 @@ describe('scan', function() {
     })
 
     it('should scan by GE on type B', function(done) {
-      var item = {a: {S: helpers.randomString()}, b: {B: new Buffer('ce', 'hex').toString('base64')}, c: {S: helpers.randomString()}},
-          item2 = {a: {S: helpers.randomString()}, b: {B: new Buffer('d0', 'hex').toString('base64')}, c: item.c},
-          item3 = {a: {S: helpers.randomString()}, b: {B: new Buffer('cf', 'hex').toString('base64')}, c: item.c},
-          item4 = {a: {S: helpers.randomString()}, b: {B: new Buffer('d000', 'hex').toString('base64')}, c: item.c},
-          item5 = {a: {S: helpers.randomString()}, b: {B: new Buffer('cfff', 'hex').toString('base64')}, c: item.c},
+      var item = {a: {S: helpers.randomString()}, b: {B: Buffer.from('ce', 'hex').toString('base64')}, c: {S: helpers.randomString()}},
+          item2 = {a: {S: helpers.randomString()}, b: {B: Buffer.from('d0', 'hex').toString('base64')}, c: item.c},
+          item3 = {a: {S: helpers.randomString()}, b: {B: Buffer.from('cf', 'hex').toString('base64')}, c: item.c},
+          item4 = {a: {S: helpers.randomString()}, b: {B: Buffer.from('d000', 'hex').toString('base64')}, c: item.c},
+          item5 = {a: {S: helpers.randomString()}, b: {B: Buffer.from('cfff', 'hex').toString('base64')}, c: item.c},
           batchReq = {RequestItems: {}}
       batchReq.RequestItems[helpers.testHashTable] = [
         {PutRequest: {Item: item}},
@@ -2104,11 +2108,11 @@ describe('scan', function() {
     })
 
     it('should scan by GT on type B', function(done) {
-      var item = {a: {S: helpers.randomString()}, b: {B: new Buffer('ce', 'hex').toString('base64')}, c: {S: helpers.randomString()}},
-          item2 = {a: {S: helpers.randomString()}, b: {B: new Buffer('d0', 'hex').toString('base64')}, c: item.c},
-          item3 = {a: {S: helpers.randomString()}, b: {B: new Buffer('cf', 'hex').toString('base64')}, c: item.c},
-          item4 = {a: {S: helpers.randomString()}, b: {B: new Buffer('d000', 'hex').toString('base64')}, c: item.c},
-          item5 = {a: {S: helpers.randomString()}, b: {B: new Buffer('cfff', 'hex').toString('base64')}, c: item.c},
+      var item = {a: {S: helpers.randomString()}, b: {B: Buffer.from('ce', 'hex').toString('base64')}, c: {S: helpers.randomString()}},
+          item2 = {a: {S: helpers.randomString()}, b: {B: Buffer.from('d0', 'hex').toString('base64')}, c: item.c},
+          item3 = {a: {S: helpers.randomString()}, b: {B: Buffer.from('cf', 'hex').toString('base64')}, c: item.c},
+          item4 = {a: {S: helpers.randomString()}, b: {B: Buffer.from('d000', 'hex').toString('base64')}, c: item.c},
+          item5 = {a: {S: helpers.randomString()}, b: {B: Buffer.from('cfff', 'hex').toString('base64')}, c: item.c},
           batchReq = {RequestItems: {}}
       batchReq.RequestItems[helpers.testHashTable] = [
         {PutRequest: {Item: item}},
@@ -2219,10 +2223,13 @@ describe('scan', function() {
     it('should scan by CONTAINS on type S', function(done) {
       var item = {a: {S: helpers.randomString()}, b: {S: 'abdef'}, c: {S: helpers.randomString()}},
           item2 = {a: {S: helpers.randomString()}, b: {SS: ['abd', 'bde']}, c: item.c},
-          item3 = {a: {S: helpers.randomString()}, b: {B: new Buffer('abdef').toString('base64')}, c: item.c},
-          item4 = {a: {S: helpers.randomString()}, b: {BS: ['abcd', new Buffer('bde').toString('base64')]}, c: item.c},
+          item3 = {a: {S: helpers.randomString()}, b: {B: Buffer.from('abdef').toString('base64')}, c: item.c},
+          item4 = {a: {S: helpers.randomString()}, b: {BS: ['abcd', Buffer.from('bde').toString('base64')]}, c: item.c},
           item5 = {a: {S: helpers.randomString()}, b: {S: 'bde'}, c: item.c},
           item6 = {a: {S: helpers.randomString()}, b: {S: 'abd'}, c: item.c},
+          item7 = {a: {S: helpers.randomString()}, b: {L: [{'N': '123'}, {'S': 'bde'}]}, c: item.c},
+          item8 = {a: {S: helpers.randomString()}, b: {L: [{'S': 'abd'}]}, c: item.c},
+          item9 = {a: {S: helpers.randomString()}, b: {L: [{'S': 'abde'}]}, c: item.c},
           batchReq = {RequestItems: {}}
       batchReq.RequestItems[helpers.testHashTable] = [
         {PutRequest: {Item: item}},
@@ -2231,6 +2238,9 @@ describe('scan', function() {
         {PutRequest: {Item: item4}},
         {PutRequest: {Item: item5}},
         {PutRequest: {Item: item6}},
+        {PutRequest: {Item: item7}},
+        {PutRequest: {Item: item8}},
+        {PutRequest: {Item: item9}},
       ]
       request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
         if (err) return done(err)
@@ -2251,8 +2261,9 @@ describe('scan', function() {
             res.body.Items.should.containEql(item)
             res.body.Items.should.containEql(item2)
             res.body.Items.should.containEql(item5)
-            res.body.Items.should.have.length(3)
-            res.body.Count.should.equal(3)
+            res.body.Items.should.containEql(item7)
+            res.body.Items.should.have.length(4)
+            res.body.Count.should.equal(4)
             cb()
           })
         }, done)
@@ -2262,9 +2273,12 @@ describe('scan', function() {
     it('should scan by CONTAINS on type N', function(done) {
       var item = {a: {S: helpers.randomString()}, b: {N: '1234'}, c: {S: helpers.randomString()}},
           item2 = {a: {S: helpers.randomString()}, b: {NS: ['123', '234']}, c: item.c},
-          item3 = {a: {S: helpers.randomString()}, b: {B: new Buffer('1234').toString('base64')}, c: item.c},
-          item4 = {a: {S: helpers.randomString()}, b: {BS: [new Buffer('234').toString('base64')]}, c: item.c},
+          item3 = {a: {S: helpers.randomString()}, b: {B: Buffer.from('1234').toString('base64')}, c: item.c},
+          item4 = {a: {S: helpers.randomString()}, b: {BS: [Buffer.from('234').toString('base64')]}, c: item.c},
           item5 = {a: {S: helpers.randomString()}, b: {SS: ['234']}, c: item.c},
+          item6 = {a: {S: helpers.randomString()}, b: {L: [{'S': 'abd'}, {'N': '234'}]}, c: item.c},
+          item7 = {a: {S: helpers.randomString()}, b: {L: [{'N': '123'}]}, c: item.c},
+          item8 = {a: {S: helpers.randomString()}, b: {L: [{'N': '1234'}]}, c: item.c},
           batchReq = {RequestItems: {}}
       batchReq.RequestItems[helpers.testHashTable] = [
         {PutRequest: {Item: item}},
@@ -2272,6 +2286,9 @@ describe('scan', function() {
         {PutRequest: {Item: item3}},
         {PutRequest: {Item: item4}},
         {PutRequest: {Item: item5}},
+        {PutRequest: {Item: item6}},
+        {PutRequest: {Item: item7}},
+        {PutRequest: {Item: item8}},
       ]
       request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
         if (err) return done(err)
@@ -2289,9 +2306,10 @@ describe('scan', function() {
           request(opts(scanOpts), function(err, res) {
             if (err) return cb(err)
             res.statusCode.should.equal(200)
-            res.body.Items.should.have.lengthOf(1)
-            res.body.Items[0].a.should.eql(item2.a)
-            res.body.Count.should.equal(1)
+            res.body.Items.should.containEql(item2)
+            res.body.Items.should.containEql(item6)
+            res.body.Items.should.have.lengthOf(2)
+            res.body.Count.should.equal(2)
             cb()
           })
         }, done)
@@ -2301,10 +2319,13 @@ describe('scan', function() {
     it('should scan by CONTAINS on type B', function(done) {
       var item = {a: {S: helpers.randomString()}, b: {S: 'abdef'}, c: {S: helpers.randomString()}},
           item2 = {a: {S: helpers.randomString()}, b: {SS: ['abd', 'bde']}, c: item.c},
-          item3 = {a: {S: helpers.randomString()}, b: {B: new Buffer('abdef').toString('base64')}, c: item.c},
-          item4 = {a: {S: helpers.randomString()}, b: {BS: [new Buffer('bde').toString('base64'), 'abcd']}, c: item.c},
-          item5 = {a: {S: helpers.randomString()}, b: {B: new Buffer('bde').toString('base64')}, c: item.c},
+          item3 = {a: {S: helpers.randomString()}, b: {B: Buffer.from('abdef').toString('base64')}, c: item.c},
+          item4 = {a: {S: helpers.randomString()}, b: {BS: [Buffer.from('bde').toString('base64'), 'abcd']}, c: item.c},
+          item5 = {a: {S: helpers.randomString()}, b: {B: Buffer.from('bde').toString('base64')}, c: item.c},
           item6 = {a: {S: helpers.randomString()}, b: {S: 'abd'}, c: item.c},
+          item7 = {a: {S: helpers.randomString()}, b: {L: [{'N': '123'}, {'B': Buffer.from('bde').toString('base64')}]}, c: item.c},
+          item8 = {a: {S: helpers.randomString()}, b: {L: [{'B': Buffer.from('abd').toString('base64')}]}, c: item.c},
+          item9 = {a: {S: helpers.randomString()}, b: {L: [{'B': Buffer.from('abde').toString('base64')}]}, c: item.c},
           batchReq = {RequestItems: {}}
       batchReq.RequestItems[helpers.testHashTable] = [
         {PutRequest: {Item: item}},
@@ -2313,6 +2334,9 @@ describe('scan', function() {
         {PutRequest: {Item: item4}},
         {PutRequest: {Item: item5}},
         {PutRequest: {Item: item6}},
+        {PutRequest: {Item: item7}},
+        {PutRequest: {Item: item8}},
+        {PutRequest: {Item: item9}},
       ]
       request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
         if (err) return done(err)
@@ -2333,8 +2357,9 @@ describe('scan', function() {
             res.body.Items.should.containEql(item3)
             res.body.Items.should.containEql(item4)
             res.body.Items.should.containEql(item5)
-            res.body.Items.should.have.length(3)
-            res.body.Count.should.equal(3)
+            res.body.Items.should.containEql(item7)
+            res.body.Items.should.have.length(4)
+            res.body.Count.should.equal(4)
             cb()
           })
         }, done)
@@ -2344,8 +2369,8 @@ describe('scan', function() {
     it('should scan by NOT_CONTAINS on type S', function(done) {
       var item = {a: {S: helpers.randomString()}, b: {S: 'abdef'}, c: {S: helpers.randomString()}},
           item2 = {a: {S: helpers.randomString()}, b: {SS: ['abd', 'bde']}, c: item.c},
-          item3 = {a: {S: helpers.randomString()}, b: {B: new Buffer('abdef').toString('base64')}, c: item.c},
-          item4 = {a: {S: helpers.randomString()}, b: {BS: [new Buffer('bde').toString('base64'), 'abcd']}, c: item.c},
+          item3 = {a: {S: helpers.randomString()}, b: {B: Buffer.from('abdef').toString('base64')}, c: item.c},
+          item4 = {a: {S: helpers.randomString()}, b: {BS: [Buffer.from('bde').toString('base64'), 'abcd']}, c: item.c},
           item5 = {a: {S: helpers.randomString()}, b: {S: 'bde'}, c: item.c},
           item6 = {a: {S: helpers.randomString()}, b: {S: 'abd'}, c: item.c},
           batchReq = {RequestItems: {}}
@@ -2387,8 +2412,8 @@ describe('scan', function() {
     it('should scan by NOT_CONTAINS on type N', function(done) {
       var item = {a: {S: helpers.randomString()}, b: {N: '1234'}, c: {S: helpers.randomString()}},
           item2 = {a: {S: helpers.randomString()}, b: {NS: ['123', '234']}, c: item.c},
-          item3 = {a: {S: helpers.randomString()}, b: {B: new Buffer('1234').toString('base64')}, c: item.c},
-          item4 = {a: {S: helpers.randomString()}, b: {BS: [new Buffer('234').toString('base64')]}, c: item.c},
+          item3 = {a: {S: helpers.randomString()}, b: {B: Buffer.from('1234').toString('base64')}, c: item.c},
+          item4 = {a: {S: helpers.randomString()}, b: {BS: [Buffer.from('234').toString('base64')]}, c: item.c},
           item5 = {a: {S: helpers.randomString()}, b: {SS: ['234']}, c: item.c},
           batchReq = {RequestItems: {}}
       batchReq.RequestItems[helpers.testHashTable] = [
@@ -2429,9 +2454,9 @@ describe('scan', function() {
     it('should scan by NOT_CONTAINS on type B', function(done) {
       var item = {a: {S: helpers.randomString()}, b: {S: 'abdef'}, c: {S: helpers.randomString()}},
           item2 = {a: {S: helpers.randomString()}, b: {SS: ['abd', 'bde']}, c: item.c},
-          item3 = {a: {S: helpers.randomString()}, b: {B: new Buffer('abdef').toString('base64')}, c: item.c},
-          item4 = {a: {S: helpers.randomString()}, b: {BS: [new Buffer('bde').toString('base64'), 'abcd']}, c: item.c},
-          item5 = {a: {S: helpers.randomString()}, b: {B: new Buffer('bde').toString('base64')}, c: item.c},
+          item3 = {a: {S: helpers.randomString()}, b: {B: Buffer.from('abdef').toString('base64')}, c: item.c},
+          item4 = {a: {S: helpers.randomString()}, b: {BS: [Buffer.from('bde').toString('base64'), 'abcd']}, c: item.c},
+          item5 = {a: {S: helpers.randomString()}, b: {B: Buffer.from('bde').toString('base64')}, c: item.c},
           item6 = {a: {S: helpers.randomString()}, b: {S: 'abd'}, c: item.c},
           batchReq = {RequestItems: {}}
       batchReq.RequestItems[helpers.testHashTable] = [
@@ -2472,7 +2497,7 @@ describe('scan', function() {
     it('should scan by BEGINS_WITH on type S', function(done) {
       var item = {a: {S: helpers.randomString()}, b: {S: 'abdef'}, c: {S: helpers.randomString()}},
           item2 = {a: {S: helpers.randomString()}, b: {SS: ['abd', 'bde']}, c: item.c},
-          item3 = {a: {S: helpers.randomString()}, b: {B: new Buffer('abdef').toString('base64')}, c: item.c},
+          item3 = {a: {S: helpers.randomString()}, b: {B: Buffer.from('abdef').toString('base64')}, c: item.c},
           item4 = {a: {S: helpers.randomString()}, b: {S: 'ab'}, c: item.c},
           item5 = {a: {S: helpers.randomString()}, b: {S: 'abd'}, c: item.c},
           batchReq = {RequestItems: {}}
@@ -2512,9 +2537,9 @@ describe('scan', function() {
     it('should scan by BEGINS_WITH on type B', function(done) {
       var item = {a: {S: helpers.randomString()}, b: {S: 'abdef'}, c: {S: helpers.randomString()}},
           item2 = {a: {S: helpers.randomString()}, b: {SS: ['abd', 'bde']}, c: item.c},
-          item3 = {a: {S: helpers.randomString()}, b: {B: new Buffer('abdef').toString('base64')}, c: item.c},
+          item3 = {a: {S: helpers.randomString()}, b: {B: Buffer.from('abdef').toString('base64')}, c: item.c},
           item4 = {a: {S: helpers.randomString()}, b: {S: 'ab'}, c: item.c},
-          item5 = {a: {S: helpers.randomString()}, b: {B: new Buffer('abd').toString('base64')}, c: item.c},
+          item5 = {a: {S: helpers.randomString()}, b: {B: Buffer.from('abd').toString('base64')}, c: item.c},
           batchReq = {RequestItems: {}}
       batchReq.RequestItems[helpers.testHashTable] = [
         {PutRequest: {Item: item}},
@@ -2552,7 +2577,7 @@ describe('scan', function() {
     it('should scan by IN on type S', function(done) {
       var item = {a: {S: helpers.randomString()}, b: {S: 'abdef'}, c: {S: helpers.randomString()}},
           item2 = {a: {S: helpers.randomString()}, b: {SS: ['abd', 'bde']}, c: item.c},
-          item3 = {a: {S: helpers.randomString()}, b: {B: new Buffer('abdef').toString('base64')}, c: item.c},
+          item3 = {a: {S: helpers.randomString()}, b: {B: Buffer.from('abdef').toString('base64')}, c: item.c},
           item4 = {a: {S: helpers.randomString()}, b: {S: 'ab'}, c: item.c},
           item5 = {a: {S: helpers.randomString()}, b: {S: 'abd'}, c: item.c},
           batchReq = {RequestItems: {}}
@@ -2592,7 +2617,7 @@ describe('scan', function() {
     it('should scan by IN on type N', function(done) {
       var item = {a: {S: helpers.randomString()}, b: {S: '1234'}, c: {S: helpers.randomString()}},
           item2 = {a: {S: helpers.randomString()}, b: {NS: ['1234']}, c: item.c},
-          item3 = {a: {S: helpers.randomString()}, b: {B: new Buffer('1234').toString('base64')}, c: item.c},
+          item3 = {a: {S: helpers.randomString()}, b: {B: Buffer.from('1234').toString('base64')}, c: item.c},
           item4 = {a: {S: helpers.randomString()}, b: {N: '1234'}, c: item.c},
           item5 = {a: {S: helpers.randomString()}, b: {N: '123.45'}, c: item.c},
           batchReq = {RequestItems: {}}
@@ -2631,10 +2656,10 @@ describe('scan', function() {
 
     it('should scan by IN on type B', function(done) {
       var item = {a: {S: helpers.randomString()}, b: {S: '1234'}, c: {S: helpers.randomString()}},
-          item2 = {a: {S: helpers.randomString()}, b: {BS: [new Buffer('1234').toString('base64')]}, c: item.c},
-          item3 = {a: {S: helpers.randomString()}, b: {B: new Buffer('1234').toString('base64')}, c: item.c},
+          item2 = {a: {S: helpers.randomString()}, b: {BS: [Buffer.from('1234').toString('base64')]}, c: item.c},
+          item3 = {a: {S: helpers.randomString()}, b: {B: Buffer.from('1234').toString('base64')}, c: item.c},
           item4 = {a: {S: helpers.randomString()}, b: {N: '1234'}, c: item.c},
-          item5 = {a: {S: helpers.randomString()}, b: {B: new Buffer('12345').toString('base64')}, c: item.c},
+          item5 = {a: {S: helpers.randomString()}, b: {B: Buffer.from('12345').toString('base64')}, c: item.c},
           batchReq = {RequestItems: {}}
       batchReq.RequestItems[helpers.testHashTable] = [
         {PutRequest: {Item: item}},
@@ -2752,11 +2777,11 @@ describe('scan', function() {
     })
 
     it('should scan by BETWEEN on type B', function(done) {
-      var item = {a: {S: helpers.randomString()}, b: {B: new Buffer('ce', 'hex').toString('base64')}, c: {S: helpers.randomString()}},
-          item2 = {a: {S: helpers.randomString()}, b: {B: new Buffer('d0', 'hex').toString('base64')}, c: item.c},
-          item3 = {a: {S: helpers.randomString()}, b: {B: new Buffer('cf', 'hex').toString('base64')}, c: item.c},
-          item4 = {a: {S: helpers.randomString()}, b: {B: new Buffer('d000', 'hex').toString('base64')}, c: item.c},
-          item5 = {a: {S: helpers.randomString()}, b: {B: new Buffer('cfff', 'hex').toString('base64')}, c: item.c},
+      var item = {a: {S: helpers.randomString()}, b: {B: Buffer.from('ce', 'hex').toString('base64')}, c: {S: helpers.randomString()}},
+          item2 = {a: {S: helpers.randomString()}, b: {B: Buffer.from('d0', 'hex').toString('base64')}, c: item.c},
+          item3 = {a: {S: helpers.randomString()}, b: {B: Buffer.from('cf', 'hex').toString('base64')}, c: item.c},
+          item4 = {a: {S: helpers.randomString()}, b: {B: Buffer.from('d000', 'hex').toString('base64')}, c: item.c},
+          item5 = {a: {S: helpers.randomString()}, b: {B: Buffer.from('cfff', 'hex').toString('base64')}, c: item.c},
           batchReq = {RequestItems: {}}
       batchReq.RequestItems[helpers.testHashTable] = [
         {PutRequest: {Item: item}},
@@ -3038,7 +3063,44 @@ describe('scan', function() {
       })
     })
 
-    it.skip('should not return LastEvaluatedKey if Limit is large', function(done) {
+    it('should return LastEvaluatedKey while filtering, even if Limit is smaller than the expected return list', function(done) {
+      var i, items = [], batchReq = {RequestItems: {}}
+
+      // This bug manifests itself when the sought after item is not among the first .Limit number of
+      // items in the scan.  Because we can't guarantee the order of the returned scan items, we can't
+      // guarantee that this test case will produce the bug.  Therefore, we will try to make it very
+      // likely that this bug will be reproduced by adding as many items as we can.  The chances that
+      // the sought after item (to be picked up by the filter) will be among the first .Limit number
+      // of items should be small enough to give us practical assurance of correctness in this one
+      // regard...
+      for (i = 0; i < 25; i++)
+        items.push({a: {S: 'item' + i}})
+
+      batchReq.RequestItems[helpers.testHashTable] = items.map(function(item) { return {PutRequest: {Item: item}} })
+
+      request(helpers.opts('BatchWriteItem', batchReq), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+
+        request(opts({
+          TableName: helpers.testHashTable,
+          ExpressionAttributeNames: {'#key': 'a'},
+          ExpressionAttributeValues: {':value': {S: 'item12'}},
+          FilterExpression: '#key = :value',
+          Limit: 2,
+        }), function(err, res) {
+          if (err) return done(err)
+
+          res.statusCode.should.equal(200)
+          res.body.ScannedCount.should.equal(2)
+          res.body.LastEvaluatedKey.a.S.should.not.be.empty // eslint-disable-line no-unused-expressions
+          Object.keys(res.body.LastEvaluatedKey).should.have.length(1)
+          helpers.clearTable(helpers.testHashTable, 'a', done)
+        })
+      })
+    })
+
+    it('should not return LastEvaluatedKey if Limit is large', function(done) {
       var i, b = {S: helpers.randomString()}, items = [], batchReq = {RequestItems: {}},
           scanFilter = {b: {ComparisonOperator: 'EQ', AttributeValueList: [b]}}
 
@@ -3051,13 +3113,13 @@ describe('scan', function() {
         if (err) return done(err)
         res.statusCode.should.equal(200)
 
-        request(opts({TableName: helpers.testHashTable, AttributesToGet: ['a'], Limit: 100000}), function(err, res) {
+        request(opts({TableName: helpers.testHashTable, AttributesToGet: ['a', 'b'], Limit: 100000}), function(err, res) {
           if (err) return done(err)
           res.statusCode.should.equal(200)
           res.body.Count.should.equal(res.body.ScannedCount)
           should.not.exist(res.body.LastEvaluatedKey)
           for (var i = 0, lastIx = 0; i < res.body.Count; i++) {
-            if (res.body.Items[i].a.S < 5) lastIx = i
+            if (res.body.Items[i].b.S == b.S) lastIx = i
           }
           var totalItems = res.body.Count
           request(opts({TableName: helpers.testHashTable, ScanFilter: scanFilter, Limit: lastIx}), function(err, res) {

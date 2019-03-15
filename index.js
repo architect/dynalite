@@ -12,8 +12,8 @@ var MAX_REQUEST_BYTES = 16 * 1024 * 1024
 
 var validApis = ['DynamoDB_20111205', 'DynamoDB_20120810', 'DynamoDBStreams_20120810'],
     validOperations = ['BatchGetItem', 'BatchWriteItem', 'CreateTable', 'DeleteItem', 'DeleteTable',
-      'DescribeTable', 'GetItem', 'ListTables', 'PutItem', 'Query', 'Scan', 'UpdateItem', 'UpdateTable',
-      'DescribeStream', 'GetRecords', 'GetShardIterator', 'ListStreams'],
+      'DescribeTable', 'GetItem', 'ListTables', 'PutItem', 'Query', 'Scan', 'TagResource', 'UntagResource',
+      'UpdateItem', 'UpdateTable', 'DescribeStream', 'GetRecords', 'GetShardIterator', 'ListStreams'],
     actions = {},
     actionValidations = {}
 

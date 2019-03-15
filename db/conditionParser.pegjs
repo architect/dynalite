@@ -119,8 +119,8 @@
     }
   }
 
-  function checkParens(expr) {
-    if (!errors.parens && text().indexOf('((') === 0) {
+  function redundantParensError() {
+    if (!errors.parens) {
       errors.parens = 'The expression has redundant parentheses;'
     }
   }
@@ -244,8 +244,16 @@ NotConditionExpression
   / ParensConditionExpression
 
 ParensConditionExpression
-  = '(' _ expr:OrConditionExpression _ ')' {
-      checkParens(expr)
+  = '((' _ expr:OrConditionExpression _ '))' {
+      redundantParensError()
+      return expr
+    }
+  / '(' _ expr:OrConditionExpression _ ')' {
+      return expr
+    }
+  / '((' _ expr:ConditionExpression _ '))' {
+      redundantParensError()
+      checkConditionErrors()
       return expr
     }
   / expr:ConditionExpression {
@@ -277,8 +285,11 @@ Comparator
   = '>=' / '<=' / '<>' / '=' / '<' / '>'
 
 OperandParens
-  = '(' _ op:Operand _ ')' {
-      checkParens(op)
+  = '((' _ op:Operand _ '))' {
+      redundantParensError()
+      return op
+    }
+  / '(' _ op:Operand _ ')' {
       return op
     }
   / Operand
@@ -330,8 +341,11 @@ PathExpression
 
 GroupedPathExpression
   = Identifier
+  / '((' _ path:PathExpression _ '))' {
+      redundantParensError()
+      return path
+    }
   / '(' _ path:PathExpression _ ')' {
-      checkParens(path)
       return path
     }
 

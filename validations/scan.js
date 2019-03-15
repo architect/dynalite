@@ -1,7 +1,17 @@
 var validations = require('./index')
 
 exports.types = {
-  Limit: {
+  Select: {
+    type: 'String',
+    enum: ['SPECIFIC_ATTRIBUTES', 'COUNT', 'ALL_ATTRIBUTES', 'ALL_PROJECTED_ATTRIBUTES'],
+  },
+  IndexName: {
+    type: 'String',
+    regex: '[a-zA-Z0-9_.-]+',
+    lengthGreaterThanOrEqual: 3,
+    lengthLessThanOrEqual: 255,
+  },
+  TotalSegments: {
     type: 'Integer',
     greaterThanOrEqual: 1,
   },
@@ -9,28 +19,25 @@ exports.types = {
     type: 'String',
     enum: ['INDEXES', 'TOTAL', 'NONE'],
   },
-  AttributesToGet: {
-    type: 'List',
-    lengthGreaterThanOrEqual: 1,
-    lengthLessThanOrEqual: 255,
-    children: 'String',
-  },
-  Segment: {
-    type: 'Integer',
-    greaterThanOrEqual: 0,
-  },
-  Select: {
+  TableName: {
     type: 'String',
-    enum: ['SPECIFIC_ATTRIBUTES', 'COUNT', 'ALL_ATTRIBUTES', 'ALL_PROJECTED_ATTRIBUTES'],
+    notNull: true,
+    regex: '[a-zA-Z0-9_.-]+',
+    lengthGreaterThanOrEqual: 3,
+    lengthLessThanOrEqual: 255,
+  },
+  ConditionalOperator: {
+    type: 'String',
+    enum: ['OR', 'AND'],
   },
   ScanFilter: {
-    type: 'Map',
+    type: 'Map<Condition>',
     children: {
-      type: 'Structure',
+      type: 'ValueStruct<Condition>',
       children: {
         AttributeValueList: {
           type: 'List',
-          children: 'AttrStructure',
+          children: 'AttrStruct<ValueStruct>',
         },
         ComparisonOperator: {
           type: 'String',
@@ -40,30 +47,23 @@ exports.types = {
       },
     },
   },
-  ConditionalOperator: {
-    type: 'String',
-    enum: ['OR', 'AND'],
+  Segment: {
+    type: 'Integer',
+    greaterThanOrEqual: 0,
   },
-  TotalSegments: {
+  AttributesToGet: {
+    type: 'List',
+    lengthGreaterThanOrEqual: 1,
+    lengthLessThanOrEqual: 255,
+    children: 'String',
+  },
+  Limit: {
     type: 'Integer',
     greaterThanOrEqual: 1,
   },
-  TableName: {
-    type: 'String',
-    notNull: true,
-    regex: '[a-zA-Z0-9_.-]+',
-    lengthGreaterThanOrEqual: 3,
-    lengthLessThanOrEqual: 255,
-  },
   ExclusiveStartKey: {
-    type: 'Map',
-    children: 'AttrStructure',
-  },
-  IndexName: {
-    type: 'String',
-    regex: '[a-zA-Z0-9_.-]+',
-    lengthGreaterThanOrEqual: 3,
-    lengthLessThanOrEqual: 255,
+    type: 'Map<AttributeValue>',
+    children: 'AttrStruct<ValueStruct>',
   },
   FilterExpression: {
     type: 'String',
@@ -72,11 +72,11 @@ exports.types = {
     type: 'String',
   },
   ExpressionAttributeValues: {
-    type: 'Map',
-    children: 'AttrStructure',
+    type: 'Map<AttributeValue>',
+    children: 'AttrStruct<ValueStruct>',
   },
   ExpressionAttributeNames: {
-    type: 'Map',
+    type: 'Map<java.lang.String>',
     children: 'String',
   },
 }

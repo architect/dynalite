@@ -9,14 +9,14 @@ An implementation of Amazon's DynamoDB, focussed on correctness and performance,
 This project aims to match the live DynamoDB instances as closely as possible
 (and is tested against them in various regions), including all limits and error messages.
 
-NB: Schema changes in v1.x
+NB: Schema changes in v2.x
 --------------------------
 
-If you've been using v0.x with a saved path on your filesystem, you should note
-that the schema has been changed to separate out indexes. This means that if
-you have tables with indexes on the old schema, you'll need to update them –
-this should just be a matter of getting each item and writing it again – a
-Scan/BatchWriteItem loop should suffice to populate the indexes correctly.
+If you've been using v1.x or v0.x or with a saved path on your filesystem, you
+should note that key schema may have changed with the move from
+`level-sublevel` to `subleveldown`. The safest way to deal with this is to
+export your DB to JSON using Scans, then upgrade and import with BatchWrites
+into the new version.
 
 Why not Amazon's DynamoDB Local?
 --------------------------------

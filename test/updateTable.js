@@ -6,6 +6,7 @@ var target = 'UpdateTable',
     assertType = helpers.assertType.bind(null, target),
     assertValidation = helpers.assertValidation.bind(null, target),
     assertInUse = helpers.assertInUse.bind(null, target)
+    assertNotFound = helpers.assertNotFound.bind(null, target)
 
 describe('updateTable', function() {
 
@@ -16,7 +17,7 @@ describe('updateTable', function() {
     })
 
     it('should return SerializationException when ProvisionedThroughput is not a struct', function(done) {
-      assertType('ProvisionedThroughput', 'Structure', done)
+      assertType('ProvisionedThroughput', 'FieldStruct<ProvisionedThroughput>', done)
     })
 
     it('should return SerializationException when ProvisionedThroughput.WriteCapacityUnits is not a long', function(done) {
@@ -32,11 +33,11 @@ describe('updateTable', function() {
     })
 
     it('should return SerializationException when GlobalSecondaryIndexUpdates.0 is not a struct', function(done) {
-      assertType('GlobalSecondaryIndexUpdates.0', 'Structure', done)
+      assertType('GlobalSecondaryIndexUpdates.0', 'ValueStruct<GlobalSecondaryIndexUpdate>', done)
     })
 
     it('should return SerializationException when GlobalSecondaryIndexUpdates.0.Update is not a struct', function(done) {
-      assertType('GlobalSecondaryIndexUpdates.0.Update', 'Structure', done)
+      assertType('GlobalSecondaryIndexUpdates.0.Update', 'FieldStruct<UpdateGlobalSecondaryIndexAction>', done)
     })
 
     it('should return SerializationException when GlobalSecondaryIndexUpdates.0.Update.IndexName is not a string', function(done) {
@@ -44,7 +45,7 @@ describe('updateTable', function() {
     })
 
     it('should return SerializationException when GlobalSecondaryIndexUpdates.0.Update.ProvisionedThroughput is not a struct', function(done) {
-      assertType('GlobalSecondaryIndexUpdates.0.Update.ProvisionedThroughput', 'Structure', done)
+      assertType('GlobalSecondaryIndexUpdates.0.Update.ProvisionedThroughput', 'FieldStruct<ProvisionedThroughput>', done)
     })
 
     it('should return SerializationException when GlobalSecondaryIndexUpdates.0.Update.ProvisionedThroughput.WriteCapacityUnits is not a long', function(done) {
@@ -53,6 +54,66 @@ describe('updateTable', function() {
 
     it('should return SerializationException when GlobalSecondaryIndexUpdates.0.Update.ProvisionedThroughput.ReadCapacityUnits is not a long', function(done) {
       assertType('GlobalSecondaryIndexUpdates.0.Update.ProvisionedThroughput.ReadCapacityUnits', 'Long', done)
+    })
+
+    it('should return SerializationException when GlobalSecondaryIndexUpdates.0.Create is not a struct', function(done) {
+      assertType('GlobalSecondaryIndexUpdates.0.Create', 'FieldStruct<CreateGlobalSecondaryIndexAction>', done)
+    })
+
+    it('should return SerializationException when GlobalSecondaryIndexUpdates.0.Create.IndexName is not a string', function(done) {
+      assertType('GlobalSecondaryIndexUpdates.0.Create.IndexName', 'String', done)
+    })
+
+    it('should return SerializationException when GlobalSecondaryIndexUpdates.0.Create.ProvisionedThroughput is not a struct', function(done) {
+      assertType('GlobalSecondaryIndexUpdates.0.Create.ProvisionedThroughput', 'FieldStruct<ProvisionedThroughput>', done)
+    })
+
+    it('should return SerializationException when GlobalSecondaryIndexUpdates.0.Create.ProvisionedThroughput.WriteCapacityUnits is not a long', function(done) {
+      assertType('GlobalSecondaryIndexUpdates.0.Create.ProvisionedThroughput.WriteCapacityUnits', 'Long', done)
+    })
+
+    it('should return SerializationException when GlobalSecondaryIndexUpdates.0.Create.ProvisionedThroughput.ReadCapacityUnits is not a long', function(done) {
+      assertType('GlobalSecondaryIndexUpdates.0.Create.ProvisionedThroughput.ReadCapacityUnits', 'Long', done)
+    })
+
+    it('should return SerializationException when GlobalSecondaryIndexUpdates.0.Create.KeySchema is not a list', function(done) {
+      assertType('GlobalSecondaryIndexUpdates.0.Create.KeySchema', 'List', done)
+    })
+
+    it('should return SerializationException when GlobalSecondaryIndexUpdates.0.Create.KeySchema.0 is not a struct', function(done) {
+      assertType('GlobalSecondaryIndexUpdates.0.Create.KeySchema.0', 'ValueStruct<KeySchemaElement>', done)
+    })
+
+    it('should return SerializationException when GlobalSecondaryIndexUpdates.0.Create.KeySchema.0.AttributeName is not a string', function(done) {
+      assertType('GlobalSecondaryIndexUpdates.0.Create.KeySchema.0.AttributeName', 'String', done)
+    })
+
+    it('should return SerializationException when GlobalSecondaryIndexUpdates.0.Create.KeySchema.0.KeyType is not a string', function(done) {
+      assertType('GlobalSecondaryIndexUpdates.0.Create.KeySchema.0.KeyType', 'String', done)
+    })
+
+    it('should return SerializationException when GlobalSecondaryIndexUpdates.0.Create.Projection is not a struct', function(done) {
+      assertType('GlobalSecondaryIndexUpdates.0.Create.Projection', 'FieldStruct<Projection>', done)
+    })
+
+    it('should return SerializationException when GlobalSecondaryIndexUpdates.0.Create.Projection.NonKeyAttributes is not a list', function(done) {
+      assertType('GlobalSecondaryIndexUpdates.0.Create.Projection.NonKeyAttributes', 'List', done)
+    })
+
+    it('should return SerializationException when GlobalSecondaryIndexUpdates.0.Create.Projection.ProjectionType is not a string', function(done) {
+      assertType('GlobalSecondaryIndexUpdates.0.Create.Projection.ProjectionType', 'String', done)
+    })
+
+    it('should return SerializationException when GlobalSecondaryIndexUpdates.0.Create.Projection.NonKeyAttributes.0 is not a string', function(done) {
+      assertType('GlobalSecondaryIndexUpdates.0.Create.Projection.NonKeyAttributes.0', 'String', done)
+    })
+
+    it('should return SerializationException when GlobalSecondaryIndexUpdates.0.Delete is not a struct', function(done) {
+      assertType('GlobalSecondaryIndexUpdates.0.Delete', 'FieldStruct<DeleteGlobalSecondaryIndexAction>', done)
+    })
+
+    it('should return SerializationException when GlobalSecondaryIndexUpdates.0.Delete.IndexName is not a strin', function(done) {
+      assertType('GlobalSecondaryIndexUpdates.0.Delete.IndexName', 'String', done)
     })
 
   })
@@ -88,21 +149,21 @@ describe('updateTable', function() {
     })
 
     it('should return ValidationException for empty ProvisionedThroughput', function(done) {
-      assertValidation({TableName: 'abc', ProvisionedThroughput: {}},
-        '2 validation errors detected: ' +
+      assertValidation({TableName: 'abc', ProvisionedThroughput: {}}, [
         'Value null at \'provisionedThroughput.writeCapacityUnits\' failed to satisfy constraint: ' +
-        'Member must not be null; ' +
+        'Member must not be null',
         'Value null at \'provisionedThroughput.readCapacityUnits\' failed to satisfy constraint: ' +
-        'Member must not be null', done)
+        'Member must not be null',
+      ], done)
     })
 
     it('should return ValidationException for low ProvisionedThroughput.WriteCapacityUnits', function(done) {
-      assertValidation({TableName: 'abc', ProvisionedThroughput: {ReadCapacityUnits: -1, WriteCapacityUnits: -1}},
-        '2 validation errors detected: ' +
+      assertValidation({TableName: 'abc', ProvisionedThroughput: {ReadCapacityUnits: -1, WriteCapacityUnits: -1}}, [
         'Value \'-1\' at \'provisionedThroughput.writeCapacityUnits\' failed to satisfy constraint: ' +
-        'Member must have value greater than or equal to 1; ' +
+        'Member must have value greater than or equal to 1',
         'Value \'-1\' at \'provisionedThroughput.readCapacityUnits\' failed to satisfy constraint: ' +
-        'Member must have value greater than or equal to 1', done)
+        'Member must have value greater than or equal to 1',
+      ], done)
     })
 
     it('should return ValidationException for high ProvisionedThroughput.ReadCapacityUnits and neg', function(done) {
@@ -133,45 +194,34 @@ describe('updateTable', function() {
 
     it('should return ValidationException for empty GlobalSecondaryIndexUpdates', function(done) {
       assertValidation({TableName: 'abc', GlobalSecondaryIndexUpdates: []},
-        'At least one of ProvisionedThroughput, StreamSpecification or GlobalSecondaryIndexUpdates is required', done)
+        'At least one of ProvisionedThroughput, StreamSpecification, UpdateStreamEnabled, GlobalSecondaryIndexUpdates or SSESpecification is required', done)
     })
 
     it('should return ValidationException for empty Update', function(done) {
-      assertValidation({TableName: 'abc', GlobalSecondaryIndexUpdates: [{Update: {}}]},
-        '2 validation errors detected: ' +
+      assertValidation({TableName: 'abc', GlobalSecondaryIndexUpdates: [{Update: {}}]}, [
         'Value null at \'globalSecondaryIndexUpdates.1.member.update.indexName\' failed to satisfy constraint: ' +
-        'Member must not be null; ' +
+        'Member must not be null',
         'Value null at \'globalSecondaryIndexUpdates.1.member.update.provisionedThroughput\' failed to satisfy constraint: ' +
-        'Member must not be null', done)
+        'Member must not be null',
+      ], done)
     })
 
     it('should return ValidationException for bad IndexName and ProvisionedThroughput', function(done) {
       assertValidation({TableName: 'abc', GlobalSecondaryIndexUpdates: [
         {Update: {IndexName: 'a', ProvisionedThroughput: {}}},
         {Update: {IndexName: 'abc;', ProvisionedThroughput: {ReadCapacityUnits: 1000000000001, WriteCapacityUnits: 0}}},
-      ]}, '5 validation errors detected: ' +
+      ]}, [
         'Value \'a\' at \'globalSecondaryIndexUpdates.1.member.update.indexName\' failed to satisfy constraint: ' +
-        'Member must have length greater than or equal to 3; ' +
+        'Member must have length greater than or equal to 3',
         'Value null at \'globalSecondaryIndexUpdates.1.member.update.provisionedThroughput.writeCapacityUnits\' failed to satisfy constraint: ' +
-        'Member must not be null; ' +
+        'Member must not be null',
         'Value null at \'globalSecondaryIndexUpdates.1.member.update.provisionedThroughput.readCapacityUnits\' failed to satisfy constraint: ' +
-        'Member must not be null; ' +
+        'Member must not be null',
         'Value \'abc;\' at \'globalSecondaryIndexUpdates.2.member.update.indexName\' failed to satisfy constraint: ' +
-        'Member must satisfy regular expression pattern: [a-zA-Z0-9_.-]+; ' +
+        'Member must satisfy regular expression pattern: [a-zA-Z0-9_.-]+',
         'Value \'0\' at \'globalSecondaryIndexUpdates.2.member.update.provisionedThroughput.writeCapacityUnits\' failed to satisfy constraint: ' +
-        'Member must have value greater than or equal to 1', done)
-    })
-
-    it('should return ValidationException for high index ReadCapacityUnits', function(done) {
-      assertValidation({TableName: 'abc', GlobalSecondaryIndexUpdates: [
-        {Update: {IndexName: 'abc', ProvisionedThroughput: {ReadCapacityUnits: 1000000000001, WriteCapacityUnits: 1000000000001}}},
-      ]}, 'Given value 1000000000001 for ReadCapacityUnits is out of bounds for index abc', done)
-    })
-
-    it('should return ValidationException for high index WriteCapacityUnits', function(done) {
-      assertValidation({TableName: 'abc', GlobalSecondaryIndexUpdates: [
-        {Update: {IndexName: 'abc', ProvisionedThroughput: {ReadCapacityUnits: 1000000000000, WriteCapacityUnits: 1000000000001}}},
-      ]}, 'Given value 1000000000001 for WriteCapacityUnits is out of bounds for index abc', done)
+        'Member must have value greater than or equal to 1',
+      ], done)
     })
 
     it('should return ValidationException for empty index struct', function(done) {
@@ -196,6 +246,36 @@ describe('updateTable', function() {
         'Only one global secondary index update per index is allowed simultaneously. Index: abc', done)
     })
 
+    it('should return ResourceNotFoundException if table does not exist', function(done) {
+      var name = helpers.randomString()
+      assertNotFound({TableName: name, ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},
+        'Requested resource not found: Table: ' + name + ' not found', done)
+    })
+
+    it('should return NotFoundException for high index ReadCapacityUnits when table does not exist', function(done) {
+      assertNotFound({TableName: 'abc', GlobalSecondaryIndexUpdates: [
+        {Update: {IndexName: 'abc', ProvisionedThroughput: {ReadCapacityUnits: 1000000000001, WriteCapacityUnits: 1000000000001}}},
+      ]}, 'Requested resource not found: Table: abc not found', done)
+    })
+
+    it('should return NotFoundException for high index WriteCapacityUnits when table does not exist', function(done) {
+      assertNotFound({TableName: 'abc', GlobalSecondaryIndexUpdates: [
+        {Update: {IndexName: 'abc', ProvisionedThroughput: {ReadCapacityUnits: 1000000000000, WriteCapacityUnits: 1000000000001}}},
+      ]}, 'Requested resource not found: Table: abc not found', done)
+    })
+
+    it('should return ValidationException for high index ReadCapacityUnits when index does not exist', function(done) {
+      assertValidation({TableName: helpers.testHashTable, GlobalSecondaryIndexUpdates: [
+        {Update: {IndexName: 'abc', ProvisionedThroughput: {ReadCapacityUnits: 1000000000001, WriteCapacityUnits: 1000000000001}}},
+      ]}, 'This operation cannot be performed with given input values. Please contact DynamoDB service team for more info: Action Blocked: IndexUpdate', done)
+    })
+
+    it('should return ValidationException for high index WriteCapacityUnits when index does not exist', function(done) {
+      assertValidation({TableName: helpers.testHashTable, GlobalSecondaryIndexUpdates: [
+        {Update: {IndexName: 'abc', ProvisionedThroughput: {ReadCapacityUnits: 1000000000000, WriteCapacityUnits: 1000000000001}}},
+      ]}, 'This operation cannot be performed with given input values. Please contact DynamoDB service team for more info: Action Blocked: IndexUpdate', done)
+    })
+
     it('should return ValidationException if read and write are same', function(done) {
       request(helpers.opts('DescribeTable', {TableName: helpers.testHashTable}), function(err, res) {
         if (err) return err(done)
@@ -210,16 +290,20 @@ describe('updateTable', function() {
       })
     })
 
-    // TODO: never returns?
-    it.skip('should return ValidationException for too many GlobalSecondaryIndexUpdates', function(done) {
-      assertValidation({TableName: helpers.testHashTable, GlobalSecondaryIndexUpdates: [
+    it('should return LimitExceededException for too many GlobalSecondaryIndexUpdates', function(done) {
+      request(opts({TableName: helpers.testHashTable, GlobalSecondaryIndexUpdates: [
         {Delete: {IndexName: 'abc'}},
         {Delete: {IndexName: 'abd'}},
         {Delete: {IndexName: 'abe'}},
         {Delete: {IndexName: 'abf'}},
         {Delete: {IndexName: 'abg'}},
         {Delete: {IndexName: 'abh'}},
-      ]}, '', done)
+      ]}), function(err, res) {
+        res.body.__type.should.equal('com.amazonaws.dynamodb.v20120810#LimitExceededException')
+        res.body.message.should.equal('Subscriber limit exceeded: Only 1 online index can be created or deleted simultaneously per table')
+        res.statusCode.should.equal(400)
+        done()
+      })
     })
 
     // TODO: No more than four decreases in a single UTC calendar day

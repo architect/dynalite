@@ -7,7 +7,7 @@ exports.types = {
     enum: ['INDEXES', 'TOTAL', 'NONE'],
   },
   RequestItems: {
-    type: 'Map',
+    type: 'Map<KeysAndAttributes>',
     notNull: true,
     lengthGreaterThanOrEqual: 1,
     keys: {
@@ -16,7 +16,7 @@ exports.types = {
       regex: '[a-zA-Z0-9_.-]+',
     },
     children: {
-      type: 'Structure',
+      type: 'ValueStruct<KeysAndAttributes>',
       children: {
         Keys: {
           type: 'List',
@@ -24,8 +24,8 @@ exports.types = {
           lengthGreaterThanOrEqual: 1,
           lengthLessThanOrEqual: 100,
           children: {
-            type: 'Map',
-            children: 'AttrStructure',
+            type: 'ParameterizedMap',
+            children: 'AttrStruct<ValueStruct>',
           },
         },
         AttributesToGet: {
@@ -39,7 +39,7 @@ exports.types = {
           type: 'String',
         },
         ExpressionAttributeNames: {
-          type: 'Map',
+          type: 'Map<java.lang.String>',
           children: 'String',
         },
       },
