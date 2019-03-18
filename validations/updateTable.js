@@ -131,7 +131,7 @@ exports.types = {
     },
   },
   StreamSpecification: {
-    type: 'Structure',
+    type: 'ValueStruct<StreamSpecification>',
     children: {
       StreamEnabled: {
         type: 'Boolean',
