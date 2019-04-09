@@ -34,7 +34,7 @@ module.exports = function createTable(store, data, cb) {
       }
 
       kinesaliteCreateStream(store.kinesalite, {StreamName: data.TableName, ShardCount: 1}, function(err) {
-        if (err) return callback(error)
+        if (err) return callback(err)
 
         callback(null, {
           StreamSpecification: data.StreamSpecification,
