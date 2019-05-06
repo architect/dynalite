@@ -699,7 +699,7 @@ describe('createTable', function() {
           Projection: {ProjectionType: 'ALL'},
         }],
         ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},
-        'One or more parameter values were invalid: LocalSecondaryIndex count exceeds the per-table limit of 5', done)
+        'One or more parameter values were invalid: Number of LocalSecondaryIndexes exceeds per-table limit of 5', done)
     })
 
 
@@ -1043,43 +1043,22 @@ describe('createTable', function() {
         ], done)
     })
 
-    it('should return ValidationException for more than five valid GlobalSecondaryIndexes', function(done) {
+    it('should return ValidationException for more than twenty valid GlobalSecondaryIndexes', function(done) {
+      var gsis = []
+      for (var i = 0; i < 21; i++) {
+        gsis.push({
+          IndexName: 'abc' + i,
+          KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
+          ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
+          Projection: {ProjectionType: 'ALL'},
+        })
+      }
       assertValidation({TableName: 'abc',
         AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}, {AttributeName: 'b', AttributeType: 'S'}],
         KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}, {KeyType: 'RANGE', AttributeName: 'b'}],
-        GlobalSecondaryIndexes: [{
-          IndexName: 'abc',
-          KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
-          ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
-          Projection: {ProjectionType: 'ALL'},
-        }, {
-          IndexName: 'abd',
-          KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
-          ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
-          Projection: {ProjectionType: 'ALL'},
-        }, {
-          IndexName: 'abe',
-          KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
-          ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
-          Projection: {ProjectionType: 'ALL'},
-        }, {
-          IndexName: 'abf',
-          KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
-          ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
-          Projection: {ProjectionType: 'ALL'},
-        }, {
-          IndexName: 'abg',
-          KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
-          ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
-          Projection: {ProjectionType: 'ALL'},
-        }, {
-          IndexName: 'abh',
-          KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
-          ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
-          Projection: {ProjectionType: 'ALL'},
-        }],
+        GlobalSecondaryIndexes: gsis,
         ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},
-        'One or more parameter values were invalid: GlobalSecondaryIndex count exceeds the per-table limit of 5', done)
+        'One or more parameter values were invalid: GlobalSecondaryIndex count exceeds the per-table limit of 20', done)
     })
 
     it('should return ValidationException for duplicate index names between LocalSecondaryIndexes and GlobalSecondaryIndexes', function(done) {
