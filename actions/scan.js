@@ -81,7 +81,14 @@ module.exports = function scan(store, data, cb) {
 
     if ((err = db.validateKeyPaths((data._filter || {}).nestedPaths, table)) != null) return cb(err)
 
-    var opts = {limit: data.Limit ? data.Limit + 1 : -1, gt: hashStart, lt: hashEnd}
+    var opts = {limit: data.Limit ? data.Limit + 1 : -1}
+
+    if (hashStart != null) {
+      opts.gt = hashStart
+    }
+    if (hashEnd != null) {
+      opts.lt = hashEnd
+    }
 
     db.queryTable(store, table, data, opts, isLocal, fetchFromItemDb, startKeyNames, cb)
   })

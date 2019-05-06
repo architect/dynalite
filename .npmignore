@@ -2,3 +2,4 @@ test
 coverage
 examples
 *.pegjs
+.nyc_output

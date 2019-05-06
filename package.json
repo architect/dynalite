@@ -7,7 +7,7 @@
   "scripts": {
     "build": "for file in ./db/*.pegjs; do pegjs \"$file\"; done",
     "test": "mocha --require should --reporter spec -t $([ $REMOTE ] && echo 30s || echo 4s)",
-    "coverage": "istanbul cover ./node_modules/.bin/_mocha -- --require should -t 4s"
+    "coverage": "npx nyc@latest mocha --require should -t 4s"
   },
   "repository": "mhart/dynalite",
   "keywords": [
@@ -22,24 +22,23 @@
   "author": "Michael Hart <michael.hart.au@gmail.com>",
   "license": "MIT",
   "dependencies": {
-    "async": "^2.1.4",
+    "async": "^2.6.2",
     "big.js": "^5.2.2",
     "buffer-crc32": "^0.2.13",
     "lazy": "^1.0.11",
-    "levelup": "^4.0.0",
+    "levelup": "^4.0.1",
     "lock": "^1.1.0",
-    "memdown": "^3.0.0",
+    "memdown": "^4.0.0",
     "minimist": "^1.2.0",
     "once": "^1.4.0",
-    "subleveldown": "^3.0.1"
+    "subleveldown": "^4.0.0"
   },
   "optionalDependencies": {
     "leveldown": "^4.0.1"
   },
   "devDependencies": {
     "aws4": "^1.8.0",
-    "istanbul": "^0.4.5",
-    "mocha": "^5.2.0",
+    "mocha": "^6.1.4",
     "pegjs": "^0.10.0",
     "should": "^13.2.3"
   }
