@@ -38,7 +38,7 @@
   },
   "devDependencies": {
     "aws4": "^1.8.0",
-    "mocha": "^6.1.4",
+    "mocha": "^5.2.0",
     "pegjs": "^0.10.0",
     "should": "^13.2.3"
   }
