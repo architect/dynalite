@@ -34,7 +34,7 @@
     "subleveldown": "^4.0.0"
   },
   "optionalDependencies": {
-    "leveldown": "^4.0.1"
+    "leveldown": "^5.0.1"
   },
   "devDependencies": {
     "aws4": "^1.8.0",
