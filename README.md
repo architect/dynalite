@@ -103,7 +103,7 @@ Part of the reason I wrote dynalite was due to the existing mock libraries not e
 live instances. Amazon then released their DynamoDB Local Java, but the early versions were still very different.
 The latest version I checked (2016-04-19) is much better, but still has a few differences.
 
-[Some of these are documented](http://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Tools.DynamoDBLocal.html#Tools.DynamoDBLocal.Differences),
+[Some of these are documented](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DynamoDBLocal.UsageNotes.html#DynamoDBLocal.Differences),
 but most aren't - the items below are a rough list of the issues found, vaguely in order of importance:
 
 - Does not return nested attributes correctly for `UpdateItem`
