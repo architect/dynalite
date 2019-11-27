@@ -8,6 +8,7 @@ http.globalAgent.maxSockets = Infinity
 
 exports.MAX_SIZE = 409600
 exports.awsRegion = process.env.AWS_REGION || process.env.AWS_DEFAULT_REGION || 'us-east-1'
+exports.awsAccountId = process.env.AWS_ACCOUNT_ID // will be set programatically below
 exports.version = 'DynamoDB_20120810'
 exports.prefix = '__dynalite_test_'
 exports.request = request
@@ -27,23 +28,18 @@ exports.assertValidation = assertValidation
 exports.assertNotFound = assertNotFound
 exports.assertInUse = assertInUse
 exports.assertConditional = assertConditional
+exports.assertAccessDenied = assertAccessDenied
 exports.strDecrement = strDecrement
 exports.randomString = randomString
 exports.randomNumber = randomNumber
 exports.randomName = randomName
 exports.readCapacity = 10
 exports.writeCapacity = 5
-exports.testHashTable = randomName()
-exports.testHashNTable = randomName()
-exports.testRangeTable = randomName()
-exports.testRangeNTable = randomName()
-exports.testRangeBTable = randomName()
-// For testing:
-// exports.testHashTable = '__dynalite_test_1'
-// exports.testHashNTable = '__dynalite_test_2'
-// exports.testRangeTable = '__dynalite_test_3'
-// exports.testRangeNTable = '__dynalite_test_4'
-// exports.testRangeBTable = '__dynalite_test_5'
+exports.testHashTable = process.env.REMOTE ? '__dynalite_test_1' : randomName()
+exports.testHashNTable = process.env.REMOTE ? '__dynalite_test_2' : randomName()
+exports.testRangeTable = process.env.REMOTE ? '__dynalite_test_3' : randomName()
+exports.testRangeNTable = process.env.REMOTE ? '__dynalite_test_4' : randomName()
+exports.testRangeBTable = process.env.REMOTE ? '__dynalite_test_5' : randomName()
 
 var port = 10000 + Math.round(Math.random() * 10000),
     requestOpts = process.env.REMOTE ?
@@ -52,12 +48,17 @@ var port = 10000 + Math.round(Math.random() * 10000),
 
 var dynaliteServer = dynalite({path: process.env.DYNALITE_PATH})
 
+var CREATE_REMOTE_TABLES = true
+var DELETE_REMOTE_TABLES = true
+
 before(function(done) {
   this.timeout(200000)
   dynaliteServer.listen(port, function(err) {
     if (err) return done(err)
-    createTestTables(done)
-    // done()
+    createTestTables(function(err) {
+      if (err) return done(err)
+      getAccountId(done)
+    })
   })
 })
 
@@ -131,6 +132,7 @@ function randomName() {
 }
 
 function createTestTables(done) {
+  if (process.env.REMOTE && !CREATE_REMOTE_TABLES) return done()
   var readCapacity = exports.readCapacity, writeCapacity = exports.writeCapacity
   var tables = [{
     TableName: exports.testHashTable,
@@ -186,7 +188,16 @@ function createTestTables(done) {
   async.forEach(tables, createAndWait, done)
 }
 
+function getAccountId(done) {
+  request(opts('DescribeTable', {TableName: exports.testHashTable}), function(err, res) {
+    if (err) return done(err)
+    exports.awsAccountId = res.body.Table.TableArn.split(':')[4]
+    done()
+  })
+}
+
 function deleteTestTables(done) {
+  if (process.env.REMOTE && !DELETE_REMOTE_TABLES) return done()
   request(opts('ListTables', {}), function(err, res) {
     if (err) return done(err)
     var names = res.body.TableNames.filter(function(name) { return name.indexOf(exports.prefix) === 0 })
@@ -516,6 +527,23 @@ function assertType(target, property, type, done) {
     child[ix] = msg[0]
     assertSerialization(target, data, msg[1], cb)
   }, done)
+}
+
+function assertAccessDenied(target, data, msg, done) {
+  request(opts(target, data), function(err, res) {
+    if (err) return done(err)
+    res.statusCode.should.equal(400)
+    if (typeof res.body !== 'object') {
+      return done(new Error('Not JSON: ' + res.body))
+    }
+    res.body.__type.should.equal('com.amazon.coral.service#AccessDeniedException')
+    if (msg instanceof RegExp) {
+      res.body.Message.should.match(msg)
+    } else {
+      res.body.Message.should.equal(msg)
+    }
+    done()
+  })
 }
 
 function assertValidation(target, data, msg, done) {

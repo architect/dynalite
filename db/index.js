@@ -48,10 +48,8 @@ function create(options) {
   options.maxItemSize = options.maxItemSizeKb * 1024
 
   var db = levelup(options.path ? require('leveldown')(options.path) : memdown()),
-      tableDb = sub(db, 'table', {valueEncoding: 'json'}),
-      subDbs = Object.create(null)
-
-  tableDb.lock = lock.Lock()
+      subDbs = Object.create(null),
+      tableDb = getSubDb('table')
 
   // XXX: Is there a better way to get this?
   tableDb.awsAccountId = (process.env.AWS_ACCOUNT_ID || '0000-0000-0000').replace(/[^\d]/g, '')
@@ -71,6 +69,14 @@ function create(options) {
 
   function deleteIndexDb(indexType, tableName, indexName, cb) {
     deleteSubDb('index-' + indexType.toLowerCase() + '~' + tableName + '~' + indexName, cb)
+  }
+
+  function getTagDb(name) {
+    return getSubDb('tag-' + name)
+  }
+
+  function deleteTagDb(name, cb) {
+    deleteSubDb('tag-' + name, cb)
   }
 
   function getSubDb(name) {
@@ -129,6 +135,8 @@ function create(options) {
     deleteItemDb: deleteItemDb,
     getIndexDb: getIndexDb,
     deleteIndexDb: deleteIndexDb,
+    getTagDb: getTagDb,
+    deleteTagDb: deleteTagDb,
     getTable: getTable,
     recreate: recreate,
   }

@@ -20,7 +20,7 @@ module.exports = function deleteTable(store, data, cb) {
 
     table.TableStatus = 'DELETING'
 
-    var deletes = [store.deleteItemDb.bind(store, key)]
+    var deletes = [store.deleteItemDb.bind(store, key), store.deleteTagDb.bind(store, key)]
     ;['Local', 'Global'].forEach(function(indexType) {
       var indexes = table[indexType + 'SecondaryIndexes'] || []
       deletes = deletes.concat(indexes.map(function(index) {
