@@ -23,9 +23,17 @@ module.exports = function createTable(store, data, cb) {
       data.TableId = uuidV4()
       data.CreationDateTime = Date.now() / 1000
       data.ItemCount = 0
+      if (!data.ProvisionedThroughput) {
+        data.ProvisionedThroughput = {ReadCapacityUnits: 0, WriteCapacityUnits: 0}
+      }
       data.ProvisionedThroughput.NumberOfDecreasesToday = 0
       data.TableSizeBytes = 0
       data.TableStatus = 'CREATING'
+      if (data.BillingMode == 'PAY_PER_REQUEST') {
+        data.BillingModeSummary = {BillingMode: 'PAY_PER_REQUEST'}
+        data.TableThroughputModeSummary = {TableThroughputMode: 'PAY_PER_REQUEST'}
+        delete data.BillingMode
+      }
       if (data.LocalSecondaryIndexes) {
         data.LocalSecondaryIndexes.forEach(function(index) {
           index.IndexArn = 'arn:aws:dynamodb:' + tableDb.awsRegion + ':' + tableDb.awsAccountId + ':table/' +
@@ -56,6 +64,10 @@ module.exports = function createTable(store, data, cb) {
             data.GlobalSecondaryIndexes.forEach(function(index) {
               index.IndexStatus = 'ACTIVE'
             })
+          }
+
+          if (data.BillingModeSummary) {
+            data.BillingModeSummary.LastUpdateToPayPerRequestDateTime = data.CreationDateTime
           }
 
           tableDb.put(key, data, function(err) {

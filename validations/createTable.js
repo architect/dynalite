@@ -23,6 +23,10 @@ exports.types = {
     tableName: true,
     regex: '[a-zA-Z0-9_.-]+',
   },
+  BillingMode: {
+    type: 'String',
+    enum: ['PROVISIONED', 'PAY_PER_REQUEST'],
+  },
   ProvisionedThroughput: {
     type: 'FieldStruct<ProvisionedThroughput>',
     children: {
@@ -175,29 +179,30 @@ exports.types = {
 
 exports.custom = function(data) {
 
-  if (!data.ProvisionedThroughput)
-    return 'One or more parameter values were invalid: Missing required parameter in input: "ProvisionedThroughput"'
+  if (data.BillingMode == 'PAY_PER_REQUEST') {
+    if (data.ProvisionedThroughput) {
+      return 'One or more parameter values were invalid: ' +
+        'Neither ReadCapacityUnits nor WriteCapacityUnits can be specified when BillingMode is PAY_PER_REQUEST'
+    }
+  } else {
+    if (!data.ProvisionedThroughput && data.BillingMode != 'PAY_PER_REQUEST')
+      return 'One or more parameter values were invalid: Missing required parameter in input: "ProvisionedThroughput"'
 
-  if (data.ProvisionedThroughput.ReadCapacityUnits > 1000000000000)
-    return 'Given value ' + data.ProvisionedThroughput.ReadCapacityUnits + ' for ReadCapacityUnits is out of bounds'
-  if (data.ProvisionedThroughput.WriteCapacityUnits > 1000000000000)
-    return 'Given value ' + data.ProvisionedThroughput.WriteCapacityUnits + ' for WriteCapacityUnits is out of bounds'
+    if (data.ProvisionedThroughput.ReadCapacityUnits > 1000000000000)
+      return 'Given value ' + data.ProvisionedThroughput.ReadCapacityUnits + ' for ReadCapacityUnits is out of bounds'
+    if (data.ProvisionedThroughput.WriteCapacityUnits > 1000000000000)
+      return 'Given value ' + data.ProvisionedThroughput.WriteCapacityUnits + ' for WriteCapacityUnits is out of bounds'
+  }
 
   var defns = data.AttributeDefinitions.map(function(key) { return key.AttributeName })
   var keys = data.KeySchema.map(function(key) { return key.AttributeName })
 
-  if (keys.length == 2) {
-    if (keys.some(function(key) { return !~defns.indexOf(key) }) ||
-        // bizarre case - not sure what the general form of it is
-        keys[0] == keys[1] && defns.length == 1)
-      return 'Invalid KeySchema: Some index key attribute have no definition'
-  }
+  if (keys.length > defns.length)
+    return 'Invalid KeySchema: Some index key attribute have no definition'
 
-  if (data.KeySchema.length == 1) {
-    if (keys.some(function(key) { return !~defns.indexOf(key) }))
-      return 'One or more parameter values were invalid: Some index key attributes are not defined in ' +
-        'AttributeDefinitions. Keys: [' + keys.join(', ') + '], AttributeDefinitions: [' + defns.join(', ') + ']'
-  }
+  if (keys.some(function(key) { return !~defns.indexOf(key) }))
+    return 'One or more parameter values were invalid: Some index key attributes are not defined in ' +
+      'AttributeDefinitions. Keys: [' + keys.join(', ') + '], AttributeDefinitions: [' + defns.join(', ') + ']'
 
   if (keys[0] == keys[1])
     return 'Both the Hash Key and the Range Key element in the KeySchema have the same name'
