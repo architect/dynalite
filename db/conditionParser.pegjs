@@ -244,14 +244,14 @@ NotConditionExpression
   / ParensConditionExpression
 
 ParensConditionExpression
-  = '((' _ expr:OrConditionExpression _ '))' {
+  = '(' _ '(' _ expr:OrConditionExpression _ ')' _ ')' {
       redundantParensError()
       return expr
     }
   / '(' _ expr:OrConditionExpression _ ')' {
       return expr
     }
-  / '((' _ expr:ConditionExpression _ '))' {
+  / '(' _ '(' _ expr:ConditionExpression _ ')' _ ')' {
       redundantParensError()
       checkConditionErrors()
       return expr
@@ -285,7 +285,7 @@ Comparator
   = '>=' / '<=' / '<>' / '=' / '<' / '>'
 
 OperandParens
-  = '((' _ op:Operand _ '))' {
+  = '(' _ '(' _ op:Operand _ ')' _ ')' {
       redundantParensError()
       return op
     }
@@ -341,7 +341,7 @@ PathExpression
 
 GroupedPathExpression
   = Identifier
-  / '((' _ path:PathExpression _ '))' {
+  / '(' _ '(' _ path:PathExpression _ ')' _ ')' {
       redundantParensError()
       return path
     }
