@@ -2882,6 +2882,12 @@ describe('scan', function() {
         async.forEach([{
           FilterExpression: 'size(b) = :b AND c = :c',
           ExpressionAttributeValues: {':b': {N: '3'}, ':c': item.c},
+        }, {
+          FilterExpression: '(size(b)) = :b AND c = :c',
+          ExpressionAttributeValues: {':b': {N: '3'}, ':c': item.c},
+        }, {
+          FilterExpression: '((size(b)) = :b) AND c = :c',
+          ExpressionAttributeValues: {':b': {N: '3'}, ':c': item.c},
         }], function(scanOpts, cb) {
           scanOpts.TableName = helpers.testHashTable
           request(opts(scanOpts), function(err, res) {
