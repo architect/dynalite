@@ -88,10 +88,14 @@ function request(opts, cb) {
   http.request(opts, function(res) {
     res.setEncoding('utf8')
     res.on('error', cb)
-    res.body = ''
-    res.on('data', function(chunk) { res.body += chunk })
+    res.rawBody = ''
+    res.on('data', function(chunk) { res.rawBody += chunk })
     res.on('end', function() {
-      try { res.body = JSON.parse(res.body) } catch (e) {} // eslint-disable-line no-empty
+      try {
+        res.body = JSON.parse(res.rawBody)
+      } catch (e) {
+        res.body = res.rawBody
+      }
       if (process.env.REMOTE && opts.retries <= MAX_RETRIES &&
           (res.body.__type == 'com.amazon.coral.availability#ThrottlingException' ||
           res.body.__type == 'com.amazonaws.dynamodb.v20120810#LimitExceededException')) {

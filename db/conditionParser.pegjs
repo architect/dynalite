@@ -301,7 +301,13 @@ Operand
   = Function
   / ExpressionAttributeValue
   / path:PathExpression {
-      path.forEach(function(name) { typeof name === 'string' && checkReserved(name) })
+      for (var i = 0; i < path.length; i++) {
+        if (typeof path[i] === 'string') {
+          checkReserved(path[i])
+        } else if (path[i] && path[i].type == 'attrName') {
+          path[i] = resolveAttrName(path[i].name)
+        }
+      }
       if (path.length > 1) {
         nestedPaths[path[0]] = true
       }
@@ -324,7 +330,7 @@ FunctionArgumentList
 
 ExpressionAttributeName
   = !ReservedWord head:'#' tail:IdentifierPart* {
-      return resolveAttrName(head + tail.join(''))
+      return {type: 'attrName', name: head + tail.join('')}
     }
 
 ExpressionAttributeValue

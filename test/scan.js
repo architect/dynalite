@@ -1249,9 +1249,9 @@ describe('scan', function() {
     })
 
     it('should scan by multiple properties', function(done) {
-      var item = {a: {S: helpers.randomString()}, b: {N: helpers.randomNumber()}, c: {N: helpers.randomNumber()}},
-          item2 = {a: {S: helpers.randomString()}, b: item.b, c: item.c},
-          item3 = {a: {S: helpers.randomString()}, b: item.b, c: {N: helpers.randomNumber()}},
+      var item = {a: {S: helpers.randomString()}, date: {N: helpers.randomNumber()}, c: {N: helpers.randomNumber()}},
+          item2 = {a: {S: helpers.randomString()}, date: item.date, c: item.c},
+          item3 = {a: {S: helpers.randomString()}, date: item.date, c: {N: helpers.randomNumber()}},
           batchReq = {RequestItems: {}}
       batchReq.RequestItems[helpers.testHashTable] = [
         {PutRequest: {Item: item}},
@@ -1263,17 +1263,18 @@ describe('scan', function() {
         res.statusCode.should.equal(200)
         async.forEach([{
           ScanFilter: {
-            b: {ComparisonOperator: 'EQ', AttributeValueList: [item.b]},
+            date: {ComparisonOperator: 'EQ', AttributeValueList: [item.date]},
             c: {ComparisonOperator: 'EQ', AttributeValueList: [item.c]},
           },
         }, {
-          FilterExpression: 'b = :b AND c = :c',
-          ExpressionAttributeValues: {':b': item.b, ':c': item.c},
+          FilterExpression: '#d = :date AND c = :c',
+          ExpressionAttributeValues: {':date': item.date, ':c': item.c},
+          ExpressionAttributeNames: {'#d': 'date'},
         }], function(scanOpts, cb) {
           scanOpts.TableName = helpers.testHashTable
           request(opts(scanOpts), function(err, res) {
             if (err) return cb(err)
-            res.statusCode.should.equal(200)
+            res.statusCode.should.equal(200, res.rawBody)
             res.body.Items.should.containEql(item)
             res.body.Items.should.containEql(item2)
             res.body.Items.should.have.length(2)

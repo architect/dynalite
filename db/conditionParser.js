@@ -211,7 +211,13 @@ function peg$parse(input, options) {
             return op
           },
       peg$c29 = function(path) {
-            path.forEach(function(name) { typeof name === 'string' && checkReserved(name) })
+            for (var i = 0; i < path.length; i++) {
+              if (typeof path[i] === 'string') {
+                checkReserved(path[i])
+              } else if (path[i] && path[i].type == 'attrName') {
+                path[i] = resolveAttrName(path[i].name)
+              }
+            }
             if (path.length > 1) {
               nestedPaths[path[0]] = true
             }
@@ -233,7 +239,7 @@ function peg$parse(input, options) {
       peg$c35 = "#",
       peg$c36 = peg$literalExpectation("#", false),
       peg$c37 = function(head, tail) {
-            return resolveAttrName(head + tail.join(''))
+            return {type: 'attrName', name: head + tail.join('')}
           },
       peg$c38 = ":",
       peg$c39 = peg$literalExpectation(":", false),
