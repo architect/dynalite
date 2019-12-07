@@ -1,7 +1,7 @@
 exports.types = {
   ResourceArns: {
     type: 'String',
-    required: true,
+    required: false,
     tableName: false,
     regex: 'arn:aws:dynamodb:(.+):(.+):table/(.+)',
   },
