@@ -23,6 +23,7 @@
   "license": "MIT",
   "dependencies": {
     "async": "^2.6.3",
+    "aws-sdk": "^2.590.0",
     "big.js": "^5.2.2",
     "buffer-crc32": "^0.2.13",
     "lazy": "^1.0.11",
@@ -31,6 +32,7 @@
     "memdown": "^5.1.0",
     "minimist": "^1.2.0",
     "once": "^1.4.0",
+    "s3leveldown": "^2.0.0",
     "subleveldown": "^4.1.4"
   },
   "optionalDependencies": {

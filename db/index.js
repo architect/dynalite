@@ -47,7 +47,23 @@ function create(options) {
   if (options.maxItemSizeKb == null) options.maxItemSizeKb = exports.MAX_SIZE / 1024
   options.maxItemSize = options.maxItemSizeKb * 1024
 
-  var db = levelup(options.path ? require('leveldown')(options.path) : memdown()),
+  var leveldown, AWS, s3;
+  if (options.bucket) {
+    AWS = require('aws-sdk');
+    s3 = new AWS.S3({
+      apiVersion: '2006-03-01',
+      endpoint: options.endpoint || 'http://127.0.0.1:9000',
+      s3ForcePathStyle: true,
+      signatureVersion: 'v4'
+    });
+    leveldown = require('s3leveldown')(options.bucket, s3);
+  } else if (options.path) {
+    leveldown = require('leveldown')(options.path);
+  } else {
+    leveldown = memdown();
+  }
+
+  var db = levelup(leveldown),
       subDbs = Object.create(null),
       tableDb = getSubDb('table')
 
