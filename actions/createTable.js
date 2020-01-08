@@ -49,6 +49,9 @@ module.exports = function createTable(store, data, cb) {
           index.IndexSizeBytes = 0
           index.ItemCount = 0
           index.IndexStatus = 'CREATING'
+          if (!index.ProvisionedThroughput) {
+            index.ProvisionedThroughput = {ReadCapacityUnits: 0, WriteCapacityUnits: 0}
+          }
           index.ProvisionedThroughput.NumberOfDecreasesToday = 0
         })
       }
