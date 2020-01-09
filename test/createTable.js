@@ -256,7 +256,7 @@ describe('createTable', function() {
 
     it('should return ValidationException for missing ProvisionedThroughput', function(done) {
       assertValidation({TableName: 'abc', AttributeDefinitions: [], KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}]},
-        'One or more parameter values were invalid: Missing required parameter in input: "ProvisionedThroughput"', done)
+        'One or more parameter values were invalid: ReadCapacityUnits and WriteCapacityUnits must both be specified when BillingMode is PROVISIONED', done)
     })
 
     it('should return ValidationException if ProvisionedThroughput set when BillingMode is PAY_PER_REQUEST', function(done) {
@@ -1119,6 +1119,25 @@ describe('createTable', function() {
         'One or more parameter values were invalid: Duplicate index name: abc', done)
     })
 
+    it('should not allow ProvisionedThroughput with PAY_PER_REQUEST and GlobalSecondaryIndexes', function(done) {
+      assertValidation({TableName: 'abc',
+        AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}, {AttributeName: 'b', AttributeType: 'S'}],
+        KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}],
+        BillingMode: 'PAY_PER_REQUEST',
+        GlobalSecondaryIndexes: [{
+          IndexName: 'abc',
+          KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
+          Projection: {ProjectionType: 'ALL'},
+        }, {
+          IndexName: 'abd',
+          KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
+          ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1},
+          Projection: {ProjectionType: 'ALL'},
+        }],
+      }, 'One or more parameter values were invalid: ' +
+        'ProvisionedThroughput should not be specified for index: abd when BillingMode is PAY_PER_REQUEST', done)
+    })
+
   })
 
   describe('functionality', function() {
@@ -1336,6 +1355,80 @@ describe('createTable', function() {
           index.ItemCount = 0
           index.IndexStatus = 'CREATING'
           index.ProvisionedThroughput.NumberOfDecreasesToday = 0
+          desc.GlobalSecondaryIndexes.should.containEql(index)
+        })
+        desc.GlobalSecondaryIndexes.length.should.equal(globalIndexes.length)
+        delete desc.GlobalSecondaryIndexes
+        delete table.GlobalSecondaryIndexes
+        desc.should.eql(table)
+
+        // Ensure that the indexes become active too
+        helpers.waitUntilIndexesActive(table.TableName, function(err, res) {
+          if (err) return done(err)
+          res.body.Table.GlobalSecondaryIndexes.forEach(function(index) { delete index.IndexArn })
+          globalIndexes.forEach(function(index) {
+            index.IndexStatus = 'ACTIVE'
+            res.body.Table.GlobalSecondaryIndexes.should.containEql(index)
+          })
+          helpers.deleteWhenActive(table.TableName)
+          done()
+        })
+      })
+    })
+
+    it('should succeed for PAY_PER_REQUEST GlobalSecondaryIndexes', function(done) {
+      var table = {
+        TableName: randomName(),
+        AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'S'}, {AttributeName: 'b', AttributeType: 'S'}],
+        KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}],
+        BillingMode: 'PAY_PER_REQUEST',
+        GlobalSecondaryIndexes: [{
+          IndexName: 'abc',
+          KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
+          Projection: {ProjectionType: 'ALL'},
+        }, {
+          IndexName: 'abd',
+          KeySchema: [{AttributeName: 'a', KeyType: 'HASH'}, {AttributeName: 'b', KeyType: 'RANGE'}],
+          Projection: {ProjectionType: 'ALL'},
+        }],
+      }, createdAt = Date.now() / 1000, globalIndexes = table.GlobalSecondaryIndexes
+      request(opts(table), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+        should.exist(res.body.TableDescription)
+        var desc = res.body.TableDescription
+        desc.TableId.should.match(/[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[0-9a-f]{4}-[0-9a-f]{8}/)
+        delete desc.TableId
+        desc.CreationDateTime.should.be.above(createdAt - 5)
+        delete desc.CreationDateTime
+        desc.TableArn.should.match(new RegExp(
+          'arn:aws:dynamodb:' + helpers.awsRegion + ':\\d+:table/' + table.TableName))
+        delete desc.TableArn
+        desc.GlobalSecondaryIndexes.forEach(function(index) {
+          index.IndexArn.should.match(new RegExp(
+            'arn:aws:dynamodb:' + helpers.awsRegion + ':\\d+:table/' + table.TableName + '/index/' + index.IndexName))
+          delete index.IndexArn
+        })
+        table.ItemCount = 0
+        table.TableSizeBytes = 0
+        table.BillingModeSummary = {BillingMode: 'PAY_PER_REQUEST'}
+        delete table.BillingMode
+        table.TableThroughputModeSummary = {TableThroughputMode: 'PAY_PER_REQUEST'}
+        table.ProvisionedThroughput = {
+          NumberOfDecreasesToday: 0,
+          ReadCapacityUnits: 0,
+          WriteCapacityUnits: 0,
+        }
+        table.TableStatus = 'CREATING'
+        globalIndexes.forEach(function(index) {
+          index.IndexSizeBytes = 0
+          index.ItemCount = 0
+          index.IndexStatus = 'CREATING'
+          index.ProvisionedThroughput = {
+            ReadCapacityUnits: 0,
+            WriteCapacityUnits: 0,
+            NumberOfDecreasesToday: 0,
+          }
           desc.GlobalSecondaryIndexes.should.containEql(index)
         })
         desc.GlobalSecondaryIndexes.length.should.equal(globalIndexes.length)

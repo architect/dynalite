@@ -147,7 +147,7 @@ function createTestTables(done) {
     TableName: exports.testHashNTable,
     AttributeDefinitions: [{AttributeName: 'a', AttributeType: 'N'}],
     KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}],
-    ProvisionedThroughput: {ReadCapacityUnits: readCapacity, WriteCapacityUnits: writeCapacity},
+    BillingMode: 'PAY_PER_REQUEST',
   }, {
     TableName: exports.testRangeTable,
     AttributeDefinitions: [

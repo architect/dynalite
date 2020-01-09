@@ -185,8 +185,11 @@ exports.custom = function(data) {
         'Neither ReadCapacityUnits nor WriteCapacityUnits can be specified when BillingMode is PAY_PER_REQUEST'
     }
   } else {
-    if (!data.ProvisionedThroughput && data.BillingMode != 'PAY_PER_REQUEST')
-      return 'One or more parameter values were invalid: Missing required parameter in input: "ProvisionedThroughput"'
+    if (data.BillingMode != 'PAY_PER_REQUEST' &&
+        (!data.ProvisionedThroughput || !data.ProvisionedThroughput.ReadCapacityUnits || !data.ProvisionedThroughput.WriteCapacityUnits)) {
+      return 'One or more parameter values were invalid: ' +
+        'ReadCapacityUnits and WriteCapacityUnits must both be specified when BillingMode is PROVISIONED'
+    }
 
     if (data.ProvisionedThroughput.ReadCapacityUnits > 1000000000000)
       return 'Given value ' + data.ProvisionedThroughput.ReadCapacityUnits + ' for ReadCapacityUnits is out of bounds'
@@ -307,6 +310,11 @@ exports.custom = function(data) {
       if (data.GlobalSecondaryIndexes[i].Projection.NonKeyAttributes && projectionType != 'INCLUDE')
         return 'One or more parameter values were invalid: ' +
           'ProjectionType is ' + projectionType + ', but NonKeyAttributes is specified'
+
+      if (data.BillingMode == 'PAY_PER_REQUEST' && data.GlobalSecondaryIndexes[i].ProvisionedThroughput) {
+        return 'One or more parameter values were invalid: ' +
+          'ProvisionedThroughput should not be specified for index: ' + indexName + ' when BillingMode is PAY_PER_REQUEST'
+      }
 
       if (indexNames[indexName])
         return 'One or more parameter values were invalid: Duplicate index name: ' + indexName
