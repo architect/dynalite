@@ -115,6 +115,10 @@ describe('updateTable', function() {
       assertType('GlobalSecondaryIndexUpdates.0.Delete.IndexName', 'String', done)
     })
 
+    it('should return SerializationException when BillingMode is not a string', function(done) {
+      assertType('BillingMode', 'String', done)
+    })
+
   })
 
   describe('validations', function() {
@@ -193,7 +197,7 @@ describe('updateTable', function() {
 
     it('should return ValidationException for empty GlobalSecondaryIndexUpdates', function(done) {
       assertValidation({TableName: 'abc', GlobalSecondaryIndexUpdates: []},
-        'At least one of ProvisionedThroughput, UpdateStreamEnabled, GlobalSecondaryIndexUpdates or SSESpecification is required', done)
+        'At least one of ProvisionedThroughput, BillingMode, UpdateStreamEnabled, GlobalSecondaryIndexUpdates or SSESpecification or ReplicaUpdates is required', done)
     })
 
     it('should return ValidationException for empty Update', function(done) {
@@ -243,6 +247,18 @@ describe('updateTable', function() {
       assertValidation({TableName: 'abc', GlobalSecondaryIndexUpdates: [{Delete: {IndexName: 'abc'}}, {Delete: {IndexName: 'abc'}}]},
         'One or more parameter values were invalid: ' +
         'Only one global secondary index update per index is allowed simultaneously. Index: abc', done)
+    })
+
+    it('should return ValidationException for ProvisionedThroughput update when PAY_PER_REQUEST', function(done) {
+      assertValidation({TableName: helpers.testHashNTable, ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}},
+        'One or more parameter values were invalid: ' +
+        'Neither ReadCapacityUnits nor WriteCapacityUnits can be specified when BillingMode is PAY_PER_REQUEST', done)
+    })
+
+    it('should return ValidationException for PROVISIONED without ProvisionedThroughput', function(done) {
+      assertValidation({TableName: helpers.testHashNTable, BillingMode: 'PROVISIONED'},
+        'One or more parameter values were invalid: ' +
+        'ProvisionedThroughput must be specified when BillingMode is PROVISIONED', done)
     })
 
     it('should return ResourceNotFoundException if table does not exist', function(done) {
@@ -312,7 +328,6 @@ describe('updateTable', function() {
 
     it('should triple rates and then reduce if requested', function(done) {
       this.timeout(200000)
-      exports.writeCapacity
       var oldRead = helpers.readCapacity, oldWrite = helpers.writeCapacity,
         newRead = oldRead * 3, newWrite = oldWrite * 3, increase = Date.now() / 1000,
         throughput = {ReadCapacityUnits: newRead, WriteCapacityUnits: newWrite}
@@ -378,5 +393,120 @@ describe('updateTable', function() {
         })
       })
     })
+
+    // XXX: this takes more than 20 mins to run
+    it.skip('should allow table to be converted to PAY_PER_REQUEST and back again', function(done) {
+      this.timeout(1500000)
+      var read = helpers.readCapacity, write = helpers.writeCapacity,
+        throughput = {ReadCapacityUnits: read, WriteCapacityUnits: write}, decrease = Date.now() / 1000
+      request(opts({TableName: helpers.testRangeTable, BillingMode: 'PAY_PER_REQUEST'}), function(err, res) {
+        if (err) return done(err)
+        res.statusCode.should.equal(200)
+
+        var desc = res.body.TableDescription
+        desc.TableStatus.should.equal('UPDATING')
+        desc.BillingModeSummary.should.eql({BillingMode: 'PAY_PER_REQUEST'})
+        desc.TableThroughputModeSummary.should.eql({TableThroughputMode: 'PAY_PER_REQUEST'})
+        desc.ProvisionedThroughput.LastDecreaseDateTime.should.be.above(decrease - 5)
+        desc.ProvisionedThroughput.NumberOfDecreasesToday.should.be.above(-1)
+        desc.ProvisionedThroughput.ReadCapacityUnits.should.equal(0)
+        desc.ProvisionedThroughput.WriteCapacityUnits.should.equal(0)
+
+        desc.GlobalSecondaryIndexes.forEach(function(index) {
+          index.IndexStatus.should.equal('UPDATING')
+          index.ProvisionedThroughput.should.eql({
+            NumberOfDecreasesToday: 0,
+            ReadCapacityUnits: 0,
+            WriteCapacityUnits: 0,
+          })
+        })
+
+        helpers.waitUntilActive(helpers.testRangeTable, function(err, res) {
+          if (err) return done(err)
+
+          var desc = res.body.Table
+          desc.BillingModeSummary.BillingMode.should.equal('PAY_PER_REQUEST')
+          desc.BillingModeSummary.LastUpdateToPayPerRequestDateTime.should.be.above(decrease - 5)
+          desc.TableThroughputModeSummary.TableThroughputMode.should.equal('PAY_PER_REQUEST')
+          desc.TableThroughputModeSummary.LastUpdateToPayPerRequestDateTime.should.be.above(decrease - 5)
+          desc.ProvisionedThroughput.NumberOfDecreasesToday.should.be.above(-1)
+          desc.ProvisionedThroughput.ReadCapacityUnits.should.equal(0)
+          desc.ProvisionedThroughput.WriteCapacityUnits.should.equal(0)
+          desc.GlobalSecondaryIndexes.forEach(function(index) {
+            index.ProvisionedThroughput.LastDecreaseDateTime.should.be.above(decrease - 5)
+            index.ProvisionedThroughput.NumberOfDecreasesToday.should.be.above(0)
+            index.ProvisionedThroughput.ReadCapacityUnits.should.equal(0)
+            index.ProvisionedThroughput.WriteCapacityUnits.should.equal(0)
+          })
+
+          assertValidation({TableName: helpers.testRangeTable, BillingMode: 'PROVISIONED', ProvisionedThroughput: throughput},
+              'One or more parameter values were invalid: ' +
+              'ProvisionedThroughput must be specified for index: index3,index4', function(err) {
+            if (err) return done(err)
+
+            request(opts({
+              TableName: helpers.testRangeTable,
+              BillingMode: 'PROVISIONED',
+              ProvisionedThroughput: throughput,
+              GlobalSecondaryIndexUpdates: [{
+                Update: {
+                  IndexName: 'index3',
+                  ProvisionedThroughput: throughput,
+                },
+              }, {
+                Update: {
+                  IndexName: 'index4',
+                  ProvisionedThroughput: throughput,
+                },
+              }],
+            }), function(err, res) {
+              if (err) return done(err)
+              res.statusCode.should.equal(200)
+
+              var desc = res.body.TableDescription
+              desc.TableStatus.should.equal('UPDATING')
+              desc.BillingModeSummary.BillingMode.should.equal('PROVISIONED')
+              desc.BillingModeSummary.LastUpdateToPayPerRequestDateTime.should.be.above(decrease - 5)
+              desc.TableThroughputModeSummary.TableThroughputMode.should.equal('PROVISIONED')
+              desc.TableThroughputModeSummary.LastUpdateToPayPerRequestDateTime.should.be.above(decrease - 5)
+              desc.ProvisionedThroughput.NumberOfDecreasesToday.should.be.above(-1)
+              desc.ProvisionedThroughput.ReadCapacityUnits.should.equal(read)
+              desc.ProvisionedThroughput.WriteCapacityUnits.should.equal(write)
+
+              desc.GlobalSecondaryIndexes.forEach(function(index) {
+                index.IndexStatus.should.equal('UPDATING')
+                index.ProvisionedThroughput.LastDecreaseDateTime.should.be.above(decrease - 5)
+                index.ProvisionedThroughput.NumberOfDecreasesToday.should.be.above(0)
+                index.ProvisionedThroughput.ReadCapacityUnits.should.equal(read)
+                index.ProvisionedThroughput.WriteCapacityUnits.should.equal(write)
+              })
+
+              helpers.waitUntilActive(helpers.testRangeTable, function(err, res) {
+                if (err) return done(err)
+
+                var desc = res.body.Table
+                desc.BillingModeSummary.BillingMode.should.equal('PROVISIONED')
+                desc.BillingModeSummary.LastUpdateToPayPerRequestDateTime.should.be.above(decrease - 5)
+                desc.TableThroughputModeSummary.TableThroughputMode.should.equal('PROVISIONED')
+                desc.TableThroughputModeSummary.LastUpdateToPayPerRequestDateTime.should.be.above(decrease - 5)
+                desc.ProvisionedThroughput.NumberOfDecreasesToday.should.be.above(-1)
+                desc.ProvisionedThroughput.ReadCapacityUnits.should.equal(read)
+                desc.ProvisionedThroughput.WriteCapacityUnits.should.equal(write)
+
+                desc.GlobalSecondaryIndexes.forEach(function(index) {
+                  index.ProvisionedThroughput.LastDecreaseDateTime.should.be.above(decrease - 5)
+                  index.ProvisionedThroughput.NumberOfDecreasesToday.should.be.above(0)
+                  index.ProvisionedThroughput.ReadCapacityUnits.should.equal(read)
+                  index.ProvisionedThroughput.WriteCapacityUnits.should.equal(write)
+                })
+
+                done()
+              })
+            })
+          })
+        })
+      })
+    })
+
   })
 })

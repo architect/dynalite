@@ -63,7 +63,7 @@ before(function(done) {
 })
 
 after(function(done) {
-  this.timeout(200000)
+  this.timeout(500000)
   deleteTestTables(function(err) {
     if (err) return done(err)
     dynaliteServer.close(done)
@@ -232,8 +232,11 @@ function waitUntilActive(name, done) {
   request(opts('DescribeTable', {TableName: name}), function(err, res) {
     if (err) return done(err)
     if (res.statusCode != 200) return done(new Error(res.statusCode + ': ' + JSON.stringify(res.body)))
-    if (res.body.Table.TableStatus == 'ACTIVE')
+    if (res.body.Table.TableStatus == 'ACTIVE' &&
+        (!res.body.Table.GlobalSecondaryIndexes ||
+          res.body.Table.GlobalSecondaryIndexes.every(function(index) { return index.IndexStatus == 'ACTIVE' }))) {
       return done(null, res)
+    }
     setTimeout(waitUntilActive, 1000, name, done)
   })
 }
