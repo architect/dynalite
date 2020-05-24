@@ -164,6 +164,10 @@ function validateItem(dataItem, table) {
         'Type mismatch for key ' + attr + ' expected: ' + type +
         ' actual: ' + Object.keys(dataItem[attr])[0])
     }
+    if (dataItem[attr][type] === '' && (type === 'S' || type === 'B')) {
+      return validationError('One or more parameter values are not valid. ' +
+        'The AttributeValue for a key attribute cannot contain an empty ' + (type === 'S' ? 'string' : 'binary') + ' value. Key: ' + attr)
+    }
     return checkKeySize(dataItem[attr][type], type, isHash)
   }) || traverseIndexes(table, function(attr, type, index) {
     if (dataItem[attr] != null && dataItem[attr][type] == null) {
@@ -220,6 +224,10 @@ function validateUpdates(attributeUpdates, expressionUpdates, table) {
 function validateKeyPiece(key, attr, type, isHash) {
   if (key[attr] == null || key[attr][type] == null) {
     return validationError('The provided key element does not match the schema')
+  }
+  if (key[attr][type] === '' && (type === 'S' || type === 'B')) {
+    return validationError('One or more parameter values were invalid: ' +
+      'The AttributeValue for a key attribute cannot contain an empty ' + (type === 'S' ? 'string' : 'binary') + ' value. Key: ' + attr)
   }
   return checkKeySize(key[attr][type], type, isHash)
 }

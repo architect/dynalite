@@ -63,6 +63,13 @@ exports.types = {
     children: {
       type: 'ValueStruct<LocalSecondaryIndex>',
       children: {
+        IndexName: {
+          type: 'String',
+          notNull: true,
+          regex: '[a-zA-Z0-9_.-]+',
+          lengthGreaterThanOrEqual: 3,
+          lengthLessThanOrEqual: 255,
+        },
         KeySchema: {
           type: 'List',
           notNull: true,
@@ -96,13 +103,6 @@ exports.types = {
               children: 'String',
             },
           },
-        },
-        IndexName: {
-          type: 'String',
-          notNull: true,
-          regex: '[a-zA-Z0-9_.-]+',
-          lengthGreaterThanOrEqual: 3,
-          lengthLessThanOrEqual: 255,
         },
       },
     },
@@ -112,6 +112,13 @@ exports.types = {
     children: {
       type: 'ValueStruct<GlobalSecondaryIndex>',
       children: {
+        IndexName: {
+          type: 'String',
+          notNull: true,
+          regex: '[a-zA-Z0-9_.-]+',
+          lengthGreaterThanOrEqual: 3,
+          lengthLessThanOrEqual: 255,
+        },
         KeySchema: {
           type: 'List',
           notNull: true,
@@ -145,13 +152,6 @@ exports.types = {
               children: 'String',
             },
           },
-        },
-        IndexName: {
-          type: 'String',
-          notNull: true,
-          regex: '[a-zA-Z0-9_.-]+',
-          lengthGreaterThanOrEqual: 3,
-          lengthLessThanOrEqual: 255,
         },
         ProvisionedThroughput: {
           type: 'FieldStruct<ProvisionedThroughput>',
