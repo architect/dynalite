@@ -401,25 +401,25 @@ describe('createTable', function() {
         KeySchema: [{KeyType: 'HASH', AttributeName: 'a'}, {KeyType: 'RANGE', AttributeName: 'b'}],
         LocalSecondaryIndexes: [{}, {}, {}, {}, {}, {}, {}, {}, {}],
         ProvisionedThroughput: {ReadCapacityUnits: 1, WriteCapacityUnits: 1}}, [
+          'Value null at \'localSecondaryIndexes.1.member.indexName\' failed to satisfy constraint: ' +
+          'Member must not be null',
           'Value null at \'localSecondaryIndexes.1.member.keySchema\' failed to satisfy constraint: ' +
           'Member must not be null',
           'Value null at \'localSecondaryIndexes.1.member.projection\' failed to satisfy constraint: ' +
           'Member must not be null',
-          'Value null at \'localSecondaryIndexes.1.member.indexName\' failed to satisfy constraint: ' +
+          'Value null at \'localSecondaryIndexes.2.member.indexName\' failed to satisfy constraint: ' +
           'Member must not be null',
           'Value null at \'localSecondaryIndexes.2.member.keySchema\' failed to satisfy constraint: ' +
           'Member must not be null',
           'Value null at \'localSecondaryIndexes.2.member.projection\' failed to satisfy constraint: ' +
           'Member must not be null',
-          'Value null at \'localSecondaryIndexes.2.member.indexName\' failed to satisfy constraint: ' +
+          'Value null at \'localSecondaryIndexes.3.member.indexName\' failed to satisfy constraint: ' +
           'Member must not be null',
           'Value null at \'localSecondaryIndexes.3.member.keySchema\' failed to satisfy constraint: ' +
           'Member must not be null',
           'Value null at \'localSecondaryIndexes.3.member.projection\' failed to satisfy constraint: ' +
           'Member must not be null',
-          'Value null at \'localSecondaryIndexes.3.member.indexName\' failed to satisfy constraint: ' +
-          'Member must not be null',
-          'Value null at \'localSecondaryIndexes.4.member.keySchema\' failed to satisfy constraint: ' +
+          'Value null at \'localSecondaryIndexes.4.member.indexName\' failed to satisfy constraint: ' +
           'Member must not be null',
         ], done)
     })
@@ -736,7 +736,7 @@ describe('createTable', function() {
           'Member must not be null',
           'Value null at \'globalSecondaryIndexes.3.member.indexName\' failed to satisfy constraint: ' +
           'Member must not be null',
-          'Value null at \'globalSecondaryIndexes.4.member.keySchema\' failed to satisfy constraint: ' +
+          'Value null at \'globalSecondaryIndexes.4.member.indexName\' failed to satisfy constraint: ' +
           'Member must not be null',
         ], done)
     })

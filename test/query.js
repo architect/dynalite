@@ -317,14 +317,10 @@ describe('query', function() {
 
     it('should return ValidationException for invalid values in QueryFilter', function(done) {
       async.forEach([
-        [{N: '', S: ''}, 'An AttributeValue may not contain an empty string'],
-        [{B: ''}, 'An AttributeValue may not contain a null or empty binary type.'],
         [{NULL: 'no'}, 'Null attribute value types must have the value of true'],
         [{SS: []}, 'An string set  may not be empty'],
         [{NS: []}, 'An number set  may not be empty'],
         [{BS: []}, 'Binary sets should not be empty'],
-        [{SS: ['a', '']}, 'An string set may not have a empty string as a member'],
-        [{BS: ['aaaa', '']}, 'Binary sets may not contain null or empty values'],
         [{SS: ['a', 'a']}, 'Input collection [a, a] contains duplicates.'],
         [{BS: ['Yg==', 'Yg==']}, 'Input collection [Yg==, Yg==]of type BS contains duplicates.'],
       ], function(expr, cb) {
@@ -340,6 +336,7 @@ describe('query', function() {
 
     it('should return ValidationException for empty/invalid numbers in QueryFilter', function(done) {
       async.forEach([
+        [{S: '', N: ''}, 'The parameter cannot be converted to a numeric value'],
         [{S: 'a', N: ''}, 'The parameter cannot be converted to a numeric value'],
         [{S: 'a', N: 'b'}, 'The parameter cannot be converted to a numeric value: b'],
         [{NS: ['1', '']}, 'The parameter cannot be converted to a numeric value'],
@@ -450,16 +447,9 @@ describe('query', function() {
         {KeyConditionExpression: '', ExpressionAttributeNames: {}, ExpressionAttributeValues: {}},
       ], function(keyOpts, cb) {
         async.forEach([
-          [{N: '', S: ''}, 'An AttributeValue may not contain an empty string'],
-          [{B: ''}, 'An AttributeValue may not contain a null or empty binary type.'],
           [{NULL: 'no'}, 'Null attribute value types must have the value of true'],
           [{SS: []}, 'An string set  may not be empty'],
-          [{NS: []}, 'An number set  may not be empty'],
           [{BS: []}, 'Binary sets should not be empty'],
-          [{SS: ['a', '']}, 'An string set may not have a empty string as a member'],
-          [{BS: ['aaaa', '']}, 'Binary sets may not contain null or empty values'],
-          [{SS: ['a', 'a']}, 'Input collection [a, a] contains duplicates.'],
-          [{BS: ['Yg==', 'Yg==']}, 'Input collection [Yg==, Yg==]of type BS contains duplicates.'],
         ], function(expr, cb) {
           assertValidation({
             TableName: 'abc',
@@ -472,12 +462,33 @@ describe('query', function() {
       }, done)
     })
 
+    it('should return ValidationException for invalid values in ExclusiveStartKey without provided message', function(done) {
+      async.forEach([
+        {KeyConditions: {a: {ComparisonOperator: 'EQ', AttributeValueList: [{}, {}]}}},
+        {KeyConditionExpression: '', ExpressionAttributeNames: {}, ExpressionAttributeValues: {}},
+      ], function(keyOpts, cb) {
+        async.forEach([
+          [{NS: []}, 'An number set  may not be empty'],
+          [{SS: ['a', 'a']}, 'Input collection [a, a] contains duplicates.'],
+          [{BS: ['Yg==', 'Yg==']}, 'Input collection [Yg==, Yg==]of type BS contains duplicates.'],
+        ], function(expr, cb) {
+          assertValidation({
+            TableName: 'abc',
+            KeyConditions: keyOpts.KeyConditions,
+            KeyConditionExpression: keyOpts.KeyConditionExpression,
+            ExclusiveStartKey: {a: expr[0]},
+          }, 'One or more parameter values were invalid: ' + expr[1], cb)
+        }, cb)
+      }, done)
+    })
+
     it('should return ValidationException for empty/invalid numbers in ExclusiveStartKey', function(done) {
       async.forEach([
         {KeyConditions: {a: {ComparisonOperator: 'EQ', AttributeValueList: [{}]}}},
         {KeyConditionExpression: '', ExpressionAttributeNames: {}, ExpressionAttributeValues: {}},
       ], function(keyOpts, cb) {
         async.forEach([
+          [{S: '', N: ''}, 'The parameter cannot be converted to a numeric value'],
           [{S: 'a', N: ''}, 'The parameter cannot be converted to a numeric value'],
           [{S: 'a', N: 'b'}, 'The parameter cannot be converted to a numeric value: b'],
           [{NS: ['1', '']}, 'The parameter cannot be converted to a numeric value'],
@@ -495,7 +506,7 @@ describe('query', function() {
             KeyConditions: keyOpts.KeyConditions,
             KeyConditionExpression: keyOpts.KeyConditionExpression,
             ExclusiveStartKey: {a: expr[0]},
-          }, 'The provided starting key is invalid: ' + expr[1], cb)
+          }, expr[1], cb)
         }, cb)
       }, done)
     })
@@ -530,14 +541,10 @@ describe('query', function() {
 
     it('should return ValidationException for invalid values in KeyConditions', function(done) {
       async.forEach([
-        [{N: '', S: ''}, 'An AttributeValue may not contain an empty string'],
-        [{B: ''}, 'An AttributeValue may not contain a null or empty binary type.'],
         [{NULL: 'no'}, 'Null attribute value types must have the value of true'],
         [{SS: []}, 'An string set  may not be empty'],
         [{NS: []}, 'An number set  may not be empty'],
         [{BS: []}, 'Binary sets should not be empty'],
-        [{SS: ['a', '']}, 'An string set may not have a empty string as a member'],
-        [{BS: ['aaaa', '']}, 'Binary sets may not contain null or empty values'],
         [{SS: ['a', 'a']}, 'Input collection [a, a] contains duplicates.'],
         [{BS: ['Yg==', 'Yg==']}, 'Input collection [Yg==, Yg==]of type BS contains duplicates.'],
       ], function(expr, cb) {
@@ -550,6 +557,7 @@ describe('query', function() {
 
     it('should return ValidationException for empty/invalid numbers in KeyConditions', function(done) {
       async.forEach([
+        [{S: '', N: ''}, 'The parameter cannot be converted to a numeric value'],
         [{S: 'a', N: ''}, 'The parameter cannot be converted to a numeric value'],
         [{S: 'a', N: 'b'}, 'The parameter cannot be converted to a numeric value: b'],
         [{NS: ['1', '']}, 'The parameter cannot be converted to a numeric value'],

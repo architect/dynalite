@@ -240,14 +240,10 @@ describe('batchGetItem', function() {
 
     it('should return ValidationException for invalid values in Key', function(done) {
       async.forEach([
-        [{N: '', S: ''}, 'An AttributeValue may not contain an empty string'],
-        [{B: ''}, 'An AttributeValue may not contain a null or empty binary type.'],
         [{NULL: 'no'}, 'Null attribute value types must have the value of true'],
         [{SS: []}, 'An string set  may not be empty'],
         [{NS: []}, 'An number set  may not be empty'],
         [{BS: []}, 'Binary sets should not be empty'],
-        [{SS: ['a', '']}, 'An string set may not have a empty string as a member'],
-        [{BS: ['aaaa', '']}, 'Binary sets may not contain null or empty values'],
         [{SS: ['a', 'a']}, 'Input collection [a, a] contains duplicates.'],
         [{BS: ['Yg==', 'Yg==']}, 'Input collection [Yg==, Yg==]of type BS contains duplicates.'],
       ], function(expr, cb) {
@@ -258,6 +254,7 @@ describe('batchGetItem', function() {
 
     it('should return ValidationException for empty/invalid numbers in Key', function(done) {
       async.forEach([
+        [{S: '', N: ''}, 'The parameter cannot be converted to a numeric value'],
         [{S: 'a', N: ''}, 'The parameter cannot be converted to a numeric value'],
         [{S: 'a', N: 'b'}, 'The parameter cannot be converted to a numeric value: b'],
         [{NS: ['1', '']}, 'The parameter cannot be converted to a numeric value'],
@@ -279,7 +276,7 @@ describe('batchGetItem', function() {
         'Supplied AttributeValue has more than one datatypes set, must contain exactly one of the supported datatypes', done)
     })
 
-    it('should return ValidationException for duplicated keys', function(done) {
+    it('should return ValidationException for empty ExpressionAttributeNames', function(done) {
       var key = {a: {S: helpers.randomString()}, b: {N: helpers.randomNumber()}}
       assertValidation({
         RequestItems: {
@@ -287,6 +284,29 @@ describe('batchGetItem', function() {
             Keys: [key, {b: key.b, a: key.a}, key],
             ExpressionAttributeNames: {},
             ProjectionExpression: '',
+          },
+        },
+      }, 'ExpressionAttributeNames must not be empty', done)
+    })
+
+    it('should return ValidationException for empty ProjectionExpression', function(done) {
+      var key = {a: {S: helpers.randomString()}, b: {N: helpers.randomNumber()}}
+      assertValidation({
+        RequestItems: {
+          abc: {
+            Keys: [key, {b: key.b, a: key.a}, key],
+            ProjectionExpression: '',
+          },
+        },
+      }, 'Invalid ProjectionExpression: The expression can not be empty;', done)
+    })
+
+    it('should return ValidationException for duplicated keys', function(done) {
+      var key = {a: {S: helpers.randomString()}, b: {N: helpers.randomNumber()}}
+      assertValidation({
+        RequestItems: {
+          abc: {
+            Keys: [key, {b: key.b, a: key.a}, key],
           },
         },
       }, 'Provided list of item keys contains duplicates', done)
@@ -302,7 +322,7 @@ describe('batchGetItem', function() {
             AttributesToGet: ['a', 'a'],
           },
         },
-      }, 'Provided list of item keys contains duplicates', done)
+      }, 'One or more parameter values were invalid: Duplicate value in attribute name: a', done)
     })
 
     it('should return ValidationException duplicate values in AttributesToGet', function(done) {
