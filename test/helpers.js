@@ -375,6 +375,7 @@ function assertType(target, property, type, done) {
     type = subtypeMatch[1]
     subtype = subtypeMatch[2]
   }
+  var castMsg = "class sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl cannot be cast to class java.lang.Class (sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl and java.lang.Class are in module java.base of loader 'bootstrap')"
   switch (type) {
     case 'Boolean':
       msgs = [
@@ -444,12 +445,12 @@ function assertType(target, property, type, done) {
       break
     case 'ParameterizedList':
       msgs = [
-        ['23', 'sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl cannot be cast to java.lang.Class'],
-        [true, 'sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl cannot be cast to java.lang.Class'],
-        [23, 'sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl cannot be cast to java.lang.Class'],
-        [-2147483648, 'sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl cannot be cast to java.lang.Class'],
-        [2147483648, 'sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl cannot be cast to java.lang.Class'],
-        [34.56, 'sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl cannot be cast to java.lang.Class'],
+        ['23', castMsg],
+        [true, castMsg],
+        [23, castMsg],
+        [-2147483648, castMsg],
+        [2147483648, castMsg],
+        [34.56, castMsg],
         [{}, 'Start of structure or map found where not expected'],
       ]
       break
@@ -466,12 +467,12 @@ function assertType(target, property, type, done) {
       break
     case 'ParameterizedMap':
       msgs = [
-        ['23', 'sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl cannot be cast to java.lang.Class'],
-        [true, 'sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl cannot be cast to java.lang.Class'],
-        [23, 'sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl cannot be cast to java.lang.Class'],
-        [-2147483648, 'sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl cannot be cast to java.lang.Class'],
-        [2147483648, 'sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl cannot be cast to java.lang.Class'],
-        [34.56, 'sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl cannot be cast to java.lang.Class'],
+        ['23', castMsg],
+        [true, castMsg],
+        [23, castMsg],
+        [-2147483648, castMsg],
+        [2147483648, castMsg],
+        [34.56, castMsg],
         [[], 'Unrecognized collection type java.util.Map<java.lang.String, com.amazonaws.dynamodb.v20120810.AttributeValue>'],
       ]
       break
@@ -556,7 +557,6 @@ function assertAccessDenied(target, data, msg, done) {
 function assertValidation(target, data, msg, done) {
   request(opts(target, data), function(err, res) {
     if (err) return done(err)
-    res.statusCode.should.equal(400)
     if (typeof res.body !== 'object') {
       return done(new Error('Not JSON: ' + res.body))
     }
@@ -573,6 +573,7 @@ function assertValidation(target, data, msg, done) {
     } else {
       res.body.message.should.equal(msg)
     }
+    res.statusCode.should.equal(400)
     done()
   })
 }

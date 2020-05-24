@@ -184,14 +184,10 @@ describe('putItem', function() {
 
     it('should return ValidationException for invalid values in Item', function(done) {
       async.forEach([
-        [{N: '', S: ''}, 'An AttributeValue may not contain an empty string'],
-        [{B: ''}, 'An AttributeValue may not contain a null or empty binary type.'],
         [{NULL: 'no'}, 'Null attribute value types must have the value of true'],
         [{SS: []}, 'An string set  may not be empty'],
         [{NS: []}, 'An number set  may not be empty'],
         [{BS: []}, 'Binary sets should not be empty'],
-        [{SS: ['a', '']}, 'An string set may not have a empty string as a member'],
-        [{BS: ['aaaa', '']}, 'Binary sets may not contain null or empty values'],
         [{SS: ['a', 'a']}, 'Input collection [a, a] contains duplicates.'],
         [{BS: ['Yg==', 'Yg==']}, 'Input collection [Yg==, Yg==]of type BS contains duplicates.'],
       ], function(expr, cb) {
@@ -207,6 +203,7 @@ describe('putItem', function() {
 
     it('should return ValidationException for empty/invalid numbers in Item', function(done) {
       async.forEach([
+        [{S: '', N: ''}, 'The parameter cannot be converted to a numeric value'],
         [{S: 'a', N: ''}, 'The parameter cannot be converted to a numeric value'],
         [{S: 'a', N: 'b'}, 'The parameter cannot be converted to a numeric value: b'],
         [{NS: ['1', '']}, 'The parameter cannot be converted to a numeric value'],
@@ -504,6 +501,16 @@ describe('putItem', function() {
       }, done)
     })
 
+    it('should return ValidationException if empty string key', function(done) {
+      assertValidation({TableName: helpers.testHashTable, Item: {a: {S: ''}}},
+        'One or more parameter values are not valid. The AttributeValue for a key attribute cannot contain an empty string value. Key: a', done)
+    })
+
+    it('should return ValidationException if empty binary key', function(done) {
+      assertValidation({TableName: helpers.testRangeBTable, Item: {a: {S: 'a'}, b: {B: ''}}},
+        'One or more parameter values are not valid. The AttributeValue for a key attribute cannot contain an empty binary value. Key: b', done)
+    })
+
     it('should return ValidationException if missing range key', function(done) {
       assertValidation({TableName: helpers.testRangeTable, Item: {a: {S: 'a'}}},
         'One or more parameter values were invalid: Missing the key b in the item', done)
@@ -559,6 +566,31 @@ describe('putItem', function() {
         request(helpers.opts('GetItem', {TableName: helpers.testHashTable, Key: {a: item.a}, ConsistentRead: true}), function(err, res) {
           if (err) return done(err)
           res.statusCode.should.equal(200)
+          res.body.should.eql({Item: item})
+          done()
+        })
+      })
+    })
+
+    it('should put empty values', function(done) {
+      var item = {
+        a: {S: helpers.randomString()},
+        b: {S: ''},
+        c: {B: ''},
+        d: {SS: ['']},
+        e: {BS: ['']},
+      }
+      request(opts({TableName: helpers.testHashTable, Item: item}), function(err, res) {
+        if (err) return done(err)
+        res.body.should.eql({})
+        res.statusCode.should.equal(200)
+        request(helpers.opts('GetItem', {TableName: helpers.testHashTable, Key: {a: item.a}, ConsistentRead: true}), function(err, res) {
+          if (err) return done(err)
+          res.statusCode.should.equal(200)
+          item.b = {S: ''}
+          item.c = {B: ''}
+          item.d = {SS: ['']}
+          item.e = {BS: ['']}
           res.body.should.eql({Item: item})
           done()
         })
