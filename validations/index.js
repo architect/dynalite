@@ -162,7 +162,7 @@ function checkTypes(data, types) {
           case 'boolean':
           case 'number':
           case 'string':
-            throw typeError('sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl cannot be cast to java.lang.Class')
+            throw typeError("class sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl cannot be cast to class java.lang.Class (sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl and java.lang.Class are in module java.base of loader 'bootstrap')")
           case 'object':
             if (!Array.isArray(val)) throw typeError('Start of structure or map found where not expected')
         }
@@ -172,7 +172,7 @@ function checkTypes(data, types) {
           case 'boolean':
           case 'number':
           case 'string':
-            throw typeError('sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl cannot be cast to java.lang.Class')
+            throw typeError("class sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl cannot be cast to class java.lang.Class (sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl and java.lang.Class are in module java.base of loader 'bootstrap')")
           case 'object':
             if (Array.isArray(val)) throw typeError('Unrecognized collection type java.util.Map<java.lang.String, com.amazonaws.dynamodb.v20120810.AttributeValue>')
         }
@@ -370,12 +370,6 @@ function validateAttributeValue(value) {
       if (msg) return msg
     }
 
-    if (type == 'B' && !value[type])
-      return 'One or more parameter values were invalid: An AttributeValue may not contain a null or empty binary type.'
-
-    if (type == 'S' && !value[type])
-      return 'One or more parameter values were invalid: An AttributeValue may not contain an empty string'
-
     if (type == 'NULL' && !value[type])
       return 'One or more parameter values were invalid: Null attribute value types must have the value of true'
 
@@ -387,12 +381,6 @@ function validateAttributeValue(value) {
 
     if (type == 'BS' && !value[type].length)
       return 'One or more parameter values were invalid: Binary sets should not be empty'
-
-    if (type == 'SS' && value[type].some(function(x) { return !x })) // eslint-disable-line no-loop-func
-      return 'One or more parameter values were invalid: An string set may not have a empty string as a member'
-
-    if (type == 'BS' && value[type].some(function(x) { return !x })) // eslint-disable-line no-loop-func
-      return 'One or more parameter values were invalid: Binary sets may not contain null or empty values'
 
     if (type == 'NS') {
       for (i = 0; i < value[type].length; i++) {

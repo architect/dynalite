@@ -113,7 +113,9 @@ exports.custom = function(data) {
 
   for (key in data.ExclusiveStartKey) {
     msg = validations.validateAttributeValue(data.ExclusiveStartKey[key])
-    if (msg) return 'The provided starting key is invalid: ' + msg
+    // For some reason this message is only added to some messages...?
+    var prepend = /contains duplicates|number set|numeric value|significant digits|number with magnitude/.test(msg) ? '' : 'The provided starting key is invalid: '
+    if (msg) return prepend + msg
   }
 
   if (data.KeyConditions == null && data.KeyConditionExpression == null) {
