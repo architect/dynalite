@@ -51,15 +51,15 @@ exports.types = {
     type: 'Integer',
     greaterThanOrEqual: 0,
   },
+  Limit: {
+    type: 'Integer',
+    greaterThanOrEqual: 1,
+  },
   AttributesToGet: {
     type: 'List',
     lengthGreaterThanOrEqual: 1,
     lengthLessThanOrEqual: 255,
     children: 'String',
-  },
-  Limit: {
-    type: 'Integer',
-    greaterThanOrEqual: 1,
   },
   ExclusiveStartKey: {
     type: 'Map<AttributeValue>',
@@ -98,7 +98,9 @@ exports.custom = function(data) {
 
   for (var key in data.ExclusiveStartKey) {
     msg = validations.validateAttributeValue(data.ExclusiveStartKey[key])
-    if (msg) return 'The provided starting key is invalid: ' + msg
+    // For some reason this message is only added to some messages...?
+    var prepend = /contains duplicates|number set|numeric value|significant digits|number with magnitude/.test(msg) ? '' : 'The provided starting key is invalid: '
+    if (msg) return prepend + msg
   }
 
   if (data.Segment && data.TotalSegments == null) {

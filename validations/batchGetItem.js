@@ -56,6 +56,14 @@ exports.custom = function(data) {
     var msg = validations.validateExpressionParams(tableData, ['ProjectionExpression'], ['AttributesToGet'])
     if (msg) return msg
 
+    if (tableData.AttributesToGet) {
+      msg = validations.findDuplicate(tableData.AttributesToGet)
+      if (msg) return 'One or more parameter values were invalid: Duplicate value in attribute name: ' + msg
+    }
+
+    msg = validations.validateExpressions(tableData)
+    if (msg) return msg
+
     var seenKeys = Object.create(null)
     for (var i = 0; i < tableData.Keys.length; i++) {
       var key = tableData.Keys[i]
@@ -75,13 +83,5 @@ exports.custom = function(data) {
       if (numReqs > 100)
         return 'Too many items requested for the BatchGetItem call'
     }
-
-    if (tableData.AttributesToGet) {
-      msg = validations.findDuplicate(tableData.AttributesToGet)
-      if (msg) return 'One or more parameter values were invalid: Duplicate value in attribute name: ' + msg
-    }
-
-    msg = validations.validateExpressions(tableData)
-    if (msg) return msg
   }
 }
