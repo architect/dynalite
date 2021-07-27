@@ -25,6 +25,7 @@ exports.toRangeStr = toRangeStr
 exports.toLexiStr = toLexiStr
 exports.hashPrefix = hashPrefix
 exports.validationError = validationError
+exports.transactionCancelledException = transactionCancelledException
 exports.limitError = limitError
 exports.checkConditional = checkConditional
 exports.itemSize = itemSize
@@ -474,6 +475,16 @@ function limitError(msg) {
   err.body = {
     __type: 'com.amazonaws.dynamodb.v20120810#LimitExceededException',
     message: msg,
+  }
+  return err
+}
+
+function transactionCancelledException(msg) {
+  var err = new Error(msg)
+  err.statusCode = 400
+  err.body = {
+    __type: 'com.amazonaws.dynamodb.v20120810#TransactionCanceledException',
+    message: msg
   }
   return err
 }

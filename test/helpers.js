@@ -25,6 +25,7 @@ exports.batchBulkPut = batchBulkPut
 exports.assertSerialization = assertSerialization
 exports.assertType = assertType
 exports.assertValidation = assertValidation
+exports.assertTransactionCanceled = assertTransactionCanceled
 exports.assertNotFound = assertNotFound
 exports.assertInUse = assertInUse
 exports.assertConditional = assertConditional
@@ -570,6 +571,23 @@ function assertValidation(target, data, msg, done) {
       for (var i = 0; i < msg.length; i++) {
         errors.should.matchAny(msg[i])
       }
+    } else {
+      res.body.message.should.equal(msg)
+    }
+    res.statusCode.should.equal(400)
+    done()
+  })
+}
+
+function assertTransactionCanceled(target, data, msg, done) {
+  request(opts(target, data), function(err, res) {
+    if (err) return done(err)
+    if (typeof res.body !== 'object') {
+      return done(new Error('Not JSON: ' + res.body))
+    }
+    res.body.__type.should.equal('com.amazonaws.dynamodb.v20120810#TransactionCanceledException')
+    if (msg instanceof RegExp) {
+      res.body.message.should.match(msg)
     } else {
       res.body.message.should.equal(msg)
     }

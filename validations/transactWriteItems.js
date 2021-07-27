@@ -17,6 +17,7 @@ exports.types = {
     type: 'List',
     notNull: true,
     lengthGreaterThanOrEqual: 1,
+    lengthLessThanOrEqual: 25,
     children: {
       type: 'ValueStruct<TransactWriteItem>',
       children: {
@@ -73,6 +74,9 @@ exports.types = {
               type: 'Map<AttributeValue>',
               notNull: true,
               children: 'AttrStruct<ValueStruct>',
+            },
+            UpdateExpression: {
+              type: 'String',
             },
           },
         },
@@ -135,4 +139,35 @@ exports.types = {
       },
     },
   },
+}
+
+exports.custom = function(data, store) {
+  var i, request, msg
+  for (i = 0; i < data.TransactItems.length; i++) {
+    request = data.TransactItems[i]
+    if (request.Put) {
+      for (let key in request.Put.Item) {
+        msg = validations.validateAttributeValue(request.Put.Item[key])
+        if (msg) return msg
+      }
+      if (db.itemSize(request.Put.Item) > store.options.maxItemSize)
+        return 'Item size has exceeded the maximum allowed size'
+    } else if (request.Delete) {
+        msg = validations.validateAttributeValue(request.Delete.Key)
+        if (msg) return msg
+    } else if (request.Update) {
+        var msg = validations.validateExpressionParams(request.Update,
+            ['UpdateExpression', 'ConditionExpression'],
+            ['AttributeUpdates', 'Expected'])
+        if (msg) return msg
+        msg = validations.validateAttributeValue(request.Update.Key)
+        if (msg) return msg
+        msg = validations.validateAttributeConditions(request.Update)
+        if (msg) return msg
+        msg = validations.validateExpressions(request.Update)
+        if (msg) return msg
+    } else {
+      return 'The action or operation requested is invalid. Verify that the action is typed correctly.'
+    }
+  }
 }
