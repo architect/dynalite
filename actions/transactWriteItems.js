@@ -7,7 +7,7 @@ module.exports = function transactWriteItem(store, data, cb) {
     var batchOpts = {}
     var releaseLocks = []
 
-    async.eachSeries(data.TransactItems, addActions, function (err, responses) {
+    async.eachSeries(data.TransactItems, addActions, function (err) {
         if (err) {
             if (err.body && (/Missing the key/.test(err.body.message) || /Type mismatch for key/.test(err.body.message)))
                 err.body.message = 'The provided key element does not match the schema'
@@ -25,17 +25,20 @@ module.exports = function transactWriteItem(store, data, cb) {
                 if (err) callback(err)
                 callback(results)
             })
-        }, function(err, results) {
+        }, function(err) {
             async.parallel(releaseLocks)
             if (err) return cb(err)
 
             var res = {UnprocessedItems: {}}, tableUnits = {}
 
             if (~['TOTAL', 'INDEXES'].indexOf(data.ReturnConsumedCapacity)) {
-                responses[1].forEach(function (action) {
-                    var table = action.ConsumedCapacity.TableName
-                    if (!tableUnits[table]) tableUnits[table] = 0
-                    tableUnits[table] += action.ConsumedCapacity.CapacityUnits
+                operationsbyTable.forEach(([table, operations]) => {
+                    tableUnits[table] = 0
+                    operations.forEach(op => {
+                        let readCapacity = db.capacityUnits(op.value, true, true)
+                        let writeCapacity = db.capacityUnits(op.value, false, true)
+                        tableUnits[table] += readCapacity + writeCapacity
+                    })
                 })
                 res.ConsumedCapacity = Object.keys(tableUnits).map(function (table) {
                     return {
@@ -77,7 +80,6 @@ module.exports = function transactWriteItem(store, data, cb) {
                     if (oldItem) {
                         itemDb.lock(key, function(release) {
                             releaseLocks.push(release)
-                            console.dir(release)
                         })
                     }
 
