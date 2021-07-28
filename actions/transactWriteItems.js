@@ -1,110 +1,195 @@
 var async = require('async'),
-    putItem = require('./putItem'),
-    deleteItem = require('./deleteItem'),
-    updateItem = require('./updateItem'),
+    { applyAttributeUpdates, applyUpdateExpression, deepClone } = require('./updateItem'),
     db = require('../db')
 
 module.exports = function transactWriteItem(store, data, cb) {
-    var actions = []
     var seenKeys = {}
+    var batchOpts = {}
+    var releaseLocks = []
 
-    async.series([
-        async.eachSeries.bind(async, data.TransactItems, addActions),
-        async.series.bind(async, actions),
-    ], function (err, responses) {
-        console.log('wake up at 11:30')
-        console.dir(err)
-        console.dir(responses)
-
+    async.eachSeries(data.TransactItems, addActions, function (err, responses) {
         if (err) {
             if (err.body && (/Missing the key/.test(err.body.message) || /Type mismatch for key/.test(err.body.message)))
                 err.body.message = 'The provided key element does not match the schema'
             return cb(err)
         }
-        var res = {UnprocessedItems: {}}, tableUnits = {}
 
-        if (~['TOTAL', 'INDEXES'].indexOf(data.ReturnConsumedCapacity)) {
-            responses[1].forEach(function (action) {
-                var table = action.ConsumedCapacity.TableName
-                if (!tableUnits[table]) tableUnits[table] = 0
-                tableUnits[table] += action.ConsumedCapacity.CapacityUnits
-            })
-            res.ConsumedCapacity = Object.keys(tableUnits).map(function (table) {
-                return {
-                    CapacityUnits: tableUnits[table],
-                    TableName: table,
-                    Table: data.ReturnConsumedCapacity == 'INDEXES' ? {CapacityUnits: tableUnits[table]} : undefined,
-                }
-            })
-        }
+        // this does NOT ensure atomicity across tables - but the items on each table are already locked
+        // and the actions have been validated. at this point the only thing that would fail would be the
+        // database itself, and that's a lot of work to get around so I'm just ¯\_(ツ)_/¯ not gonna do that
+        var operationsbyTable = Object.entries(batchOpts)
 
-        cb(null, res)
+        async.each(operationsbyTable, function([tableName, ops], callback) {
+            var itemDb = store.getItemDb(tableName)
+            itemDb.batch(ops, function(err, results) {
+                if (err) callback(err)
+                callback(results)
+            })
+        }, function(err, results) {
+            async.parallel(releaseLocks)
+            if (err) return cb(err)
+
+            var res = {UnprocessedItems: {}}, tableUnits = {}
+
+            if (~['TOTAL', 'INDEXES'].indexOf(data.ReturnConsumedCapacity)) {
+                responses[1].forEach(function (action) {
+                    var table = action.ConsumedCapacity.TableName
+                    if (!tableUnits[table]) tableUnits[table] = 0
+                    tableUnits[table] += action.ConsumedCapacity.CapacityUnits
+                })
+                res.ConsumedCapacity = Object.keys(tableUnits).map(function (table) {
+                    return {
+                        CapacityUnits: tableUnits[table],
+                        TableName: table,
+                        Table: data.ReturnConsumedCapacity == 'INDEXES' ? {CapacityUnits: tableUnits[table]} : undefined,
+                    }
+                })
+            }
+
+            cb(null, res)
+        })
     })
 
     function addActions(transactItem, cb) {
         var options = {}
         var tableName
-        var key
 
         if (data.ReturnConsumedCapacity) options.ReturnConsumedCapacity = data.ReturnConsumedCapacity
 
         if (transactItem.Put) {
-            tableName = transactItem.Put.TableName;
-            options = {TableName: tableName}
+            tableName = transactItem.Put.TableName
 
             store.getTable(tableName, function (err, table) {
                 if (err) return cb(err)
                 if ((err = db.validateItem(transactItem.Put.Item, table)) != null) return cb(err)
 
-                options.Item = transactItem.Put.Item
-                actions.push(putItem.bind(null, store, options))
-                key = db.createKey(options.Item, table)
-
+                let value = transactItem.Put.Item
+                let key = db.createKey(transactItem.Put.Item, table)
                 if (seenKeys[key]) {
                     return cb(db.transactionCancelledException('Transaction cancelled, please refer cancellation reasons for specific reasons'))
                 }
+
                 seenKeys[key] = true
-                return cb()
+
+                var itemDb = store.getItemDb(tableName)
+
+                itemDb.get(key, function(err, oldItem) {
+                    if (oldItem) {
+                        itemDb.lock(key, function(release) {
+                            releaseLocks.push(release)
+                            console.dir(release)
+                        })
+                    }
+
+                    if (err && err.name != 'NotFoundError') return cb(err)
+
+                    if ((err = db.checkConditional(transactItem.Put, oldItem)) != null) return cb(err)
+
+                    let operation = {
+                        type: 'put',
+                        key,
+                        value
+                    }
+
+                    if (batchOpts[tableName]) {
+                        batchOpts[tableName].push(operation)
+                    } else {
+                        batchOpts[tableName] = [operation]
+                    }
+
+                    return cb()
+                })
             })
         } else if (transactItem.Delete) {
-            tableName = transactItem.Delete.TableName;
-            options = {TableName: tableName}
+            tableName = transactItem.Delete.TableName
 
             store.getTable(tableName, function (err, table) {
                 if (err) return cb(err)
                 if ((err = db.validateKey(transactItem.Delete.Key, table) != null)) return cb(err)
 
-                options.Key = transactItem.Delete.Key
-                actions.push(deleteItem.bind(null, store, options))
-
-                key = db.createKey(options.Key, table)
-
+                let key = db.createKey(transactItem.Delete.Key, table)
                 if (seenKeys[key]) {
                     return cb(db.transactionCancelledException('Transaction cancelled, please refer cancellation reasons for specific reasons'))
                 }
+
                 seenKeys[key] = true
-                return cb()
+
+                var itemDb = store.getItemDb(tableName)
+
+                itemDb.lock(key, function(release) {
+                    releaseLocks.push(release)
+                    itemDb.get(key, function(err, oldItem) {
+                        if (err && err.name != 'NotFoundError') return cb(err)
+
+                        if ((err = db.checkConditional(transactItem.Delete, oldItem)) != null) return cb(err)
+
+                        let operation = {
+                            type: 'del',
+                            key
+                        }
+
+                        if (batchOpts[tableName]) {
+                            batchOpts[tableName].push(operation)
+                        } else {
+                            batchOpts[tableName] = [operation]
+                        }
+                        return cb()
+                    })
+                })
             })
         } else if (transactItem.Update) {
-            tableName = transactItem.Update.TableName;
-            options = transactItem.Update
+            tableName = transactItem.Update.TableName
 
             store.getTable(tableName, function (err, table) {
                 if (err) return cb(err)
-                if ((err = db.validateKey(transactItem.Update.Key, table) != null)) return cb(err)
 
-                options.Key = transactItem.Update.Key
-                actions.push(updateItem.bind(null, store, options))
+                if ((err = db.validateUpdates(transactItem.Update.AttributeUpdates, transactItem.Update._updates, table)) != null) return cb(err)
 
-                key = db.createKey(options.Key, table)
-
+                let key = db.createKey(transactItem.Update.Key, table)
                 if (seenKeys[key]) {
                     return cb(db.transactionCancelledException('Transaction cancelled, please refer cancellation reasons for specific reasons'))
                 }
+
                 seenKeys[key] = true
-                return cb()
+
+                var itemDb = store.getItemDb(tableName)
+
+                itemDb.lock(key, function(release) {
+                    releaseLocks.push(release)
+                    itemDb.get(key, function(err, oldItem) {
+                        if (err && err.name != 'NotFoundError') return cb(err)
+
+                        if ((err = db.checkConditional(transactItem.Update, oldItem)) != null) return cb(err)
+
+                        var item = transactItem.Update.Key
+
+                        if (oldItem) {
+                            item = deepClone(oldItem)
+                        }
+
+                        err = transactItem.Update._updates ? applyUpdateExpression(transactItem.Update._updates.sections, table, item) :
+                            applyAttributeUpdates(transactItem.Update.AttributeUpdates, table, item)
+                        if (err) return cb(err)
+
+                        if (db.itemSize(item) > store.options.maxItemSize)
+                            return cb(db.validationError('Item size to update has exceeded the maximum allowed size'))
+
+                        let operation = {
+                            type: 'put',
+                            key,
+                            value: item
+                        }
+
+                        if (batchOpts[tableName]) {
+                            batchOpts[tableName].push(operation)
+                        } else {
+                            batchOpts[tableName] = [operation]
+                        }
+
+                        return cb()
+                    })
+                })
             })
         }
-
     }
 }

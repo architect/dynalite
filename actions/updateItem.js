@@ -1,7 +1,13 @@
 var Big = require('big.js'),
     db = require('../db')
 
-module.exports = function updateItem(store, data, cb) {
+exports.deepClone = deepClone
+exports.applyAttributeUpdates = applyAttributeUpdates
+exports.applyUpdateExpression = applyUpdateExpression
+exports.resolveValue = resolveValue
+exports.deleteFromParent = deleteFromParent
+exports.addToParent = addToParent
+exports.updateItem = function updateItem(store, data, cb) {
 
   store.getTable(data.TableName, function(err, table) {
     if (err) return cb(err)

@@ -479,7 +479,7 @@ describe('transactWriteItem', function() {
                         // update item
                         if (err) return done(err)
                         res.statusCode.should.equal(200)
-                        res.body.Item.should.equal({})
+                        res.body.should.eql({})
                         request(helpers.opts('GetItem', {TableName: helpers.testHashTable, Key: {a: item2.a}, ConsistentRead: true}), function(err, res) {
                             // put item
                             if (err) return done(err)
