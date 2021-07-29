@@ -166,11 +166,11 @@ module.exports = function transactWriteItem(store, data, cb) {
                         var item = transactItem.Update.Key
 
                         if (oldItem) {
-                            item = deepClone(oldItem)
+                            item = db.deepClone(oldItem)
                         }
 
-                        err = transactItem.Update._updates ? applyUpdateExpression(transactItem.Update._updates.sections, table, item) :
-                            applyAttributeUpdates(transactItem.Update.AttributeUpdates, table, item)
+                        err = transactItem.Update._updates ? db.applyUpdateExpression(transactItem.Update._updates.sections, table, item) :
+                            db.applyAttributeUpdates(transactItem.Update.AttributeUpdates, table, item)
                         if (err) return cb(err)
 
                         if (db.itemSize(item) > store.options.maxItemSize)
