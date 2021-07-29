@@ -194,6 +194,46 @@ describe('transactWriteItem', function() {
             assertTransactionCanceled(transaction, 'Transaction cancelled, please refer cancellation reasons for specific reasons', done)
         })
 
+        it('should return TransactionCanceledException for puts and updates of the same item with put first', function (done) {
+            var transaction = {
+                TransactItems: [{
+                    Put: {
+                        TableName: helpers.testHashTable,
+                        Item: {a: {S: 'aaaaa'}}
+                    }
+                }, {
+                    Update: {
+                        TableName: helpers.testHashTable,
+                        Key: {a: {S: 'aaaaa'}},
+                        UpdateExpression: 'SET b = :b',
+                        ExpressionAttributeValues: {
+                            ':b': {
+                                S: 'b'
+                            }
+                        }
+                    }
+                }]
+            }
+            assertTransactionCanceled(transaction, 'Transaction cancelled, please refer cancellation reasons for specific reasons', done)
+        })
+
+        it('should return ValidationException for item too large', function(done) {
+            var key = {a: {S: helpers.randomString()}}
+            var expressionAttributeValues = {
+                ':b': {S: new Array(helpers.MAX_SIZE).join('a')},
+                ':c': {N: new Array(38 + 1).join('1') + new Array(89).join('0')},
+            }
+            assertValidation({TransactItems: [
+                {Update:
+                        {TableName: helpers.testHashTable,
+                            Key: key,
+                            UpdateExpression: 'SET b = :b, c = :c',
+                            ExpressionAttributeValues: expressionAttributeValues
+                }}]},
+                'Item size to update has exceeded the maximum allowed size',
+                done)
+        })
+
         it('should return ValidationException for key type mismatch in Put Item', function (done) {
             async.forEach([
                 {NULL: true},
@@ -274,7 +314,7 @@ describe('transactWriteItem', function() {
             })
         })
 
-        it('should write multiple items', function(done) {
+        it('should put multiple items', function(done) {
             var item = {
                     a: {S: helpers.randomString()},
                     c: {S: 'c'}},
@@ -296,6 +336,130 @@ describe('transactWriteItem', function() {
                         res.statusCode.should.equal(200)
                         res.body.should.eql({Item: item2})
                         done()
+                    })
+                })
+            })
+        })
+
+        it('should update multiple items', function(done) {
+            var item = {
+                    a: {S: helpers.randomString()},
+                    c: {S: 'c'}},
+                item2 = {
+                    a: {S: helpers.randomString()},
+                    c: {S: 'c'}},
+                transactReq = {TransactItems: []}
+
+            transactReq.TransactItems = [
+                {
+                    Update: {
+                        TableName: helpers.testHashTable,
+                        Key: {
+                            a: item.a
+                        },
+                        UpdateExpression: 'SET c=:d',
+                        ExpressionAttributeValues: {
+                            ':d': {
+                                S: 'd'
+                            }
+                        }
+                    }
+                },
+                {
+                    Update: {
+                        TableName: helpers.testHashTable,
+                        Key: {
+                            a: item2.a
+                        },
+                        UpdateExpression: 'SET c=:d',
+                        ExpressionAttributeValues: {
+                            ':d': {
+                                S: 'd'
+                            }
+                        }
+                    }
+                }
+            ]
+
+            request(helpers.opts('PutItem', {TableName: helpers.testHashTable, Item: item}), function(err, res) {
+                if (err) return done(err)
+                res.statusCode.should.equal(200)
+                request(helpers.opts('PutItem', {TableName: helpers.testHashTable, Item: item2}), function(err, res) {
+                    if (err) return done(err)
+                    res.statusCode.should.equal(200)
+                    request(opts(transactReq), function(err, res) {
+                        if (err) return done(err)
+                        res.statusCode.should.equal(200)
+                        res.body.should.eql({UnprocessedItems: {}})
+                        request(helpers.opts('GetItem', {TableName: helpers.testHashTable, Key: {a: item.a}, ConsistentRead: true}), function(err, res) {
+                            // update item
+                            if (err) return done(err)
+                            res.statusCode.should.equal(200)
+                            res.body.Item.should.eql({...item, c: {S: 'd'}})
+                            request(helpers.opts('GetItem', {TableName: helpers.testHashTable, Key: {a: item2.a}, ConsistentRead: true}), function(err, res) {
+                                // put item
+                                if (err) return done(err)
+                                res.statusCode.should.equal(200)
+                                res.body.Item.should.eql({...item2, c: {S: 'd'}})
+                                done()
+                            })
+                        })
+                    })
+                })
+            })
+        })
+
+        it('should delete multiple items', function(done) {
+            var item = {
+                    a: {S: helpers.randomString()},
+                    c: {S: 'c'}},
+                item2 = {
+                    a: {S: helpers.randomString()},
+                    c: {S: 'c'}},
+                transactReq = {TransactItems: []}
+
+            transactReq.TransactItems = [
+                {
+                    Delete: {
+                        TableName: helpers.testHashTable,
+                        Key: {
+                            a: item.a
+                        }
+                    }
+                },
+                {
+                    Delete: {
+                        TableName: helpers.testHashTable,
+                        Key: {
+                            a: item2.a
+                        }
+                    }
+                }
+            ]
+
+            request(helpers.opts('PutItem', {TableName: helpers.testHashTable, Item: item}), function(err, res) {
+                if (err) return done(err)
+                res.statusCode.should.equal(200)
+                request(helpers.opts('PutItem', {TableName: helpers.testHashTable, Item: item2}), function(err, res) {
+                    if (err) return done(err)
+                    res.statusCode.should.equal(200)
+                    request(opts(transactReq), function(err, res) {
+                        if (err) return done(err)
+                        res.statusCode.should.equal(200)
+                        res.body.should.eql({UnprocessedItems: {}})
+                        request(helpers.opts('GetItem', {TableName: helpers.testHashTable, Key: {a: item.a}, ConsistentRead: true}), function(err, res) {
+                            // update item
+                            if (err) return done(err)
+                            res.statusCode.should.equal(200)
+                            res.body.should.eql({})
+                            request(helpers.opts('GetItem', {TableName: helpers.testHashTable, Key: {a: item2.a}, ConsistentRead: true}), function(err, res) {
+                                // put item
+                                if (err) return done(err)
+                                res.statusCode.should.equal(200)
+                                res.body.should.eql({})
+                                done()
+                            })
+                        })
                     })
                 })
             })

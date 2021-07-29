@@ -1,5 +1,4 @@
 var async = require('async'),
-    { applyAttributeUpdates, applyUpdateExpression, deepClone } = require('./updateItem'),
     db = require('../db')
 
 module.exports = function transactWriteItem(store, data, cb) {
