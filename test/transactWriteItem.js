@@ -1054,6 +1054,64 @@ describe('transactWriteItem', function() {
                 })
             })
         })
+
+        it('should update the same row multiple times', function (done) {
+            var atomicCounter = {
+                a: {
+                    S: 'atomicCounter'
+                },
+                counter: {
+                    N: '1'
+                }
+            }
+
+            var transaction = {
+                TransactItems: [{
+                    Update: {
+                        TableName: helpers.testHashTable,
+                        Key: {
+                            a: atomicCounter.a
+                        },
+                        UpdateExpression: `SET #counter = if_not_exists(#counter, :zero) + :increment`,
+                        ExpressionAttributeNames: {
+                            '#counter': 'counter'
+                        },
+                        ExpressionAttributeValues: {
+                            ':increment': {
+                                N: '1'
+                            },
+                            ':zero': {
+                                N: '0'
+                            }
+                        }
+                    }
+                }
+                ]
+            }
+
+            request(opts(transaction), function(err, res) {
+                if (err) return done(err)
+                res.statusCode.should.equal(200)
+                res.body.should.eql({UnprocessedItems: {}})
+                request(helpers.opts('GetItem', {TableName: helpers.testHashTable, Key: {a: atomicCounter.a}, ConsistentRead: true}), function(err, res) {
+                    if (err) return done(err)
+                    res.statusCode.should.equal(200)
+                    res.body.Item.counter.N.should.eql('1')
+                    request(opts(transaction), function(err, res) {
+                        if (err) return done(err)
+                        res.statusCode.should.equal(200)
+                        res.body.should.eql({UnprocessedItems: {}})
+                        request(helpers.opts('GetItem', {TableName: helpers.testHashTable, Key: {a: atomicCounter.a}, ConsistentRead: true}), function(err, res) {
+                            if (err) return done(err)
+                            res.statusCode.should.equal(200)
+                            res.body.Item.counter.N.should.eql('2')
+                            done()
+                        })
+                    })
+                })
+            })
+        })
+
         })
     })
 })

@@ -25,7 +25,7 @@ module.exports = function transactWriteItem(store, data, cb) {
                 callback(results)
             })
         }, function(err) {
-            async.parallel(releaseLocks)
+            releaseLocks.forEach(release => release()())
             if (err) return cb(err)
 
             var res = {UnprocessedItems: {}}, tableUnits = {}
