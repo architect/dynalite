@@ -108,6 +108,13 @@ describe('transactWriteItem', function() {
                 'Member must not be null', done)
         })
 
+        it('should return ValidationException for invalid ConditionCheck request in TransactItems', function (done) {
+            assertValidation({TransactItems: [{ConditionCheck: {}}]},
+                '1 validation error detected: ' +
+                'Value null at \'transactItems.1.member.conditionCheck.key\' failed to satisfy constraint: ' +
+                'Member must not be null', done)
+        })
+
         it('should return ValidationException for invalid metadata and missing requests', function (done) {
             assertValidation({TransactItems: [], ReturnConsumedCapacity: 'hi', ReturnItemCollectionMetrics: 'hi'}, [
                 'Value \'hi\' at \'returnConsumedCapacity\' failed to satisfy constraint: ' +
@@ -211,6 +218,24 @@ describe('transactWriteItem', function() {
                                 S: 'b'
                             }
                         }
+                    }
+                }]
+            }
+            assertTransactionCanceled(transaction, 'Transaction cancelled, please refer cancellation reasons for specific reasons', done)
+        })
+
+        it('should return TransactionCanceledException for puts and condition checks of the same item with put first', function (done) {
+            var transaction = {
+                TransactItems: [{
+                    Put: {
+                        TableName: helpers.testHashTable,
+                        Item: {a: {S: 'aaaaa'}}
+                    }
+                }, {
+                    ConditionCheck: {
+                        TableName: helpers.testHashTable,
+                        Key: {a: {S: 'aaaaa'}},
+                        ConditionExpression: 'attribute_exists(a)'
                     }
                 }]
             }
@@ -656,6 +681,173 @@ describe('transactWriteItem', function() {
             })
         })
 
+        it('should fail to write with failed ConditionCheck in one transaction', function(done) {
+            var item = {
+                    a: {S: helpers.randomString()},
+                    c: {S: 'c'}},
+                item2 = {
+                    a: {S: helpers.randomString()},
+                    c: {S: 'c'}},
+                transactReq = {TransactItems: []}
+
+            transactReq.TransactItems = [
+                {
+                    Put: {
+                        TableName: helpers.testHashTable,
+                        Item: item
+                    }
+                },
+                {
+                    ConditionCheck: {
+                        TableName: helpers.testHashTable,
+                        Key: {
+                            a: item2.a
+                        },
+                        ConditionExpression: 'attribute_not_exists(c)'
+                    }
+                }
+            ]
+
+            request(helpers.opts('PutItem', {TableName: helpers.testHashTable, Item: item2}), function(err, res) {
+                if (err) return done(err)
+                res.statusCode.should.equal(200)
+                request(opts(transactReq), function(err, res) {
+                    if (err) return done(err)
+                    res.statusCode.should.equal(400)
+                    res.body.message.should.equal('The conditional request failed')
+                    request(helpers.opts('GetItem', {TableName: helpers.testHashTable, Key: {a: item.a}, ConsistentRead: true}), function(err, res) {
+                        if (err) return done(err)
+                        res.statusCode.should.equal(200)
+                        res.body.should.eql({})
+                        done()
+                    })
+                })
+            })
+        })
+
+        it('should succeed to write with ConditionCheck in one transaction', function(done) {
+            var item = {
+                    a: {S: helpers.randomString()},
+                    c: {S: 'c'}},
+                item2 = {
+                    a: {S: helpers.randomString()},
+                    c: {S: 'c'}},
+                transactReq = {TransactItems: []}
+
+            transactReq.TransactItems = [
+                {
+                    Put: {
+                        TableName: helpers.testHashTable,
+                        Item: item
+                    }
+                },
+                {
+                    ConditionCheck: {
+                        TableName: helpers.testHashTable,
+                        Key: {
+                            a: item2.a
+                        },
+                        ConditionExpression: 'attribute_not_exists(c)'
+                    }
+                }
+            ]
+
+            request(helpers.opts('PutItem', {TableName: helpers.testHashTable, Item: item2}), function(err, res) {
+                if (err) return done(err)
+                res.statusCode.should.equal(200)
+                request(opts(transactReq), function(err, res) {
+                    if (err) return done(err)
+                    res.statusCode.should.equal(400)
+                    res.body.message.should.equal('The conditional request failed')
+                    request(helpers.opts('GetItem', {TableName: helpers.testHashTable, Key: {a: item.a}, ConsistentRead: true}), function(err, res) {
+                        if (err) return done(err)
+                        res.statusCode.should.equal(200)
+                        res.body.should.eql({})
+                        done()
+                    })
+                })
+            })
+        })
+
+        it('should succeed to write in table A with succeeded ConditionCheck in table B in one transaction', function(done) {
+            var item = {
+                    a: {S: helpers.randomString()},
+                    c: {S: 'c'}},
+                item2 = {a: {S: helpers.randomString()}, b: {S: helpers.randomString()}, g: {N: '23'}},
+                transactReq = {TransactItems: []}
+
+            transactReq.TransactItems = [
+                {
+                    Put: {
+                        TableName: helpers.testHashTable,
+                        Item: item
+                    }
+                },
+                {
+                    ConditionCheck: {
+                        TableName: helpers.testRangeTable,
+                        Key: {a: item2.a, b: item2.b},
+                        ConditionExpression: 'attribute_not_exists(c)'
+                    }
+                }
+            ]
+
+            request(helpers.opts('PutItem', {TableName: helpers.testRangeTable, Item: item2}), function(err, res) {
+                if (err) return done(err)
+                res.statusCode.should.equal(200)
+                request(opts(transactReq), function(err, res) {
+                    if (err) return done(err)
+                    res.statusCode.should.equal(200)
+                    request(helpers.opts('GetItem', {TableName: helpers.testHashTable, Key: {a: item.a}, ConsistentRead: true}), function(err, res) {
+                        if (err) return done(err)
+                        res.statusCode.should.equal(200)
+                        res.body.Item.should.eql(item)
+                        done()
+                    })
+                })
+            })
+        })
+
+        it('should fail to write in table A with failed ConditionCheck in table B in one transaction', function(done) {
+            var item = {
+                    a: {S: helpers.randomString()},
+                    c: {S: 'c'}},
+                item2 = {a: {S: helpers.randomString()}, b: {S: helpers.randomString()}, g: {N: '23'}},
+                transactReq = {TransactItems: []}
+
+            transactReq.TransactItems = [
+                {
+                    Put: {
+                        TableName: helpers.testHashTable,
+                        Item: item
+                    }
+                },
+                {
+                    ConditionCheck: {
+                        TableName: helpers.testRangeTable,
+                        Key: {a: item2.a, b: item2.b},
+                        ConditionExpression: 'attribute_not_exists(g)'
+                    }
+                }
+            ]
+
+            request(helpers.opts('PutItem', {TableName: helpers.testRangeTable, Item: item2}), function(err, res) {
+                if (err) return done(err)
+                res.statusCode.should.equal(200)
+                request(opts(transactReq), function(err, res) {
+                    if (err) return done(err)
+                    res.statusCode.should.equal(400)
+                    res.body.message.should.equal('The conditional request failed')
+                    request(helpers.opts('GetItem', {TableName: helpers.testHashTable, Key: {a: item.a}, ConsistentRead: true}), function(err, res) {
+                        if (err) return done(err)
+                        res.statusCode.should.equal(200)
+                        res.body.should.eql({})
+                        done()
+                    })
+                })
+            })
+        })
+
         it('should write to two different tables', function(done) {
             var hashItem = {a: {S: helpers.randomString()}, c: {S: 'c'}},
                 rangeItem = {a: {S: helpers.randomString()}, b: {S: helpers.randomString()}, g: {N: '23'}}
@@ -757,6 +949,106 @@ describe('transactWriteItem', function() {
                             res.body.ConsumedCapacity.should.containEql({CapacityUnits: 5, Table: {CapacityUnits: 5}, TableName: helpers.testHashTable})
                             res.body.ConsumedCapacity.should.containEql({CapacityUnits: 2, Table: {CapacityUnits: 2}, TableName: helpers.testHashNTable})
                             done()
+                        })
+                    })
+                })
+            })
+        })
+
+        it('should complete successfully with updates and atomic counter decrement', function (done) {
+            var atomicCounter = {
+                a: {
+                    S: 'atomicCounter'
+                },
+                counter: {
+                    N: '1'
+                }
+            }
+
+            var item = {
+                a: {
+                    S: 'item'
+                },
+                b: {
+                    M: {
+                        'one': {
+                            S: 'itemname',
+                        },
+                        'two': {
+                            N: '123456'
+                        }
+                    }
+                }
+            }
+
+            var transaction = {
+                TransactItems: [{
+                    Update: {
+                        TableName: helpers.testHashTable,
+                        Key: {
+                            a: atomicCounter.a
+                        },
+                        UpdateExpression: `SET #counter = if_not_exists(#counter, :zero) + :increment`,
+                        ExpressionAttributeNames: {
+                            '#counter': 'counter'
+                        },
+                        ExpressionAttributeValues: {
+                            ':increment': {
+                                N: '-1'
+                        },
+                            ':zero': {
+                                N: '0'
+                            }
+                        }
+                    }
+                },
+                    {
+                    Update: {
+                        TableName: helpers.testHashTable,
+                        Key: {a: item.a},
+                        UpdateExpression: 'SET b = :b',
+                        ExpressionAttributeValues: {
+                            ':b': {
+                                M: {
+                                    'one': {
+                                        S: 'itemname',
+                                    },
+                                    'two': {
+                                        N: '654321'
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                ]
+            }
+
+            request(helpers.opts('PutItem', {TableName: helpers.testHashTable, Item: atomicCounter}), function(err, res) {
+                if (err) return done(err)
+                res.statusCode.should.eql(200)
+                request(helpers.opts('PutItem', {TableName: helpers.testHashTable, Item: item}), function(err, res) {
+                    if (err) return done(err)
+                    res.statusCode.should.equal(200)
+                    request(opts(transaction), function(err, res) {
+                        if (err) return done(err)
+                        res.statusCode.should.equal(200)
+                        res.body.should.eql({UnprocessedItems: {}})
+                        request(helpers.opts('GetItem', {TableName: helpers.testHashTable, Key: {a: item.a}, ConsistentRead: true}), function(err, res) {
+                            if (err) return done(err)
+                            res.statusCode.should.equal(200)
+                            res.body.Item.b.M.should.eql({'one': {
+                                    S: 'itemname',
+                                },
+                                'two': {
+                                    N: '654321'
+                                }})
+                            request(helpers.opts('GetItem', {TableName: helpers.testHashTable, Key: {a: atomicCounter.a}, ConsistentRead: true}), function(err, res) {
+                                if (err) return done(err)
+                                res.statusCode.should.equal(200)
+                                res.body.Item.counter.should.eql({N: '0'})
+                                done()
+                            })
                         })
                     })
                 })

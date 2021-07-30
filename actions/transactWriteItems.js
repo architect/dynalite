@@ -191,6 +191,32 @@ module.exports = function transactWriteItem(store, data, cb) {
                     })
                 })
             })
+        } else if (transactItem.ConditionCheck) {
+            tableName = transactItem.ConditionCheck.TableName
+
+            store.getTable(tableName, function (err, table) {
+                if (err) return cb(err)
+
+                let key = db.createKey(transactItem.ConditionCheck.Key, table)
+                if (seenKeys[key]) {
+                    return cb(db.transactionCancelledException('Transaction cancelled, please refer cancellation reasons for specific reasons'))
+                }
+
+                seenKeys[key] = true
+
+                var itemDb = store.getItemDb(tableName)
+
+                itemDb.lock(key, function(release) {
+                    releaseLocks.push(release)
+                    itemDb.get(key, function(err, oldItem) {
+                        if (err && err.name != 'NotFoundError') return cb(err)
+
+                        if ((err = db.checkConditional(transactItem.ConditionCheck, oldItem)) != null) return cb(err)
+
+                        return cb()
+                    })
+                })
+            })
         }
     }
 }
