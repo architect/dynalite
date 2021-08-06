@@ -169,7 +169,6 @@ module.exports = function transactWriteItem(store, data, cb) {
                 if ((err = db.validateUpdates(transactItem.Update.AttributeUpdates, transactItem.Update._updates, table)) != null) return cb(err)
 
                 let key = db.createKey(transactItem.Update.Key, table)
-                console.log(key)
                 if (seenKeys[key]) {
                     return cb(db.transactionCancelledException('Transaction cancelled, please refer cancellation reasons for specific reasons'))
                 }
@@ -186,11 +185,9 @@ module.exports = function transactWriteItem(store, data, cb) {
                         if ((err = db.checkConditional(transactItem.Update, oldItem)) != null) return cb(err)
 
                         var item = transactItem.Update.Key
-                        console.log('old item', oldItem)
 
                         if (oldItem) {
                             item = db.deepClone(oldItem)
-                            console.log('did deep clone')
                         }
 
                         err = transactItem.Update._updates ? db.applyUpdateExpression(transactItem.Update._updates.sections, table, item) :
