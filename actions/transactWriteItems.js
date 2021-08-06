@@ -5,6 +5,7 @@ module.exports = function transactWriteItem(store, data, cb) {
     var seenKeys = {}
     var batchOpts = {}
     var releaseLocks = []
+    var indexUpdates = {}
 
     async.eachSeries(data.TransactItems, addActions, function (err) {
         if (err) {
@@ -20,9 +21,17 @@ module.exports = function transactWriteItem(store, data, cb) {
 
         async.each(operationsbyTable, function([tableName, ops], callback) {
             var itemDb = store.getItemDb(tableName)
-            itemDb.batch(ops, function(err, results) {
-                if (err) callback(err)
-                callback(results)
+
+            store.getTable(tableName, function(err, table) {
+                indexUpdates[tableName].forEach(update => {
+                    db.updateIndexes(store, table, update.existingItem, update.item, function(err) {
+                        if (err) return callback(err)
+                    })
+                })
+                itemDb.batch(ops, function(err, results) {
+                    if (err) callback(err)
+                    callback(results)
+                })
             })
         }, function(err) {
             releaseLocks.forEach(release => release()())
@@ -92,10 +101,17 @@ module.exports = function transactWriteItem(store, data, cb) {
                         value
                     }
 
+                    let indexUpdate = {
+                        existingItem: oldItem,
+                        item: value
+                    }
+
                     if (batchOpts[tableName]) {
                         batchOpts[tableName].push(operation)
+                        indexUpdates[tableName].push(indexUpdate)
                     } else {
                         batchOpts[tableName] = [operation]
+                        indexUpdates[tableName] = [indexUpdate]
                     }
 
                     return cb()
@@ -129,10 +145,16 @@ module.exports = function transactWriteItem(store, data, cb) {
                             key
                         }
 
+                        let indexUpdate = {
+                            existingItem: oldItem
+                        }
+
                         if (batchOpts[tableName]) {
                             batchOpts[tableName].push(operation)
+                            indexUpdates[tableName].push(indexUpdate)
                         } else {
                             batchOpts[tableName] = [operation]
+                            indexUpdates[tableName] = [indexUpdate]
                         }
                         return cb()
                     })
@@ -147,6 +169,7 @@ module.exports = function transactWriteItem(store, data, cb) {
                 if ((err = db.validateUpdates(transactItem.Update.AttributeUpdates, transactItem.Update._updates, table)) != null) return cb(err)
 
                 let key = db.createKey(transactItem.Update.Key, table)
+                console.log(key)
                 if (seenKeys[key]) {
                     return cb(db.transactionCancelledException('Transaction cancelled, please refer cancellation reasons for specific reasons'))
                 }
@@ -163,9 +186,11 @@ module.exports = function transactWriteItem(store, data, cb) {
                         if ((err = db.checkConditional(transactItem.Update, oldItem)) != null) return cb(err)
 
                         var item = transactItem.Update.Key
+                        console.log('old item', oldItem)
 
                         if (oldItem) {
                             item = db.deepClone(oldItem)
+                            console.log('did deep clone')
                         }
 
                         err = transactItem.Update._updates ? db.applyUpdateExpression(transactItem.Update._updates.sections, table, item) :
@@ -181,10 +206,17 @@ module.exports = function transactWriteItem(store, data, cb) {
                             value: item
                         }
 
+                        let indexUpdate = {
+                            existingItem: oldItem,
+                            item: item
+                        }
+
                         if (batchOpts[tableName]) {
                             batchOpts[tableName].push(operation)
+                            indexUpdates[tableName].push(indexUpdate)
                         } else {
                             batchOpts[tableName] = [operation]
+                            indexUpdates[tableName] = [indexUpdate]
                         }
 
                         return cb()

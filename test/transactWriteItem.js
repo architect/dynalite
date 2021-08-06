@@ -1112,6 +1112,135 @@ describe('transactWriteItem', function() {
             })
         })
 
+        it('should update the index', function (done) {
+            var key = {a: {S: helpers.randomString()}, b: {S: helpers.randomString()}}
+            var transaction = {
+                TransactItems: [{
+                    Update: {
+                        TableName: helpers.testRangeTable,
+                        Key: key,
+                        UpdateExpression: 'set c = a, d = b, e = a, f = b'
+                    }
+                }
+                ]
+            }
+            request(opts(transaction), function(err, res) {
+                if (err) return done(err)
+                res.statusCode.should.equal(200)
+                request(helpers.opts('Query', {
+                    TableName: helpers.testRangeTable,
+                    ConsistentRead: true,
+                    IndexName: 'index1',
+                    KeyConditions: {
+                        a: {ComparisonOperator: 'EQ', AttributeValueList: [key.a]},
+                        c: {ComparisonOperator: 'EQ', AttributeValueList: [key.a]},
+                    },
+                }), function(err, res) {
+                    if (err) return done(err)
+                    res.statusCode.should.equal(200)
+                    res.body.Items.should.eql([{a: key.a, b: key.b, c: key.a, d: key.b, e: key.a, f: key.b}])
+                    request(helpers.opts('Query', {
+                        TableName: helpers.testRangeTable,
+                        ConsistentRead: true,
+                        IndexName: 'index2',
+                        KeyConditions: {
+                            a: {ComparisonOperator: 'EQ', AttributeValueList: [key.a]},
+                            d: {ComparisonOperator: 'EQ', AttributeValueList: [key.b]},
+                        },
+                    }), function(err, res) {
+                        if (err) return done(err)
+                        res.statusCode.should.equal(200)
+                        res.body.Items.should.eql([{a: key.a, b: key.b, c: key.a, d: key.b}])
+                        transaction.TransactItems[0].Update = {
+                            TableName: helpers.testRangeTable,
+                            Key: key,
+                            UpdateExpression: 'set c = b, d = a, e = b, f = a',
+                        }
+                        request(opts(transaction), function(err, res) {
+                            if (err) return done(err)
+                            res.statusCode.should.equal(200)
+                            request(helpers.opts('Query', {
+                                TableName: helpers.testRangeTable,
+                                ConsistentRead: true,
+                                IndexName: 'index1',
+                                KeyConditions: {
+                                    a: {ComparisonOperator: 'EQ', AttributeValueList: [key.a]},
+                                    c: {ComparisonOperator: 'EQ', AttributeValueList: [key.a]},
+                                },
+                            }), function(err, res) {
+                                if (err) return done(err)
+                                res.statusCode.should.equal(200)
+                                res.body.Items.should.eql([])
+                                request(helpers.opts('Query', {
+                                    TableName: helpers.testRangeTable,
+                                    ConsistentRead: true,
+                                    IndexName: 'index2',
+                                    KeyConditions: {
+                                        a: {ComparisonOperator: 'EQ', AttributeValueList: [key.a]},
+                                        d: {ComparisonOperator: 'EQ', AttributeValueList: [key.b]},
+                                    },
+                                }), function(err, res) {
+                                    if (err) return done(err)
+                                    res.statusCode.should.equal(200)
+                                    res.body.Items.should.eql([])
+                                    request(helpers.opts('Query', {
+                                        TableName: helpers.testRangeTable,
+                                        ConsistentRead: true,
+                                        IndexName: 'index1',
+                                        KeyConditions: {
+                                            a: {ComparisonOperator: 'EQ', AttributeValueList: [key.a]},
+                                            c: {ComparisonOperator: 'EQ', AttributeValueList: [key.b]},
+                                        },
+                                    }), function(err, res) {
+                                        if (err) return done(err)
+                                        res.statusCode.should.equal(200)
+                                        res.body.Items.should.eql([{a: key.a, b: key.b, c: key.b, d: key.a, e: key.b, f: key.a}])
+                                        request(helpers.opts('Query', {
+                                            TableName: helpers.testRangeTable,
+                                            ConsistentRead: true,
+                                            IndexName: 'index2',
+                                            KeyConditions: {
+                                                a: {ComparisonOperator: 'EQ', AttributeValueList: [key.a]},
+                                                d: {ComparisonOperator: 'EQ', AttributeValueList: [key.a]},
+                                            },
+                                        }), function(err, res) {
+                                            if (err) return done(err)
+                                            res.statusCode.should.equal(200)
+                                            res.body.Items.should.eql([{a: key.a, b: key.b, c: key.b, d: key.a}])
+                                            request(helpers.opts('Query', {
+                                                TableName: helpers.testRangeTable,
+                                                IndexName: 'index3',
+                                                KeyConditions: {
+                                                    c: {ComparisonOperator: 'EQ', AttributeValueList: [key.b]},
+                                                },
+                                            }), function(err, res) {
+                                                if (err) return done(err)
+                                                res.statusCode.should.equal(200)
+                                                res.body.Items.should.eql([{a: key.a, b: key.b, c: key.b, d: key.a, e: key.b, f: key.a}])
+                                                request(helpers.opts('Query', {
+                                                    TableName: helpers.testRangeTable,
+                                                    IndexName: 'index4',
+                                                    KeyConditions: {
+                                                        c: {ComparisonOperator: 'EQ', AttributeValueList: [key.b]},
+                                                        d: {ComparisonOperator: 'EQ', AttributeValueList: [key.a]},
+                                                    },
+                                                }), function(err, res) {
+                                                    if (err) return done(err)
+                                                    res.statusCode.should.equal(200)
+                                                    res.body.Items.should.eql([{a: key.a, b: key.b, c: key.b, d: key.a, e: key.b}])
+                                                    done()
+                                                })
+                                            })
+                                        })
+                                    })
+                                })
+                            })
+                        })
+                    })
+                })
+            })
+        })
+
         })
     })
 })
