@@ -128,6 +128,38 @@ function create (options) {
     })
   }
 
+  var timerIdTtlScanner = setInterval(function() {
+    var currentUnixSeconds = Math.round(Date.now() / 1000)
+    function logError(err, result) {
+      if (err) console.error("@@@", err)
+    }
+    lazyStream(tableDb.createKeyStream({}), logError)
+        .join(function(tableNames) {
+          tableNames.forEach(function(name) {
+            getTable(name, false, function(err, table) {
+              if (err) return
+              if (!table.TimeToLiveDescription || table.TimeToLiveDescription.TimeToLiveStatus !== 'ENABLED') return
+
+              var itemDb = getItemDb(table.TableName)
+              var kvStream = lazyStream(itemDb.createReadStream({}), logError())
+              kvStream = kvStream.filter(function(item){
+                var ttl = item.value[table.TimeToLiveDescription.AttributeName]
+                return ttl && typeof ttl.N === 'string' && currentUnixSeconds > Number(ttl.N)
+              })
+              kvStream.join(function(items){
+                items.forEach(function(item) {
+                  itemDb.del(item.key)
+                })
+              })
+            })
+          })
+        })
+  }, 1000)
+
+  function stopBackgroundJobs() {
+    clearInterval(timerIdTtlScanner)
+  }
+
   return {
     options: options,
     db: db,
@@ -140,6 +172,7 @@ function create (options) {
     deleteTagDb: deleteTagDb,
     getTable: getTable,
     recreate: recreate,
+    stopBackgroundJobs: stopBackgroundJobs,
   }
 }
 
