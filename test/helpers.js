@@ -50,8 +50,12 @@ var port = 10000 + Math.round(Math.random() * 10000),
   requestOpts = useRemoteDynamo ?
     { host: 'dynamodb.' + exports.awsRegion + '.amazonaws.com', method: 'POST' } :
     { host: '127.0.0.1', port: port, method: 'POST' }
+var ttlCheckEvery = 1
 
-var dynaliteServer = dynalite({ path: process.env.DYNALITE_PATH })
+var dynaliteServer = dynalite({
+  path: process.env.DYNALITE_PATH,
+  ttlCheckEvery: ttlCheckEvery,
+})
 
 var CREATE_REMOTE_TABLES = true
 var DELETE_REMOTE_TABLES = true

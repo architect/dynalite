@@ -46,6 +46,7 @@ function create (options) {
   if (options.deleteTableMs == null) options.deleteTableMs = 500
   if (options.updateTableMs == null) options.updateTableMs = 500
   if (options.maxItemSizeKb == null) options.maxItemSizeKb = exports.MAX_SIZE / 1024
+  if (options.ttlCheckEvery == null) options.ttlCheckEvery = 60
   options.maxItemSize = options.maxItemSizeKb * 1024
 
   // eslint-disable-next-line
@@ -129,48 +130,55 @@ function create (options) {
     })
   }
 
-  var timerIdTtlScanner = setInterval(function() {
-    var currentUnixSeconds = Math.round(Date.now() / 1000)
-    function logError(err, result) {
-      if (err) console.error("@@@", err)
-    }
-    lazyStream(tableDb.createKeyStream({}), logError)
-        .join(function(tableNames) {
-          tableNames.forEach(function(name) {
-            getTable(name, false, function(err, table) {
-              if (err) return
-              if (!table.TimeToLiveDescription || table.TimeToLiveDescription.TimeToLiveStatus !== 'ENABLED') return
+  var timerIdTtlScanner = null
+  if (typeof options.ttlCheckEvery === 'number'  && options.ttlCheckEvery > 0) {
+    var ttlScannerInterval = options.ttlCheckEvery * 1000
 
-              var keyAttrNames = table.KeySchema.map(function(i) {
-                return i.AttributeName
-              })
-              var source = {
-                getItemDb: getItemDb,
-                getIndexDb: getIndexDb,
-              }
-              var itemDb = getItemDb(table.TableName)
-              var kvStream = lazyStream(itemDb.createReadStream({}), logError())
-              kvStream = kvStream.filter(function(item){
-                var ttl = item.value[table.TimeToLiveDescription.AttributeName]
-                return ttl && typeof ttl.N === 'string' && currentUnixSeconds > Number(ttl.N)
-              })
-              kvStream.join(function(kvs){
-                kvs.forEach(function(kv) {
-                  var itemKey = keyAttrNames.reduce(function(key, attrName) {
-                    key[attrName] = kv.value[attrName]
-                    return key
-                  }, {})
-                  var data = { TableName: name, Key: itemKey}
-                  var cb = function(err) {
-                    // Noop ?
-                  }
-                  deleteItem(source, data, table, itemDb, kv.key, cb)
+    timerIdTtlScanner = setInterval(function () {
+      var currentUnixSeconds = Math.round(Date.now() / 1000)
+
+      function logError(err, result) {
+        if (err) console.error("@@@", err)
+      }
+
+      lazyStream(tableDb.createKeyStream({}), logError)
+          .join(function (tableNames) {
+            tableNames.forEach(function (name) {
+              getTable(name, false, function (err, table) {
+                if (err) return
+                if (!table.TimeToLiveDescription || table.TimeToLiveDescription.TimeToLiveStatus !== 'ENABLED') return
+
+                var keyAttrNames = table.KeySchema.map(function (i) {
+                  return i.AttributeName
+                })
+                var source = {
+                  getItemDb: getItemDb,
+                  getIndexDb: getIndexDb,
+                }
+                var itemDb = getItemDb(table.TableName)
+                var kvStream = lazyStream(itemDb.createReadStream({}), logError())
+                kvStream = kvStream.filter(function (item) {
+                  var ttl = item.value[table.TimeToLiveDescription.AttributeName]
+                  return ttl && typeof ttl.N === 'string' && currentUnixSeconds > Number(ttl.N)
+                })
+                kvStream.join(function (kvs) {
+                  kvs.forEach(function (kv) {
+                    var itemKey = keyAttrNames.reduce(function (key, attrName) {
+                      key[attrName] = kv.value[attrName]
+                      return key
+                    }, {})
+                    var data = {TableName: name, Key: itemKey}
+                    var cb = function (err) {
+                      // Noop ?
+                    }
+                    deleteItem(source, data, table, itemDb, kv.key, cb)
+                  })
                 })
               })
             })
           })
-        })
-  }, 1000)
+    }, ttlScannerInterval)
+  }
 
   function stopBackgroundJobs() {
     clearInterval(timerIdTtlScanner)
