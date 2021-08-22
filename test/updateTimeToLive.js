@@ -166,49 +166,69 @@ describe('updateTimeToLive', function() {
         res.statusCode.should.equal(200)
         res.body.should.eql({TimeToLiveSpecification: {AttributeName: "TTL", Enabled: true}})
 
-        var timestampOneSecondLater = Math.round(Date.now() / 1000) + 1;
-        var item = {
-          a: {S: helpers.randomString()},
+        var timestampNow = Math.round(Date.now() / 1000);
+        var sharedPk = helpers.randomString()
+        var sharedGsiPk = helpers.randomString()
+        var expiredItem = {
+          a: {S: sharedPk},
           b: {S: helpers.randomString()},
-          c: {S: helpers.randomString()},
+          c: {S: sharedGsiPk},
           d: {S: helpers.randomString()},
-          TTL: {N: timestampOneSecondLater.toString()},
+          TTL: {N: (timestampNow + 1).toString()},
         }
-
-        request(helpers.opts('PutItem', {TableName: helpers.testRangeTable, Item: item}), function(err, res) {
+        var livingItem = {
+          a: {S: sharedPk},
+          b: {S: helpers.randomString()},
+          c: {S: sharedGsiPk},
+          d: {S: helpers.randomString()},
+          TTL: {N: (timestampNow + 1000000).toString()},
+        }
+        var batchWriteItemInput = {
+          RequestItems: {},
+        }
+        batchWriteItemInput.RequestItems[helpers.testRangeTable] = [
+          { PutRequest: { Item: expiredItem }},
+          { PutRequest: { Item: livingItem  }},
+        ]
+        request(helpers.opts('BatchWriteItem', batchWriteItemInput), function(err, res) {
           if (err) return done(err)
           res.statusCode.should.equal(200)
 
           setTimeout(function(){
-            request(helpers.opts('GetItem', {TableName: helpers.testRangeTable, Key: { a: item.a, b: item.b }}), function(err, res) {
+            request(helpers.opts('Query', {
+              TableName: helpers.testRangeTable,
+              KeyConditionExpression: "a = :a",
+              ExpressionAttributeValues: {
+                ":a": expiredItem.a,
+              },
+            }), function(err, res) {
               if (err) return done(err)
               res.statusCode.should.equal(200)
-              res.body.should.eql({}, 'Item should be deleted from table')
+              res.body.Items.should.eql([livingItem], 'Expired item should be deleted from table')
 
               request(helpers.opts('Query', {
                 TableName: helpers.testRangeTable,
                 IndexName: 'index1',
-                KeyConditionExpression: "a = :a AND c = :c",
+                KeyConditionExpression: "a = :a",
                 ExpressionAttributeValues: {
-                  ":a": item.a,
-                  ":c": item.c,
+                  ":a": expiredItem.a,
                 },
               }), function(err, res) {
                 if (err) return done(err)
                 res.statusCode.should.equal(200)
-                res.body.Items.should.eql([], "Item should be deleted from LSI")
+                res.body.Items.should.eql([livingItem], "Expired Item should be deleted from LSI")
 
                 request(helpers.opts('Query', {
                   TableName: helpers.testRangeTable,
                   IndexName: 'index3',
                   KeyConditionExpression: "c = :c",
                   ExpressionAttributeValues: {
-                    ":c": item.c,
+                    ":c": expiredItem.c,
                   },
                 }), function(err, res) {
                   if (err) return done(err)
                   res.statusCode.should.equal(200)
-                  res.body.Items.should.eql([], "Item should be deleted from GSI")
+                  res.body.Items.should.eql([livingItem], "Expired Item should be deleted from GSI")
 
                   // teardown
                   request(opts({
