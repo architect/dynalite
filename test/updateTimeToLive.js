@@ -160,8 +160,8 @@ describe('updateTimeToLive', function() {
       })
     })
 
-    it('should delete the expired items when TTL is enabled', function(done) {
-      request(opts({TableName: helpers.testHashTable, TimeToLiveSpecification: {AttributeName: "TTL", Enabled: true}}), function(err, res) {
+    it('should delete the expired items from Tables and Indices when TTL is enabled', function(done) {
+      request(opts({TableName: helpers.testRangeTable, TimeToLiveSpecification: {AttributeName: "TTL", Enabled: true}}), function(err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
         res.body.should.eql({TimeToLiveSpecification: {AttributeName: "TTL", Enabled: true}})
@@ -169,25 +169,57 @@ describe('updateTimeToLive', function() {
         var timestampOneSecondLater = Math.round(Date.now() / 1000) + 1;
         var item = {
           a: {S: helpers.randomString()},
+          b: {S: helpers.randomString()},
+          c: {S: helpers.randomString()},
+          d: {S: helpers.randomString()},
           TTL: {N: timestampOneSecondLater.toString()},
         }
 
-        request(helpers.opts('PutItem', {TableName: helpers.testHashTable, Item: item}), function(err, res) {
+        request(helpers.opts('PutItem', {TableName: helpers.testRangeTable, Item: item}), function(err, res) {
           if (err) return done(err)
           res.statusCode.should.equal(200)
 
           setTimeout(function(){
-            request(helpers.opts('GetItem', {TableName: helpers.testHashTable, Key: { a: item.a }}), function(err, res) {
+            request(helpers.opts('GetItem', {TableName: helpers.testRangeTable, Key: { a: item.a, b: item.b }}), function(err, res) {
               if (err) return done(err)
               res.statusCode.should.equal(200)
-              // Item should be deleted
-              res.body.should.eql({})
+              res.body.should.eql({}, 'Item should be deleted from table')
 
-              // teardown
-              request(opts({TableName: helpers.testHashTable, TimeToLiveSpecification: {AttributeName: "TTL", Enabled: false}}), function(err, res) {
+              request(helpers.opts('Query', {
+                TableName: helpers.testRangeTable,
+                IndexName: 'index1',
+                KeyConditionExpression: "a = :a AND c = :c",
+                ExpressionAttributeValues: {
+                  ":a": item.a,
+                  ":c": item.c,
+                },
+              }), function(err, res) {
                 if (err) return done(err)
                 res.statusCode.should.equal(200)
-                done()
+                res.body.Items.should.eql([], "Item should be deleted from LSI")
+
+                request(helpers.opts('Query', {
+                  TableName: helpers.testRangeTable,
+                  IndexName: 'index3',
+                  KeyConditionExpression: "c = :c",
+                  ExpressionAttributeValues: {
+                    ":c": item.c,
+                  },
+                }), function(err, res) {
+                  if (err) return done(err)
+                  res.statusCode.should.equal(200)
+                  res.body.Items.should.eql([], "Item should be deleted from GSI")
+
+                  // teardown
+                  request(opts({
+                    TableName: helpers.testRangeTable,
+                    TimeToLiveSpecification: {AttributeName: "TTL", Enabled: false}
+                  }), function (err, res) {
+                    if (err) return done(err)
+                    res.statusCode.should.equal(200)
+                    done()
+                  })
+                })
               })
             })
           }, 3000)
