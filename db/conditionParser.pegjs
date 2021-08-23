@@ -343,7 +343,7 @@ PathExpression
       _ '[' _ ix:[0-9]+ _ ']' {
         return +(ix.join(''))
       }
-    / _ '.' _ prop:Identifier {
+    / _ '.' _ prop:PathIdentifier {
         return prop
       }
     )* {
@@ -351,7 +351,7 @@ PathExpression
     }
 
 GroupedPathExpression
-  = Identifier
+  = PathIdentifier
   / '(' _ '(' _ path:PathExpression _ ')' _ ')' {
       redundantParensError()
       return path
@@ -366,9 +366,18 @@ Identifier
     }
   / ExpressionAttributeName
 
+PathIdentifier
+  = !ReservedWord head:PathIdentifierStart tail:IdentifierPart* {
+      return head + tail.join('')
+    }
+  / ExpressionAttributeName
+
 IdentifierStart
   = [a-zA-Z]
   / '_'
+
+PathIdentifierStart
+  = [a-zA-Z]
 
 IdentifierPart
   = IdentifierStart

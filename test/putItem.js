@@ -551,6 +551,18 @@ describe('putItem', function() {
         helpers.deleteWhenActive(table.TableName)
       })
     })
+
+    it('should return ValidationException if path token starts with underscore', function(done) {
+      async.forEach([
+        { ConditionExpression: 'attribute_not_exists(_c)' },
+        { ConditionExpression: 'attribute_not_exists(c._d)'},
+      ], function(putData, cb) {
+        putData.TableName = helpers.testRangeTable
+        putData.Item = {a: {S: 'a'}, b: {S: 'b'}}
+        assertValidation(putData, /^Invalid ConditionExpression: Syntax error;/, cb)
+      }, done)
+    })
+
   })
 
   // A number can have up to 38 digits precision and can be between 10^-128 to 10^+126
