@@ -1450,6 +1450,11 @@ describe('updateItem', function() {
         UpdateExpression: 'SET #b = :b',
         ExpressionAttributeNames: {'#a': 'active', '#b': 'active'},
         ExpressionAttributeValues: {':a': {BOOL: false}, ':b': {BOOL: true}},
+      }, {
+        ConditionExpression: '#a IN (:a)',
+        UpdateExpression: 'SET #a = :b',
+        ExpressionAttributeNames: {'#a': 'active'},
+        ExpressionAttributeValues: {':a': {BOOL: false}, ':b': {BOOL: true}},
       }], function(updateOpts, cb) {
         var item = {a: {S: helpers.randomString()}, active: {BOOL: false}}
         request(helpers.opts('PutItem', {TableName: helpers.testHashTable, Item: item}), function(err, res) {
