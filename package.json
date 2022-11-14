@@ -1,6 +1,6 @@
 {
   "name": "dynalite",
-  "version": "3.2.1",
+  "version": "3.2.2",
   "description": "An implementation of Amazon's DynamoDB built on LevelDB",
   "main": "index.js",
   "bin": "cli.js",
@@ -31,13 +31,13 @@
     "memdown": "^5.1.0",
     "minimist": "^1.2.5",
     "once": "^1.4.0",
-    "subleveldown": "^5.0.0"
+    "subleveldown": "^5.0.1"
   },
   "optionalDependencies": {
-    "leveldown": "^5.2.1"
+    "leveldown": "^5.6.0"
   },
   "devDependencies": {
-    "aws4": "^1.10.0",
+    "aws4": "^1.11.0",
     "mocha": "^6.2.3",
     "pegjs": "^0.10.0",
     "should": "^13.2.3"
