@@ -152,11 +152,15 @@ exports.custom = function(data, store) {
       }
       if (db.itemSize(request.Put.Item) > store.options.maxItemSize)
         return 'Item size has exceeded the maximum allowed size'
+      msg = validations.validateExpressions(request.Put)
+      if (msg) return msg
     } else if (request.Delete) {
         for (key in request.Delete.Key) {
           msg = validations.validateAttributeValue(request.Delete.Key[key])
           if (msg) return msg
         }
+      msg = validations.validateExpressions(request.Delete)
+      if (msg) return msg
     } else if (request.Update) {
         for (key in request.Update.Key) {
           msg = validations.validateAttributeValue(request.Update.Key[key])

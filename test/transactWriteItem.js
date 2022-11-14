@@ -681,6 +681,43 @@ describe('transactWriteItem', function() {
             })
         })
 
+        it('should fail to put with failed condition expression in one transaction', function(done) {
+            var item = {
+                    a: {S: helpers.randomString()},
+                    c: {S: 'c'}},
+                transactReq = {TransactItems: []}
+
+            transactReq.TransactItems = [
+                {
+                    Put: {
+                        TableName: helpers.testHashTable,
+                        Item: {
+                            ...item,
+                            c: {S: 'd'}
+                        },
+                        ConditionExpression: 'attribute_not_exists(c)',
+                    }
+                }
+            ]
+
+            request(helpers.opts('PutItem', {TableName: helpers.testHashTable, Item: item}), function(err, res) {
+                if (err) return done(err)
+                res.statusCode.should.equal(200)
+                request(opts(transactReq), function(err, res) {
+                    if (err) return done(err)
+                    res.statusCode.should.equal(400)
+                    res.body.message.should.equal('The conditional request failed')
+                    request(helpers.opts('GetItem', {TableName: helpers.testHashTable, Key: {a: item.a}, ConsistentRead: true}), function(err, res) {
+                        // update item
+                        if (err) return done(err)
+                        res.statusCode.should.equal(200)
+                        res.body.should.eql({Item: item})
+                        done()
+                    })
+                })
+            })
+        })
+
         it('should fail to write with failed ConditionCheck in one transaction', function(done) {
             var item = {
                     a: {S: helpers.randomString()},
