@@ -1,87 +1,100 @@
-var validations = require('./index'),
-    db = require('../db')
+var validations = require("./index"),
+  db = require("../db");
 
 exports.types = {
   ReturnConsumedCapacity: {
-    type: 'String',
-    enum: ['INDEXES', 'TOTAL', 'NONE'],
+    type: "String",
+    enum: ["INDEXES", "TOTAL", "NONE"],
   },
   RequestItems: {
-    type: 'Map<KeysAndAttributes>',
+    type: "Map<KeysAndAttributes>",
     notNull: true,
     lengthGreaterThanOrEqual: 1,
     keys: {
       lengthLessThanOrEqual: 255,
       lengthGreaterThanOrEqual: 3,
-      regex: '[a-zA-Z0-9_.-]+',
+      regex: "[a-zA-Z0-9_.-]+",
     },
     children: {
-      type: 'ValueStruct<KeysAndAttributes>',
+      type: "ValueStruct<KeysAndAttributes>",
       children: {
         Keys: {
-          type: 'List',
+          type: "List",
           notNull: true,
           lengthGreaterThanOrEqual: 1,
           lengthLessThanOrEqual: 100,
           children: {
-            type: 'ParameterizedMap',
-            children: 'AttrStruct<ValueStruct>',
+            type: "ParameterizedMap",
+            children: "AttrStruct<ValueStruct>",
           },
         },
         AttributesToGet: {
-          type: 'List',
+          type: "List",
           lengthGreaterThanOrEqual: 1,
           lengthLessThanOrEqual: 255,
-          children: 'String',
+          children: "String",
         },
-        ConsistentRead: 'Boolean',
+        ConsistentRead: "Boolean",
         ProjectionExpression: {
-          type: 'String',
+          type: "String",
         },
         ExpressionAttributeNames: {
-          type: 'Map<java.lang.String>',
-          children: 'String',
+          type: "Map<java.lang.String>",
+          children: "String",
         },
       },
     },
   },
-}
+};
 
-exports.custom = function(data) {
-  var numReqs = 0
+exports.custom = function (data) {
+  var numReqs = 0;
 
   for (var table in data.RequestItems) {
-    var tableData = data.RequestItems[table]
+    var tableData = data.RequestItems[table];
 
-    var msg = validations.validateExpressionParams(tableData, ['ProjectionExpression'], ['AttributesToGet'])
-    if (msg) return msg
+    var msg = validations.validateExpressionParams(
+      tableData,
+      ["ProjectionExpression"],
+      ["AttributesToGet"]
+    );
+    if (msg) return msg;
 
     if (tableData.AttributesToGet) {
-      msg = validations.findDuplicate(tableData.AttributesToGet)
-      if (msg) return 'One or more parameter values were invalid: Duplicate value in attribute name: ' + msg
+      msg = validations.findDuplicate(tableData.AttributesToGet);
+      if (msg)
+        return (
+          "One or more parameter values were invalid: Duplicate value in attribute name: " +
+          msg
+        );
     }
 
-    msg = validations.validateExpressions(tableData)
-    if (msg) return msg
+    msg = validations.validateExpressions(tableData);
+    if (msg) return msg;
 
-    var seenKeys = Object.create(null)
+    var seenKeys = Object.create(null);
     for (var i = 0; i < tableData.Keys.length; i++) {
-      var key = tableData.Keys[i]
+      var key = tableData.Keys[i];
 
       for (var attr in key) {
-        msg = validations.validateAttributeValue(key[attr])
-        if (msg) return msg
+        msg = validations.validateAttributeValue(key[attr]);
+        if (msg) return msg;
       }
 
       // TODO: this is unnecessarily expensive
-      var keyStr = Object.keys(key).sort().map(function(attr) { return db.toRangeStr(key[attr]) }).join('/')
+      var keyStr = Object.keys(key)
+        .sort()
+        .map(function (attr) {
+          return db.toRangeStr(key[attr]);
+        })
+        .join("/");
       if (seenKeys[keyStr])
-        return 'Provided list of item keys contains duplicates'
-      seenKeys[keyStr] = true
+        return "Provided list of item keys contains duplicates";
+      seenKeys[keyStr] = true;
 
-      numReqs++
+      numReqs++;
       if (numReqs > 100)
-        return 'Too many items requested for the BatchGetItem call'
+        return "Too many items requested for the BatchGetItem call";
     }
   }
-}
+};

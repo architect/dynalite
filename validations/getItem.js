@@ -1,51 +1,58 @@
-var validations = require('./index')
+var validations = require("./index");
 
 exports.types = {
   ReturnConsumedCapacity: {
-    type: 'String',
-    enum: ['INDEXES', 'TOTAL', 'NONE'],
+    type: "String",
+    enum: ["INDEXES", "TOTAL", "NONE"],
   },
   AttributesToGet: {
-    type: 'List',
+    type: "List",
     lengthGreaterThanOrEqual: 1,
     lengthLessThanOrEqual: 255,
-    children: 'String',
+    children: "String",
   },
   TableName: {
-    type: 'String',
+    type: "String",
     notNull: true,
-    regex: '[a-zA-Z0-9_.-]+',
+    regex: "[a-zA-Z0-9_.-]+",
     lengthGreaterThanOrEqual: 3,
     lengthLessThanOrEqual: 255,
   },
   Key: {
-    type: 'Map<AttributeValue>',
+    type: "Map<AttributeValue>",
     notNull: true,
-    children: 'AttrStruct<ValueStruct>',
+    children: "AttrStruct<ValueStruct>",
   },
-  ConsistentRead: 'Boolean',
+  ConsistentRead: "Boolean",
   ProjectionExpression: {
-    type: 'String',
+    type: "String",
   },
   ExpressionAttributeNames: {
-    type: 'Map<java.lang.String>',
-    children: 'String',
+    type: "Map<java.lang.String>",
+    children: "String",
   },
-}
+};
 
-exports.custom = function(data) {
-
-  var msg = validations.validateExpressionParams(data, ['ProjectionExpression'], ['AttributesToGet'])
-  if (msg) return msg
+exports.custom = function (data) {
+  var msg = validations.validateExpressionParams(
+    data,
+    ["ProjectionExpression"],
+    ["AttributesToGet"]
+  );
+  if (msg) return msg;
 
   for (var key in data.Key) {
-    msg = validations.validateAttributeValue(data.Key[key])
-    if (msg) return msg
+    msg = validations.validateAttributeValue(data.Key[key]);
+    if (msg) return msg;
   }
   if (data.AttributesToGet) {
-    msg = validations.findDuplicate(data.AttributesToGet)
-    if (msg) return 'One or more parameter values were invalid: Duplicate value in attribute name: ' + msg
+    msg = validations.findDuplicate(data.AttributesToGet);
+    if (msg)
+      return (
+        "One or more parameter values were invalid: Duplicate value in attribute name: " +
+        msg
+      );
   }
-  msg = validations.validateExpressions(data)
-  if (msg) return msg
-}
+  msg = validations.validateExpressions(data);
+  if (msg) return msg;
+};

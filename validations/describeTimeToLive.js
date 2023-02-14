@@ -1,8 +1,8 @@
 exports.types = {
   TableName: {
-    type: 'String',
+    type: "String",
     required: true,
     tableName: true,
-    regex: '[a-zA-Z0-9_.-]+',
+    regex: "[a-zA-Z0-9_.-]+",
   },
-}
+};

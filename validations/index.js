@@ -1,531 +1,780 @@
-var Big = require('big.js'),
-    db = require('../db'),
-    conditionParser = require('../db/conditionParser'),
-    projectionParser = require('../db/projectionParser'),
-    updateParser = require('../db/updateParser')
+var Big = require("big.js"),
+  db = require("../db"),
+  conditionParser = require("../db/conditionParser"),
+  projectionParser = require("../db/projectionParser"),
+  updateParser = require("../db/updateParser");
 
-exports.checkTypes = checkTypes
-exports.checkValidations = checkValidations
-exports.toLowerFirst = toLowerFirst
-exports.findDuplicate = findDuplicate
-exports.validateAttributeValue = validateAttributeValue
-exports.validateConditions = validateConditions
-exports.validateAttributeConditions = validateAttributeConditions
-exports.validateExpressionParams = validateExpressionParams
-exports.validateExpressions = validateExpressions
-exports.convertKeyCondition = convertKeyCondition
+exports.checkTypes = checkTypes;
+exports.checkValidations = checkValidations;
+exports.toLowerFirst = toLowerFirst;
+exports.findDuplicate = findDuplicate;
+exports.validateAttributeValue = validateAttributeValue;
+exports.validateConditions = validateConditions;
+exports.validateAttributeConditions = validateAttributeConditions;
+exports.validateExpressionParams = validateExpressionParams;
+exports.validateExpressions = validateExpressions;
+exports.convertKeyCondition = convertKeyCondition;
 
 function checkTypes(data, types) {
-  var key
+  var key;
   for (key in data) {
     // TODO: deal with nulls
-    if (!types[key] || data[key] == null)
-      delete data[key]
+    if (!types[key] || data[key] == null) delete data[key];
   }
 
-  return Object.keys(types).reduce(function(newData, key) {
-    var val = checkType(data[key], types[key])
-    if (val != null) newData[key] = val
-    return newData
-  }, {})
+  return Object.keys(types).reduce(function (newData, key) {
+    var val = checkType(data[key], types[key]);
+    if (val != null) newData[key] = val;
+    return newData;
+  }, {});
 
   function typeError(msg) {
-    var err = new Error(msg)
-    err.statusCode = 400
+    var err = new Error(msg);
+    err.statusCode = 400;
     err.body = {
-      __type: 'com.amazon.coral.service#SerializationException',
+      __type: "com.amazon.coral.service#SerializationException",
       Message: msg,
-    }
-    return err
+    };
+    return err;
   }
 
   function checkType(val, type) {
-    if (val == null) return null
-    var children = type.children
-    if (typeof children == 'string') children = {type: children}
-    if (type.type) type = type.type
-    var subtypeMatch = type.match(/(.+?)<(.+)>$/), subtype
+    if (val == null) return null;
+    var children = type.children;
+    if (typeof children == "string") children = { type: children };
+    if (type.type) type = type.type;
+    var subtypeMatch = type.match(/(.+?)<(.+)>$/),
+      subtype;
     if (subtypeMatch != null) {
-      type = subtypeMatch[1]
-      subtype = subtypeMatch[2]
+      type = subtypeMatch[1];
+      subtype = subtypeMatch[2];
     }
 
-    if (type == 'AttrStruct') {
+    if (type == "AttrStruct") {
       return checkType(val, {
-        type: subtype + '<AttributeValue>',
+        type: subtype + "<AttributeValue>",
         children: {
-          S: 'String',
-          B: 'Blob',
-          N: 'String',
-          BOOL: 'Boolean',
-          NULL: 'Boolean',
+          S: "String",
+          B: "Blob",
+          N: "String",
+          BOOL: "Boolean",
+          NULL: "Boolean",
           BS: {
-            type: 'List',
-            children: 'Blob',
+            type: "List",
+            children: "Blob",
           },
           NS: {
-            type: 'List',
-            children: 'String',
+            type: "List",
+            children: "String",
           },
           SS: {
-            type: 'List',
-            children: 'String',
+            type: "List",
+            children: "String",
           },
           L: {
-            type: 'List',
-            children: 'AttrStruct<ValueStruct>',
+            type: "List",
+            children: "AttrStruct<ValueStruct>",
           },
           M: {
-            type: 'Map<AttributeValue>',
-            children: 'AttrStruct<ValueStruct>',
+            type: "Map<AttributeValue>",
+            children: "AttrStruct<ValueStruct>",
           },
         },
-      })
+      });
     }
 
     switch (type) {
-      case 'Boolean':
+      case "Boolean":
         switch (typeof val) {
-          case 'number':
-            throw typeError((val % 1 === 0 ? 'NUMBER_VALUE' : 'DECIMAL_VALUE') + ' cannot be converted to ' + type)
-          case 'string':
+          case "number":
+            throw typeError(
+              (val % 1 === 0 ? "NUMBER_VALUE" : "DECIMAL_VALUE") +
+                " cannot be converted to " +
+                type
+            );
+          case "string":
             // 'true'/'false'/'1'/'0'/'no'/'yes' seem to convert fine
-            val = val.toUpperCase()
-            if (~['TRUE', '1', 'YES'].indexOf(val)) {
-              val = true
-            } else if (~['FALSE', '0', 'NO'].indexOf(val)) {
-              val = false
+            val = val.toUpperCase();
+            if (~["TRUE", "1", "YES"].indexOf(val)) {
+              val = true;
+            } else if (~["FALSE", "0", "NO"].indexOf(val)) {
+              val = false;
             } else {
-              throw typeError('Unexpected token received from parser')
+              throw typeError("Unexpected token received from parser");
             }
-            break
-          case 'object':
-            if (Array.isArray(val)) throw typeError('Unrecognized collection type class java.lang.' + type)
-            throw typeError('Start of structure or map found where not expected')
+            break;
+          case "object":
+            if (Array.isArray(val))
+              throw typeError(
+                "Unrecognized collection type class java.lang." + type
+              );
+            throw typeError(
+              "Start of structure or map found where not expected"
+            );
         }
-        return val
-      case 'Short':
-      case 'Integer':
-      case 'Long':
-      case 'Double':
+        return val;
+      case "Short":
+      case "Integer":
+      case "Long":
+      case "Double":
         switch (typeof val) {
-          case 'boolean':
-            throw typeError((val ? 'TRUE_VALUE' : 'FALSE_VALUE') + ' cannot be converted to ' + type)
-          case 'number':
-            if (type != 'Double') val = Math.floor(val)
-            break
-          case 'string':
-            throw typeError('STRING_VALUE cannot be converted to ' + type)
-          case 'object':
-            if (Array.isArray(val)) throw typeError('Unrecognized collection type class java.lang.' + type)
-            throw typeError('Start of structure or map found where not expected')
+          case "boolean":
+            throw typeError(
+              (val ? "TRUE_VALUE" : "FALSE_VALUE") +
+                " cannot be converted to " +
+                type
+            );
+          case "number":
+            if (type != "Double") val = Math.floor(val);
+            break;
+          case "string":
+            throw typeError("STRING_VALUE cannot be converted to " + type);
+          case "object":
+            if (Array.isArray(val))
+              throw typeError(
+                "Unrecognized collection type class java.lang." + type
+              );
+            throw typeError(
+              "Start of structure or map found where not expected"
+            );
         }
-        return val
-      case 'String':
+        return val;
+      case "String":
         switch (typeof val) {
-          case 'boolean':
-            throw typeError((val ? 'TRUE_VALUE' : 'FALSE_VALUE') + ' cannot be converted to ' + type)
-          case 'number':
-            throw typeError((val % 1 === 0 ? 'NUMBER_VALUE' : 'DECIMAL_VALUE') + ' cannot be converted to ' + type)
-          case 'object':
-            if (Array.isArray(val)) throw typeError('Unrecognized collection type class java.lang.' + type)
-            throw typeError('Start of structure or map found where not expected')
+          case "boolean":
+            throw typeError(
+              (val ? "TRUE_VALUE" : "FALSE_VALUE") +
+                " cannot be converted to " +
+                type
+            );
+          case "number":
+            throw typeError(
+              (val % 1 === 0 ? "NUMBER_VALUE" : "DECIMAL_VALUE") +
+                " cannot be converted to " +
+                type
+            );
+          case "object":
+            if (Array.isArray(val))
+              throw typeError(
+                "Unrecognized collection type class java.lang." + type
+              );
+            throw typeError(
+              "Start of structure or map found where not expected"
+            );
         }
-        return val
-      case 'Blob':
+        return val;
+      case "Blob":
         switch (typeof val) {
-          case 'boolean':
-          case 'number':
-            throw typeError('only base-64-encoded strings are convertible to bytes')
-          case 'object':
-            if (Array.isArray(val)) throw typeError('Unrecognized collection type class java.nio.ByteBuffer')
-            throw typeError('Start of structure or map found where not expected')
+          case "boolean":
+          case "number":
+            throw typeError(
+              "only base-64-encoded strings are convertible to bytes"
+            );
+          case "object":
+            if (Array.isArray(val))
+              throw typeError(
+                "Unrecognized collection type class java.nio.ByteBuffer"
+              );
+            throw typeError(
+              "Start of structure or map found where not expected"
+            );
         }
         if (val.length % 4)
-          throw typeError('Base64 encoded length is expected a multiple of 4 bytes but found: ' + val.length)
+          throw typeError(
+            "Base64 encoded length is expected a multiple of 4 bytes but found: " +
+              val.length
+          );
         // TODO: need a better check than this...
-        if (Buffer.from(val, 'base64').toString('base64') != val)
-          throw typeError('Invalid last non-pad Base64 character dectected')
-        return val
-      case 'List':
+        if (Buffer.from(val, "base64").toString("base64") != val)
+          throw typeError("Invalid last non-pad Base64 character dectected");
+        return val;
+      case "List":
         switch (typeof val) {
-          case 'boolean':
-          case 'number':
-          case 'string':
-            throw typeError('Unexpected field type')
-          case 'object':
-            if (!Array.isArray(val)) throw typeError('Start of structure or map found where not expected')
+          case "boolean":
+          case "number":
+          case "string":
+            throw typeError("Unexpected field type");
+          case "object":
+            if (!Array.isArray(val))
+              throw typeError(
+                "Start of structure or map found where not expected"
+              );
         }
-        return val.map(function(child) { return checkType(child, children) })
-      case 'ParameterizedList':
+        return val.map(function (child) {
+          return checkType(child, children);
+        });
+      case "ParameterizedList":
         switch (typeof val) {
-          case 'boolean':
-          case 'number':
-          case 'string':
-            throw typeError("class sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl cannot be cast to class java.lang.Class (sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl and java.lang.Class are in module java.base of loader 'bootstrap')")
-          case 'object':
-            if (!Array.isArray(val)) throw typeError('Start of structure or map found where not expected')
+          case "boolean":
+          case "number":
+          case "string":
+            throw typeError(
+              "class sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl cannot be cast to class java.lang.Class (sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl and java.lang.Class are in module java.base of loader 'bootstrap')"
+            );
+          case "object":
+            if (!Array.isArray(val))
+              throw typeError(
+                "Start of structure or map found where not expected"
+              );
         }
-        return val.map(function(child) { return checkType(child, children) })
-      case 'ParameterizedMap':
+        return val.map(function (child) {
+          return checkType(child, children);
+        });
+      case "ParameterizedMap":
         switch (typeof val) {
-          case 'boolean':
-          case 'number':
-          case 'string':
-            throw typeError("class sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl cannot be cast to class java.lang.Class (sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl and java.lang.Class are in module java.base of loader 'bootstrap')")
-          case 'object':
-            if (Array.isArray(val)) throw typeError('Unrecognized collection type java.util.Map<java.lang.String, com.amazonaws.dynamodb.v20120810.AttributeValue>')
+          case "boolean":
+          case "number":
+          case "string":
+            throw typeError(
+              "class sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl cannot be cast to class java.lang.Class (sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl and java.lang.Class are in module java.base of loader 'bootstrap')"
+            );
+          case "object":
+            if (Array.isArray(val))
+              throw typeError(
+                "Unrecognized collection type java.util.Map<java.lang.String, com.amazonaws.dynamodb.v20120810.AttributeValue>"
+              );
         }
-        return Object.keys(val).reduce(function(newVal, key) {
-          newVal[key] = checkType(val[key], children)
-          return newVal
-        }, {})
-      case 'Map':
+        return Object.keys(val).reduce(function (newVal, key) {
+          newVal[key] = checkType(val[key], children);
+          return newVal;
+        }, {});
+      case "Map":
         switch (typeof val) {
-          case 'boolean':
-          case 'number':
-          case 'string':
-            throw typeError('Unexpected field type')
-          case 'object':
+          case "boolean":
+          case "number":
+          case "string":
+            throw typeError("Unexpected field type");
+          case "object":
             if (Array.isArray(val)) {
-              throw typeError('Unrecognized collection type java.util.Map<java.lang.String, ' +
-                (~subtype.indexOf('.') ? subtype : 'com.amazonaws.dynamodb.v20120810.' + subtype) + '>')
+              throw typeError(
+                "Unrecognized collection type java.util.Map<java.lang.String, " +
+                  (~subtype.indexOf(".")
+                    ? subtype
+                    : "com.amazonaws.dynamodb.v20120810." + subtype) +
+                  ">"
+              );
             }
         }
-        return Object.keys(val).reduce(function(newVal, key) {
-          newVal[key] = checkType(val[key], children)
-          return newVal
-        }, {})
-      case 'ValueStruct':
+        return Object.keys(val).reduce(function (newVal, key) {
+          newVal[key] = checkType(val[key], children);
+          return newVal;
+        }, {});
+      case "ValueStruct":
         switch (typeof val) {
-          case 'boolean':
-          case 'number':
-          case 'string':
-            throw typeError('Unexpected value type in payload')
-          case 'object':
-            if (Array.isArray(val)) throw typeError('Unrecognized collection type class com.amazonaws.dynamodb.v20120810.' + subtype)
+          case "boolean":
+          case "number":
+          case "string":
+            throw typeError("Unexpected value type in payload");
+          case "object":
+            if (Array.isArray(val))
+              throw typeError(
+                "Unrecognized collection type class com.amazonaws.dynamodb.v20120810." +
+                  subtype
+              );
         }
-        return checkTypes(val, children)
-      case 'FieldStruct':
+        return checkTypes(val, children);
+      case "FieldStruct":
         switch (typeof val) {
-          case 'boolean':
-          case 'number':
-          case 'string':
-            throw typeError('Unexpected field type')
-          case 'object':
-            if (Array.isArray(val)) throw typeError('Unrecognized collection type class com.amazonaws.dynamodb.v20120810.' + subtype)
+          case "boolean":
+          case "number":
+          case "string":
+            throw typeError("Unexpected field type");
+          case "object":
+            if (Array.isArray(val))
+              throw typeError(
+                "Unrecognized collection type class com.amazonaws.dynamodb.v20120810." +
+                  subtype
+              );
         }
-        return checkTypes(val, children)
+        return checkTypes(val, children);
       default:
-        throw new Error('Unknown type: ' + type)
+        throw new Error("Unknown type: " + type);
     }
   }
 }
 
-var validateFns = {}
+var validateFns = {};
 
 function checkValidations(data, validations, custom, store) {
-  var attr, msg, errors = []
+  var attr,
+    msg,
+    errors = [];
 
   for (attr in validations) {
     if (validations[attr].required && data[attr] == null) {
-      throw db.validationError('The parameter \'' + attr + '\' is required but was not present in the request')
+      throw db.validationError(
+        "The parameter '" +
+          attr +
+          "' is required but was not present in the request"
+      );
     }
     if (validations[attr].tableName) {
-      msg = validateTableName(attr, data[attr])
-      if (msg) throw db.validationError(msg)
+      msg = validateTableName(attr, data[attr]);
+      if (msg) throw db.validationError(msg);
     }
   }
 
   function checkNonRequireds(data, types, parent) {
     for (attr in types) {
-      checkNonRequired(attr, data[attr], types[attr], parent)
+      checkNonRequired(attr, data[attr], types[attr], parent);
     }
   }
 
-  checkNonRequireds(data, validations)
+  checkNonRequireds(data, validations);
 
   function checkNonRequired(attr, data, validations, parent) {
-    if (validations == null || typeof validations != 'object') return
+    if (validations == null || typeof validations != "object") return;
     for (var validation in validations) {
-      if (errors.length >= 10) return
-      if (~['type', 'required', 'tableName'].indexOf(validation)) continue
-      if (validation != 'notNull' && data == null) continue
-      if (validation == 'children') {
+      if (errors.length >= 10) return;
+      if (~["type", "required", "tableName"].indexOf(validation)) continue;
+      if (validation != "notNull" && data == null) continue;
+      if (validation == "children") {
         if (/List$/.test(validations.type)) {
           for (var i = 0; i < data.length; i++) {
-            checkNonRequired('member', data[i], validations.children,
-              (parent ? parent + '.' : '') + toLowerFirst(attr) + '.' + (i + 1))
+            checkNonRequired(
+              "member",
+              data[i],
+              validations.children,
+              (parent ? parent + "." : "") + toLowerFirst(attr) + "." + (i + 1)
+            );
           }
-          continue
+          continue;
         } else if (/Map/.test(validations.type)) {
-          Object.keys(data).forEach(function(key) { // eslint-disable-line no-loop-func
-            checkNonRequired('member', data[key], validations.children,
-              (parent ? parent + '.' : '') + toLowerFirst(attr) + '.' + key)
-          })
-          continue
+          Object.keys(data).forEach(function (key) {
+            // eslint-disable-line no-loop-func
+            checkNonRequired(
+              "member",
+              data[key],
+              validations.children,
+              (parent ? parent + "." : "") + toLowerFirst(attr) + "." + key
+            );
+          });
+          continue;
         }
-        checkNonRequireds(data, validations.children, (parent ? parent + '.' : '') + toLowerFirst(attr))
-        continue
+        checkNonRequireds(
+          data,
+          validations.children,
+          (parent ? parent + "." : "") + toLowerFirst(attr)
+        );
+        continue;
       }
-      validateFns[validation](parent, attr, validations[validation], data, errors)
+      validateFns[validation](
+        parent,
+        attr,
+        validations[validation],
+        data,
+        errors
+      );
     }
   }
 
   if (errors.length)
-    throw db.validationError(errors.length + ' validation error' + (errors.length > 1 ? 's' : '') + ' detected: ' + errors.join('; '))
+    throw db.validationError(
+      errors.length +
+        " validation error" +
+        (errors.length > 1 ? "s" : "") +
+        " detected: " +
+        errors.join("; ")
+    );
 
   if (custom) {
-    msg = custom(data, store)
-    if (msg) throw db.validationError(msg)
+    msg = custom(data, store);
+    if (msg) throw db.validationError(msg);
   }
 }
 
-validateFns.notNull = function(parent, key, val, data, errors) {
-  validate(data != null, 'Member must not be null', data, parent, key, errors)
-}
-validateFns.greaterThanOrEqual = function(parent, key, val, data, errors) {
-  validate(data >= val, 'Member must have value greater than or equal to ' + val, data, parent, key, errors)
-}
-validateFns.lessThanOrEqual = function(parent, key, val, data, errors) {
-  validate(data <= val, 'Member must have value less than or equal to ' + val, data, parent, key, errors)
-}
-validateFns.regex = function(parent, key, pattern, data, errors) {
-  validate(RegExp('^' + pattern + '$').test(data), 'Member must satisfy regular expression pattern: ' + pattern, data, parent, key, errors)
-}
-validateFns.lengthGreaterThanOrEqual = function(parent, key, val, data, errors) {
-  var length = (typeof data == 'object' && !Array.isArray(data)) ? Object.keys(data).length : data.length
-  validate(length >= val, 'Member must have length greater than or equal to ' + val, data, parent, key, errors)
-}
-validateFns.lengthLessThanOrEqual = function(parent, key, val, data, errors) {
-  var length = (typeof data == 'object' && !Array.isArray(data)) ? Object.keys(data).length : data.length
-  validate(length <= val, 'Member must have length less than or equal to ' + val, data, parent, key, errors)
-}
-validateFns.enum = function(parent, key, val, data, errors) {
-  validate(~val.indexOf(data), 'Member must satisfy enum value set: [' + val.join(', ') + ']', data, parent, key, errors)
-}
-validateFns.keys = function(parent, key, val, data, errors) {
-  Object.keys(data).forEach(function(mapKey) {
+validateFns.notNull = function (parent, key, val, data, errors) {
+  validate(data != null, "Member must not be null", data, parent, key, errors);
+};
+validateFns.greaterThanOrEqual = function (parent, key, val, data, errors) {
+  validate(
+    data >= val,
+    "Member must have value greater than or equal to " + val,
+    data,
+    parent,
+    key,
+    errors
+  );
+};
+validateFns.lessThanOrEqual = function (parent, key, val, data, errors) {
+  validate(
+    data <= val,
+    "Member must have value less than or equal to " + val,
+    data,
+    parent,
+    key,
+    errors
+  );
+};
+validateFns.regex = function (parent, key, pattern, data, errors) {
+  validate(
+    RegExp("^" + pattern + "$").test(data),
+    "Member must satisfy regular expression pattern: " + pattern,
+    data,
+    parent,
+    key,
+    errors
+  );
+};
+validateFns.lengthGreaterThanOrEqual = function (
+  parent,
+  key,
+  val,
+  data,
+  errors
+) {
+  var length =
+    typeof data == "object" && !Array.isArray(data)
+      ? Object.keys(data).length
+      : data.length;
+  validate(
+    length >= val,
+    "Member must have length greater than or equal to " + val,
+    data,
+    parent,
+    key,
+    errors
+  );
+};
+validateFns.lengthLessThanOrEqual = function (parent, key, val, data, errors) {
+  var length =
+    typeof data == "object" && !Array.isArray(data)
+      ? Object.keys(data).length
+      : data.length;
+  validate(
+    length <= val,
+    "Member must have length less than or equal to " + val,
+    data,
+    parent,
+    key,
+    errors
+  );
+};
+validateFns.enum = function (parent, key, val, data, errors) {
+  validate(
+    ~val.indexOf(data),
+    "Member must satisfy enum value set: [" + val.join(", ") + "]",
+    data,
+    parent,
+    key,
+    errors
+  );
+};
+validateFns.keys = function (parent, key, val, data, errors) {
+  Object.keys(data).forEach(function (mapKey) {
     try {
-      Object.keys(val).forEach(function(validation) {
-        validateFns[validation]('', '', val[validation], mapKey, [])
-      })
+      Object.keys(val).forEach(function (validation) {
+        validateFns[validation]("", "", val[validation], mapKey, []);
+      });
     } catch (e) {
-      var msgs = Object.keys(val).map(function(validation) {
-        if (validation == 'lengthGreaterThanOrEqual')
-          return 'Member must have length greater than or equal to ' + val[validation]
-        if (validation == 'lengthLessThanOrEqual')
-          return 'Member must have length less than or equal to ' + val[validation]
-        if (validation == 'regex')
-          return 'Member must satisfy regular expression pattern: ' + val[validation]
-      })
-      validate(false, 'Map keys must satisfy constraint: [' + msgs.join(', ') + ']', data, parent, key, errors)
+      var msgs = Object.keys(val).map(function (validation) {
+        if (validation == "lengthGreaterThanOrEqual")
+          return (
+            "Member must have length greater than or equal to " +
+            val[validation]
+          );
+        if (validation == "lengthLessThanOrEqual")
+          return (
+            "Member must have length less than or equal to " + val[validation]
+          );
+        if (validation == "regex")
+          return (
+            "Member must satisfy regular expression pattern: " + val[validation]
+          );
+      });
+      validate(
+        false,
+        "Map keys must satisfy constraint: [" + msgs.join(", ") + "]",
+        data,
+        parent,
+        key,
+        errors
+      );
     }
-  })
-}
-validateFns.values = function(parent, key, val, data, errors) {
-  Object.keys(data).forEach(function(mapKey) {
+  });
+};
+validateFns.values = function (parent, key, val, data, errors) {
+  Object.keys(data).forEach(function (mapKey) {
     try {
-      Object.keys(val).forEach(function(validation) {
-        validateFns[validation]('', '', val[validation], data[mapKey], [])
-      })
+      Object.keys(val).forEach(function (validation) {
+        validateFns[validation]("", "", val[validation], data[mapKey], []);
+      });
     } catch (e) {
-      var msgs = Object.keys(val).map(function(validation) {
-        if (validation == 'lengthGreaterThanOrEqual')
-          return 'Member must have length greater than or equal to ' + val[validation]
-        if (validation == 'lengthLessThanOrEqual')
-          return 'Member must have length less than or equal to ' + val[validation]
-      })
-      validate(false, 'Map value must satisfy constraint: [' + msgs.join(', ') + ']', data, parent, key, errors)
+      var msgs = Object.keys(val).map(function (validation) {
+        if (validation == "lengthGreaterThanOrEqual")
+          return (
+            "Member must have length greater than or equal to " +
+            val[validation]
+          );
+        if (validation == "lengthLessThanOrEqual")
+          return (
+            "Member must have length less than or equal to " + val[validation]
+          );
+      });
+      validate(
+        false,
+        "Map value must satisfy constraint: [" + msgs.join(", ") + "]",
+        data,
+        parent,
+        key,
+        errors
+      );
     }
-  })
-}
+  });
+};
 
 function validate(predicate, msg, data, parent, key, errors) {
-  if (predicate) return
-  var value = valueStr(data)
-  if (value != 'null') value = '\'' + value + '\''
-  parent = parent ? parent + '.' : ''
-  errors.push('Value ' + value + ' at \'' + parent + toLowerFirst(key) + '\' failed to satisfy constraint: ' + msg)
+  if (predicate) return;
+  var value = valueStr(data);
+  if (value != "null") value = "'" + value + "'";
+  parent = parent ? parent + "." : "";
+  errors.push(
+    "Value " +
+      value +
+      " at '" +
+      parent +
+      toLowerFirst(key) +
+      "' failed to satisfy constraint: " +
+      msg
+  );
 }
 
 function validateTableName(key, val) {
-  if (val == null) return null
+  if (val == null) return null;
   if (val.length < 3 || val.length > 255)
-    return key + ' must be at least 3 characters long and at most 255 characters long'
+    return (
+      key +
+      " must be at least 3 characters long and at most 255 characters long"
+    );
 }
 
 function toLowerFirst(str) {
-  return str[0].toLowerCase() + str.slice(1)
+  return str[0].toLowerCase() + str.slice(1);
 }
 
 function validateAttributeValue(value) {
-  var types = Object.keys(value), msg, i, attr
+  var types = Object.keys(value),
+    msg,
+    i,
+    attr;
   if (!types.length)
-    return 'Supplied AttributeValue is empty, must contain exactly one of the supported datatypes'
+    return "Supplied AttributeValue is empty, must contain exactly one of the supported datatypes";
 
   for (var type in value) {
-    if (type == 'N') {
-      msg = checkNum(type, value)
-      if (msg) return msg
+    if (type == "N") {
+      msg = checkNum(type, value);
+      if (msg) return msg;
     }
 
-    if (type == 'NULL' && !value[type])
-      return 'One or more parameter values were invalid: Null attribute value types must have the value of true'
+    if (type == "NULL" && !value[type])
+      return "One or more parameter values were invalid: Null attribute value types must have the value of true";
 
-    if (type == 'SS' && !value[type].length)
-      return 'One or more parameter values were invalid: An string set  may not be empty'
+    if (type == "SS" && !value[type].length)
+      return "One or more parameter values were invalid: An string set  may not be empty";
 
-    if (type == 'NS' && !value[type].length)
-      return 'One or more parameter values were invalid: An number set  may not be empty'
+    if (type == "NS" && !value[type].length)
+      return "One or more parameter values were invalid: An number set  may not be empty";
 
-    if (type == 'BS' && !value[type].length)
-      return 'One or more parameter values were invalid: Binary sets should not be empty'
+    if (type == "BS" && !value[type].length)
+      return "One or more parameter values were invalid: Binary sets should not be empty";
 
-    if (type == 'NS') {
+    if (type == "NS") {
       for (i = 0; i < value[type].length; i++) {
-        msg = checkNum(i, value[type])
-        if (msg) return msg
+        msg = checkNum(i, value[type]);
+        if (msg) return msg;
       }
     }
 
-    if (type == 'SS' && findDuplicate(value[type]))
-      return 'One or more parameter values were invalid: Input collection ' + valueStr(value[type]) + ' contains duplicates.'
+    if (type == "SS" && findDuplicate(value[type]))
+      return (
+        "One or more parameter values were invalid: Input collection " +
+        valueStr(value[type]) +
+        " contains duplicates."
+      );
 
-    if (type == 'NS' && findDuplicate(value[type]))
-      return 'Input collection contains duplicates'
+    if (type == "NS" && findDuplicate(value[type]))
+      return "Input collection contains duplicates";
 
-    if (type == 'BS' && findDuplicate(value[type]))
-      return 'One or more parameter values were invalid: Input collection ' + valueStr(value[type]) + 'of type BS contains duplicates.'
+    if (type == "BS" && findDuplicate(value[type]))
+      return (
+        "One or more parameter values were invalid: Input collection " +
+        valueStr(value[type]) +
+        "of type BS contains duplicates."
+      );
 
-    if (type == 'M') {
+    if (type == "M") {
       for (attr in value[type]) {
-        msg = validateAttributeValue(value[type][attr])
-        if (msg) return msg
+        msg = validateAttributeValue(value[type][attr]);
+        if (msg) return msg;
       }
     }
 
-    if (type == 'L') {
+    if (type == "L") {
       for (i = 0; i < value[type].length; i++) {
-        msg = validateAttributeValue(value[type][i])
-        if (msg) return msg
+        msg = validateAttributeValue(value[type][i]);
+        if (msg) return msg;
       }
     }
   }
 
   if (types.length > 1)
-    return 'Supplied AttributeValue has more than one datatypes set, must contain exactly one of the supported datatypes'
+    return "Supplied AttributeValue has more than one datatypes set, must contain exactly one of the supported datatypes";
 }
 
 function checkNum(attr, obj) {
-  if (!obj[attr])
-    return 'The parameter cannot be converted to a numeric value'
+  if (!obj[attr]) return "The parameter cannot be converted to a numeric value";
 
-  var bigNum
+  var bigNum;
   try {
-    bigNum = new Big(obj[attr])
+    bigNum = new Big(obj[attr]);
   } catch (e) {
-    return 'The parameter cannot be converted to a numeric value: ' + obj[attr]
+    return "The parameter cannot be converted to a numeric value: " + obj[attr];
   }
   if (bigNum.e > 125)
-    return 'Number overflow. Attempting to store a number with magnitude larger than supported range'
+    return "Number overflow. Attempting to store a number with magnitude larger than supported range";
   else if (bigNum.e < -130)
-    return 'Number underflow. Attempting to store a number with magnitude smaller than supported range'
+    return "Number underflow. Attempting to store a number with magnitude smaller than supported range";
   else if (bigNum.c.length > 38)
-    return 'Attempting to store more than 38 significant digits in a Number'
+    return "Attempting to store more than 38 significant digits in a Number";
 
-  obj[attr] = bigNum.toFixed()
+  obj[attr] = bigNum.toFixed();
 }
 
 function valueStr(data) {
-  return data == null ? 'null' : Array.isArray(data) ? '[' + data.map(valueStr).join(', ') + ']' :
-    typeof data == 'object' ? JSON.stringify(data) : data
+  return data == null
+    ? "null"
+    : Array.isArray(data)
+    ? "[" + data.map(valueStr).join(", ") + "]"
+    : typeof data == "object"
+    ? JSON.stringify(data)
+    : data;
 }
 
 function findDuplicate(arr) {
-  if (!arr) return null
-  var vals = Object.create(null)
+  if (!arr) return null;
+  var vals = Object.create(null);
   for (var i = 0; i < arr.length; i++) {
-    if (vals[arr[i]]) return arr[i]
-    vals[arr[i]] = true
+    if (vals[arr[i]]) return arr[i];
+    vals[arr[i]] = true;
   }
 }
 
 function validateAttributeConditions(data) {
   for (var key in data.Expected) {
-    var condition = data.Expected[key]
+    var condition = data.Expected[key];
 
-    if ('AttributeValueList' in condition && 'Value' in condition)
-      return 'One or more parameter values were invalid: ' +
-        'Value and AttributeValueList cannot be used together for Attribute: ' + key
+    if ("AttributeValueList" in condition && "Value" in condition)
+      return (
+        "One or more parameter values were invalid: " +
+        "Value and AttributeValueList cannot be used together for Attribute: " +
+        key
+      );
 
-    if ('ComparisonOperator' in condition) {
-      if ('Exists' in condition)
-        return 'One or more parameter values were invalid: ' +
-          'Exists and ComparisonOperator cannot be used together for Attribute: ' + key
+    if ("ComparisonOperator" in condition) {
+      if ("Exists" in condition)
+        return (
+          "One or more parameter values were invalid: " +
+          "Exists and ComparisonOperator cannot be used together for Attribute: " +
+          key
+        );
 
-      if (condition.ComparisonOperator != 'NULL' && condition.ComparisonOperator != 'NOT_NULL' &&
-          !('AttributeValueList' in condition) && !('Value' in condition))
-        return 'One or more parameter values were invalid: ' +
-          'Value or AttributeValueList must be used with ComparisonOperator: ' + condition.ComparisonOperator +
-          ' for Attribute: ' + key
+      if (
+        condition.ComparisonOperator != "NULL" &&
+        condition.ComparisonOperator != "NOT_NULL" &&
+        !("AttributeValueList" in condition) &&
+        !("Value" in condition)
+      )
+        return (
+          "One or more parameter values were invalid: " +
+          "Value or AttributeValueList must be used with ComparisonOperator: " +
+          condition.ComparisonOperator +
+          " for Attribute: " +
+          key
+        );
 
-      var values = condition.AttributeValueList ?
-        condition.AttributeValueList.length : condition.Value ? 1 : 0
-      var validAttrCount = false
+      var values = condition.AttributeValueList
+        ? condition.AttributeValueList.length
+        : condition.Value
+        ? 1
+        : 0;
+      var validAttrCount = false;
 
       switch (condition.ComparisonOperator) {
-        case 'EQ':
-        case 'NE':
-        case 'LE':
-        case 'LT':
-        case 'GE':
-        case 'GT':
-        case 'CONTAINS':
-        case 'NOT_CONTAINS':
-        case 'BEGINS_WITH':
-          if (values === 1) validAttrCount = true
-          break
-        case 'NOT_NULL':
-        case 'NULL':
-          if (values === 0) validAttrCount = true
-          break
-        case 'IN':
-          if (values > 0) validAttrCount = true
-          break
-        case 'BETWEEN':
-          if (values === 2) validAttrCount = true
-          break
+        case "EQ":
+        case "NE":
+        case "LE":
+        case "LT":
+        case "GE":
+        case "GT":
+        case "CONTAINS":
+        case "NOT_CONTAINS":
+        case "BEGINS_WITH":
+          if (values === 1) validAttrCount = true;
+          break;
+        case "NOT_NULL":
+        case "NULL":
+          if (values === 0) validAttrCount = true;
+          break;
+        case "IN":
+          if (values > 0) validAttrCount = true;
+          break;
+        case "BETWEEN":
+          if (values === 2) validAttrCount = true;
+          break;
       }
       if (!validAttrCount)
-        return 'One or more parameter values were invalid: ' +
-          'Invalid number of argument(s) for the ' + condition.ComparisonOperator + ' ComparisonOperator'
+        return (
+          "One or more parameter values were invalid: " +
+          "Invalid number of argument(s) for the " +
+          condition.ComparisonOperator +
+          " ComparisonOperator"
+        );
 
       if (condition.AttributeValueList && condition.AttributeValueList.length) {
-        var type = Object.keys(condition.AttributeValueList[0])[0]
-        if (condition.AttributeValueList.some(function(attr) { return Object.keys(attr)[0] != type })) {
-          return 'One or more parameter values were invalid: AttributeValues inside AttributeValueList must be of same type'
+        var type = Object.keys(condition.AttributeValueList[0])[0];
+        if (
+          condition.AttributeValueList.some(function (attr) {
+            return Object.keys(attr)[0] != type;
+          })
+        ) {
+          return "One or more parameter values were invalid: AttributeValues inside AttributeValueList must be of same type";
         }
-        if (condition.ComparisonOperator == 'BETWEEN' && db.compare('GT', condition.AttributeValueList[0], condition.AttributeValueList[1])) {
-          return 'The BETWEEN condition was provided a range where the lower bound is greater than the upper bound'
+        if (
+          condition.ComparisonOperator == "BETWEEN" &&
+          db.compare(
+            "GT",
+            condition.AttributeValueList[0],
+            condition.AttributeValueList[1]
+          )
+        ) {
+          return "The BETWEEN condition was provided a range where the lower bound is greater than the upper bound";
         }
       }
-    } else if ('AttributeValueList' in condition) {
-      return 'One or more parameter values were invalid: ' +
-        'AttributeValueList can only be used with a ComparisonOperator for Attribute: ' + key
+    } else if ("AttributeValueList" in condition) {
+      return (
+        "One or more parameter values were invalid: " +
+        "AttributeValueList can only be used with a ComparisonOperator for Attribute: " +
+        key
+      );
     } else {
-      var exists = condition.Exists == null || condition.Exists
+      var exists = condition.Exists == null || condition.Exists;
       if (exists && condition.Value == null)
-        return 'One or more parameter values were invalid: ' +
-          'Value must be provided when Exists is ' +
-          (condition.Exists == null ? 'null' : condition.Exists) +
-          ' for Attribute: ' + key
+        return (
+          "One or more parameter values were invalid: " +
+          "Value must be provided when Exists is " +
+          (condition.Exists == null ? "null" : condition.Exists) +
+          " for Attribute: " +
+          key
+        );
       else if (!exists && condition.Value != null)
-        return 'One or more parameter values were invalid: ' +
-          'Value cannot be used when Exists is false for Attribute: ' + key
+        return (
+          "One or more parameter values were invalid: " +
+          "Value cannot be used when Exists is false for Attribute: " +
+          key
+        );
       if (condition.Value != null) {
-        var msg = validateAttributeValue(condition.Value)
-        if (msg) return msg
+        var msg = validateAttributeValue(condition.Value);
+        if (msg) return msg;
       }
     }
   }
@@ -546,250 +795,338 @@ function validateConditions(conditions) {
     BEGINS_WITH: 1,
     IN: [1],
     BETWEEN: 2,
-  }
+  };
   var types = {
-    EQ: ['S', 'N', 'B', 'SS', 'NS', 'BS'],
-    NE: ['S', 'N', 'B', 'SS', 'NS', 'BS'],
-    LE: ['S', 'N', 'B'],
-    LT: ['S', 'N', 'B'],
-    GE: ['S', 'N', 'B'],
-    GT: ['S', 'N', 'B'],
-    CONTAINS: ['S', 'N', 'B'],
-    NOT_CONTAINS: ['S', 'N', 'B'],
-    BEGINS_WITH: ['S', 'B'],
-    IN: ['S', 'N', 'B'],
-    BETWEEN: ['S', 'N', 'B'],
-  }
+    EQ: ["S", "N", "B", "SS", "NS", "BS"],
+    NE: ["S", "N", "B", "SS", "NS", "BS"],
+    LE: ["S", "N", "B"],
+    LT: ["S", "N", "B"],
+    GE: ["S", "N", "B"],
+    GT: ["S", "N", "B"],
+    CONTAINS: ["S", "N", "B"],
+    NOT_CONTAINS: ["S", "N", "B"],
+    BEGINS_WITH: ["S", "B"],
+    IN: ["S", "N", "B"],
+    BETWEEN: ["S", "N", "B"],
+  };
   for (var key in conditions) {
-    var comparisonOperator = conditions[key].ComparisonOperator
-    var attrValList = conditions[key].AttributeValueList || []
+    var comparisonOperator = conditions[key].ComparisonOperator;
+    var attrValList = conditions[key].AttributeValueList || [];
     for (var i = 0; i < attrValList.length; i++) {
-      var msg = validateAttributeValue(attrValList[i])
-      if (msg) return msg
+      var msg = validateAttributeValue(attrValList[i]);
+      if (msg) return msg;
     }
 
-    if ((typeof lengths[comparisonOperator] == 'number' && attrValList.length != lengths[comparisonOperator]) ||
-        (attrValList.length < lengths[comparisonOperator][0] || attrValList.length > lengths[comparisonOperator][1]))
-      return 'One or more parameter values were invalid: Invalid number of argument(s) for the ' +
-        comparisonOperator + ' ComparisonOperator'
+    if (
+      (typeof lengths[comparisonOperator] == "number" &&
+        attrValList.length != lengths[comparisonOperator]) ||
+      attrValList.length < lengths[comparisonOperator][0] ||
+      attrValList.length > lengths[comparisonOperator][1]
+    )
+      return (
+        "One or more parameter values were invalid: Invalid number of argument(s) for the " +
+        comparisonOperator +
+        " ComparisonOperator"
+      );
 
     if (attrValList.length) {
-      var type = Object.keys(attrValList[0])[0]
-      if (attrValList.some(function(attr) { return Object.keys(attr)[0] != type })) {
-        return 'One or more parameter values were invalid: AttributeValues inside AttributeValueList must be of same type'
+      var type = Object.keys(attrValList[0])[0];
+      if (
+        attrValList.some(function (attr) {
+          return Object.keys(attr)[0] != type;
+        })
+      ) {
+        return "One or more parameter values were invalid: AttributeValues inside AttributeValueList must be of same type";
       }
     }
 
     if (types[comparisonOperator]) {
       for (i = 0; i < attrValList.length; i++) {
         if (!~types[comparisonOperator].indexOf(Object.keys(attrValList[i])[0]))
-          return 'One or more parameter values were invalid: ComparisonOperator ' + comparisonOperator +
-            ' is not valid for ' + Object.keys(attrValList[i])[0] + ' AttributeValue type'
+          return (
+            "One or more parameter values were invalid: ComparisonOperator " +
+            comparisonOperator +
+            " is not valid for " +
+            Object.keys(attrValList[i])[0] +
+            " AttributeValue type"
+          );
       }
     }
 
-    if (comparisonOperator == 'BETWEEN' && db.compare('GT', attrValList[0], attrValList[1])) {
-      return 'The BETWEEN condition was provided a range where the lower bound is greater than the upper bound'
+    if (
+      comparisonOperator == "BETWEEN" &&
+      db.compare("GT", attrValList[0], attrValList[1])
+    ) {
+      return "The BETWEEN condition was provided a range where the lower bound is greater than the upper bound";
     }
   }
 }
 
 function validateExpressionParams(data, expressions, nonExpressions) {
-  var exprParams = expressions.filter(function(expr) { return data[expr] != null })
+  var exprParams = expressions.filter(function (expr) {
+    return data[expr] != null;
+  });
 
   if (exprParams.length) {
     // Special case for KeyConditions and KeyConditionExpression
     if (data.KeyConditions != null && data.KeyConditionExpression == null) {
-      nonExpressions.splice(nonExpressions.indexOf('KeyConditions'), 1)
+      nonExpressions.splice(nonExpressions.indexOf("KeyConditions"), 1);
     }
-    var nonExprParams = nonExpressions.filter(function(expr) { return data[expr] != null })
+    var nonExprParams = nonExpressions.filter(function (expr) {
+      return data[expr] != null;
+    });
     if (nonExprParams.length) {
-      return 'Can not use both expression and non-expression parameters in the same request: ' +
-        'Non-expression parameters: {' + nonExprParams.join(', ') + '} ' +
-        'Expression parameters: {' + exprParams.join(', ') + '}'
+      return (
+        "Can not use both expression and non-expression parameters in the same request: " +
+        "Non-expression parameters: {" +
+        nonExprParams.join(", ") +
+        "} " +
+        "Expression parameters: {" +
+        exprParams.join(", ") +
+        "}"
+      );
     }
   }
 
   if (data.ExpressionAttributeNames != null && !exprParams.length) {
-    return 'ExpressionAttributeNames can only be specified when using expressions'
+    return "ExpressionAttributeNames can only be specified when using expressions";
   }
 
-  var valExprs = expressions.filter(function(expr) { return expr != 'ProjectionExpression' })
-  if (valExprs.length && data.ExpressionAttributeValues != null &&
-      valExprs.every(function(expr) { return data[expr] == null })) {
-    return 'ExpressionAttributeValues can only be specified when using expressions: ' +
-      valExprs.join(' and ') + ' ' + (valExprs.length > 1 ? 'are' : 'is') + ' null'
+  var valExprs = expressions.filter(function (expr) {
+    return expr != "ProjectionExpression";
+  });
+  if (
+    valExprs.length &&
+    data.ExpressionAttributeValues != null &&
+    valExprs.every(function (expr) {
+      return data[expr] == null;
+    })
+  ) {
+    return (
+      "ExpressionAttributeValues can only be specified when using expressions: " +
+      valExprs.join(" and ") +
+      " " +
+      (valExprs.length > 1 ? "are" : "is") +
+      " null"
+    );
   }
 }
 
 function validateExpressions(data) {
-  var key, msg, result, context = {
-    attrNames: data.ExpressionAttributeNames,
-    attrVals: data.ExpressionAttributeValues,
-    unusedAttrNames: {},
-    unusedAttrVals: {},
-  }
+  var key,
+    msg,
+    result,
+    context = {
+      attrNames: data.ExpressionAttributeNames,
+      attrVals: data.ExpressionAttributeValues,
+      unusedAttrNames: {},
+      unusedAttrVals: {},
+    };
 
   if (data.ExpressionAttributeNames != null) {
     if (!Object.keys(data.ExpressionAttributeNames).length)
-      return 'ExpressionAttributeNames must not be empty'
+      return "ExpressionAttributeNames must not be empty";
     for (key in data.ExpressionAttributeNames) {
       if (!/^#[0-9a-zA-Z_]+$/.test(key)) {
-        return 'ExpressionAttributeNames contains invalid key: Syntax error; key: "' + key + '"'
+        return (
+          'ExpressionAttributeNames contains invalid key: Syntax error; key: "' +
+          key +
+          '"'
+        );
       }
-      context.unusedAttrNames[key] = true
+      context.unusedAttrNames[key] = true;
     }
   }
 
   if (data.ExpressionAttributeValues != null) {
     if (!Object.keys(data.ExpressionAttributeValues).length)
-      return 'ExpressionAttributeValues must not be empty'
+      return "ExpressionAttributeValues must not be empty";
     for (key in data.ExpressionAttributeValues) {
       if (!/^:[0-9a-zA-Z_]+$/.test(key)) {
-        return 'ExpressionAttributeValues contains invalid key: Syntax error; key: "' + key + '"'
+        return (
+          'ExpressionAttributeValues contains invalid key: Syntax error; key: "' +
+          key +
+          '"'
+        );
       }
-      context.unusedAttrVals[key] = true
+      context.unusedAttrVals[key] = true;
     }
     for (key in data.ExpressionAttributeValues) {
-      msg = validateAttributeValue(data.ExpressionAttributeValues[key])
+      msg = validateAttributeValue(data.ExpressionAttributeValues[key]);
       if (msg) {
-        msg = 'ExpressionAttributeValues contains invalid value: ' + msg + ' for key ' + key
-        return msg
+        msg =
+          "ExpressionAttributeValues contains invalid value: " +
+          msg +
+          " for key " +
+          key;
+        return msg;
       }
     }
   }
 
   if (data.UpdateExpression != null) {
-    result = parse(data.UpdateExpression, updateParser, context)
-    if (typeof result == 'string') {
-      return 'Invalid UpdateExpression: ' + result
+    result = parse(data.UpdateExpression, updateParser, context);
+    if (typeof result == "string") {
+      return "Invalid UpdateExpression: " + result;
     }
-    data._updates = result
+    data._updates = result;
   }
 
   if (data.ConditionExpression != null) {
-    result = parse(data.ConditionExpression, conditionParser, context)
-    if (typeof result == 'string') {
-      return 'Invalid ConditionExpression: ' + result
+    result = parse(data.ConditionExpression, conditionParser, context);
+    if (typeof result == "string") {
+      return "Invalid ConditionExpression: " + result;
     }
-    data._condition = result
+    data._condition = result;
   }
 
   if (data.KeyConditionExpression != null) {
-    context.isKeyCondition = true
-    result = parse(data.KeyConditionExpression, conditionParser, context)
-    if (typeof result == 'string') {
-      return 'Invalid KeyConditionExpression: ' + result
+    context.isKeyCondition = true;
+    result = parse(data.KeyConditionExpression, conditionParser, context);
+    if (typeof result == "string") {
+      return "Invalid KeyConditionExpression: " + result;
     }
-    data._keyCondition = result
+    data._keyCondition = result;
   }
 
   if (data.FilterExpression != null) {
-    result = parse(data.FilterExpression, conditionParser, context)
-    if (typeof result == 'string') {
-      return 'Invalid FilterExpression: ' + result
+    result = parse(data.FilterExpression, conditionParser, context);
+    if (typeof result == "string") {
+      return "Invalid FilterExpression: " + result;
     }
-    data._filter = result
+    data._filter = result;
   }
 
   if (data.ProjectionExpression != null) {
-    result = parse(data.ProjectionExpression, projectionParser, context)
-    if (typeof result == 'string') {
-      return 'Invalid ProjectionExpression: ' + result
+    result = parse(data.ProjectionExpression, projectionParser, context);
+    if (typeof result == "string") {
+      return "Invalid ProjectionExpression: " + result;
     }
-    data._projection = result
+    data._projection = result;
   }
 
   if (Object.keys(context.unusedAttrNames).length) {
-    return 'Value provided in ExpressionAttributeNames unused in expressions: ' +
-      'keys: {' + Object.keys(context.unusedAttrNames).join(', ') + '}'
+    return (
+      "Value provided in ExpressionAttributeNames unused in expressions: " +
+      "keys: {" +
+      Object.keys(context.unusedAttrNames).join(", ") +
+      "}"
+    );
   }
 
   if (Object.keys(context.unusedAttrVals).length) {
-    return 'Value provided in ExpressionAttributeValues unused in expressions: ' +
-      'keys: {' + Object.keys(context.unusedAttrVals).join(', ') + '}'
+    return (
+      "Value provided in ExpressionAttributeValues unused in expressions: " +
+      "keys: {" +
+      Object.keys(context.unusedAttrVals).join(", ") +
+      "}"
+    );
   }
 }
 
 function parse(str, parser, context) {
-  if (str == '') return 'The expression can not be empty;'
-  context.isReserved = isReserved
-  context.compare = db.compare
+  if (str == "") return "The expression can not be empty;";
+  context.isReserved = isReserved;
+  context.compare = db.compare;
   try {
-    return parser.parse(str, {context: context})
+    return parser.parse(str, { context: context });
   } catch (e) {
-    return e.name == 'SyntaxError' ? 'Syntax error; ' + e.message : e.message
+    return e.name == "SyntaxError" ? "Syntax error; " + e.message : e.message;
   }
 }
 
 function convertKeyCondition(expression) {
-  var keyConds = Object.create(null)
-  return checkExpr(expression, keyConds) || keyConds
+  var keyConds = Object.create(null);
+  return checkExpr(expression, keyConds) || keyConds;
 }
 
 function checkExpr(expr, keyConds) {
-  if (!expr || !expr.type) return
-  if (~['or', 'not', 'in', '<>'].indexOf(expr.type)) {
-    return 'Invalid operator used in KeyConditionExpression: ' + expr.type.toUpperCase()
+  if (!expr || !expr.type) return;
+  if (~["or", "not", "in", "<>"].indexOf(expr.type)) {
+    return (
+      "Invalid operator used in KeyConditionExpression: " +
+      expr.type.toUpperCase()
+    );
   }
-  if (expr.type == 'function' && ~['attribute_exists', 'attribute_not_exists', 'attribute_type', 'contains'].indexOf(expr.name)) {
-    return 'Invalid operator used in KeyConditionExpression: ' + expr.name
+  if (
+    expr.type == "function" &&
+    ~[
+      "attribute_exists",
+      "attribute_not_exists",
+      "attribute_type",
+      "contains",
+    ].indexOf(expr.name)
+  ) {
+    return "Invalid operator used in KeyConditionExpression: " + expr.name;
   }
-  if (expr.type == 'function' && expr.name == 'size') {
-    return 'KeyConditionExpressions cannot contain nested operations'
+  if (expr.type == "function" && expr.name == "size") {
+    return "KeyConditionExpressions cannot contain nested operations";
   }
-  if (expr.type == 'between' && !Array.isArray(expr.args[0])) {
-    return 'Invalid condition in KeyConditionExpression: ' + expr.type.toUpperCase() + ' operator must have the key attribute as its first operand'
+  if (expr.type == "between" && !Array.isArray(expr.args[0])) {
+    return (
+      "Invalid condition in KeyConditionExpression: " +
+      expr.type.toUpperCase() +
+      " operator must have the key attribute as its first operand"
+    );
   }
-  if (expr.type == 'function' && expr.name == 'begins_with' && !Array.isArray(expr.args[0])) {
-    return 'Invalid condition in KeyConditionExpression: ' + expr.name + ' operator must have the key attribute as its first operand'
+  if (
+    expr.type == "function" &&
+    expr.name == "begins_with" &&
+    !Array.isArray(expr.args[0])
+  ) {
+    return (
+      "Invalid condition in KeyConditionExpression: " +
+      expr.name +
+      " operator must have the key attribute as its first operand"
+    );
   }
   if (expr.args) {
-    var attrName = '', attrIx = 0
+    var attrName = "",
+      attrIx = 0;
     for (var i = 0; i < expr.args.length; i++) {
       if (Array.isArray(expr.args[i])) {
         if (attrName) {
-          return 'Invalid condition in KeyConditionExpression: Multiple attribute names used in one condition'
+          return "Invalid condition in KeyConditionExpression: Multiple attribute names used in one condition";
         }
         if (expr.args[i].length > 1) {
-          return 'KeyConditionExpressions cannot have conditions on nested attributes'
+          return "KeyConditionExpressions cannot have conditions on nested attributes";
         }
-        attrName = expr.args[i][0]
-        attrIx = i
+        attrName = expr.args[i][0];
+        attrIx = i;
       } else if (expr.args[i].type) {
-        var result = checkExpr(expr.args[i], keyConds)
-        if (result) return result
+        var result = checkExpr(expr.args[i], keyConds);
+        if (result) return result;
       }
     }
-    if (expr.type != 'and') {
+    if (expr.type != "and") {
       if (!attrName) {
-        return 'Invalid condition in KeyConditionExpression: No key attribute specified'
+        return "Invalid condition in KeyConditionExpression: No key attribute specified";
       }
       if (keyConds[attrName]) {
-        return 'KeyConditionExpressions must only contain one condition per key'
+        return "KeyConditionExpressions must only contain one condition per key";
       }
       if (attrIx != 0) {
         expr.type = {
-          '=': '=',
-          '<': '>',
-          '<=': '>=',
-          '>': '<',
-          '>=': '<=',
-        }[expr.type]
-        expr.args[1] = expr.args[0]
+          "=": "=",
+          "<": ">",
+          "<=": ">=",
+          ">": "<",
+          ">=": "<=",
+        }[expr.type];
+        expr.args[1] = expr.args[0];
       }
       keyConds[attrName] = {
         ComparisonOperator: {
-          '=': 'EQ',
-          '<': 'LT',
-          '<=': 'LE',
-          '>': 'GT',
-          '>=': 'GE',
-          'between': 'BETWEEN',
-          'function': 'BEGINS_WITH',
+          "=": "EQ",
+          "<": "LT",
+          "<=": "LE",
+          ">": "GT",
+          ">=": "GE",
+          between: "BETWEEN",
+          function: "BEGINS_WITH",
         }[expr.type],
         AttributeValueList: expr.args.slice(1),
-      }
+      };
     }
   }
 }
@@ -1369,8 +1706,8 @@ var RESERVED_WORDS = {
   WRITE: true,
   YEAR: true,
   ZONE: true,
-}
+};
 
 function isReserved(name) {
-  return RESERVED_WORDS[name.toUpperCase()] != null
+  return RESERVED_WORDS[name.toUpperCase()] != null;
 }
