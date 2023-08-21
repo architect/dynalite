@@ -1,5 +1,6 @@
-test
+.github
+.nyc_output
+*.pegjs
 coverage
 examples
-*.pegjs
-.nyc_output
+test
