@@ -25,7 +25,7 @@
     "leveldb"
   ],
   "author": "Michael Hart <michael.hart.au@gmail.com>",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "dependencies": {
     "async": "^2.6.3",
     "big.js": "^5.2.2",
