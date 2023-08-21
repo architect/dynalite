@@ -2,6 +2,12 @@
   "name": "dynalite",
   "version": "3.2.2",
   "description": "An implementation of Amazon's DynamoDB built on LevelDB",
+  "homepage": "https://github.com/architect/dynalite",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/architect/dynalite"
+  },
+  "bugs": "https://github.com/architect/dynalite/issues",
   "main": "index.js",
   "bin": "cli.js",
   "scripts": {
@@ -9,7 +15,6 @@
     "test": "mocha --require should --reporter spec -t $([ $REMOTE ] && echo 30s || echo 4s)",
     "coverage": "npx nyc@latest mocha --require should -t 4s"
   },
-  "repository": "mhart/dynalite",
   "keywords": [
     "dynamodb",
     "mock",
