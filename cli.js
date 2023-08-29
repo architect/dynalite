@@ -20,7 +20,7 @@ if (argv.help) {
     '--updateTableMs <ms>  Amount of time tables stay in UPDATING state (default: 500)',
     '--maxItemSizeKb <kb>  Maximum item size (default: 400)',
     '',
-    'Report bugs at github.com/mhart/dynalite/issues',
+    'Report bugs at github.com/architect/dynalite/issues',
   ].join('\n'))
 }
 

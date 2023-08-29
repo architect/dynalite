@@ -15,15 +15,9 @@
     "test": "mocha --require should --reporter spec -t $([ $REMOTE ] && echo 30s || echo 4s)",
     "coverage": "npx nyc@latest mocha --require should -t 4s"
   },
-  "keywords": [
-    "dynamodb",
-    "mock",
-    "fake",
-    "test",
-    "aws",
-    "dynamo",
-    "leveldb"
-  ],
+  "engines": {
+    "node": ">=14"
+  },
   "author": "Michael Hart <michael.hart.au@gmail.com>",
   "license": "Apache-2.0",
   "dependencies": {
@@ -46,5 +40,17 @@
     "mocha": "^10.2.0",
     "pegjs": "^0.10.0",
     "should": "^13.2.3"
-  }
+  },
+  "keywords": [
+    "aws",
+    "amazon",
+    "cloud",
+    "dynamo",
+    "dynamodb",
+    "fake",
+    "leveldb",
+    "mock",
+    "serverless",
+    "test"
+  ]
 }
