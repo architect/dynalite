@@ -13,7 +13,8 @@
   "scripts": {
     "build": "for file in ./db/*.pegjs; do pegjs \"$file\"; done",
     "test": "mocha --require should --reporter spec -t $([ $REMOTE ] && echo 30s || echo 4s)",
-    "coverage": "npx nyc@latest mocha --require should -t 4s"
+    "coverage": "npx nyc@latest mocha --require should -t 4s",
+    "lint": "eslint . --fix"
   },
   "engines": {
     "node": ">=14"
@@ -36,7 +37,9 @@
     "leveldown": "^6.1.1"
   },
   "devDependencies": {
+    "@architect/eslint-config": "^2.1.1",
     "aws4": "^1.12.0",
+    "eslint": "^8.48.0",
     "mocha": "^10.2.0",
     "pegjs": "^0.10.0",
     "should": "^13.2.3"
