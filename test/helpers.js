@@ -350,9 +350,10 @@ function batchWriteUntilDone(name, actions, cb) {
         cb()
       })
     },
-    function() {
-      return (batchRes.body.UnprocessedItems && Object.keys(batchRes.body.UnprocessedItems).length) ||
-        /ProvisionedThroughputExceededException/.test(batchRes.body.__type)
+    function(cb) {
+      let result = (batchRes.body.UnprocessedItems && Object.keys(batchRes.body.UnprocessedItems).length) ||
+      /ProvisionedThroughputExceededException/.test(batchRes.body.__type)
+      cb(null, result)
     },
     cb
   )
