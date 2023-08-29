@@ -34,7 +34,7 @@
     "levelup": "^4.4.0",
     "lock": "^1.1.0",
     "memdown": "^5.1.0",
-    "minimist": "^1.2.5",
+    "minimist": "^1.2.8",
     "once": "^1.4.0",
     "subleveldown": "^5.0.1"
   },
@@ -42,7 +42,7 @@
     "leveldown": "^5.6.0"
   },
   "devDependencies": {
-    "aws4": "^1.11.0",
+    "aws4": "^1.12.0",
     "mocha": "^10.2.0",
     "pegjs": "^0.10.0",
     "should": "^13.2.3"
