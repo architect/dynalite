@@ -31,15 +31,15 @@
     "big.js": "^6.2.1",
     "buffer-crc32": "^0.2.13",
     "lazy": "^1.0.11",
-    "levelup": "^4.4.0",
+    "levelup": "^5.1.1",
     "lock": "^1.1.0",
-    "memdown": "^5.1.0",
+    "memdown": "^6.1.1",
     "minimist": "^1.2.8",
     "once": "^1.4.0",
-    "subleveldown": "^5.0.1"
+    "subleveldown": "^6.0.1"
   },
   "optionalDependencies": {
-    "leveldown": "^5.6.0"
+    "leveldown": "^6.1.1"
   },
   "devDependencies": {
     "aws4": "^1.12.0",
