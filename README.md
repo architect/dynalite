@@ -1,6 +1,6 @@
 # dynalite
 
-[![Build Status](https://api.travis-ci.org/mhart/dynalite.png?branch=master)](https://travis-ci.org/github/mhart/dynalite)
+[![GitHub CI status](https://github.com/architect/dynalite/workflows/Node%20CI/badge.svg)](https://github.com/architect/dynalite/actions?query=workflow%3A%22Node+CI%22)
 
 An implementation of Amazon's DynamoDB built on LevelDB
 (well, [@rvagg](https://github.com/rvagg)'s awesome [LevelUP](https://github.com/Level/levelup) to be precise)
