@@ -27,7 +27,7 @@
   "author": "Michael Hart <michael.hart.au@gmail.com>",
   "license": "Apache-2.0",
   "dependencies": {
-    "async": "^2.6.3",
+    "async": "^3.2.4",
     "big.js": "^6.2.1",
     "buffer-crc32": "^0.2.13",
     "lazy": "^1.0.11",
