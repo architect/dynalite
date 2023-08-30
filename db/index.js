@@ -138,7 +138,7 @@ function create (options) {
       var currentUnixSeconds = Math.round(Date.now() / 1000)
 
       function logError(err, result) {
-        if (err) console.error("@@@", err)
+        if (err) console.error(err)
       }
 
       lazyStream(tableDb.createKeyStream({}), logError)
@@ -156,7 +156,7 @@ function create (options) {
                   getIndexDb: getIndexDb,
                 }
                 var itemDb = getItemDb(table.TableName)
-                var kvStream = lazyStream(itemDb.createReadStream({}), logError())
+                var kvStream = lazyStream(itemDb.createReadStream({}), logError)
                 kvStream = kvStream.filter(function (item) {
                   var ttl = item.value[table.TimeToLiveDescription.AttributeName]
                   return ttl && typeof ttl.N === 'string' && currentUnixSeconds > Number(ttl.N)
