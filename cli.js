@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-var argv = require('minimist')(process.argv.slice(2))
+var argv = require('minimist')(process.argv.slice(2), {alias: {debug: ['d'], verbose: ['v']}})
 
 if (argv.help || argv.h) {
   // eslint-disable-next-line no-console
