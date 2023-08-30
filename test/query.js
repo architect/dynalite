@@ -3232,8 +3232,7 @@ describe('query', function() {
       })
     })
 
-    // TODO: Need high capacity to run this (~100 runs quickly)
-    it.skip('should not return LastEvaluatedKey if just under limit', function(done) {
+    it('should not return LastEvaluatedKey if just under limit', function(done) {
       this.timeout(200000)
 
       var i, items = [], id = helpers.randomString(), e = new Array(41646).join('e'), eAttr = e.slice(0, 255)
@@ -3269,8 +3268,7 @@ describe('query', function() {
       })
     })
 
-    // TODO: Need high capacity to run this (~100 runs quickly)
-    it.skip('should return LastEvaluatedKey if just over limit', function(done) {
+    it('should return LastEvaluatedKey if just over limit', function(done) {
       this.timeout(200000)
 
       var i, items = [], id = helpers.randomString(), e = new Array(41646).join('e')
@@ -3304,8 +3302,7 @@ describe('query', function() {
       })
     })
 
-    // TODO: Need high capacity to run this (~100 runs quickly)
-    it.skip('should return all if just under limit', function(done) {
+    it('should return all if just under limit', function(done) {
       this.timeout(200000)
 
       var i, items = [], id = helpers.randomString(), e = new Array(43373).join('e'), eAttr = e.slice(0, 255)
@@ -3339,8 +3336,7 @@ describe('query', function() {
       })
     })
 
-    // TODO: Need high capacity to run this (~100 runs quickly)
-    it.skip('should return one less than all if just over limit', function(done) {
+    it('should return one less than all if just over limit', function(done) {
       this.timeout(200000)
 
       var i, items = [], id = helpers.randomString(), e = new Array(43373).join('e')

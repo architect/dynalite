@@ -3352,8 +3352,7 @@ describe('scan', function() {
       })
     })
 
-    // TODO: Need high capacity to run this (~100 runs quickly)
-    it.skip('should not return LastEvaluatedKey if just under limit for range table', function(done) {
+    it('should not return LastEvaluatedKey if just under limit for range table', function(done) {
       this.timeout(200000)
 
       var i, items = [], id = helpers.randomString(), e = new Array(41583).join('e'), eAttr = e.slice(0, 255)
@@ -3389,8 +3388,7 @@ describe('scan', function() {
       })
     })
 
-    // TODO: Need high capacity to run this (~100 runs quickly)
-    it.skip('should return LastEvaluatedKey if just over limit for range table', function(done) {
+    it('should return LastEvaluatedKey if just over limit for range table', function(done) {
       this.timeout(200000)
 
       var i, items = [], id = helpers.randomString(), e = new Array(41597).join('e')
@@ -3423,8 +3421,7 @@ describe('scan', function() {
       })
     })
 
-    // TODO: Need high capacity to run this (~100 runs quickly)
-    it.skip('should not return LastEvaluatedKey if just under limit for number range table', function(done) {
+    it('should not return LastEvaluatedKey if just under limit for number range table', function(done) {
       this.timeout(200000)
 
       var i, items = [], id = helpers.randomString(), e = new Array(41639).join('e'), eAttr = e.slice(0, 255)
@@ -3460,8 +3457,7 @@ describe('scan', function() {
       })
     })
 
-    // TODO: Need high capacity to run this (~100 runs quickly)
-    it.skip('should return LastEvaluatedKey if just over limit for number range table', function(done) {
+    it('should return LastEvaluatedKey if just over limit for number range table', function(done) {
       this.timeout(200000)
 
       var i, items = [], id = helpers.randomString(), e = new Array(41639).join('e')
@@ -3494,8 +3490,7 @@ describe('scan', function() {
       })
     })
 
-    // TODO: Need high capacity to run this (~100 runs quickly)
-    it.skip('should return all if just under limit with small attribute for hash table', function(done) {
+    it('should return all if just under limit with small attribute for hash table', function(done) {
       this.timeout(200000)
 
       var i, items = []
@@ -3545,8 +3540,7 @@ describe('scan', function() {
       })
     })
 
-    // TODO: Need high capacity to run this (~100 runs quickly)
-    it.skip('should return all if just under limit with large attribute', function(done) {
+    it('should return all if just under limit with large attribute', function(done) {
       this.timeout(200000)
 
       var i, items = []
@@ -3596,8 +3590,7 @@ describe('scan', function() {
       })
     })
 
-    // TODO: Need high capacity to run this (~100 runs quickly)
-    it.skip('should return one less than all if just over limit with small attribute for hash table', function(done) {
+    it('should return one less than all if just over limit with small attribute for hash table', function(done) {
       this.timeout(100000)
 
       var i, items = []
@@ -3647,8 +3640,7 @@ describe('scan', function() {
       })
     })
 
-    // TODO: Need high capacity to run this (~100 runs quickly)
-    it.skip('should return all if just under limit for range table', function(done) {
+    it('should return all if just under limit for range table', function(done) {
       this.timeout(200000)
 
       var i, items = []
@@ -3698,8 +3690,7 @@ describe('scan', function() {
       })
     })
 
-    // TODO: Need high capacity to run this (~100 runs quickly)
-    it.skip('should return all if just over limit with less items for range table', function(done) {
+    it('should return all if just over limit with less items for range table', function(done) {
       this.timeout(200000)
 
       var i, items = []
@@ -3745,8 +3736,7 @@ describe('scan', function() {
       })
     })
 
-    // TODO: Need high capacity to run this (~100 runs quickly)
-    it.skip('should return all if just over limit for range table', function(done) {
+    it('should return all if just over limit for range table', function(done) {
       this.timeout(200000)
 
       var i, items = []
@@ -3796,8 +3786,7 @@ describe('scan', function() {
       })
     })
 
-    // TODO: Need high capacity to run this (~100 runs quickly)
-    it.skip('should return one less than all if just over limit with large attribute', function(done) {
+    it('should return one less than all if just over limit with large attribute', function(done) {
       this.timeout(100000)
 
       var i, items = []
