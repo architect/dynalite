@@ -9,6 +9,7 @@ var http = require('http'),
     db = require('./db')
 
 var MAX_REQUEST_BYTES = 16 * 1024 * 1024
+var verbose = false
 
 var validApis = ['DynamoDB_20111205', 'DynamoDB_20120810'],
     validOperations = ['BatchGetItem', 'BatchWriteItem', 'CreateTable', 'DeleteItem', 'DeleteTable',
@@ -21,6 +22,8 @@ module.exports = dynalite
 
 function dynalite(options) {
   options = options || {}
+  if (options.verbose || options.v) verbose = true
+
   var server, store = db.create(options), requestHandler = httpHandler.bind(null, store)
 
   if (options.ssl) {
@@ -259,7 +262,10 @@ function httpHandler(store, req, res) {
     }
 
     actions[action](store, data, function(err, data) {
-      if (err && err.statusCode) return sendData(req, res, err.body, err.statusCode)
+      if (err && err.statusCode) {
+        if (verbose) console.error(err.body)
+        return sendData(req, res, err.body, err.statusCode)
+      }
       if (err) throw err
       sendData(req, res, data)
     })
