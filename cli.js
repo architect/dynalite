@@ -2,7 +2,7 @@
 
 var argv = require('minimist')(process.argv.slice(2))
 
-if (argv.help) {
+if (argv.help || argv.h) {
   // eslint-disable-next-line no-console
   return console.log([
     '',
@@ -11,7 +11,7 @@ if (argv.help) {
     'A DynamoDB http server, optionally backed by LevelDB',
     '',
     'Options:',
-    '--help                Display this help message and exit',
+    '--help, -h            Display this help message and exit',
     '--port <port>         The port to listen on (default: 4567)',
     '--path <path>         The path to use for the LevelDB store (in-memory by default)',
     '--ssl                 Enable SSL for the web server (default: false)',
@@ -19,6 +19,8 @@ if (argv.help) {
     '--deleteTableMs <ms>  Amount of time tables stay in DELETING state (default: 500)',
     '--updateTableMs <ms>  Amount of time tables stay in UPDATING state (default: 500)',
     '--maxItemSizeKb <kb>  Maximum item size (default: 400)',
+    '--verbose, -v         Enable verbose logging',
+    '--debug, -d           Enable debug logging',
     '',
     'Report bugs at github.com/architect/dynalite/issues',
   ].join('\n'))

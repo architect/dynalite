@@ -6,6 +6,11 @@
 
 Hello! After a bit of a hiatus, the [Architect team](https://github.com/architect/dynalite/issues/166) is pleased bring the first new Dynalite release in over two years!
 
+### Added
+
+- Added `--verbose|-v` + `--debug|-d` logging modes, and some additional logging
+- Added `-h` help alias for CLI
+
 
 ### Changed
 
