@@ -616,8 +616,7 @@ describe('batchGetItem', function() {
       })
     })
 
-    // TODO: Need high capacity to run this (~100 runs quickly)
-    it.skip('should return all items if just under limit', function(done) {
+    it('should return all items if just under limit', function(done) {
       this.timeout(200000)
 
       var i, item, items = [], b = new Array(helpers.MAX_SIZE - 6).join('b'),
@@ -648,7 +647,7 @@ describe('batchGetItem', function() {
       })
     })
 
-    // TODO: Need high capacity to run this (~100 runs quickly)
+    // TODO: test fails!
     it.skip('should return an unprocessed item if just over limit', function(done) {
       this.timeout(200000)
 
@@ -686,8 +685,7 @@ describe('batchGetItem', function() {
     })
 
 
-    // TODO: Need high capacity to run this (~100 runs quickly)
-    it.skip('should return many unprocessed items if very over the limit', function(done) {
+    it('should return many unprocessed items if very over the limit', function(done) {
       this.timeout(200000)
 
       var i, item, items = [], b = new Array(helpers.MAX_SIZE - 3).join('b'),
