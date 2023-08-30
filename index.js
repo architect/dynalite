@@ -22,7 +22,7 @@ module.exports = dynalite
 
 function dynalite(options) {
   options = options || {}
-  if (options.verbose || options.v) verbose = true
+  if (options.verbose) verbose = true
 
   var server, store = db.create(options), requestHandler = httpHandler.bind(null, store)
 
