@@ -10,6 +10,7 @@ var http = require('http'),
 
 var MAX_REQUEST_BYTES = 16 * 1024 * 1024
 var verbose = false
+var debug = false
 
 var validApis = ['DynamoDB_20111205', 'DynamoDB_20120810'],
     validOperations = ['BatchGetItem', 'BatchWriteItem', 'CreateTable', 'DeleteItem', 'DeleteTable',
@@ -23,6 +24,7 @@ module.exports = dynalite
 function dynalite(options) {
   options = options || {}
   if (options.verbose) verbose = true
+  if (options.debug) debug = true
 
   var server, store = db.create(options), requestHandler = httpHandler.bind(null, store)
 
@@ -95,6 +97,10 @@ function httpHandler(store, req, res) {
 
     body = body ? body.toString() : ''
 
+    if (debug) {
+      console.error('[Dynalite] Incoming request:', {headers: req.headers, body: body})
+    }
+
     // All responses after this point have a RequestId
     res.setHeader('x-amzn-RequestId', rand52CharId())
 
@@ -120,7 +126,7 @@ function httpHandler(store, req, res) {
       res.statusCode = 200
       res.setHeader('x-amz-crc32', 3128867991)
       res.setHeader('Content-Length', 42)
-      return res.end('healthy: dynamodb.us-east-1.amazonaws.com ')
+      return res.end('healthy: dynamodb.us-east-1.amazonaws.com ') // Trailing space intentional, lol
     }
 
     var contentType = (req.headers['content-type'] || '').split(';')[0].trim()
@@ -256,14 +262,17 @@ function httpHandler(store, req, res) {
     try {
       data = validations.checkTypes(data, actionValidation.types)
       validations.checkValidations(data, actionValidation.types, actionValidation.custom, store)
-    } catch (e) {
-      if (e.statusCode) return sendData(req, res, e.body, e.statusCode)
-      throw e
+    } catch (err) {
+      if (err.statusCode) {
+        if (verbose) console.error('[Dynalite] Validation error', err.body)
+        return sendData(req, res, err.body, err.statusCode)
+      }
+      throw err
     }
 
     actions[action](store, data, function(err, data) {
       if (err && err.statusCode) {
-        if (verbose) console.error(err.body)
+        if (verbose) console.error('[Dynalite] API error', err.body)
         return sendData(req, res, err.body, err.statusCode)
       }
       if (err) throw err
