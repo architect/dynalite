@@ -27,7 +27,8 @@ Usage: dynalite [--port <port>] [--path <path>] [options]
 A DynamoDB http server, optionally backed by LevelDB
 
 Options:
---help                Display this help message and exit
+--help, -h            Display this help message and exit
+--host                Listen on a specific host address (default: all available)
 --port <port>         The port to listen on (default: 4567)
 --path <path>         The path to use for the LevelDB store (in-memory by default)
 --ssl                 Enable SSL for the web server (default: false)
@@ -35,8 +36,10 @@ Options:
 --deleteTableMs <ms>  Amount of time tables stay in DELETING state (default: 500)
 --updateTableMs <ms>  Amount of time tables stay in UPDATING state (default: 500)
 --maxItemSizeKb <kb>  Maximum item size (default: 400)
+--verbose, -v         Enable verbose logging
+--debug, -d           Enable debug logging
 
-Report bugs at github.com/mhart/dynalite/issues
+Report bugs at github.com/architect/dynalite/issues
 ```
 
 Or programmatically:
@@ -85,4 +88,4 @@ npm install -D dynalite
 - Implement `ReturnItemCollectionMetrics` on all remaining endpoints
 - Implement size info for tables and indexes
 - Add ProvisionedThroughput checking
-- See [open issues on GitHub](https://github.com/mhart/dynalite/issues) for any further TODOs
+- See [open issues on GitHub](https://github.com/architect/dynalite/issues) for any further TODOs
