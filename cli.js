@@ -12,6 +12,7 @@ if (argv.help || argv.h) {
     '',
     'Options:',
     '--help, -h            Display this help message and exit',
+    '--host                Listen on a specific host address (default: all available)',
     '--port <port>         The port to listen on (default: 4567)',
     '--path <path>         The path to use for the LevelDB store (in-memory by default)',
     '--ssl                 Enable SSL for the web server (default: false)',
@@ -29,8 +30,10 @@ if (argv.help || argv.h) {
 // If we're PID 1, eg in a docker container, SIGINT won't end the process as usual
 if (process.pid == 1) process.on('SIGINT', process.exit)
 
-var server = require('./index.js')(argv).listen(argv.port || 4567, function() {
-  var address = server.address(), protocol = argv.ssl ? 'https' : 'http'
-  // eslint-disable-next-line no-console
-  console.log('Listening at %s://%s:%s', protocol, address.address, address.port)
-})
+var server = require('./index.js')(argv)
+  .listen(argv.port || 4567, argv.host || undefined, function() {
+    var address = server.address(), protocol = argv.ssl ? 'https' : 'http'
+    // eslint-disable-next-line no-console
+    var host = argv.host || 'localhost'
+    console.log('Dynalite listening at: %s://%s:%s', protocol, host, address.port)
+  })
