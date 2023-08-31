@@ -4,6 +4,10 @@ var http = require('http'),
     once = require('once'),
     dynalite = require('..')
 
+var useRemoteDynamo = process.env.REMOTE
+var runSlowTests = true
+if (useRemoteDynamo && !process.env.SLOW_TESTS) runSlowTests = false
+
 http.globalAgent.maxSockets = Infinity
 
 exports.MAX_SIZE = 409600
@@ -36,14 +40,15 @@ exports.randomNumber = randomNumber
 exports.randomName = randomName
 exports.readCapacity = 10
 exports.writeCapacity = 5
-exports.testHashTable = process.env.REMOTE ? '__dynalite_test_1' : randomName()
-exports.testHashNTable = process.env.REMOTE ? '__dynalite_test_2' : randomName()
-exports.testRangeTable = process.env.REMOTE ? '__dynalite_test_3' : randomName()
-exports.testRangeNTable = process.env.REMOTE ? '__dynalite_test_4' : randomName()
-exports.testRangeBTable = process.env.REMOTE ? '__dynalite_test_5' : randomName()
+exports.testHashTable = useRemoteDynamo ? '__dynalite_test_1' : randomName()
+exports.testHashNTable = useRemoteDynamo ? '__dynalite_test_2' : randomName()
+exports.testRangeTable = useRemoteDynamo ? '__dynalite_test_3' : randomName()
+exports.testRangeNTable = useRemoteDynamo ? '__dynalite_test_4' : randomName()
+exports.testRangeBTable = useRemoteDynamo ? '__dynalite_test_5' : randomName()
+exports.runSlowTests = runSlowTests
 
 var port = 10000 + Math.round(Math.random() * 10000),
-    requestOpts = process.env.REMOTE ?
+    requestOpts = useRemoteDynamo ?
       {host: 'dynamodb.' + exports.awsRegion + '.amazonaws.com', method: 'POST'} :
       {host: '127.0.0.1', port: port, method: 'POST'}
 
@@ -97,7 +102,7 @@ function request(opts, cb) {
       } catch (e) {
         res.body = res.rawBody
       }
-      if (process.env.REMOTE && opts.retries <= MAX_RETRIES &&
+      if (useRemoteDynamo && opts.retries <= MAX_RETRIES &&
           (res.body.__type == 'com.amazon.coral.availability#ThrottlingException' ||
           res.body.__type == 'com.amazonaws.dynamodb.v20120810#LimitExceededException')) {
         opts.retries++
@@ -137,7 +142,7 @@ function randomName() {
 }
 
 function createTestTables(done) {
-  if (process.env.REMOTE && !CREATE_REMOTE_TABLES) return done()
+  if (useRemoteDynamo && !CREATE_REMOTE_TABLES) return done()
   var readCapacity = exports.readCapacity, writeCapacity = exports.writeCapacity
   var tables = [{
     TableName: exports.testHashTable,
@@ -202,7 +207,7 @@ function getAccountId(done) {
 }
 
 function deleteTestTables(done) {
-  if (process.env.REMOTE && !DELETE_REMOTE_TABLES) return done()
+  if (useRemoteDynamo && !DELETE_REMOTE_TABLES) return done()
   request(opts('ListTables', {}), function(err, res) {
     if (err) return done(err)
     var names = res.body.TableNames.filter(function(name) { return name.indexOf(exports.prefix) === 0 })
