@@ -57,7 +57,7 @@ exports.types = {
         KeyType: {
           type: 'String',
           notNull: true,
-          enum: ['HASH', 'RANGE'],
+          enum: ['HASH', 'RANGE', 'SORT'],
         },
       },
     },
@@ -202,6 +202,10 @@ exports.custom = function(data) {
 
   if (keys.length > defns.length)
     return 'Invalid KeySchema: Some index key attribute have no definition'
+  
+  if (data.KeySchema[1].KeyType === 'SORT') {
+      data.KeySchema[1].KeyType = 'RANGE';
+  }
 
   if (keys.some(function(key) { return !~defns.indexOf(key) }))
     return 'One or more parameter values were invalid: Some index key attributes are not defined in ' +
@@ -325,4 +329,3 @@ exports.custom = function(data) {
       return 'One or more parameter values were invalid: GlobalSecondaryIndex count exceeds the per-table limit of 20'
   }
 }
-
