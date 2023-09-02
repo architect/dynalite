@@ -692,7 +692,6 @@ function compare(comp, val, compVals) {
       break
     case 'IN':
     case 'in':
-      if (!attrVal) return false
       if (!compVals.some(function(compVal) {
         compType = Object.keys(compVal)[0]
         compVal = compVal[compType]

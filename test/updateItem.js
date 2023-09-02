@@ -1450,6 +1450,11 @@ describe('updateItem', function() {
         UpdateExpression: 'SET #b = :b',
         ExpressionAttributeNames: {'#a': 'active', '#b': 'active'},
         ExpressionAttributeValues: {':a': {BOOL: false}, ':b': {BOOL: true}},
+      }, {
+        ConditionExpression: '#a IN (:a)',
+        UpdateExpression: 'SET #a = :b',
+        ExpressionAttributeNames: {'#a': 'active'},
+        ExpressionAttributeValues: {':a': {BOOL: false}, ':b': {BOOL: true}},
       }], function(updateOpts, cb) {
         var item = {a: {S: helpers.randomString()}, active: {BOOL: false}}
         request(helpers.opts('PutItem', {TableName: helpers.testHashTable, Item: item}), function(err, res) {
@@ -1463,6 +1468,31 @@ describe('updateItem', function() {
             if (err) return cb(err)
             res.statusCode.should.equal(200)
             res.body.should.eql({Attributes: {active: {BOOL: true}}})
+            cb()
+          })
+        })
+      }, done)
+    })
+
+    it('should update when falsey in condition matches', function(done) {
+      async.forEach([{BOOL:false}, {S:""}, {N: "0.0"}, {"N": "0"}, {NULL: true}], function(value, cb) {
+        var item = {a: {S: helpers.randomString()}, updated: {BOOL: false}, value: value}
+        request(helpers.opts('PutItem', {TableName: helpers.testHashTable, Item: item}), function(err, res) {
+          if (err) return cb(err)
+          res.statusCode.should.equal(200)
+          res.body.should.eql({})
+          request(opts({
+            TableName: helpers.testHashTable,
+            Key: {a: item.a},
+            ReturnValues: 'UPDATED_NEW',
+            UpdateExpression: 'SET #u = :t',
+            ConditionExpression: '#v in (:v)',
+            ExpressionAttributeNames: {'#u': 'updated', '#v': 'value'},
+            ExpressionAttributeValues: {':t': {BOOL: true}, ':v': value},
+          }), function(err, res) {
+            if (err) return cb(err)
+            res.statusCode.should.equal(200, `Update failed when checking for {${Object.keys(value)[0]}:${Object.values(value)[0]}}`)
+            res.body.should.eql({Attributes: {updated: {BOOL: true}}})
             cb()
           })
         })
