@@ -1,29 +1,29 @@
 var async = require('async'),
-    getItem = require('./getItem'),
-    db = require('../db')
+  getItem = require('./getItem'),
+  db = require('../db')
 
-module.exports = function batchGetItem(store, data, cb) {
+module.exports = function batchGetItem (store, data, cb) {
   var requests = {}
 
   async.series([
     async.each.bind(async, Object.keys(data.RequestItems), addTableRequests),
     async.parallel.bind(async, requests),
-  ], function(err, responses) {
+  ], function (err, responses) {
     if (err) return cb(err)
-    var res = {Responses: {}, UnprocessedKeys: {}}, table, tableResponses = responses[1], totalSize = 0, capacities = {}
+    var res = { Responses: {}, UnprocessedKeys: {} }, table, tableResponses = responses[1], totalSize = 0, capacities = {}
 
     for (table in tableResponses) {
       // Order is pretty random
       // Assign keys before we shuffle
-      tableResponses[table].forEach(function(tableRes, ix) { tableRes._key = data.RequestItems[table].Keys[ix] }) // eslint-disable-line no-loop-func
+      tableResponses[table].forEach(function (tableRes, ix) { tableRes._key = data.RequestItems[table].Keys[ix] }) // eslint-disable-line no-loop-func
       shuffle(tableResponses[table])
-      res.Responses[table] = tableResponses[table].map(function(tableRes) { // eslint-disable-line no-loop-func
+      res.Responses[table] = tableResponses[table].map(function (tableRes) { // eslint-disable-line no-loop-func
         if (tableRes.Item) {
           // TODO: This is totally inefficient - should fix this
           var newSize = totalSize + db.itemSize(tableRes.Item)
           if (newSize > (1024 * 1024 + store.options.maxItemSize - 3)) {
             if (!res.UnprocessedKeys[table]) {
-              res.UnprocessedKeys[table] = {Keys: []}
+              res.UnprocessedKeys[table] = { Keys: [] }
               if (data.RequestItems[table].AttributesToGet)
                 res.UnprocessedKeys[table].AttributesToGet = data.RequestItems[table].AttributesToGet
               if (data.RequestItems[table].ConsistentRead)
@@ -44,12 +44,12 @@ module.exports = function batchGetItem(store, data, cb) {
       }).filter(Boolean)
     }
 
-    if (~['TOTAL', 'INDEXES'].indexOf(data.ReturnConsumedCapacity)) {
-      res.ConsumedCapacity = Object.keys(tableResponses).map(function(table) {
+    if (~[ 'TOTAL', 'INDEXES' ].indexOf(data.ReturnConsumedCapacity)) {
+      res.ConsumedCapacity = Object.keys(tableResponses).map(function (table) {
         return {
           CapacityUnits: capacities[table],
           TableName: table,
-          Table: data.ReturnConsumedCapacity == 'INDEXES' ? {CapacityUnits: capacities[table]} : undefined,
+          Table: data.ReturnConsumedCapacity == 'INDEXES' ? { CapacityUnits: capacities[table] } : undefined,
         }
       })
     }
@@ -57,8 +57,8 @@ module.exports = function batchGetItem(store, data, cb) {
     cb(null, res)
   })
 
-  function addTableRequests(tableName, cb) {
-    store.getTable(tableName, function(err, table) {
+  function addTableRequests (tableName, cb) {
+    store.getTable(tableName, function (err, table) {
       if (err) return cb(err)
 
       var req = data.RequestItems[tableName], i, key, options, gets = []
@@ -66,9 +66,10 @@ module.exports = function batchGetItem(store, data, cb) {
       for (i = 0; i < req.Keys.length; i++) {
         key = req.Keys[i]
 
-        if ((err = db.validateKey(key, table)) != null) return cb(err)
+        let invalid = db.validateKey(key, table)
+        if (invalid != null) return cb(invalid)
 
-        options = {TableName: tableName, Key: key}
+        options = { TableName: tableName, Key: key }
         if (req._projection) options._projection = req._projection
         if (req.AttributesToGet) options.AttributesToGet = req.AttributesToGet
         if (req.ConsistentRead) options.ConsistentRead = req.ConsistentRead
@@ -76,14 +77,14 @@ module.exports = function batchGetItem(store, data, cb) {
         gets.push(options)
       }
 
-      requests[tableName] = async.map.bind(async, gets, function(data, cb) { return getItem(store, data, cb) })
+      requests[tableName] = async.map.bind(async, gets, function (data, cb) { return getItem(store, data, cb) })
 
       cb()
     })
   }
 }
 
-function shuffle(arr) {
+function shuffle (arr) {
   var i, j, temp
   for (i = arr.length - 1; i >= 1; i--) {
     j = Math.floor(Math.random() * (i + 1))

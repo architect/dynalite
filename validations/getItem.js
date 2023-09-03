@@ -3,7 +3,7 @@ var validations = require('./index')
 exports.types = {
   ReturnConsumedCapacity: {
     type: 'String',
-    enum: ['INDEXES', 'TOTAL', 'NONE'],
+    enum: [ 'INDEXES', 'TOTAL', 'NONE' ],
   },
   AttributesToGet: {
     type: 'List',
@@ -33,9 +33,9 @@ exports.types = {
   },
 }
 
-exports.custom = function(data) {
+exports.custom = function (data) {
 
-  var msg = validations.validateExpressionParams(data, ['ProjectionExpression'], ['AttributesToGet'])
+  var msg = validations.validateExpressionParams(data, [ 'ProjectionExpression' ], [ 'AttributesToGet' ])
   if (msg) return msg
 
   for (var key in data.Key) {

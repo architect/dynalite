@@ -12,7 +12,7 @@ exports.types = {
         AttributeType: {
           type: 'String',
           notNull: true,
-          enum: ['B', 'N', 'S'],
+          enum: [ 'B', 'N', 'S' ],
         },
       },
     },
@@ -25,7 +25,7 @@ exports.types = {
   },
   BillingMode: {
     type: 'String',
-    enum: ['PROVISIONED', 'PAY_PER_REQUEST'],
+    enum: [ 'PROVISIONED', 'PAY_PER_REQUEST' ],
   },
   ProvisionedThroughput: {
     type: 'FieldStruct<ProvisionedThroughput>',
@@ -57,7 +57,7 @@ exports.types = {
         KeyType: {
           type: 'String',
           notNull: true,
-          enum: ['HASH', 'RANGE'],
+          enum: [ 'HASH', 'RANGE' ],
         },
       },
     },
@@ -99,7 +99,7 @@ exports.types = {
           children: {
             ProjectionType: {
               type: 'String',
-              enum: ['ALL', 'INCLUDE', 'KEYS_ONLY'],
+              enum: [ 'ALL', 'INCLUDE', 'KEYS_ONLY' ],
             },
             NonKeyAttributes: {
               type: 'List',
@@ -148,7 +148,7 @@ exports.types = {
           children: {
             ProjectionType: {
               type: 'String',
-              enum: ['ALL', 'INCLUDE', 'KEYS_ONLY'],
+              enum: [ 'ALL', 'INCLUDE', 'KEYS_ONLY' ],
             },
             NonKeyAttributes: {
               type: 'List',
@@ -177,14 +177,15 @@ exports.types = {
   },
 }
 
-exports.custom = function(data) {
+exports.custom = function (data) {
 
   if (data.BillingMode == 'PAY_PER_REQUEST') {
     if (data.ProvisionedThroughput) {
       return 'One or more parameter values were invalid: ' +
         'Neither ReadCapacityUnits nor WriteCapacityUnits can be specified when BillingMode is PAY_PER_REQUEST'
     }
-  } else {
+  }
+  else {
     if (data.BillingMode != 'PAY_PER_REQUEST' &&
         (!data.ProvisionedThroughput || !data.ProvisionedThroughput.ReadCapacityUnits || !data.ProvisionedThroughput.WriteCapacityUnits)) {
       return 'One or more parameter values were invalid: ' +
@@ -197,13 +198,13 @@ exports.custom = function(data) {
       return 'Given value ' + data.ProvisionedThroughput.WriteCapacityUnits + ' for WriteCapacityUnits is out of bounds'
   }
 
-  var defns = data.AttributeDefinitions.map(function(key) { return key.AttributeName })
-  var keys = data.KeySchema.map(function(key) { return key.AttributeName })
+  var defns = data.AttributeDefinitions.map(function (key) { return key.AttributeName })
+  var keys = data.KeySchema.map(function (key) { return key.AttributeName })
 
   if (keys.length > defns.length)
     return 'Invalid KeySchema: Some index key attribute have no definition'
 
-  if (keys.some(function(key) { return !~defns.indexOf(key) }))
+  if (keys.some(function (key) { return !~defns.indexOf(key) }))
     return 'One or more parameter values were invalid: Some index key attributes are not defined in ' +
       'AttributeDefinitions. Keys: [' + keys.join(', ') + '], AttributeDefinitions: [' + defns.join(', ') + ']'
 
@@ -235,8 +236,8 @@ exports.custom = function(data) {
 
     for (i = 0; i < data.LocalSecondaryIndexes.length; i++) {
       indexName = data.LocalSecondaryIndexes[i].IndexName
-      indexKeys = data.LocalSecondaryIndexes[i].KeySchema.map(function(key) { return key.AttributeName }) // eslint-disable-line no-loop-func
-      if (indexKeys.some(function(key) { return !~defns.indexOf(key) })) // eslint-disable-line no-loop-func
+      indexKeys = data.LocalSecondaryIndexes[i].KeySchema.map(function (key) { return key.AttributeName }) // eslint-disable-line no-loop-func
+      if (indexKeys.some(function (key) { return !~defns.indexOf(key) })) // eslint-disable-line no-loop-func
         return 'One or more parameter values were invalid: ' +
           'Some index key attributes are not defined in AttributeDefinitions. ' +
           'Keys: [' + indexKeys.join(', ') + '], AttributeDefinitions: [' + defns.join(', ') + ']'
@@ -286,8 +287,8 @@ exports.custom = function(data) {
 
     for (i = 0; i < data.GlobalSecondaryIndexes.length; i++) {
       indexName = data.GlobalSecondaryIndexes[i].IndexName
-      indexKeys = data.GlobalSecondaryIndexes[i].KeySchema.map(function(key) { return key.AttributeName }) // eslint-disable-line no-loop-func
-      if (indexKeys.some(function(key) { return !~defns.indexOf(key) })) // eslint-disable-line no-loop-func
+      indexKeys = data.GlobalSecondaryIndexes[i].KeySchema.map(function (key) { return key.AttributeName }) // eslint-disable-line no-loop-func
+      if (indexKeys.some(function (key) { return !~defns.indexOf(key) })) // eslint-disable-line no-loop-func
         return 'One or more parameter values were invalid: ' +
           'Some index key attributes are not defined in AttributeDefinitions. ' +
           'Keys: [' + indexKeys.join(', ') + '], AttributeDefinitions: [' + defns.join(', ') + ']'

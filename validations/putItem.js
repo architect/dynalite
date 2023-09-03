@@ -1,10 +1,10 @@
 var validations = require('./index'),
-    db = require('../db')
+  db = require('../db')
 
 exports.types = {
   ReturnConsumedCapacity: {
     type: 'String',
-    enum: ['INDEXES', 'TOTAL', 'NONE'],
+    enum: [ 'INDEXES', 'TOTAL', 'NONE' ],
   },
   TableName: {
     type: 'String',
@@ -20,7 +20,7 @@ exports.types = {
   },
   ConditionalOperator: {
     type: 'String',
-    enum: ['OR', 'AND'],
+    enum: [ 'OR', 'AND' ],
   },
   Expected: {
     type: 'Map<ExpectedAttributeValue>',
@@ -33,7 +33,7 @@ exports.types = {
         },
         ComparisonOperator: {
           type: 'String',
-          enum: ['IN', 'NULL', 'BETWEEN', 'LT', 'NOT_CONTAINS', 'EQ', 'GT', 'NOT_NULL', 'NE', 'LE', 'BEGINS_WITH', 'GE', 'CONTAINS'],
+          enum: [ 'IN', 'NULL', 'BETWEEN', 'LT', 'NOT_CONTAINS', 'EQ', 'GT', 'NOT_NULL', 'NE', 'LE', 'BEGINS_WITH', 'GE', 'CONTAINS' ],
         },
         Exists: 'Boolean',
         Value: 'AttrStruct<FieldStruct>',
@@ -42,11 +42,11 @@ exports.types = {
   },
   ReturnValues: {
     type: 'String',
-    enum: ['ALL_NEW', 'UPDATED_OLD', 'ALL_OLD', 'NONE', 'UPDATED_NEW'],
+    enum: [ 'ALL_NEW', 'UPDATED_OLD', 'ALL_OLD', 'NONE', 'UPDATED_NEW' ],
   },
   ReturnItemCollectionMetrics: {
     type: 'String',
-    enum: ['SIZE', 'NONE'],
+    enum: [ 'SIZE', 'NONE' ],
   },
   ConditionExpression: {
     type: 'String',
@@ -61,9 +61,9 @@ exports.types = {
   },
 }
 
-exports.custom = function(data, store) {
+exports.custom = function (data, store) {
 
-  var msg = validations.validateExpressionParams(data, ['ConditionExpression'], ['Expected'])
+  var msg = validations.validateExpressionParams(data, [ 'ConditionExpression' ], [ 'Expected' ])
   if (msg) return msg
 
   for (var key in data.Item) {

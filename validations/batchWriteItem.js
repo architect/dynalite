@@ -1,14 +1,14 @@
 var validations = require('./index'),
-    db = require('../db')
+  db = require('../db')
 
 exports.types = {
   ReturnConsumedCapacity: {
     type: 'String',
-    enum: ['INDEXES', 'TOTAL', 'NONE'],
+    enum: [ 'INDEXES', 'TOTAL', 'NONE' ],
   },
   ReturnItemCollectionMetrics: {
     type: 'String',
-    enum: ['SIZE', 'NONE'],
+    enum: [ 'SIZE', 'NONE' ],
   },
   RequestItems: {
     type: 'Map<java.util.List<com.amazonaws.dynamodb.v20120810.WriteRequest>>',
@@ -54,10 +54,10 @@ exports.types = {
   },
 }
 
-exports.custom = function(data, store) {
+exports.custom = function (data, store) {
   var table, i, request, key, msg
   for (table in data.RequestItems) {
-    if (data.RequestItems[table].some(function(item) { return !Object.keys(item).length })) // eslint-disable-line no-loop-func
+    if (data.RequestItems[table].some(function (item) { return !Object.keys(item).length })) // eslint-disable-line no-loop-func
       return 'Supplied AttributeValue has more than one datatypes set, ' +
         'must contain exactly one of the supported datatypes'
     for (i = 0; i < data.RequestItems[table].length; i++) {
@@ -69,7 +69,8 @@ exports.custom = function(data, store) {
         }
         if (db.itemSize(request.PutRequest.Item) > store.options.maxItemSize)
           return 'Item size has exceeded the maximum allowed size'
-      } else if (request.DeleteRequest) {
+      }
+      else if (request.DeleteRequest) {
         for (key in request.DeleteRequest.Key) {
           msg = validations.validateAttributeValue(request.DeleteRequest.Key[key])
           if (msg) return msg

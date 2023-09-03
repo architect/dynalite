@@ -1,14 +1,14 @@
 var validations = require('./index'),
-    db = require('../db')
+  db = require('../db')
 
 exports.types = {
   ReturnConsumedCapacity: {
     type: 'String',
-    enum: ['INDEXES', 'TOTAL', 'NONE'],
+    enum: [ 'INDEXES', 'TOTAL', 'NONE' ],
   },
   ReturnItemCollectionMetrics: {
     type: 'String',
-    enum: ['SIZE', 'NONE'],
+    enum: [ 'SIZE', 'NONE' ],
   },
   ClientRequestToken: {
     type: 'String'
@@ -37,7 +37,7 @@ exports.types = {
             },
             ReturnValuesOnConditionCheckFailure: {
               type: 'String',
-              enum: ['ALL_OLD', 'NONE'],
+              enum: [ 'ALL_OLD', 'NONE' ],
             },
             ConditionExpression: {
               type: 'String',
@@ -65,7 +65,7 @@ exports.types = {
             },
             ReturnValuesOnConditionCheckFailure: {
               type: 'String',
-              enum: ['ALL_OLD', 'NONE'],
+              enum: [ 'ALL_OLD', 'NONE' ],
             },
             ConditionExpression: {
               type: 'String',
@@ -96,7 +96,7 @@ exports.types = {
             },
             ReturnValuesOnConditionCheckFailure: {
               type: 'String',
-              enum: ['ALL_OLD', 'NONE'],
+              enum: [ 'ALL_OLD', 'NONE' ],
             },
             ConditionExpression: {
               type: 'String',
@@ -124,7 +124,7 @@ exports.types = {
             },
             ReturnValuesOnConditionCheckFailure: {
               type: 'String',
-              enum: ['ALL_OLD', 'NONE'],
+              enum: [ 'ALL_OLD', 'NONE' ],
             },
             ConditionExpression: {
               type: 'String',
@@ -141,7 +141,7 @@ exports.types = {
   },
 }
 
-exports.custom = function(data, store) {
+exports.custom = function (data, store) {
   var i, request, msg, key
   for (i = 0; i < data.TransactItems.length; i++) {
     request = data.TransactItems[i]
@@ -154,36 +154,40 @@ exports.custom = function(data, store) {
         return 'Item size has exceeded the maximum allowed size'
       msg = validations.validateExpressions(request.Put)
       if (msg) return msg
-    } else if (request.Delete) {
-        for (key in request.Delete.Key) {
-          msg = validations.validateAttributeValue(request.Delete.Key[key])
-          if (msg) return msg
-        }
+    }
+    else if (request.Delete) {
+      for (key in request.Delete.Key) {
+        msg = validations.validateAttributeValue(request.Delete.Key[key])
+        if (msg) return msg
+      }
       msg = validations.validateExpressions(request.Delete)
       if (msg) return msg
-    } else if (request.Update) {
-        for (key in request.Update.Key) {
-          msg = validations.validateAttributeValue(request.Update.Key[key])
-          if (msg) return msg
-        }
-        msg = validations.validateExpressionParams(request.Update,
-            ['UpdateExpression', 'ConditionExpression'],
-            ['AttributeUpdates', 'Expected'])
+    }
+    else if (request.Update) {
+      for (key in request.Update.Key) {
+        msg = validations.validateAttributeValue(request.Update.Key[key])
         if (msg) return msg
-        msg = validations.validateAttributeConditions(request.Update)
+      }
+      msg = validations.validateExpressionParams(request.Update,
+        [ 'UpdateExpression', 'ConditionExpression' ],
+        [ 'AttributeUpdates', 'Expected' ])
+      if (msg) return msg
+      msg = validations.validateAttributeConditions(request.Update)
+      if (msg) return msg
+      msg = validations.validateExpressions(request.Update)
+      if (msg) return msg
+    }
+    else if (request.ConditionCheck) {
+      for (key in request.ConditionCheck.Key) {
+        msg = validations.validateAttributeValue(request.ConditionCheck.Key[key])
         if (msg) return msg
-        msg = validations.validateExpressions(request.Update)
-        if (msg) return msg
-    } else if (request.ConditionCheck) {
-        for (key in request.ConditionCheck.Key) {
-          msg = validations.validateAttributeValue(request.ConditionCheck.Key[key])
-          if (msg) return msg
-        }
-        msg = validations.validateExpressionParams(request.ConditionCheck, ['ConditionExpression'], [])
-        if (msg) return msg
-        msg = validations.validateExpressions(request.ConditionCheck)
-        if (msg) return msg
-    } else {
+      }
+      msg = validations.validateExpressionParams(request.ConditionCheck, [ 'ConditionExpression' ], [])
+      if (msg) return msg
+      msg = validations.validateExpressions(request.ConditionCheck)
+      if (msg) return msg
+    }
+    else {
       return 'The action or operation requested is invalid. Verify that the action is typed correctly.'
     }
   }
