@@ -1,8 +1,8 @@
 var Big = require('big.js'),
-    db = require('../db'),
-    conditionParser = require('../db/conditionParser'),
-    projectionParser = require('../db/projectionParser'),
-    updateParser = require('../db/updateParser')
+  db = require('../db'),
+  conditionParser = require('../db/conditionParser'),
+  projectionParser = require('../db/projectionParser'),
+  updateParser = require('../db/updateParser')
 
 exports.checkTypes = checkTypes
 exports.checkValidations = checkValidations
@@ -15,7 +15,7 @@ exports.validateExpressionParams = validateExpressionParams
 exports.validateExpressions = validateExpressions
 exports.convertKeyCondition = convertKeyCondition
 
-function checkTypes(data, types) {
+function checkTypes (data, types) {
   var key
   for (key in data) {
     // TODO: deal with nulls
@@ -23,13 +23,13 @@ function checkTypes(data, types) {
       delete data[key]
   }
 
-  return Object.keys(types).reduce(function(newData, key) {
+  return Object.keys(types).reduce(function (newData, key) {
     var val = checkType(data[key], types[key])
     if (val != null) newData[key] = val
     return newData
   }, {})
 
-  function typeError(msg) {
+  function typeError (msg) {
     var err = new Error(msg)
     err.statusCode = 400
     err.body = {
@@ -39,10 +39,10 @@ function checkTypes(data, types) {
     return err
   }
 
-  function checkType(val, type) {
+  function checkType (val, type) {
     if (val == null) return null
     var children = type.children
-    if (typeof children == 'string') children = {type: children}
+    if (typeof children == 'string') children = { type: children }
     if (type.type) type = type.type
     var subtypeMatch = type.match(/(.+?)<(.+)>$/), subtype
     if (subtypeMatch != null) {
@@ -84,147 +84,149 @@ function checkTypes(data, types) {
     }
 
     switch (type) {
-      case 'Boolean':
-        switch (typeof val) {
-          case 'number':
-            throw typeError((val % 1 === 0 ? 'NUMBER_VALUE' : 'DECIMAL_VALUE') + ' cannot be converted to ' + type)
-          case 'string':
-            // 'true'/'false'/'1'/'0'/'no'/'yes' seem to convert fine
-            val = val.toUpperCase()
-            if (~['TRUE', '1', 'YES'].indexOf(val)) {
-              val = true
-            } else if (~['FALSE', '0', 'NO'].indexOf(val)) {
-              val = false
-            } else {
-              throw typeError('Unexpected token received from parser')
-            }
-            break
-          case 'object':
-            if (Array.isArray(val)) throw typeError('Unrecognized collection type class java.lang.' + type)
-            throw typeError('Start of structure or map found where not expected')
+    case 'Boolean':
+      switch (typeof val) {
+      case 'number':
+        throw typeError((val % 1 === 0 ? 'NUMBER_VALUE' : 'DECIMAL_VALUE') + ' cannot be converted to ' + type)
+      case 'string':
+        // 'true'/'false'/'1'/'0'/'no'/'yes' seem to convert fine
+        val = val.toUpperCase()
+        if (~[ 'TRUE', '1', 'YES' ].indexOf(val)) {
+          val = true
         }
-        return val
-      case 'Short':
-      case 'Integer':
-      case 'Long':
-      case 'Double':
-        switch (typeof val) {
-          case 'boolean':
-            throw typeError((val ? 'TRUE_VALUE' : 'FALSE_VALUE') + ' cannot be converted to ' + type)
-          case 'number':
-            if (type != 'Double') val = Math.floor(val)
-            break
-          case 'string':
-            throw typeError('STRING_VALUE cannot be converted to ' + type)
-          case 'object':
-            if (Array.isArray(val)) throw typeError('Unrecognized collection type class java.lang.' + type)
-            throw typeError('Start of structure or map found where not expected')
+        else if (~[ 'FALSE', '0', 'NO' ].indexOf(val)) {
+          val = false
         }
-        return val
-      case 'String':
-        switch (typeof val) {
-          case 'boolean':
-            throw typeError((val ? 'TRUE_VALUE' : 'FALSE_VALUE') + ' cannot be converted to ' + type)
-          case 'number':
-            throw typeError((val % 1 === 0 ? 'NUMBER_VALUE' : 'DECIMAL_VALUE') + ' cannot be converted to ' + type)
-          case 'object':
-            if (Array.isArray(val)) throw typeError('Unrecognized collection type class java.lang.' + type)
-            throw typeError('Start of structure or map found where not expected')
+        else {
+          throw typeError('Unexpected token received from parser')
         }
-        return val
-      case 'Blob':
-        switch (typeof val) {
-          case 'boolean':
-          case 'number':
-            throw typeError('only base-64-encoded strings are convertible to bytes')
-          case 'object':
-            if (Array.isArray(val)) throw typeError('Unrecognized collection type class java.nio.ByteBuffer')
-            throw typeError('Start of structure or map found where not expected')
-        }
-        if (val.length % 4)
-          throw typeError('Base64 encoded length is expected a multiple of 4 bytes but found: ' + val.length)
+        break
+      case 'object':
+        if (Array.isArray(val)) throw typeError('Unrecognized collection type class java.lang.' + type)
+        throw typeError('Start of structure or map found where not expected')
+      }
+      return val
+    case 'Short':
+    case 'Integer':
+    case 'Long':
+    case 'Double':
+      switch (typeof val) {
+      case 'boolean':
+        throw typeError((val ? 'TRUE_VALUE' : 'FALSE_VALUE') + ' cannot be converted to ' + type)
+      case 'number':
+        if (type != 'Double') val = Math.floor(val)
+        break
+      case 'string':
+        throw typeError('STRING_VALUE cannot be converted to ' + type)
+      case 'object':
+        if (Array.isArray(val)) throw typeError('Unrecognized collection type class java.lang.' + type)
+        throw typeError('Start of structure or map found where not expected')
+      }
+      return val
+    case 'String':
+      switch (typeof val) {
+      case 'boolean':
+        throw typeError((val ? 'TRUE_VALUE' : 'FALSE_VALUE') + ' cannot be converted to ' + type)
+      case 'number':
+        throw typeError((val % 1 === 0 ? 'NUMBER_VALUE' : 'DECIMAL_VALUE') + ' cannot be converted to ' + type)
+      case 'object':
+        if (Array.isArray(val)) throw typeError('Unrecognized collection type class java.lang.' + type)
+        throw typeError('Start of structure or map found where not expected')
+      }
+      return val
+    case 'Blob':
+      switch (typeof val) {
+      case 'boolean':
+      case 'number':
+        throw typeError('only base-64-encoded strings are convertible to bytes')
+      case 'object':
+        if (Array.isArray(val)) throw typeError('Unrecognized collection type class java.nio.ByteBuffer')
+        throw typeError('Start of structure or map found where not expected')
+      }
+      if (val.length % 4)
+        throw typeError('Base64 encoded length is expected a multiple of 4 bytes but found: ' + val.length)
         // TODO: need a better check than this...
-        if (Buffer.from(val, 'base64').toString('base64') != val)
-          throw typeError('Invalid last non-pad Base64 character dectected')
-        return val
-      case 'List':
-        switch (typeof val) {
-          case 'boolean':
-          case 'number':
-          case 'string':
-            throw typeError('Unexpected field type')
-          case 'object':
-            if (!Array.isArray(val)) throw typeError('Start of structure or map found where not expected')
-        }
-        return val.map(function(child) { return checkType(child, children) })
-      case 'ParameterizedList':
-        switch (typeof val) {
-          case 'boolean':
-          case 'number':
-          case 'string':
-            throw typeError("class sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl cannot be cast to class java.lang.Class (sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl and java.lang.Class are in module java.base of loader 'bootstrap')")
-          case 'object':
-            if (!Array.isArray(val)) throw typeError('Start of structure or map found where not expected')
-        }
-        return val.map(function(child) { return checkType(child, children) })
-      case 'ParameterizedMap':
-        switch (typeof val) {
-          case 'boolean':
-          case 'number':
-          case 'string':
-            throw typeError("class sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl cannot be cast to class java.lang.Class (sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl and java.lang.Class are in module java.base of loader 'bootstrap')")
-          case 'object':
-            if (Array.isArray(val)) throw typeError('Unrecognized collection type java.util.Map<java.lang.String, com.amazonaws.dynamodb.v20120810.AttributeValue>')
-        }
-        return Object.keys(val).reduce(function(newVal, key) {
-          newVal[key] = checkType(val[key], children)
-          return newVal
-        }, {})
-      case 'Map':
-        switch (typeof val) {
-          case 'boolean':
-          case 'number':
-          case 'string':
-            throw typeError('Unexpected field type')
-          case 'object':
-            if (Array.isArray(val)) {
-              throw typeError('Unrecognized collection type java.util.Map<java.lang.String, ' +
+      if (Buffer.from(val, 'base64').toString('base64') != val)
+        throw typeError('Invalid last non-pad Base64 character dectected')
+      return val
+    case 'List':
+      switch (typeof val) {
+      case 'boolean':
+      case 'number':
+      case 'string':
+        throw typeError('Unexpected field type')
+      case 'object':
+        if (!Array.isArray(val)) throw typeError('Start of structure or map found where not expected')
+      }
+      return val.map(function (child) { return checkType(child, children) })
+    case 'ParameterizedList':
+      switch (typeof val) {
+      case 'boolean':
+      case 'number':
+      case 'string':
+        throw typeError("class sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl cannot be cast to class java.lang.Class (sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl and java.lang.Class are in module java.base of loader 'bootstrap')")
+      case 'object':
+        if (!Array.isArray(val)) throw typeError('Start of structure or map found where not expected')
+      }
+      return val.map(function (child) { return checkType(child, children) })
+    case 'ParameterizedMap':
+      switch (typeof val) {
+      case 'boolean':
+      case 'number':
+      case 'string':
+        throw typeError("class sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl cannot be cast to class java.lang.Class (sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl and java.lang.Class are in module java.base of loader 'bootstrap')")
+      case 'object':
+        if (Array.isArray(val)) throw typeError('Unrecognized collection type java.util.Map<java.lang.String, com.amazonaws.dynamodb.v20120810.AttributeValue>')
+      }
+      return Object.keys(val).reduce(function (newVal, key) {
+        newVal[key] = checkType(val[key], children)
+        return newVal
+      }, {})
+    case 'Map':
+      switch (typeof val) {
+      case 'boolean':
+      case 'number':
+      case 'string':
+        throw typeError('Unexpected field type')
+      case 'object':
+        if (Array.isArray(val)) {
+          throw typeError('Unrecognized collection type java.util.Map<java.lang.String, ' +
                 (~subtype.indexOf('.') ? subtype : 'com.amazonaws.dynamodb.v20120810.' + subtype) + '>')
-            }
         }
-        return Object.keys(val).reduce(function(newVal, key) {
-          newVal[key] = checkType(val[key], children)
-          return newVal
-        }, {})
-      case 'ValueStruct':
-        switch (typeof val) {
-          case 'boolean':
-          case 'number':
-          case 'string':
-            throw typeError('Unexpected value type in payload')
-          case 'object':
-            if (Array.isArray(val)) throw typeError('Unrecognized collection type class com.amazonaws.dynamodb.v20120810.' + subtype)
-        }
-        return checkTypes(val, children)
-      case 'FieldStruct':
-        switch (typeof val) {
-          case 'boolean':
-          case 'number':
-          case 'string':
-            throw typeError('Unexpected field type')
-          case 'object':
-            if (Array.isArray(val)) throw typeError('Unrecognized collection type class com.amazonaws.dynamodb.v20120810.' + subtype)
-        }
-        return checkTypes(val, children)
-      default:
-        throw new Error('Unknown type: ' + type)
+      }
+      return Object.keys(val).reduce(function (newVal, key) {
+        newVal[key] = checkType(val[key], children)
+        return newVal
+      }, {})
+    case 'ValueStruct':
+      switch (typeof val) {
+      case 'boolean':
+      case 'number':
+      case 'string':
+        throw typeError('Unexpected value type in payload')
+      case 'object':
+        if (Array.isArray(val)) throw typeError('Unrecognized collection type class com.amazonaws.dynamodb.v20120810.' + subtype)
+      }
+      return checkTypes(val, children)
+    case 'FieldStruct':
+      switch (typeof val) {
+      case 'boolean':
+      case 'number':
+      case 'string':
+        throw typeError('Unexpected field type')
+      case 'object':
+        if (Array.isArray(val)) throw typeError('Unrecognized collection type class com.amazonaws.dynamodb.v20120810.' + subtype)
+      }
+      return checkTypes(val, children)
+    default:
+      throw new Error('Unknown type: ' + type)
     }
   }
 }
 
 var validateFns = {}
 
-function checkValidations(data, validations, custom, store) {
+function checkValidations (data, validations, custom, store) {
   var attr, msg, errors = []
 
   for (attr in validations) {
@@ -237,7 +239,7 @@ function checkValidations(data, validations, custom, store) {
     }
   }
 
-  function checkNonRequireds(data, types, parent) {
+  function checkNonRequireds (data, types, parent) {
     for (attr in types) {
       checkNonRequired(attr, data[attr], types[attr], parent)
     }
@@ -245,11 +247,11 @@ function checkValidations(data, validations, custom, store) {
 
   checkNonRequireds(data, validations)
 
-  function checkNonRequired(attr, data, validations, parent) {
+  function checkNonRequired (attr, data, validations, parent) {
     if (validations == null || typeof validations != 'object') return
     for (var validation in validations) {
       if (errors.length >= 10) return
-      if (~['type', 'required', 'tableName'].indexOf(validation)) continue
+      if (~[ 'type', 'required', 'tableName' ].indexOf(validation)) continue
       if (validation != 'notNull' && data == null) continue
       if (validation == 'children') {
         if (/List$/.test(validations.type)) {
@@ -258,8 +260,9 @@ function checkValidations(data, validations, custom, store) {
               (parent ? parent + '.' : '') + toLowerFirst(attr) + '.' + (i + 1))
           }
           continue
-        } else if (/Map/.test(validations.type)) {
-          Object.keys(data).forEach(function(key) { // eslint-disable-line no-loop-func
+        }
+        else if (/Map/.test(validations.type)) {
+          Object.keys(data).forEach(function (key) { // eslint-disable-line no-loop-func
             checkNonRequired('member', data[key], validations.children,
               (parent ? parent + '.' : '') + toLowerFirst(attr) + '.' + key)
           })
@@ -281,37 +284,38 @@ function checkValidations(data, validations, custom, store) {
   }
 }
 
-validateFns.notNull = function(parent, key, val, data, errors) {
+validateFns.notNull = function (parent, key, val, data, errors) {
   validate(data != null, 'Member must not be null', data, parent, key, errors)
 }
-validateFns.greaterThanOrEqual = function(parent, key, val, data, errors) {
+validateFns.greaterThanOrEqual = function (parent, key, val, data, errors) {
   validate(data >= val, 'Member must have value greater than or equal to ' + val, data, parent, key, errors)
 }
-validateFns.lessThanOrEqual = function(parent, key, val, data, errors) {
+validateFns.lessThanOrEqual = function (parent, key, val, data, errors) {
   validate(data <= val, 'Member must have value less than or equal to ' + val, data, parent, key, errors)
 }
-validateFns.regex = function(parent, key, pattern, data, errors) {
+validateFns.regex = function (parent, key, pattern, data, errors) {
   validate(RegExp('^' + pattern + '$').test(data), 'Member must satisfy regular expression pattern: ' + pattern, data, parent, key, errors)
 }
-validateFns.lengthGreaterThanOrEqual = function(parent, key, val, data, errors) {
+validateFns.lengthGreaterThanOrEqual = function (parent, key, val, data, errors) {
   var length = (typeof data == 'object' && !Array.isArray(data)) ? Object.keys(data).length : data.length
   validate(length >= val, 'Member must have length greater than or equal to ' + val, data, parent, key, errors)
 }
-validateFns.lengthLessThanOrEqual = function(parent, key, val, data, errors) {
+validateFns.lengthLessThanOrEqual = function (parent, key, val, data, errors) {
   var length = (typeof data == 'object' && !Array.isArray(data)) ? Object.keys(data).length : data.length
   validate(length <= val, 'Member must have length less than or equal to ' + val, data, parent, key, errors)
 }
-validateFns.enum = function(parent, key, val, data, errors) {
+validateFns.enum = function (parent, key, val, data, errors) {
   validate(~val.indexOf(data), 'Member must satisfy enum value set: [' + val.join(', ') + ']', data, parent, key, errors)
 }
-validateFns.keys = function(parent, key, val, data, errors) {
-  Object.keys(data).forEach(function(mapKey) {
+validateFns.keys = function (parent, key, val, data, errors) {
+  Object.keys(data).forEach(function (mapKey) {
     try {
-      Object.keys(val).forEach(function(validation) {
+      Object.keys(val).forEach(function (validation) {
         validateFns[validation]('', '', val[validation], mapKey, [])
       })
-    } catch (e) {
-      var msgs = Object.keys(val).map(function(validation) {
+    }
+    catch (e) {
+      var msgs = Object.keys(val).map(function (validation) {
         if (validation == 'lengthGreaterThanOrEqual')
           return 'Member must have length greater than or equal to ' + val[validation]
         if (validation == 'lengthLessThanOrEqual')
@@ -323,14 +327,15 @@ validateFns.keys = function(parent, key, val, data, errors) {
     }
   })
 }
-validateFns.values = function(parent, key, val, data, errors) {
-  Object.keys(data).forEach(function(mapKey) {
+validateFns.values = function (parent, key, val, data, errors) {
+  Object.keys(data).forEach(function (mapKey) {
     try {
-      Object.keys(val).forEach(function(validation) {
+      Object.keys(val).forEach(function (validation) {
         validateFns[validation]('', '', val[validation], data[mapKey], [])
       })
-    } catch (e) {
-      var msgs = Object.keys(val).map(function(validation) {
+    }
+    catch (e) {
+      var msgs = Object.keys(val).map(function (validation) {
         if (validation == 'lengthGreaterThanOrEqual')
           return 'Member must have length greater than or equal to ' + val[validation]
         if (validation == 'lengthLessThanOrEqual')
@@ -341,7 +346,7 @@ validateFns.values = function(parent, key, val, data, errors) {
   })
 }
 
-function validate(predicate, msg, data, parent, key, errors) {
+function validate (predicate, msg, data, parent, key, errors) {
   if (predicate) return
   var value = valueStr(data)
   if (value != 'null') value = '\'' + value + '\''
@@ -349,17 +354,17 @@ function validate(predicate, msg, data, parent, key, errors) {
   errors.push('Value ' + value + ' at \'' + parent + toLowerFirst(key) + '\' failed to satisfy constraint: ' + msg)
 }
 
-function validateTableName(key, val) {
+function validateTableName (key, val) {
   if (val == null) return null
   if (val.length < 3 || val.length > 255)
     return key + ' must be at least 3 characters long and at most 255 characters long'
 }
 
-function toLowerFirst(str) {
+function toLowerFirst (str) {
   return str[0].toLowerCase() + str.slice(1)
 }
 
-function validateAttributeValue(value) {
+function validateAttributeValue (value) {
   var types = Object.keys(value), msg, i, attr
   if (!types.length)
     return 'Supplied AttributeValue is empty, must contain exactly one of the supported datatypes'
@@ -417,14 +422,15 @@ function validateAttributeValue(value) {
     return 'Supplied AttributeValue has more than one datatypes set, must contain exactly one of the supported datatypes'
 }
 
-function checkNum(attr, obj) {
+function checkNum (attr, obj) {
   if (!obj[attr])
     return 'The parameter cannot be converted to a numeric value'
 
   var bigNum
   try {
     bigNum = new Big(obj[attr])
-  } catch (e) {
+  }
+  catch (e) {
     return 'The parameter cannot be converted to a numeric value: ' + obj[attr]
   }
   if (bigNum.e > 125)
@@ -437,12 +443,12 @@ function checkNum(attr, obj) {
   obj[attr] = bigNum.toFixed()
 }
 
-function valueStr(data) {
+function valueStr (data) {
   return data == null ? 'null' : Array.isArray(data) ? '[' + data.map(valueStr).join(', ') + ']' :
     typeof data == 'object' ? JSON.stringify(data) : data
 }
 
-function findDuplicate(arr) {
+function findDuplicate (arr) {
   if (!arr) return null
   var vals = Object.create(null)
   for (var i = 0; i < arr.length; i++) {
@@ -451,7 +457,7 @@ function findDuplicate(arr) {
   }
 }
 
-function validateAttributeConditions(data) {
+function validateAttributeConditions (data) {
   for (var key in data.Expected) {
     var condition = data.Expected[key]
 
@@ -475,27 +481,27 @@ function validateAttributeConditions(data) {
       var validAttrCount = false
 
       switch (condition.ComparisonOperator) {
-        case 'EQ':
-        case 'NE':
-        case 'LE':
-        case 'LT':
-        case 'GE':
-        case 'GT':
-        case 'CONTAINS':
-        case 'NOT_CONTAINS':
-        case 'BEGINS_WITH':
-          if (values === 1) validAttrCount = true
-          break
-        case 'NOT_NULL':
-        case 'NULL':
-          if (values === 0) validAttrCount = true
-          break
-        case 'IN':
-          if (values > 0) validAttrCount = true
-          break
-        case 'BETWEEN':
-          if (values === 2) validAttrCount = true
-          break
+      case 'EQ':
+      case 'NE':
+      case 'LE':
+      case 'LT':
+      case 'GE':
+      case 'GT':
+      case 'CONTAINS':
+      case 'NOT_CONTAINS':
+      case 'BEGINS_WITH':
+        if (values === 1) validAttrCount = true
+        break
+      case 'NOT_NULL':
+      case 'NULL':
+        if (values === 0) validAttrCount = true
+        break
+      case 'IN':
+        if (values > 0) validAttrCount = true
+        break
+      case 'BETWEEN':
+        if (values === 2) validAttrCount = true
+        break
       }
       if (!validAttrCount)
         return 'One or more parameter values were invalid: ' +
@@ -503,17 +509,19 @@ function validateAttributeConditions(data) {
 
       if (condition.AttributeValueList && condition.AttributeValueList.length) {
         var type = Object.keys(condition.AttributeValueList[0])[0]
-        if (condition.AttributeValueList.some(function(attr) { return Object.keys(attr)[0] != type })) {
+        if (condition.AttributeValueList.some(function (attr) { return Object.keys(attr)[0] != type })) {
           return 'One or more parameter values were invalid: AttributeValues inside AttributeValueList must be of same type'
         }
         if (condition.ComparisonOperator == 'BETWEEN' && db.compare('GT', condition.AttributeValueList[0], condition.AttributeValueList[1])) {
           return 'The BETWEEN condition was provided a range where the lower bound is greater than the upper bound'
         }
       }
-    } else if ('AttributeValueList' in condition) {
+    }
+    else if ('AttributeValueList' in condition) {
       return 'One or more parameter values were invalid: ' +
         'AttributeValueList can only be used with a ComparisonOperator for Attribute: ' + key
-    } else {
+    }
+    else {
       var exists = condition.Exists == null || condition.Exists
       if (exists && condition.Value == null)
         return 'One or more parameter values were invalid: ' +
@@ -531,7 +539,7 @@ function validateAttributeConditions(data) {
   }
 }
 
-function validateConditions(conditions) {
+function validateConditions (conditions) {
   var lengths = {
     NULL: 0,
     NOT_NULL: 0,
@@ -544,21 +552,21 @@ function validateConditions(conditions) {
     CONTAINS: 1,
     NOT_CONTAINS: 1,
     BEGINS_WITH: 1,
-    IN: [1],
+    IN: [ 1 ],
     BETWEEN: 2,
   }
   var types = {
-    EQ: ['S', 'N', 'B', 'SS', 'NS', 'BS'],
-    NE: ['S', 'N', 'B', 'SS', 'NS', 'BS'],
-    LE: ['S', 'N', 'B'],
-    LT: ['S', 'N', 'B'],
-    GE: ['S', 'N', 'B'],
-    GT: ['S', 'N', 'B'],
-    CONTAINS: ['S', 'N', 'B'],
-    NOT_CONTAINS: ['S', 'N', 'B'],
-    BEGINS_WITH: ['S', 'B'],
-    IN: ['S', 'N', 'B'],
-    BETWEEN: ['S', 'N', 'B'],
+    EQ: [ 'S', 'N', 'B', 'SS', 'NS', 'BS' ],
+    NE: [ 'S', 'N', 'B', 'SS', 'NS', 'BS' ],
+    LE: [ 'S', 'N', 'B' ],
+    LT: [ 'S', 'N', 'B' ],
+    GE: [ 'S', 'N', 'B' ],
+    GT: [ 'S', 'N', 'B' ],
+    CONTAINS: [ 'S', 'N', 'B' ],
+    NOT_CONTAINS: [ 'S', 'N', 'B' ],
+    BEGINS_WITH: [ 'S', 'B' ],
+    IN: [ 'S', 'N', 'B' ],
+    BETWEEN: [ 'S', 'N', 'B' ],
   }
   for (var key in conditions) {
     var comparisonOperator = conditions[key].ComparisonOperator
@@ -575,7 +583,7 @@ function validateConditions(conditions) {
 
     if (attrValList.length) {
       var type = Object.keys(attrValList[0])[0]
-      if (attrValList.some(function(attr) { return Object.keys(attr)[0] != type })) {
+      if (attrValList.some(function (attr) { return Object.keys(attr)[0] != type })) {
         return 'One or more parameter values were invalid: AttributeValues inside AttributeValueList must be of same type'
       }
     }
@@ -594,15 +602,15 @@ function validateConditions(conditions) {
   }
 }
 
-function validateExpressionParams(data, expressions, nonExpressions) {
-  var exprParams = expressions.filter(function(expr) { return data[expr] != null })
+function validateExpressionParams (data, expressions, nonExpressions) {
+  var exprParams = expressions.filter(function (expr) { return data[expr] != null })
 
   if (exprParams.length) {
     // Special case for KeyConditions and KeyConditionExpression
     if (data.KeyConditions != null && data.KeyConditionExpression == null) {
       nonExpressions.splice(nonExpressions.indexOf('KeyConditions'), 1)
     }
-    var nonExprParams = nonExpressions.filter(function(expr) { return data[expr] != null })
+    var nonExprParams = nonExpressions.filter(function (expr) { return data[expr] != null })
     if (nonExprParams.length) {
       return 'Can not use both expression and non-expression parameters in the same request: ' +
         'Non-expression parameters: {' + nonExprParams.join(', ') + '} ' +
@@ -614,15 +622,15 @@ function validateExpressionParams(data, expressions, nonExpressions) {
     return 'ExpressionAttributeNames can only be specified when using expressions'
   }
 
-  var valExprs = expressions.filter(function(expr) { return expr != 'ProjectionExpression' })
+  var valExprs = expressions.filter(function (expr) { return expr != 'ProjectionExpression' })
   if (valExprs.length && data.ExpressionAttributeValues != null &&
-      valExprs.every(function(expr) { return data[expr] == null })) {
+      valExprs.every(function (expr) { return data[expr] == null })) {
     return 'ExpressionAttributeValues can only be specified when using expressions: ' +
       valExprs.join(' and ') + ' ' + (valExprs.length > 1 ? 'are' : 'is') + ' null'
   }
 }
 
-function validateExpressions(data) {
+function validateExpressions (data) {
   var key, msg, result, context = {
     attrNames: data.ExpressionAttributeNames,
     attrVals: data.ExpressionAttributeValues,
@@ -711,28 +719,29 @@ function validateExpressions(data) {
   }
 }
 
-function parse(str, parser, context) {
+function parse (str, parser, context) {
   if (str == '') return 'The expression can not be empty;'
   context.isReserved = isReserved
   context.compare = db.compare
   try {
-    return parser.parse(str, {context: context})
-  } catch (e) {
+    return parser.parse(str, { context: context })
+  }
+  catch (e) {
     return e.name == 'SyntaxError' ? 'Syntax error; ' + e.message : e.message
   }
 }
 
-function convertKeyCondition(expression) {
+function convertKeyCondition (expression) {
   var keyConds = Object.create(null)
   return checkExpr(expression, keyConds) || keyConds
 }
 
-function checkExpr(expr, keyConds) {
+function checkExpr (expr, keyConds) {
   if (!expr || !expr.type) return
-  if (~['or', 'not', 'in', '<>'].indexOf(expr.type)) {
+  if (~[ 'or', 'not', 'in', '<>' ].indexOf(expr.type)) {
     return 'Invalid operator used in KeyConditionExpression: ' + expr.type.toUpperCase()
   }
-  if (expr.type == 'function' && ~['attribute_exists', 'attribute_not_exists', 'attribute_type', 'contains'].indexOf(expr.name)) {
+  if (expr.type == 'function' && ~[ 'attribute_exists', 'attribute_not_exists', 'attribute_type', 'contains' ].indexOf(expr.name)) {
     return 'Invalid operator used in KeyConditionExpression: ' + expr.name
   }
   if (expr.type == 'function' && expr.name == 'size') {
@@ -756,7 +765,8 @@ function checkExpr(expr, keyConds) {
         }
         attrName = expr.args[i][0]
         attrIx = i
-      } else if (expr.args[i].type) {
+      }
+      else if (expr.args[i].type) {
         var result = checkExpr(expr.args[i], keyConds)
         if (result) return result
       }
@@ -1371,6 +1381,6 @@ var RESERVED_WORDS = {
   ZONE: true,
 }
 
-function isReserved(name) {
+function isReserved (name) {
   return RESERVED_WORDS[name.toUpperCase()] != null
 }

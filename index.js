@@ -1,27 +1,27 @@
 var http = require('http'),
-    https = require('https'),
-    fs = require('fs'),
-    path = require('path'),
-    url = require('url'),
-    crypto = require('crypto'),
-    crc32 = require('buffer-crc32'),
-    validations = require('./validations'),
-    db = require('./db')
+  https = require('https'),
+  fs = require('fs'),
+  path = require('path'),
+  url = require('url'),
+  crypto = require('crypto'),
+  crc32 = require('buffer-crc32'),
+  validations = require('./validations'),
+  db = require('./db')
 
 var MAX_REQUEST_BYTES = 16 * 1024 * 1024
 var verbose = false
 var debug = false
 
-var validApis = ['DynamoDB_20111205', 'DynamoDB_20120810'],
-    validOperations = ['BatchGetItem', 'BatchWriteItem', 'CreateTable', 'DeleteItem', 'DeleteTable',
-      'DescribeTable', 'DescribeTimeToLive', 'GetItem', 'ListTables', 'PutItem', 'Query', 'Scan', 'TagResource',
-      'UntagResource', 'ListTagsOfResource', 'UpdateItem', 'UpdateTable'],
-    actions = {},
-    actionValidations = {}
+var validApis = [ 'DynamoDB_20111205', 'DynamoDB_20120810' ],
+  validOperations = [ 'BatchGetItem', 'BatchWriteItem', 'CreateTable', 'DeleteItem', 'DeleteTable',
+    'DescribeTable', 'DescribeTimeToLive', 'GetItem', 'ListTables', 'PutItem', 'Query', 'Scan', 'TagResource',
+    'UntagResource', 'ListTagsOfResource', 'UpdateItem', 'UpdateTable' ],
+  actions = {},
+  actionValidations = {}
 
 module.exports = dynalite
 
-function dynalite(options) {
+function dynalite (options) {
   options = options || {}
   if (options.verbose) verbose = true
   if (options.debug) debug = true
@@ -33,17 +33,18 @@ function dynalite(options) {
     options.cert = options.cert || fs.readFileSync(path.join(__dirname, 'ssl', 'server-crt.pem'))
     options.ca = options.ca || fs.readFileSync(path.join(__dirname, 'ssl', 'ca-crt.pem'))
     server = https.createServer(options, requestHandler)
-  } else {
+  }
+  else {
     server = http.createServer(requestHandler)
   }
 
   // Ensure we close DB when we're closing the server too
   var httpServerClose = server.close, httpServerListen = server.listen
-  server.close = function(cb) {
-    store.db.close(function(err) {
+  server.close = function (cb) {
+    store.db.close(function (err) {
       if (err) return cb(err)
       // Recreate the store if the user wants to listen again
-      server.listen = function() {
+      server.listen = function () {
         store.recreate()
         httpServerListen.apply(server, arguments)
       }
@@ -54,20 +55,22 @@ function dynalite(options) {
   return server
 }
 
-validOperations.forEach(function(action) {
+validOperations.forEach(function (action) {
   action = validations.toLowerFirst(action)
+  // eslint-disable-next-line
   actions[action] = require('./actions/' + action)
+  // eslint-disable-next-line
   actionValidations[action] = require('./validations/' + action)
 })
 
-function rand52CharId() {
+function rand52CharId () {
   // 39 bytes turns into 52 base64 characters
   var bytes = crypto.randomBytes(39)
   // Need to replace + and / so just choose 0, obvs won't be truly random, whatevs
   return bytes.toString('base64').toUpperCase().replace(/\+|\//g, '0')
 }
 
-function sendData(req, res, data, statusCode) {
+function sendData (req, res, data, statusCode) {
   var body = JSON.stringify(data)
   req.removeAllListeners()
   res.statusCode = statusCode || 200
@@ -80,10 +83,10 @@ function sendData(req, res, data, statusCode) {
   res.end(body)
 }
 
-function httpHandler(store, req, res) {
+function httpHandler (store, req, res) {
   var body
-  req.on('error', function(err) { throw err })
-  req.on('data', function(data) {
+  req.on('error', function (err) { throw err })
+  req.on('data', function (data) {
     var newLength = data.length + (body ? body.length : 0)
     if (newLength > MAX_REQUEST_BYTES) {
       req.removeAllListeners()
@@ -91,14 +94,14 @@ function httpHandler(store, req, res) {
       res.setHeader('Transfer-Encoding', 'chunked')
       return res.end()
     }
-    body = body ? Buffer.concat([body, data], newLength) : data
+    body = body ? Buffer.concat([ body, data ], newLength) : data
   })
-  req.on('end', function() {
+  req.on('end', function () {
 
     body = body ? body.toString() : ''
 
     if (debug) {
-      console.error('[Dynalite] Incoming request:', {headers: req.headers, body: body})
+      console.error('[Dynalite] Incoming request:', { headers: req.headers, body: body })
     }
 
     // All responses after this point have a RequestId
@@ -149,15 +152,16 @@ function httpHandler(store, req, res) {
     if (body) {
       try {
         data = JSON.parse(body)
-      } catch (e) {
-        return sendData(req, res, {__type: 'com.amazon.coral.service#SerializationException'}, 400)
+      }
+      catch (e) {
+        return sendData(req, res, { __type: 'com.amazon.coral.service#SerializationException' }, 400)
       }
     }
 
     var target = (req.headers['x-amz-target'] || '').split('.')
 
     if (target.length != 2 || !~validApis.indexOf(target[0]) || !~validOperations.indexOf(target[1]))
-      return sendData(req, res, {__type: 'com.amazon.coral.service#UnknownOperationException'}, 400)
+      return sendData(req, res, { __type: 'com.amazon.coral.service#UnknownOperationException' }, 400)
 
     var authHeader = req.headers.authorization
     var query = url.parse(req.url, true).query
@@ -181,13 +185,13 @@ function httpHandler(store, req, res) {
       // TODO: Go through key-vals first
       // "'Credential' not a valid key=value pair (missing equal-sign) in Authorization header: 'AWS4-HMAC-SHA256 \
       // Signature=b,    Credential,    SignedHeaders'."
-      params = ['Credential', 'Signature', 'SignedHeaders']
-      var authParams = authHeader.split(/,| /).slice(1).filter(Boolean).reduce(function(obj, x) {
+      params = [ 'Credential', 'Signature', 'SignedHeaders' ]
+      var authParams = authHeader.split(/,| /).slice(1).filter(Boolean).reduce(function (obj, x) {
         var keyVal = x.trim().split('=')
         obj[keyVal[0]] = keyVal[1]
         return obj
       }, {})
-      params.forEach(function(param) {
+      params.forEach(function (param) {
         if (!authParams[param])
           // TODO: SignedHeaders *is* allowed to be an empty string at this point
           msg += 'Authorization header requires \'' + param + '\' parameter. '
@@ -196,9 +200,10 @@ function httpHandler(store, req, res) {
         msg += 'Authorization header requires existence of either a \'X-Amz-Date\' or a \'Date\' header. '
       if (msg) msg += 'Authorization=' + authHeader
 
-    } else {
-      params = ['X-Amz-Algorithm', 'X-Amz-Credential', 'X-Amz-Signature', 'X-Amz-SignedHeaders', 'X-Amz-Date']
-      params.forEach(function(param) {
+    }
+    else {
+      params = [ 'X-Amz-Algorithm', 'X-Amz-Credential', 'X-Amz-Signature', 'X-Amz-SignedHeaders', 'X-Amz-Date' ]
+      params.forEach(function (param) {
         if (!query[param])
           msg += 'AWS query-string parameters must include \'' + param + '\'. '
       })
@@ -255,14 +260,15 @@ function httpHandler(store, req, res) {
 
     // For some reason, the serialization checks seem to be a bit out of sync
     if (!body)
-      return sendData(req, res, {__type: 'com.amazon.coral.service#SerializationException'}, 400)
+      return sendData(req, res, { __type: 'com.amazon.coral.service#SerializationException' }, 400)
 
     var action = validations.toLowerFirst(target[1])
     var actionValidation = actionValidations[action]
     try {
       data = validations.checkTypes(data, actionValidation.types)
       validations.checkValidations(data, actionValidation.types, actionValidation.custom, store)
-    } catch (err) {
+    }
+    catch (err) {
       if (err.statusCode) {
         if (verbose) console.error('[Dynalite] Validation error', err.body)
         return sendData(req, res, err.body, err.statusCode)
@@ -270,7 +276,7 @@ function httpHandler(store, req, res) {
       throw err
     }
 
-    actions[action](store, data, function(err, data) {
+    actions[action](store, data, function (err, data) {
       if (err && err.statusCode) {
         if (verbose) console.error('[Dynalite] API error', err.body)
         return sendData(req, res, err.body, err.statusCode)

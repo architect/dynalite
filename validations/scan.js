@@ -3,7 +3,7 @@ var validations = require('./index')
 exports.types = {
   Select: {
     type: 'String',
-    enum: ['SPECIFIC_ATTRIBUTES', 'COUNT', 'ALL_ATTRIBUTES', 'ALL_PROJECTED_ATTRIBUTES'],
+    enum: [ 'SPECIFIC_ATTRIBUTES', 'COUNT', 'ALL_ATTRIBUTES', 'ALL_PROJECTED_ATTRIBUTES' ],
   },
   IndexName: {
     type: 'String',
@@ -17,7 +17,7 @@ exports.types = {
   },
   ReturnConsumedCapacity: {
     type: 'String',
-    enum: ['INDEXES', 'TOTAL', 'NONE'],
+    enum: [ 'INDEXES', 'TOTAL', 'NONE' ],
   },
   TableName: {
     type: 'String',
@@ -28,7 +28,7 @@ exports.types = {
   },
   ConditionalOperator: {
     type: 'String',
-    enum: ['OR', 'AND'],
+    enum: [ 'OR', 'AND' ],
   },
   ScanFilter: {
     type: 'Map<Condition>',
@@ -42,7 +42,7 @@ exports.types = {
         ComparisonOperator: {
           type: 'String',
           notNull: true,
-          enum: ['IN', 'NULL', 'BETWEEN', 'LT', 'NOT_CONTAINS', 'EQ', 'GT', 'NOT_NULL', 'NE', 'LE', 'BEGINS_WITH', 'GE', 'CONTAINS'],
+          enum: [ 'IN', 'NULL', 'BETWEEN', 'LT', 'NOT_CONTAINS', 'EQ', 'GT', 'NOT_NULL', 'NE', 'LE', 'BEGINS_WITH', 'GE', 'CONTAINS' ],
         },
       },
     },
@@ -81,11 +81,11 @@ exports.types = {
   },
 }
 
-exports.custom = function(data) {
+exports.custom = function (data) {
 
   var msg = validations.validateExpressionParams(data,
-    ['ProjectionExpression', 'FilterExpression'],
-    ['AttributesToGet', 'ScanFilter', 'ConditionalOperator'])
+    [ 'ProjectionExpression', 'FilterExpression' ],
+    [ 'AttributesToGet', 'ScanFilter', 'ConditionalOperator' ])
   if (msg) return msg
 
   if (data.AttributesToGet) {
@@ -117,6 +117,6 @@ exports.custom = function(data) {
     }
   }
 
-  msg = validations.validateExpressions(data, ['ProjectionExpression', 'FilterExpression'])
+  msg = validations.validateExpressions(data, [ 'ProjectionExpression', 'FilterExpression' ])
   if (msg) return msg
 }

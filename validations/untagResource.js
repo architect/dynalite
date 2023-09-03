@@ -8,7 +8,7 @@ exports.types = {
   },
 }
 
-exports.custom = function(data, store) {
+exports.custom = function (data, store) {
   if (data.ResourceArn == null) {
     return 'Invalid TableArn'
   }

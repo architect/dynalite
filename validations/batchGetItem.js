@@ -1,10 +1,10 @@
 var validations = require('./index'),
-    db = require('../db')
+  db = require('../db')
 
 exports.types = {
   ReturnConsumedCapacity: {
     type: 'String',
-    enum: ['INDEXES', 'TOTAL', 'NONE'],
+    enum: [ 'INDEXES', 'TOTAL', 'NONE' ],
   },
   RequestItems: {
     type: 'Map<KeysAndAttributes>',
@@ -47,13 +47,13 @@ exports.types = {
   },
 }
 
-exports.custom = function(data) {
+exports.custom = function (data) {
   var numReqs = 0
 
   for (var table in data.RequestItems) {
     var tableData = data.RequestItems[table]
 
-    var msg = validations.validateExpressionParams(tableData, ['ProjectionExpression'], ['AttributesToGet'])
+    var msg = validations.validateExpressionParams(tableData, [ 'ProjectionExpression' ], [ 'AttributesToGet' ])
     if (msg) return msg
 
     if (tableData.AttributesToGet) {
@@ -74,7 +74,7 @@ exports.custom = function(data) {
       }
 
       // TODO: this is unnecessarily expensive
-      var keyStr = Object.keys(key).sort().map(function(attr) { return db.toRangeStr(key[attr]) }).join('/')
+      var keyStr = Object.keys(key).sort().map(function (attr) { return db.toRangeStr(key[attr]) }).join('/')
       if (seenKeys[keyStr])
         return 'Provided list of item keys contains duplicates'
       seenKeys[keyStr] = true

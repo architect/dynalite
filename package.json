@@ -12,7 +12,7 @@
   "bin": "cli.js",
   "scripts": {
     "build": "for file in ./db/*.pegjs; do pegjs \"$file\"; done",
-    "test": "mocha --require should --reporter spec -t $([ $REMOTE ] && echo 30s || echo 4s)",
+    "test": "npm run lint && mocha --require should --reporter spec -t $([ $REMOTE ] && echo 30s || echo 4s)",
     "coverage": "npx nyc@latest mocha --require should -t 4s",
     "lint": "eslint . --fix"
   },
@@ -55,5 +55,14 @@
     "mock",
     "serverless",
     "test"
-  ]
+  ],
+  "eslintConfig": {
+    "extends": "@architect/eslint-config",
+    "env": {
+      "mocha": true
+    },
+    "rules": {
+      "filenames/match-regex": [ "error", "^[a-zA-Z0-9-_.]+$", true ]
+    }
+  }
 }

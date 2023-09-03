@@ -1,13 +1,13 @@
 var db = require('../db')
 
-module.exports = function updateTable(store, data, cb) {
+module.exports = function updateTable (store, data, cb) {
 
   var key = data.TableName, tableDb = store.tableDb
 
-  tableDb.lock(key, function(release) {
+  tableDb.lock(key, function (release) {
     cb = release(cb)
 
-    store.getTable(key, false, function(err, table) {
+    store.getTable(key, false, function (err, table) {
       if (err) return cb(err)
 
       var tableBillingMode = (table.BillingModeSummary || {}).BillingMode || 'PROVISIONED'
@@ -21,7 +21,8 @@ module.exports = function updateTable(store, data, cb) {
 
       try {
         updates = getThroughputUpdates(data, table)
-      } catch (err) {
+      }
+      catch (err) {
         return cb(err)
       }
 
@@ -67,7 +68,7 @@ module.exports = function updateTable(store, data, cb) {
         table.ProvisionedThroughput.ReadCapacityUnits = 0
         table.ProvisionedThroughput.WriteCapacityUnits = 0
         if (table.GlobalSecondaryIndexes) {
-          table.GlobalSecondaryIndexes.forEach(function(index) {
+          table.GlobalSecondaryIndexes.forEach(function (index) {
             index.IndexStatus = 'UPDATING'
             index.ProvisionedThroughput = index.ProvisionedThroughput || {}
             index.ProvisionedThroughput.NumberOfDecreasesToday = index.ProvisionedThroughput.NumberOfDecreasesToday || 0
@@ -75,20 +76,21 @@ module.exports = function updateTable(store, data, cb) {
             index.ProvisionedThroughput.WriteCapacityUnits = 0
           })
         }
-      } else if (data.BillingMode == 'PROVISIONED' && tableBillingMode != 'PROVISIONED') {
+      }
+      else if (data.BillingMode == 'PROVISIONED' && tableBillingMode != 'PROVISIONED') {
         table.BillingModeSummary = table.BillingModeSummary || {}
         table.BillingModeSummary.BillingMode = 'PROVISIONED'
         table.TableThroughputModeSummary = table.TableThroughputModeSummary || {}
         table.TableThroughputModeSummary.TableThroughputMode = 'PROVISIONED'
       }
 
-      tableDb.put(key, table, function(err) {
+      tableDb.put(key, table, function (err) {
         if (err) return cb(err)
 
-        setTimeout(function() {
+        setTimeout(function () {
 
           // Shouldn't need to lock/fetch as nothing should have changed
-          updates.forEach(function(update) {
+          updates.forEach(function (update) {
             dataThroughput = update.dataThroughput
             tableThroughput = update.tableThroughput
 
@@ -96,7 +98,8 @@ module.exports = function updateTable(store, data, cb) {
 
             if (update.readDiff > 0 || update.writeDiff > 0) {
               tableThroughput.LastIncreaseDateTime = Date.now() / 1000
-            } else if (update.readDiff < 0 || update.writeDiff < 0) {
+            }
+            else if (update.readDiff < 0 || update.writeDiff < 0) {
               tableThroughput.LastDecreaseDateTime = Date.now() / 1000
               tableThroughput.NumberOfDecreasesToday++
             }
@@ -111,7 +114,7 @@ module.exports = function updateTable(store, data, cb) {
             table.TableThroughputModeSummary.LastUpdateToPayPerRequestDateTime = Date.now() / 1000
             delete table.ProvisionedThroughput.LastDecreaseDateTime
             if (table.GlobalSecondaryIndexes) {
-              table.GlobalSecondaryIndexes.forEach(function(index) {
+              table.GlobalSecondaryIndexes.forEach(function (index) {
                 index.IndexStatus = 'ACTIVE'
                 index.ProvisionedThroughput.NumberOfDecreasesToday++
                 index.ProvisionedThroughput.LastDecreaseDateTime = Date.now() / 1000
@@ -119,23 +122,23 @@ module.exports = function updateTable(store, data, cb) {
             }
           }
 
-          tableDb.put(key, table, function(err) {
+          tableDb.put(key, table, function (err) {
             // eslint-disable-next-line no-console
             if (err && !/Database is not open/.test(err)) console.error(err.stack || err)
           })
 
         }, store.options.updateTableMs)
 
-        cb(null, {TableDescription: table})
+        cb(null, { TableDescription: table })
       })
     })
   })
 
 }
 
-function getThroughputUpdates(data, table) {
+function getThroughputUpdates (data, table) {
   var tableBillingMode = (table.BillingModeSummary || {}).BillingMode || 'PROVISIONED'
-  var remainingIndexes = (table.GlobalSecondaryIndexes || []).reduce(function(map, index) {
+  var remainingIndexes = (table.GlobalSecondaryIndexes || []).reduce(function (map, index) {
     map[index.IndexName] = true
     return map
   }, Object.create(null))
@@ -144,12 +147,12 @@ function getThroughputUpdates(data, table) {
     updates.push({
       dataThroughput: data.ProvisionedThroughput,
       tableThroughput: table.ProvisionedThroughput,
-      setStatus: function(status) { table.TableStatus = status },
+      setStatus: function (status) { table.TableStatus = status },
     })
   }
   var globalUpdates = data.GlobalSecondaryIndexUpdates || []
   if (globalUpdates.length > 5) throw db.limitError('Subscriber limit exceeded: Only 1 online index can be created or deleted simultaneously per table')
-  globalUpdates.forEach(function(update) {
+  globalUpdates.forEach(function (update) {
     var dataThroughput = update.Update && update.Update.ProvisionedThroughput
     if (!dataThroughput) {
       return
@@ -157,13 +160,13 @@ function getThroughputUpdates(data, table) {
     if (dataThroughput.ReadCapacityUnits > 1000000000000 || dataThroughput.WriteCapacityUnits > 1000000000000) {
       throw db.validationError('This operation cannot be performed with given input values. Please contact DynamoDB service team for more info: Action Blocked: IndexUpdate')
     }
-    (table.GlobalSecondaryIndexes || []).forEach(function(index) {
+    (table.GlobalSecondaryIndexes || []).forEach(function (index) {
       if (index.IndexName == update.Update.IndexName) {
         delete remainingIndexes[index.IndexName]
         updates.push({
           dataThroughput: dataThroughput,
           tableThroughput: index.ProvisionedThroughput,
-          setStatus: function(status) { index.IndexStatus = status },
+          setStatus: function (status) { index.IndexStatus = status },
         })
       }
     })

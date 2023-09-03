@@ -1,16 +1,16 @@
 var helpers = require('./helpers')
 
-describe.skip('benchmarks', function() {
+describe.skip('benchmarks', function () {
 
-  it('should batch write', function(done) {
+  it('should batch write', function (done) {
     this.timeout(1e6)
 
     var numItems = 1e6, numSegments = 4, start = Date.now(), i, items = new Array(numItems)
 
     for (i = 0; i < numItems; i++)
-      items[i] = {a: {S: String(i)}}
+      items[i] = { a: { S: String(i) } }
 
-    helpers.batchBulkPut(helpers.testHashTable, items, numSegments, function(err) {
+    helpers.batchBulkPut(helpers.testHashTable, items, numSegments, function (err) {
       if (err) return done(err)
 
       // eslint-disable-next-line no-console
@@ -20,15 +20,15 @@ describe.skip('benchmarks', function() {
     })
   })
 
-  it('should scan', function(done) {
+  it('should scan', function (done) {
     this.timeout(1e6)
 
     scan()
 
-    function scan(key) {
+    function scan (key) {
       var start = Date.now()
 
-      helpers.request(helpers.opts('Scan', {TableName: helpers.testHashTable, Limit: 1000, ExclusiveStartKey: key}), function(err, res) {
+      helpers.request(helpers.opts('Scan', { TableName: helpers.testHashTable, Limit: 1000, ExclusiveStartKey: key }), function (err, res) {
         if (err) return done(err)
         res.statusCode.should.equal(200)
 

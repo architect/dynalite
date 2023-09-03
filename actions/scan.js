@@ -1,17 +1,17 @@
 var once = require('once'),
-    db = require('../db')
+  db = require('../db')
 
-module.exports = function scan(store, data, cb) {
+module.exports = function scan (store, data, cb) {
   cb = once(cb)
 
-  store.getTable(data.TableName, function(err, table) {
+  store.getTable(data.TableName, function (err, table) {
     if (err) return cb(err)
 
-    var keySchema = table.KeySchema, startKeyNames = keySchema.map(function(key) { return key.AttributeName }),
+    var keySchema = table.KeySchema, startKeyNames = keySchema.map(function (key) { return key.AttributeName }),
       fetchFromItemDb = false, isLocal
 
     if (data.IndexName) {
-      var index = db.traverseIndexes(table, function(attr, type, index, isGlobal) {
+      var index = db.traverseIndexes(table, function (attr, type, index, isGlobal) {
         if (index.IndexName == data.IndexName) {
           isLocal = !isGlobal
           return index
@@ -25,7 +25,7 @@ module.exports = function scan(store, data, cb) {
       }
       keySchema = index.KeySchema
       fetchFromItemDb = data.Select == 'ALL_ATTRIBUTES' && index.Projection.ProjectionType != 'ALL'
-      keySchema.forEach(function(key) { if (!~startKeyNames.indexOf(key.AttributeName)) startKeyNames.push(key.AttributeName) })
+      keySchema.forEach(function (key) { if (!~startKeyNames.indexOf(key.AttributeName)) startKeyNames.push(key.AttributeName) })
     }
 
     if (data.ExclusiveStartKey && Object.keys(data.ExclusiveStartKey).length != startKeyNames.length) {
@@ -34,7 +34,7 @@ module.exports = function scan(store, data, cb) {
     }
 
     if (data.IndexName && data.ExclusiveStartKey) {
-      err = db.traverseKey(table, keySchema, function(attr, type, isHash) {
+      err = db.traverseKey(table, keySchema, function (attr, type, isHash) {
         if (!data.ExclusiveStartKey[attr]) {
           return db.validationError('The provided starting key is invalid')
         }
@@ -50,13 +50,12 @@ module.exports = function scan(store, data, cb) {
     }
 
     if (data.ExclusiveStartKey) {
-      var tableStartKey = table.KeySchema.reduce(function(obj, attr) {
+      var tableStartKey = table.KeySchema.reduce(function (obj, attr) {
         obj[attr.AttributeName] = data.ExclusiveStartKey[attr.AttributeName]
         return obj
       }, {})
-      if ((err = db.validateKey(tableStartKey, table)) != null) {
-        return cb(db.validationError('The provided starting key is invalid: ' + err.message))
-      }
+      let invalid = db.validateKey(tableStartKey, table)
+      if (invalid != null) return cb(db.validationError('The provided starting key is invalid: ' + invalid.message))
     }
 
     if (data.TotalSegments > 1) {
@@ -77,11 +76,14 @@ module.exports = function scan(store, data, cb) {
       hashStart = startKey
     }
 
-    if ((err = db.validateKeyPaths((data._projection || {}).nestedPaths, table)) != null) return cb(err)
+    let invalid
+    invalid = db.validateKeyPaths((data._projection || {}).nestedPaths, table)
+    if (invalid != null) return cb(invalid)
 
-    if ((err = db.validateKeyPaths((data._filter || {}).nestedPaths, table)) != null) return cb(err)
+    invalid = db.validateKeyPaths((data._filter || {}).nestedPaths, table)
+    if (invalid != null) return cb(invalid)
 
-    var opts = {limit: data.Limit ? data.Limit + 1 : -1}
+    var opts = { limit: data.Limit ? data.Limit + 1 : -1 }
 
     if (hashStart != null) {
       opts.gt = hashStart

@@ -3,7 +3,7 @@ var validations = require('./index')
 exports.types = {
   Select: {
     type: 'String',
-    enum: ['SPECIFIC_ATTRIBUTES', 'COUNT', 'ALL_ATTRIBUTES', 'ALL_PROJECTED_ATTRIBUTES'],
+    enum: [ 'SPECIFIC_ATTRIBUTES', 'COUNT', 'ALL_ATTRIBUTES', 'ALL_PROJECTED_ATTRIBUTES' ],
   },
   IndexName: {
     type: 'String',
@@ -13,7 +13,7 @@ exports.types = {
   },
   ReturnConsumedCapacity: {
     type: 'String',
-    enum: ['INDEXES', 'TOTAL', 'NONE'],
+    enum: [ 'INDEXES', 'TOTAL', 'NONE' ],
   },
   QueryFilter: {
     type: 'Map<Condition>',
@@ -27,7 +27,7 @@ exports.types = {
         ComparisonOperator: {
           type: 'String',
           notNull: true,
-          enum: ['IN', 'NULL', 'BETWEEN', 'LT', 'NOT_CONTAINS', 'EQ', 'GT', 'NOT_NULL', 'NE', 'LE', 'BEGINS_WITH', 'GE', 'CONTAINS'],
+          enum: [ 'IN', 'NULL', 'BETWEEN', 'LT', 'NOT_CONTAINS', 'EQ', 'GT', 'NOT_NULL', 'NE', 'LE', 'BEGINS_WITH', 'GE', 'CONTAINS' ],
         },
       },
     },
@@ -41,7 +41,7 @@ exports.types = {
   },
   ConditionalOperator: {
     type: 'String',
-    enum: ['OR', 'AND'],
+    enum: [ 'OR', 'AND' ],
   },
   AttributesToGet: {
     type: 'List',
@@ -61,7 +61,7 @@ exports.types = {
         ComparisonOperator: {
           type: 'String',
           notNull: true,
-          enum: ['IN', 'NULL', 'BETWEEN', 'LT', 'NOT_CONTAINS', 'EQ', 'GT', 'NOT_NULL', 'NE', 'LE', 'BEGINS_WITH', 'GE', 'CONTAINS'],
+          enum: [ 'IN', 'NULL', 'BETWEEN', 'LT', 'NOT_CONTAINS', 'EQ', 'GT', 'NOT_NULL', 'NE', 'LE', 'BEGINS_WITH', 'GE', 'CONTAINS' ],
         },
         AttributeValueList: {
           type: 'List',
@@ -95,11 +95,11 @@ exports.types = {
   },
 }
 
-exports.custom = function(data) {
+exports.custom = function (data) {
 
   var msg = validations.validateExpressionParams(data,
-    ['ProjectionExpression', 'FilterExpression', 'KeyConditionExpression'],
-    ['AttributesToGet', 'QueryFilter', 'ConditionalOperator', 'KeyConditions'])
+    [ 'ProjectionExpression', 'FilterExpression', 'KeyConditionExpression' ],
+    [ 'AttributesToGet', 'QueryFilter', 'ConditionalOperator', 'KeyConditions' ])
   if (msg) return msg
 
   var key

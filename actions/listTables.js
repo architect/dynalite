@@ -1,16 +1,16 @@
 var once = require('once'),
-    db = require('../db')
+  db = require('../db')
 
-module.exports = function listTables(store, data, cb) {
+module.exports = function listTables (store, data, cb) {
   cb = once(cb)
   var opts, limit = data.Limit || 100
 
   if (data.ExclusiveStartTableName)
-    opts = {gt: data.ExclusiveStartTableName}
+    opts = { gt: data.ExclusiveStartTableName }
 
   db.lazy(store.tableDb.createKeyStream(opts), cb)
     .take(limit + 1)
-    .join(function(names) {
+    .join(function (names) {
       var result = {}
       if (names.length > limit) {
         names.splice(limit)

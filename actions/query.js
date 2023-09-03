@@ -1,17 +1,17 @@
 var once = require('once'),
-    db = require('../db')
+  db = require('../db')
 
-module.exports = function query(store, data, cb) {
+module.exports = function query (store, data, cb) {
   cb = once(cb)
 
-  store.getTable(data.TableName, function(err, table) {
+  store.getTable(data.TableName, function (err, table) {
     if (err) return cb(err)
 
-    var keySchema = table.KeySchema, startKeyNames = keySchema.map(function(key) { return key.AttributeName }),
+    var keySchema = table.KeySchema, startKeyNames = keySchema.map(function (key) { return key.AttributeName }),
       hashKey = startKeyNames[0], rangeKey = startKeyNames[1], fetchFromItemDb = false, isLocal
 
     if (data.IndexName) {
-      var index = db.traverseIndexes(table, function(attr, type, index, isGlobal) {
+      var index = db.traverseIndexes(table, function (attr, type, index, isGlobal) {
         if (index.IndexName == data.IndexName) {
           isLocal = !isGlobal
           return index
@@ -25,7 +25,7 @@ module.exports = function query(store, data, cb) {
       }
       keySchema = index.KeySchema
       fetchFromItemDb = data.Select == 'ALL_ATTRIBUTES' && index.Projection.ProjectionType != 'ALL'
-      keySchema.forEach(function(key) { if (!~startKeyNames.indexOf(key.AttributeName)) startKeyNames.push(key.AttributeName) })
+      keySchema.forEach(function (key) { if (!~startKeyNames.indexOf(key.AttributeName)) startKeyNames.push(key.AttributeName) })
       hashKey = keySchema[0].AttributeName
       rangeKey = keySchema[1] && keySchema[1].AttributeName
     }
@@ -34,7 +34,7 @@ module.exports = function query(store, data, cb) {
       return cb(db.validationError('The provided starting key is invalid'))
     }
 
-    err = db.traverseKey(table, keySchema, function(attr, type, isHash) {
+    err = db.traverseKey(table, keySchema, function (attr, type, isHash) {
       if (data.ExclusiveStartKey) {
         if (!data.ExclusiveStartKey[attr]) {
           return db.validationError('The provided starting key is invalid')
@@ -56,11 +56,11 @@ module.exports = function query(store, data, cb) {
 
       var comparisonOperator = data.KeyConditions[attr].ComparisonOperator
 
-      if (~['NULL', 'NOT_NULL', 'NE', 'CONTAINS', 'NOT_CONTAINS', 'IN'].indexOf(comparisonOperator)) {
+      if (~[ 'NULL', 'NOT_NULL', 'NE', 'CONTAINS', 'NOT_CONTAINS', 'IN' ].indexOf(comparisonOperator)) {
         return db.validationError('Attempted conditional constraint is not an indexable operation')
       }
 
-      if (data.KeyConditions[attr].AttributeValueList.some(function(attrVal) { return attrVal[type] == null })) {
+      if (data.KeyConditions[attr].AttributeValueList.some(function (attrVal) { return attrVal[type] == null })) {
         return db.validationError('One or more parameter values were invalid: Condition parameter type does not match schema type')
       }
 
@@ -74,19 +74,19 @@ module.exports = function query(store, data, cb) {
     var hashVal = data.KeyConditions[hashKey].AttributeValueList[0][hashType]
 
     if (data.ExclusiveStartKey) {
-      var tableStartKey = table.KeySchema.reduce(function(obj, attr) {
+      var tableStartKey = table.KeySchema.reduce(function (obj, attr) {
         obj[attr.AttributeName] = data.ExclusiveStartKey[attr.AttributeName]
         return obj
       }, {})
-      if ((err = db.validateKey(tableStartKey, table)) != null) {
-        return cb(db.validationError('The provided starting key is invalid: ' + err.message))
-      }
+      let invalid = db.validateKey(tableStartKey, table)
+      if (invalid != null) return cb(db.validationError('The provided starting key is invalid: ' + invalid.message))
 
       if (!rangeKey || !data.KeyConditions[rangeKey]) {
         if (data.ExclusiveStartKey[hashKey][hashType] != hashVal) {
           return cb(db.validationError('The provided starting key is outside query boundaries based on provided conditions'))
         }
-      } else {
+      }
+      else {
         var matchesRange = db.compare(data.KeyConditions[rangeKey].ComparisonOperator,
           data.ExclusiveStartKey[rangeKey], data.KeyConditions[rangeKey].AttributeValueList)
         if (!matchesRange) {
@@ -98,12 +98,14 @@ module.exports = function query(store, data, cb) {
       }
     }
 
-    if ((err = db.validateKeyPaths((data._projection || {}).nestedPaths, table)) != null) return cb(err)
+    let invalid
+    invalid = db.validateKeyPaths((data._projection || {}).nestedPaths, table)
+    if (invalid != null) return cb(invalid)
 
     if (data.QueryFilter || data._filter) {
       var pathHeads = data.QueryFilter ? data.QueryFilter : data._filter.pathHeads
       var propertyName = data.QueryFilter ? 'QueryFilter' : 'Filter Expression'
-      err = db.traverseKey(table, keySchema, function(attr) {
+      err = db.traverseKey(table, keySchema, function (attr) {
         if (pathHeads[attr]) {
           return db.validationError(propertyName + ' can only contain non-primary key attributes: ' +
             'Primary key attribute: ' + attr)
@@ -118,9 +120,10 @@ module.exports = function query(store, data, cb) {
         data.IndexName + ' because its projection type is not ALL'))
     }
 
-    if ((err = db.validateKeyPaths((data._filter || {}).nestedPaths, table)) != null) return cb(err)
+    invalid = db.validateKeyPaths((data._filter || {}).nestedPaths, table)
+    if (invalid != null) return cb(invalid)
 
-    var opts = {reverse: data.ScanIndexForward === false, limit: data.Limit ? data.Limit + 1 : -1}
+    var opts = { reverse: data.ScanIndexForward === false, limit: data.Limit ? data.Limit + 1 : -1 }
 
     opts.gte = db.hashPrefix(hashVal, hashType) + '/' + db.toRangeStr(hashVal, hashType) + '/'
     opts.lt = opts.gte + '~'
@@ -133,20 +136,26 @@ module.exports = function query(store, data, cb) {
         opts.gte += rangeStr
         opts.lte = opts.gte + '~'
         delete opts.lt
-      } else if (comp == 'LT') {
+      }
+      else if (comp == 'LT') {
         opts.lt = opts.gte + rangeStr
-      } else if (comp == 'LE') {
+      }
+      else if (comp == 'LE') {
         opts.lte = opts.gte + rangeStr + '~'
         delete opts.lt
-      } else if (comp == 'GT') {
+      }
+      else if (comp == 'GT') {
         opts.gt = opts.gte + rangeStr + '~'
         delete opts.gte
-      } else if (comp == 'GE') {
+      }
+      else if (comp == 'GE') {
         opts.gte += rangeStr
-      } else if (comp == 'BEGINS_WITH') {
+      }
+      else if (comp == 'BEGINS_WITH') {
         opts.lt = opts.gte + rangeStrPrefix + '~'
         opts.gte += rangeStr
-      } else if (comp == 'BETWEEN') {
+      }
+      else if (comp == 'BETWEEN') {
         opts.lte = opts.gte + db.toRangeStr(data.KeyConditions[rangeKey].AttributeValueList[1]) + '/~'
         opts.gte += rangeStr
         delete opts.lt
@@ -160,7 +169,8 @@ module.exports = function query(store, data, cb) {
       if (data.ScanIndexForward === false) {
         opts.lt = startKey
         delete opts.lte
-      } else {
+      }
+      else {
         opts.gt = startKey
         delete opts.gte
       }

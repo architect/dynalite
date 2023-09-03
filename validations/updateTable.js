@@ -22,7 +22,7 @@ exports.types = {
   },
   BillingMode: {
     type: 'String',
-    enum: ['PROVISIONED', 'PAY_PER_REQUEST'],
+    enum: [ 'PROVISIONED', 'PAY_PER_REQUEST' ],
   },
   GlobalSecondaryIndexUpdates: {
     type: 'List',
@@ -66,7 +66,7 @@ exports.types = {
               children: {
                 ProjectionType: {
                   type: 'String',
-                  enum: ['ALL', 'INCLUDE', 'KEYS_ONLY'],
+                  enum: [ 'ALL', 'INCLUDE', 'KEYS_ONLY' ],
                 },
                 NonKeyAttributes: {
                   type: 'List',
@@ -136,7 +136,7 @@ exports.types = {
   },
 }
 
-exports.custom = function(data) {
+exports.custom = function (data) {
 
   if (!data.ProvisionedThroughput && !data.BillingMode && !data.UpdateStreamEnabled &&
       (!data.GlobalSecondaryIndexUpdates || !data.GlobalSecondaryIndexUpdates.length) && !data.SSESpecification) {
