@@ -11,6 +11,7 @@ Hello! After a bit of a hiatus, the [Architect team](https://github.com/architec
 - Added `--host` / `options.host` option for specifying a particular host
 - Added `--verbose|-v` / `options.verbose`, `--debug|-d` / `options.debug` logging modes, and some additional logging
 - Added `-h` help alias for CLI
+- Added Typescript Types via JSDOC comments
 
 ### Changed
 
