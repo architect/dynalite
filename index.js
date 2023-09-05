@@ -15,7 +15,7 @@ var debug = false
 var validApis = [ 'DynamoDB_20111205', 'DynamoDB_20120810' ],
   validOperations = [ 'BatchGetItem', 'BatchWriteItem', 'CreateTable', 'DeleteItem', 'DeleteTable',
     'DescribeTable', 'DescribeTimeToLive', 'GetItem', 'ListTables', 'PutItem', 'Query', 'Scan', 'TagResource',
-    'UntagResource', 'ListTagsOfResource', 'UpdateItem', 'UpdateTable' ],
+    'UntagResource', 'ListTagsOfResource', 'UpdateItem', 'UpdateTable', 'TransactWriteItems' ],
   actions = {},
   actionValidations = {}
 
