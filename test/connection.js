@@ -1,7 +1,8 @@
 var https = require('https'),
   once = require('once'),
   dynalite = require('..'),
-  helpers = require('./helpers')
+  helpers = require('./helpers'),
+  path = require('path')
 
 var request = helpers.request
 
@@ -109,7 +110,13 @@ describe('dynalite connections', function () {
     })
 
     it('should connect to SSL', function (done) {
-      var port = 10000 + Math.round(Math.random() * 10000), dynaliteServer = dynalite({ ssl: true })
+      var port = 10000 + Math.round(Math.random() * 10000), dynaliteServer = dynalite({
+        ssl: true,
+        useSSLFilePaths: true,
+        key: path.join(__dirname, 'ssl', 'server-key.pem'),
+        cert: path.join(__dirname, 'ssl', 'server-crt.pem'),
+        ca: path.join(__dirname, 'ssl', 'ca-crt.pem'),
+      })
 
       dynaliteServer.listen(port, function (err) {
         if (err) return done(err)
