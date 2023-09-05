@@ -15,7 +15,7 @@ Hello! After a bit of a hiatus, the [Architect team](https://github.com/architec
 
 ### Changed
 
-- [Breaking change] Introduced minimum Node.js version of >= 14; fixes [#169](https://github.com/architect/dynalite/issues/169)
+- [Breaking change] Introduced minimum Node.js version of >= 16; fixes [#169](https://github.com/architect/dynalite/issues/169)
 - Changed license from MIT to Apache 2.0; see [#166](https://github.com/architect/dynalite/issues/166)
 - Updated dependencies (which themselves dropped support for older versions of Node.js)
 - Updated tests
