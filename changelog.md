@@ -12,6 +12,8 @@ Hello! After a bit of a hiatus, the [Architect team](https://github.com/architec
 - Added `--verbose|-v` / `options.verbose`, `--debug|-d` / `options.debug` logging modes, and some additional logging
 - Added `-h` help alias for CLI
 - Added Typescript Types via JSDOC comments
+- Enabled `port` and `host` options to be passed to Dynalite in `http` mode (instead of needing to be set in `dynalite.listen(port, host)`)
+
 
 ### Changed
 
@@ -23,11 +25,6 @@ Hello! After a bit of a hiatus, the [Architect team](https://github.com/architec
 - Updated dependencies (which themselves dropped support for older versions of Node.js)
 - Updated tests
 - Added Architect Code of Conduct, new CI flow, etc.
-
-
-### Fixed
-
-- Fixed CLI `--port` (and `--host`) options not being passed to Dynalite in `http` mode; fixes [#178](https://github.com/architect/dynalite/issues/178)
 
 ---
 
