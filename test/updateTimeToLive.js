@@ -194,7 +194,16 @@ describe('updateTimeToLive', function () {
           if (err) return done(err)
           res.statusCode.should.equal(200)
 
-          setTimeout(function (){
+          var retryCounter = 100
+          var intervalTimer
+          var teardown = (err) => {
+            if (--retryCounter > 0) return
+            clearInterval(intervalTimer)
+            return done(err)
+          }
+          // Retry until expired item is deleted from table and indices
+          // Interval is short to speed up the test
+          intervalTimer = setInterval(function (){
             request(helpers.opts('Query', {
               TableName: helpers.testRangeTable,
               KeyConditionExpression: 'a = :a',
@@ -202,47 +211,53 @@ describe('updateTimeToLive', function () {
                 ':a': expiredItem.a,
               },
             }), function (err, res) {
-              if (err) return done(err)
-              res.statusCode.should.equal(200)
-              res.body.Items.should.eql([ livingItem ], 'Expired item should be deleted from table')
-
-              request(helpers.opts('Query', {
-                TableName: helpers.testRangeTable,
-                IndexName: 'index1',
-                KeyConditionExpression: 'a = :a',
-                ExpressionAttributeValues: {
-                  ':a': expiredItem.a,
-                },
-              }), function (err, res) {
-                if (err) return done(err)
+              try {
+                if (err) return teardown(err)
                 res.statusCode.should.equal(200)
-                res.body.Items.should.eql([ livingItem ], 'Expired Item should be deleted from LSI')
+                res.body.Items.should.eql([ livingItem ], 'Expired item should be deleted from table')
 
                 request(helpers.opts('Query', {
                   TableName: helpers.testRangeTable,
-                  IndexName: 'index3',
-                  KeyConditionExpression: 'c = :c',
+                  IndexName: 'index1',
+                  KeyConditionExpression: 'a = :a',
                   ExpressionAttributeValues: {
-                    ':c': expiredItem.c,
+                    ':a': expiredItem.a,
                   },
                 }), function (err, res) {
-                  if (err) return done(err)
+                  if (err) return teardown(err)
                   res.statusCode.should.equal(200)
-                  res.body.Items.should.eql([ livingItem ], 'Expired Item should be deleted from GSI')
+                  res.body.Items.should.eql([ livingItem ], 'Expired Item should be deleted from LSI')
 
-                  // teardown
-                  request(opts({
+                  request(helpers.opts('Query', {
                     TableName: helpers.testRangeTable,
-                    TimeToLiveSpecification: { AttributeName: 'TTL', Enabled: false }
+                    IndexName: 'index3',
+                    KeyConditionExpression: 'c = :c',
+                    ExpressionAttributeValues: {
+                      ':c': expiredItem.c,
+                    },
                   }), function (err, res) {
-                    if (err) return done(err)
+                    if (err) return teardown(err)
                     res.statusCode.should.equal(200)
-                    done()
+                    res.body.Items.should.eql([ livingItem ], 'Expired Item should be deleted from GSI')
+
+                    // teardown
+                    request(opts({
+                      TableName: helpers.testRangeTable,
+                      TimeToLiveSpecification: { AttributeName: 'TTL', Enabled: false }
+                    }), function (err, res) {
+                      if (err) return teardown(err)
+                      res.statusCode.should.equal(200)
+                      clearInterval(intervalTimer)
+                      done()
+                    })
                   })
                 })
-              })
+              }
+              catch (e) {
+                return teardown(e)
+              }
             })
-          }, 3000)
+          }, 50)
         })
       })
     })
