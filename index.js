@@ -15,7 +15,7 @@ var debug = false
 var validApis = [ 'DynamoDB_20111205', 'DynamoDB_20120810' ],
   validOperations = [ 'BatchGetItem', 'BatchWriteItem', 'CreateTable', 'DeleteItem', 'DeleteTable',
     'DescribeTable', 'DescribeTimeToLive', 'GetItem', 'ListTables', 'PutItem', 'Query', 'Scan', 'TagResource',
-    'UntagResource', 'ListTagsOfResource', 'UpdateItem', 'UpdateTable' ],
+    'UntagResource', 'ListTagsOfResource', 'UpdateItem', 'UpdateTable', 'UpdateTimeToLive' ],
   actions = {},
   actionValidations = {}
 
@@ -57,6 +57,7 @@ function dynalite (options) {
   // Ensure we close DB when we're closing the server too
   var httpServerClose = server.close, httpServerListen = server.listen
   server.close = function (cb) {
+    store.stopBackgroundJobs()
     store.db.close(function (err) {
       if (err) return cb(err)
       // Recreate the store if the user wants to listen again
