@@ -5,7 +5,8 @@ module.exports = function describeTimeToLive (store, data, cb) {
 
     if (table.TimeToLiveDescription !== null && typeof table.TimeToLiveDescription === 'object') {
       cb(null, { TimeToLiveDescription: table.TimeToLiveDescription })
-    } else {
+    }
+    else {
       cb(null, { TimeToLiveDescription: { TimeToLiveStatus: 'DISABLED' } })
     }
   })

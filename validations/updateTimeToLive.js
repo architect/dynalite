@@ -23,8 +23,8 @@ exports.types = {
 }
 
 
-exports.custom = function(data) {
+exports.custom = function (data) {
   if (data.TimeToLiveSpecification.AttributeName === '') {
-    return 'TimeToLiveSpecification.AttributeName must be non empty';
+    return 'TimeToLiveSpecification.AttributeName must be non empty'
   }
 }

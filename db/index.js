@@ -137,50 +137,50 @@ function create (options) {
     timerIdTtlScanner = setInterval(function () {
       var currentUnixSeconds = Math.round(Date.now() / 1000)
 
-      function logError(err, result) {
+      function logError (err) {
         if (err) console.error(err)
       }
 
       lazyStream(tableDb.createKeyStream({}), logError)
-          .join(function (tableNames) {
-            tableNames.forEach(function (name) {
-              getTable(name, false, function (err, table) {
-                if (err) return
-                if (!table.TimeToLiveDescription || table.TimeToLiveDescription.TimeToLiveStatus !== 'ENABLED') return
+        .join(function (tableNames) {
+          tableNames.forEach(function (name) {
+            getTable(name, false, function (err, table) {
+              if (err) return
+              if (!table.TimeToLiveDescription || table.TimeToLiveDescription.TimeToLiveStatus !== 'ENABLED') return
 
-                var keyAttrNames = table.KeySchema.map(function (i) {
-                  return i.AttributeName
-                })
-                var source = {
-                  getItemDb: getItemDb,
-                  getIndexDb: getIndexDb,
-                }
-                var itemDb = getItemDb(table.TableName)
-                var kvStream = lazyStream(itemDb.createReadStream({}), logError)
-                kvStream = kvStream.filter(function (item) {
-                  var ttl = item.value[table.TimeToLiveDescription.AttributeName]
-                  return ttl && typeof ttl.N === 'string' && currentUnixSeconds > Number(ttl.N)
-                })
-                kvStream.join(function (kvs) {
-                  kvs.forEach(function (kv) {
-                    var itemKey = keyAttrNames.reduce(function (key, attrName) {
-                      key[attrName] = kv.value[attrName]
-                      return key
-                    }, {})
-                    var data = {TableName: name, Key: itemKey}
-                    var cb = function (err) {
-                      // Noop ?
-                    }
-                    deleteItem(source, data, table, itemDb, kv.key, cb)
-                  })
+              var keyAttrNames = table.KeySchema.map(function (i) {
+                return i.AttributeName
+              })
+              var source = {
+                getItemDb: getItemDb,
+                getIndexDb: getIndexDb,
+              }
+              var itemDb = getItemDb(table.TableName)
+              var kvStream = lazyStream(itemDb.createReadStream({}), logError)
+              kvStream = kvStream.filter(function (item) {
+                var ttl = item.value[table.TimeToLiveDescription.AttributeName]
+                return ttl && typeof ttl.N === 'string' && currentUnixSeconds > Number(ttl.N)
+              })
+              kvStream.join(function (kvs) {
+                kvs.forEach(function (kv) {
+                  var itemKey = keyAttrNames.reduce(function (key, attrName) {
+                    key[attrName] = kv.value[attrName]
+                    return key
+                  }, {})
+                  var data = { TableName: name, Key: itemKey }
+                  var cb = () => {
+                    // Noop ?
+                  }
+                  deleteItem(source, data, table, itemDb, kv.key, cb)
                 })
               })
             })
           })
+        })
     }, ttlScannerInterval)
   }
 
-  function stopBackgroundJobs() {
+  function stopBackgroundJobs () {
     clearInterval(timerIdTtlScanner)
   }
 
@@ -244,14 +244,15 @@ function validateItem (dataItem, table) {
   })
 }
 
-function deleteItem(store, data, table, itemDb, key, cb) {
-  itemDb.lock(key, function(release) {
+function deleteItem (store, data, table, itemDb, key, cb) {
+  itemDb.lock(key, function (release) {
     cb = release(cb)
 
-    itemDb.get(key, function(err, existingItem) {
+    itemDb.get(key, function (err, existingItem) {
       if (err && err.name !== 'NotFoundError') return cb(err)
 
-      if ((err = checkConditional(data, existingItem)) != null) return cb(err)
+      let conditionalErr = checkConditional(data, existingItem)
+      if (conditionalErr) return cb(conditionalErr)
 
       var returnObj = {}
 
@@ -260,10 +261,10 @@ function deleteItem(store, data, table, itemDb, key, cb) {
 
       returnObj.ConsumedCapacity = addConsumedCapacity(data, false, existingItem)
 
-      updateIndexes(store, table, existingItem, null, function(err) {
+      updateIndexes(store, table, existingItem, null, function (err) {
         if (err) return cb(err)
 
-        itemDb.del(key, function(err) {
+        itemDb.del(key, function (err) {
           if (err) return cb(err)
           cb(null, returnObj)
         })
@@ -272,7 +273,6 @@ function deleteItem(store, data, table, itemDb, key, cb) {
   })
 }
 
-function validateUpdates(attributeUpdates, expressionUpdates, table) {
 function validateUpdates (attributeUpdates, expressionUpdates, table) {
   if (attributeUpdates == null && expressionUpdates == null) return
 
