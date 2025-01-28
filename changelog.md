@@ -12,10 +12,15 @@ Hello! After a bit of a hiatus, the [Architect team](https://github.com/architec
 - Added `--verbose|-v` / `options.verbose`, `--debug|-d` / `options.debug` logging modes, and some additional logging
 - Added `-h` help alias for CLI
 - Added Typescript Types via JSDOC comments
+- Enabled `port` and `host` options to be passed to Dynalite in `http` mode (instead of needing to be set in `dynalite.listen(port, host)`)
+
 
 ### Changed
 
-- [Breaking change] Introduced minimum Node.js version of >= 16; fixes [#169](https://github.com/architect/dynalite/issues/169)
+- [Breaking change] Introduced minimum Node.js version of >= 18; fixes [#169](https://github.com/architect/dynalite/issues/169)
+- [Breaking change] When using SSL mode, you must now supply your own `key`, `cert`, and `ca` (which isn't much of a breaking change, really, because Dynalite's certs were expired); fixes [#176](https://github.com/architect/dynalite/issues/176)
+  - In CLI mode, pass them as file paths with flags (e.g. `--key /foo/key.pem --cert /foo/cert.pem --ca /foo/ca-cert.pem`)
+  - As a module, you can pass them as strings or as file paths; when passing as file paths, make sure you include a boolean `useSSLFilePaths` option
 - Changed license from MIT to Apache 2.0; see [#166](https://github.com/architect/dynalite/issues/166)
 - Updated dependencies (which themselves dropped support for older versions of Node.js)
 - Updated tests

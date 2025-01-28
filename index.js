@@ -1,16 +1,13 @@
-var http = require('http'),
-  https = require('https'),
-  fs = require('fs'),
-  path = require('path'),
-  url = require('url'),
-  crypto = require('crypto'),
-  crc32 = require('buffer-crc32'),
-  validations = require('./validations'),
-  db = require('./db')
+let { readFileSync } = require('fs')
+let url = require('url')
+let crypto = require('crypto')
+let crc32 = require('buffer-crc32')
+let validations = require('./validations')
+let db = require('./db')
 
-var MAX_REQUEST_BYTES = 16 * 1024 * 1024
-var verbose = false
-var debug = false
+const MAX_REQUEST_BYTES = 16 * 1024 * 1024
+let verbose = false
+let debug = false
 
 var validApis = [ 'DynamoDB_20111205', 'DynamoDB_20120810' ],
   validOperations = [ 'BatchGetItem', 'BatchWriteItem', 'CreateTable', 'DeleteItem', 'DeleteTable',
@@ -19,16 +16,15 @@ var validApis = [ 'DynamoDB_20111205', 'DynamoDB_20120810' ],
   actions = {},
   actionValidations = {}
 
-module.exports = dynalite
-
 /**
  * @param {Object} options - The shape is the same as SpecialType above
  * @param {boolean} [options.verbose=false] - Enable verbose logging
  * @param {boolean} [options.debug=false] - Enable debug logging
  * @param {boolean} [options.ssl=false] - Enable SSL for the web server
- * @param {string} [options.key] - SSL private key - if omitted and ssl enabled, self-signed cert will be used
- * @param {string} [options.cert] - SSL certificate - if omitted and ssl enabled, self-signed cert will be used
- * @param {string} [options.ca] - SSL certificate authority - if omitted and ssl enabled, self-signed cert will be used
+ * @param {string} [options.key] - SSL private key; to use a file path instead, pass the useSSLFilePaths option
+ * @param {string} [options.cert] - SSL certificate; to use a file path instead, pass the useSSLFilePaths option
+ * @param {string} [options.ca] - SSL certificate authority; to use a file path instead, pass the useSSLFilePaths option
+ * @param {boolean} [options.useSSLFilePaths] - Use file paths instead of strings for SSL certs
  * @param {number} [options.createTableMs=500] - Amount of time tables stay in CREATING state
  * @param {number} [options.deleteTableMs=500] - Amount of time tables stay in DELETING state
  * @param {number} [options.updateTableMs=500] - Amount of time tables stay in UPDATING state
@@ -45,17 +41,28 @@ function dynalite (options) {
   var server, store = db.create(options), requestHandler = httpHandler.bind(null, store)
 
   if (options.ssl) {
-    options.key = options.key || fs.readFileSync(path.join(__dirname, 'ssl', 'server-key.pem'))
-    options.cert = options.cert || fs.readFileSync(path.join(__dirname, 'ssl', 'server-crt.pem'))
-    options.ca = options.ca || fs.readFileSync(path.join(__dirname, 'ssl', 'ca-crt.pem'))
+    let useFilePath = options.useSSLFilePaths || options._
+    let files = [ 'key', 'cert', 'ca' ]
+    files.forEach(file => {
+      if (!options[file]) throw ReferenceError(`SSL must have '${file}' option`)
+    })
+    options.key = useFilePath ? readFileSync(options.key) : options.key
+    options.cert = useFilePath ? readFileSync(options.cert) : options.cert
+    options.ca = useFilePath ? readFileSync(options.ca) : options.ca
+
+    // eslint-disable-next-line
+    let https = require('https')
     server = https.createServer(options, requestHandler)
   }
   else {
-    server = http.createServer(requestHandler)
+    // eslint-disable-next-line
+    let http = require('http')
+    server = http.createServer(options, requestHandler)
   }
 
   // Ensure we close DB when we're closing the server too
-  var httpServerClose = server.close, httpServerListen = server.listen
+  let httpServerClose = server.close
+  let httpServerListen = server.listen
   server.close = function (cb) {
     store.db.close(function (err) {
       if (err) return cb(err)
@@ -303,4 +310,5 @@ function httpHandler (store, req, res) {
   })
 }
 
+module.exports = dynalite
 if (require.main === module) dynalite().listen(4567)
