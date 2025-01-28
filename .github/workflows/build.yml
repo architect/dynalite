@@ -15,16 +15,16 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        node-version: [ 14.x, 16.x, 18.x ]
+        node-version: [ 18.x, 20.x, 22.x ]
         os: [ windows-latest, ubuntu-latest, macOS-latest ]
 
     # Go
     steps:
     - name: Check out repo
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Set up Node.js
-      uses: actions/setup-node@v3
+      uses: actions/setup-node@v4
       with:
         node-version: ${{ matrix.node-version }}
 
@@ -48,7 +48,7 @@ jobs:
     - name: Notify
       uses: sarisia/actions-status-discord@v1
       # Only fire alert once
-      if: github.ref == 'refs/heads/main' && failure() && matrix.node-version == '14.x' && matrix.os == 'ubuntu-latest'
+      if: github.ref == 'refs/heads/main' && failure() && matrix.node-version == '22.x' && matrix.os == 'ubuntu-latest'
       with:
         webhook: ${{ secrets.DISCORD_WEBHOOK }}
         title: "build and test"
@@ -67,10 +67,10 @@ jobs:
     # Go
     steps:
       - name: Check out repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: lts/*
           registry-url: https://registry.npmjs.org/

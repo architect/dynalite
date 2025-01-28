@@ -17,7 +17,7 @@ Hello! After a bit of a hiatus, the [Architect team](https://github.com/architec
 
 ### Changed
 
-- [Breaking change] Introduced minimum Node.js version of >= 14; fixes [#169](https://github.com/architect/dynalite/issues/169)
+- [Breaking change] Introduced minimum Node.js version of >= 18; fixes [#169](https://github.com/architect/dynalite/issues/169)
 - [Breaking change] When using SSL mode, you must now supply your own `key`, `cert`, and `ca` (which isn't much of a breaking change, really, because Dynalite's certs were expired); fixes [#176](https://github.com/architect/dynalite/issues/176)
   - In CLI mode, pass them as file paths with flags (e.g. `--key /foo/key.pem --cert /foo/cert.pem --ca /foo/ca-cert.pem`)
   - As a module, you can pass them as strings or as file paths; when passing as file paths, make sure you include a boolean `useSSLFilePaths` option
