@@ -20,8 +20,8 @@
 | test-tape/mocha-source-split/describeTimeToLive.js | 71   | ✅ Converted |                                           |
 | test-tape/mocha-source-split/deleteItem.part1.js | 77   | ✅ Converted |                                           |
 | test-tape/mocha-source-split/putItem.part1.js | 79   | ✅ Converted |                                           |
-| test-tape/mocha-source-split/untagResource.js | 87   | ⬜ Not started |                                           |
-| test-tape/mocha-source-split/tagResource.js | 95   | ⬜ Not started |                                           |
+| test-tape/mocha-source-split/untagResource.js | 87   | ✅ Converted | Fixed assertion discrepancy vs Mocha src. |
+| test-tape/mocha-source-split/tagResource.js | 95   | ✅ Converted | Fixed assertion discrepancy vs Mocha src. |
 | test-tape/mocha-source-split/updateItem.part1.js | 100  | ⬜ Not started |                                           |
 | test-tape/mocha-source-split/deleteTable.js | 106  | ⬜ Not started |                                           |
 | test-tape/mocha-source-split/scan.part1.js | 107  | ⬜ Not started |                                           |
