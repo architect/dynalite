@@ -81,6 +81,16 @@ Or to install for development/testing in your project:
 npm install -D dynalite
 ```
 
+## Testing
+
+To run the test suite:
+
+```sh
+npm test
+```
+
+This will execute the tests using [Tape](https://github.com/tape-testing/tape).
+
 ## TODO
 
 - Implement [Transactions](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/transaction-apis.html)
