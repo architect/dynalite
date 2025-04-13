@@ -2,6 +2,7 @@ const test = require('tape')
 const helpers = require('./helpers')
 
 const target = 'DescribeTable'
+const request = helpers.request
 const assertType = helpers.assertType.bind(null, target)
 const assertValidation = helpers.assertValidation.bind(null, target)
 const assertNotFound = helpers.assertNotFound.bind(null, target)
@@ -76,6 +77,33 @@ test('describeTable', (t) => {
     })
 
     st.end() // End validations tests
+  })
+
+  // Added functionality test
+  t.test('functionality', (st) => {
+    st.test('should describe the test hash table successfully', (sst) => {
+      const tableName = helpers.testHashTable
+      helpers.waitUntilActive(tableName, (waitErr) => { // Ensure table is active first
+        sst.error(waitErr, `waitUntilActive for ${tableName} should not error`)
+
+        request(helpers.opts('DescribeTable', { TableName: tableName }), (err, res) => {
+          sst.error(err, 'DescribeTable request should not error')
+          if (!res) return sst.end('No response from DescribeTable')
+
+          sst.equal(res.statusCode, 200, 'DescribeTable status code should be 200')
+          sst.ok(res.body.Table, 'Response body should contain Table description')
+          if (res.body.Table) {
+            sst.equal(res.body.Table.TableName, tableName, 'Table name should match')
+            sst.ok(res.body.Table.TableArn, 'Table ARN should exist')
+            sst.equal(res.body.Table.TableStatus, 'ACTIVE', 'Table status should be ACTIVE')
+            // Basic check for ARN format - adjust regex if needed
+            sst.ok(/^arn:aws:dynamodb:[^:]+:[^:]+:table\/.+$/.test(res.body.Table.TableArn), 'Table ARN should have expected format')
+          }
+          sst.end()
+        })
+      })
+    })
+    st.end() // End functionality tests
   })
 
   t.end() // End describeTable tests

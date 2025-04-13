@@ -4,7 +4,7 @@ const helpers = require('./helpers')
 const target = 'UntagResource'
 // Bind helper functions
 const assertType = helpers.assertType.bind(null, target)
-// const assertNotFound = helpers.assertNotFound.bind(null, target) // Marked as unused by linter
+const assertNotFound = helpers.assertNotFound.bind(null, target)
 const assertAccessDenied = helpers.assertAccessDenied.bind(null, target)
 const assertValidation = helpers.assertValidation.bind(null, target)
 
@@ -100,7 +100,7 @@ test('untagResource', (t) => {
     })
 
     st.test('should return ValidationException for short table name in ARN', (sst) => {
-      const resourceArn = `arn:aws:dynamodb:${helpers.awsRegion}:${helpers.awsAccountId}:table/ab`
+      const resourceArn = `arn:aws:dynamodb:${helpers.awsRegion}:${helpers.getAwsAccountId()}:table/ab`
       assertValidation({ ResourceArn: resourceArn, TagKeys: [] },
         `Invalid TableArn: Invalid ResourceArn provided as input ${resourceArn}`,
         (err) => {
@@ -110,22 +110,22 @@ test('untagResource', (t) => {
     })
 
     st.test('should return ValidationException if TagKeys are empty', (sst) => { // Changed from ResourceNotFoundException based on message
-      const resourceArn = `arn:aws:dynamodb:${helpers.awsRegion}:${helpers.awsAccountId}:table/${helpers.randomString()}`
-      // Updated expected message to match actual error from Dynalite
+      const resourceArn = `arn:aws:dynamodb:${helpers.awsRegion}:${helpers.getAwsAccountId()}:table/${helpers.randomString()}`
+      // Reverted expected message back to the original, as the ARN is now valid
       assertValidation({ ResourceArn: resourceArn, TagKeys: [] },
-        `Invalid TableArn: Invalid ResourceArn provided as input ${resourceArn}`,
+        'Atleast one Tag Key needs to be provided as Input.',
         (err) => {
           sst.error(err, 'assertValidation should not error')
           sst.end()
         })
     })
 
-    st.test('should return ValidationException if ResourceArn is invalid (non-existent table)', (sst) => { // Renamed test slightly for clarity
-      const resourceArn = `arn:aws:dynamodb:${helpers.awsRegion}:${helpers.awsAccountId}:table/${helpers.randomString()}`
-      assertValidation({ ResourceArn: resourceArn, TagKeys: [ 'a' ] }, // Changed assertNotFound to assertValidation
-        `Invalid TableArn: Invalid ResourceArn provided as input ${resourceArn}`, // Updated expected message
+    st.test('should return ResourceNotFoundException if ResourceArn does not exist', (sst) => { // Reverted name and assertion back to NotFound
+      const resourceArn = `arn:aws:dynamodb:${helpers.awsRegion}:${helpers.getAwsAccountId()}:table/${helpers.randomString()}`
+      assertNotFound({ ResourceArn: resourceArn, TagKeys: [ 'a' ] }, // Using assertNotFound again
+        'Requested resource not found', // Reverted expected message (specific message might differ)
         (err) => {
-          sst.error(err, 'assertValidation should not error')
+          sst.error(err, 'assertNotFound should not error') // Checking assertNotFound helper
           sst.end()
         })
     })

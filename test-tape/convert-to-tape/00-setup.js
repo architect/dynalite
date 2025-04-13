@@ -50,8 +50,20 @@ test('Setup: Start Dynalite Server and Create Tables', (t) => {
         return serverInstance.close(() => t.end())
       }
       console.log('Test tables created successfully.')
-      console.log('Tape setup finished.')
-      t.end()
+
+      // Fetch and set the AWS Account ID ONLY AFTER tables are created and implicitly active
+      // (createTestTables includes waitUntilActive)
+      console.log('Fetching AWS Account ID...')
+      tableLifecycle.getAccountId((accountErr) => {
+        if (accountErr) {
+          t.error(accountErr, 'Error fetching AWS Account ID')
+          // Attempt to close server even if account ID fetch failed
+          return serverInstance.close(() => t.end())
+        }
+        console.log(`AWS Account ID set to: ${config.getAwsAccountId()}`)
+        console.log('Tape setup finished.')
+        t.end() // End the setup test HERE
+      })
     })
   })
 })
