@@ -28,7 +28,7 @@
 | test-tape/mocha-source-split/updateTable.part1.js | 121  | ✅ Converted |                                           |
 | test-tape/mocha-source-split/listTagsOfResource.js | 125  | ✅ Converted | Fixed assertion/ARN issues.            |
 | test-tape/mocha-source-split/query.part1.js | 132  | ✅ Converted |                                           |
-| test-tape/mocha-source-split/createTable.part1.js | 166  | ⬜ Not started |                                           |
+| test-tape/mocha-source-split/createTable.part1.js | 166  | ✅ Converted |                                           |
 | test-tape/mocha-source-split/updateTable.part3.js | 195  | ⬜ Not started |                                           |
 | test-tape/mocha-source-split/updateTable.part2.js | 214  | ⬜ Not started |                                           |
 | test-tape/mocha-source-split/getItem.part3.js | 225  | ⬜ Not started |                                           |
