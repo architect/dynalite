@@ -1,109 +1,162 @@
-const fs = require('fs');
-const path = require('path');
-const recast = require('recast');
-const b = recast.types.builders;
+const fs = require('fs')
+const path = require('path')
+const recast = require('recast')
+const b = recast.types.builders
 
-const TARGET_DIR = path.join(__dirname, '../test-tape/mocha-source-split');
-const MAX_LINES = 500;
+const SOURCE_DIR = path.resolve(__dirname, './mocha-source') // Relative to script in test-tape
+const TARGET_DIR = path.resolve(__dirname, './mocha-source-split') // Relative to script in test-tape
+const MAX_LINES = 500
 
-function getLineCount(node) {
-    if (!node || !node.loc) return 0;
-    return node.loc.end.line - node.loc.start.line + 1;
+function getLineCount (node) {
+  if (!node || !node.loc) return 0
+  if (node.loc.start.line === node.loc.end.line && node.loc.start.column === node.loc.end.column) {
+    return recast.print(node).code.split('\n').length
+  }
+  return node.loc.end.line - node.loc.start.line + 1
 }
 
-function splitFile(filePath) {
-    const originalCode = fs.readFileSync(filePath, 'utf8');
-    const ast = recast.parse(originalCode);
-    const body = ast.program.body;
+function splitFile (filePath) {
+  const originalCode = fs.readFileSync(filePath, 'utf8')
+  const ast = recast.parse(originalCode, { tolerant: true })
+  const body = ast.program.body
 
-    const headerNodes = [];
-    const topLevelBlocks = []; // describe or it blocks
-    let currentBlock = null;
+  const headerNodes = []
+  const topLevelDescribeNodes = []
+  const otherTopLevelNodes = []
 
-    // Separate header (requires, top-level vars) from test blocks
-    body.forEach(node => {
-        if (node.type === 'ExpressionStatement' &&
-            node.expression.type === 'CallExpression' &&
-            node.expression.callee &&
-            (node.expression.callee.name === 'describe' || node.expression.callee.name === 'it')) {
-            topLevelBlocks.push(node);
-        } else if (node.type === 'VariableDeclaration' && node.kind === 'var') {
-            // Keep simple var declarations in header
-            headerNodes.push(node);
-        } else if (node.type === 'ExpressionStatement' && 
-                   node.expression.type === 'AssignmentExpression' &&
-                   node.expression.left.type === 'Identifier') {
-             // Keep simple top-level assignments (like `target = '...'`)
-             headerNodes.push(node);
-        } else if (node.type === 'VariableDeclaration') {
-            // Assume other var declarations are part of header too
-            headerNodes.push(node);
-        } else {
-            // Default to header
-            headerNodes.push(node);
-        }
-    });
+  let isHeader = true
+  for (const node of body) {
+    let isTopLevelDescribe = node.type === 'ExpressionStatement' &&
+                                node.expression.type === 'CallExpression' &&
+                                node.expression.callee.name === 'describe'
 
-    let partIndex = 1;
-    let currentPartNodes = [...headerNodes];
-    let currentLineCount = headerNodes.reduce((sum, node) => sum + getLineCount(node), 0);
+    if (isHeader &&
+            ( (node.type === 'VariableDeclaration' && (node.kind === 'var' || node.kind === 'const')) ||
+              (node.type === 'ExpressionStatement' && node.expression.type === 'CallExpression' && node.expression.callee.name === 'require') ||
+              (node.type === 'ExpressionStatement' && node.expression.type === 'AssignmentExpression') ||
+              (node.type.endsWith('ImportDeclaration'))
+            )
+    ) {
+      headerNodes.push(node)
+    }
+    else if (isTopLevelDescribe) {
+      isHeader = false
+      topLevelDescribeNodes.push(node)
+    }
+    else {
+      isHeader = false
+      otherTopLevelNodes.push(node)
+    }
+  }
 
-    for (const block of topLevelBlocks) {
-        const blockLineCount = getLineCount(block);
+  let partIndex = 1
+  const generatedFiles = []
 
-        if (currentLineCount > 0 && currentLineCount + blockLineCount > MAX_LINES) {
-            // Write current part
-            writePart(filePath, partIndex, currentPartNodes);
-            partIndex++;
-            // Start new part with header
-            currentPartNodes = [...headerNodes];
-            currentLineCount = headerNodes.reduce((sum, node) => sum + getLineCount(node), 0);
-        }
+  for (const describeNode of topLevelDescribeNodes) {
+    const describeArgs = describeNode.expression.arguments
+    if (describeArgs.length < 2 || describeArgs[1].type !== 'FunctionExpression') continue
 
-        currentPartNodes.push(block);
-        currentLineCount += blockLineCount;
+    const describeBody = describeArgs[1].body.body
+    const describeHeaderStr = recast.print(describeNode.expression.callee).code + '(' + recast.print(describeArgs[0]).code + ', function() {\n'
+    const describeFooterStr = '\n});'
+
+    let currentPartNodes = []
+    let currentLineCount = getLineCount(b.program([ ...headerNodes, ...otherTopLevelNodes ]))
+    currentLineCount += describeHeaderStr.split('\n').length
+    currentLineCount += describeFooterStr.split('\n').length
+
+    for (const itNode of describeBody) {
+      const itNodeLineCount = getLineCount(itNode)
+
+      let isNestedDescribe = itNode.type === 'ExpressionStatement' &&
+                                  itNode.expression.type === 'CallExpression' &&
+                                  itNode.expression.callee.name === 'describe'
+
+      if (currentPartNodes.length > 0 &&
+                ( (currentLineCount + itNodeLineCount > MAX_LINES) || isNestedDescribe) ) {
+        generatedFiles.push(writePartNested(filePath, partIndex, headerNodes, otherTopLevelNodes, describeNode, currentPartNodes))
+        partIndex++
+        currentPartNodes = []
+        currentLineCount = getLineCount(b.program([ ...headerNodes, ...otherTopLevelNodes ])) + describeHeaderStr.split('\n').length + describeFooterStr.split('\n').length
+      }
+
+      currentPartNodes.push(itNode)
+      currentLineCount += itNodeLineCount
     }
 
-    // Write the last part if it has content beyond the header
-    if (currentPartNodes.length > headerNodes.length) {
-        writePart(filePath, partIndex, currentPartNodes);
+    if (currentPartNodes.length > 0) {
+      generatedFiles.push(writePartNested(filePath, partIndex, headerNodes, otherTopLevelNodes, describeNode, currentPartNodes))
+      partIndex++
     }
+  }
 
-    // Delete original file after successful splitting
-    fs.unlinkSync(filePath);
-    console.log(`Split and removed original file: ${path.basename(filePath)}`);
+  if (topLevelDescribeNodes.length === 0 && (headerNodes.length > 0 || otherTopLevelNodes.length > 0)) {
+    console.log(`File ${path.basename(filePath)} has no top-level describe blocks to split or is already small.`)
+    return []
+  }
 
+  console.log(`Split ${path.basename(filePath)} into ${partIndex - 1} part(s).`)
+  return generatedFiles
 }
 
-function writePart(originalFilePath, partIndex, nodes) {
-    const baseName = path.basename(originalFilePath, '.js');
-    const dirName = path.dirname(originalFilePath);
-    const newFileName = `${baseName}.part${partIndex}.js`;
-    const newFilePath = path.join(dirName, newFileName);
+function writePartNested (originalFilePath, partIndex, headerNodes, otherTopLevelNodes, describeNode, itNodes) {
+  const baseName = path.basename(originalFilePath, '.js')
+  const newFileName = `${baseName}.part${partIndex}.js`
+  const newFilePath = path.join(TARGET_DIR, newFileName)
 
-    const newAst = b.program(nodes);
-    const newCode = recast.print(newAst).code;
+  const newDescribeNode = recast.parse(recast.print(describeNode).code).program.body[0]
+  newDescribeNode.expression.arguments[1].body.body = itNodes
 
-    fs.writeFileSync(newFilePath, newCode, 'utf8');
-    console.log(`Created part: ${newFileName}`);
+  const allNodes = [ ...headerNodes, ...otherTopLevelNodes, newDescribeNode ]
+
+  const newAst = b.program(allNodes)
+  const newCode = recast.print(newAst).code
+
+  fs.writeFileSync(newFilePath, newCode, 'utf8')
+  return newFilePath
 }
 
 // --- Main Execution ---
-fs.readdirSync(TARGET_DIR).forEach(file => {
-    if (path.extname(file) === '.js') {
-        const filePath = path.join(TARGET_DIR, file);
-        const stats = fs.statSync(filePath);
-        const lineCount = fs.readFileSync(filePath, 'utf8').split('\n').length;
+console.log(`Reading from: ${SOURCE_DIR}`)
+console.log(`Writing to: ${TARGET_DIR}`)
+const allGeneratedFiles = []
 
-        if (lineCount > MAX_LINES && file !== 'helpers.js') { // Exclude helpers for now
-            console.log(`Splitting ${file} (${lineCount} lines)...`);
-            try {
-                splitFile(filePath);
-            } catch (error) {
-                console.error(`Error splitting file ${file}:`, error);
-            }
-        }
+fs.mkdirSync(TARGET_DIR, { recursive: true })
+
+fs.readdirSync(SOURCE_DIR).forEach(file => {
+  const filePath = path.join(SOURCE_DIR, file) // Define filePath here
+  if (path.extname(file) === '.js' && file !== 'helpers.js') {
+    // const stats = fs.statSync(filePath); // Variable stats is declared but its value is never read.
+    const lineCount = fs.readFileSync(filePath, 'utf8').split('\n').length
+
+    if (lineCount > MAX_LINES) {
+      console.log(`Splitting ${file} (${lineCount} lines)...`)
+      try {
+        const generated = splitFile(filePath) // Pass filePath
+        allGeneratedFiles.push(...generated)
+      }
+      catch (error) {
+        console.error(`Error splitting file ${file}:`, error)
+      }
     }
-});
+    else {
+      const targetPath = path.join(TARGET_DIR, file)
+      fs.copyFileSync(filePath, targetPath)
+      console.log(`Copied ${file} (${lineCount} lines)`)
+      allGeneratedFiles.push(targetPath)
+    }
+  }
+})
 
-console.log("\nFile splitting complete."); 
+console.log('\n--- Generated File Line Counts ---')
+allGeneratedFiles.forEach(filePath => {
+  try {
+    const lineCount = fs.readFileSync(filePath, 'utf8').split('\n').length
+    console.log(`${path.basename(filePath)}: ${lineCount}`)
+  }
+  catch (err) {
+    console.log(`${path.basename(filePath)}: Error reading file`)
+  }
+})
+
+console.log('\nFile splitting and copying complete.')

@@ -1,5 +1,5 @@
 const test = require('tape')
-const should = require('should') // Ensure should is required for assertions
+// const should = require('should') // Ensure should is required for assertions - Removed as tests are skipped
 const helpers = require('./helpers') // Assuming helpers is in the same dir or accessible
 
 test.skip('benchmarks', (t) => {
@@ -43,7 +43,7 @@ test.skip('benchmarks', (t) => {
         if (err) return st.end()
 
         // Use should assertions (requires 'should' module)
-        res.statusCode.should.equal(200)
+        // res.statusCode.should.equal(200); // Assertion commented out as tests are skipped
 
         // eslint-disable-next-line no-console
         console.log('Scan: %d items, %dms, %d items/sec, %s', res.body.Count, Date.now() - start,

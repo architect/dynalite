@@ -21,10 +21,10 @@ function assertType (target, property, type, done) {
   const msgs = []
   const pieces = property.split('.')
   const subtypeMatch = type.match(/(.+?)<(.+)>$/)
-  let subtype
+  // let subtype; // Variable subtype is declared but its value is never read.
   if (subtypeMatch != null) {
     type = subtypeMatch[1]
-    subtype = subtypeMatch[2]
+    // subtype = subtypeMatch[2] // Commented out as subtype is unused
   }
   // This message seems specific to a Java runtime and might not be relevant for Dynalite/Node.js errors
   const castMsg = "class sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl cannot be cast to class java.lang.Class (sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl and java.lang.Class are in module java.base of loader 'bootstrap')"

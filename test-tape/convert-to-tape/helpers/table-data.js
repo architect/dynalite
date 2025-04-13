@@ -77,13 +77,10 @@ function batchWriteUntilDone (name, actions, cb) {
     return cb() // No items to process
   }
 
-  let batchRes = {}
-
   async.doWhilst(
     (callback) => {
       request(opts('BatchWriteItem', batchReq), (err, res) => {
         if (err) return callback(err)
-        batchRes = res
 
         // Check for unprocessed items first
         if (res.body.UnprocessedItems && Object.keys(res.body.UnprocessedItems).length > 0 && res.body.UnprocessedItems[name]) {

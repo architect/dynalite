@@ -26,11 +26,11 @@ function request (callOpts, cb) {
   if (!finalOpts.noSign) {
     const credentials = config.useRemoteDynamo
       ? {
-          accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-          secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-          sessionToken: process.env.AWS_SESSION_TOKEN,
-        }
-      : { accessKeyId: 'dummy', secretAccessKey: 'dummy' }; // Dummy credentials for local
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+        sessionToken: process.env.AWS_SESSION_TOKEN,
+      }
+      : { accessKeyId: 'dummy', secretAccessKey: 'dummy' } // Dummy credentials for local
 
     // Clean up potential conflicting headers if we are signing
     // aws4.sign modifies the opts object directly
@@ -39,8 +39,8 @@ function request (callOpts, cb) {
     delete finalOpts.headers['x-amz-date']
     delete finalOpts.headers['authorization']
 
-    aws4.sign(finalOpts, credentials); // Use determined credentials
-    
+    aws4.sign(finalOpts, credentials) // Use determined credentials
+
     // Set noSign flag after signing to prevent recursive signing attempts on retries
     finalOpts.noSign = true
   }
