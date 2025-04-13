@@ -25,7 +25,7 @@
 | test-tape/mocha-source-split/updateItem.part1.js | 100  | ✅ Converted |                                           |
 | test-tape/mocha-source-split/deleteTable.js | 106  | ✅ Converted |                                           |
 | test-tape/mocha-source-split/scan.part1.js | 107  | ✅ Converted |                                           |
-| test-tape/mocha-source-split/updateTable.part1.js | 121  | ⬜ Not started |                                           |
+| test-tape/mocha-source-split/updateTable.part1.js | 121  | ✅ Converted |                                           |
 | test-tape/mocha-source-split/listTagsOfResource.js | 125  | ⬜ Not started |                                           |
 | test-tape/mocha-source-split/query.part1.js | 132  | ⬜ Not started |                                           |
 | test-tape/mocha-source-split/createTable.part1.js | 166  | ⬜ Not started |                                           |
