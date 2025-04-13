@@ -22,7 +22,7 @@
 | test-tape/mocha-source-split/putItem.part1.js | 79   | ✅ Converted |                                           |
 | test-tape/mocha-source-split/untagResource.js | 87   | ✅ Converted | Fixed assertion discrepancy vs Mocha src. |
 | test-tape/mocha-source-split/tagResource.js | 95   | ✅ Converted | Fixed assertion discrepancy vs Mocha src. |
-| test-tape/mocha-source-split/updateItem.part1.js | 100  | ⬜ Not started |                                           |
+| test-tape/mocha-source-split/updateItem.part1.js | 100  | ✅ Converted |                                           |
 | test-tape/mocha-source-split/deleteTable.js | 106  | ⬜ Not started |                                           |
 | test-tape/mocha-source-split/scan.part1.js | 107  | ⬜ Not started |                                           |
 | test-tape/mocha-source-split/updateTable.part1.js | 121  | ⬜ Not started |                                           |
