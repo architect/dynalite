@@ -41,7 +41,7 @@
 | test-tape/mocha-source-split/getItem.part2.js | 364  | ✅ Converted |                                           |
 | test-tape/mocha-source-split/batchWriteItem.part2.js | 370  | ✅ Converted |                                           |
 | test-tape/mocha-source-split/deleteItem.part2.js | 382  | ✅ Converted |                                           |
-| test-tape/mocha-source-split/connection.js | 387  | ⬜ Not started |                                           |
+| test-tape/mocha-source-split/connection.js | 387  | ✅ Converted | Skipped 413 test, see discrepancies.md     |
 | test-tape/mocha-source-split/putItem.part2.js | 486  | ⬜ Not started |                                           |
 | test-tape/mocha-source-split/updateItem.part3.js | 666  | ⬜ Not started |                                           |
 | test-tape/mocha-source-split/updateItem.part2.js | 902  | ⬜ Not started |                                           |
