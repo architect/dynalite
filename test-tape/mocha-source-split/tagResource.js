@@ -1,5 +1,4 @@
 var helpers = require('./helpers')
-var config = require('./helpers/config')
 
 var target = 'TagResource',
   assertType = helpers.assertType.bind(null, target),
@@ -74,19 +73,19 @@ describe('tagResource', function () {
     })
 
     it('should return ValidationException for short table name', function (done) {
-      var resourceArn = 'arn:aws:dynamodb:' + config.awsRegion + ':' + config.awsAccountId + ':table/ab'
+      var resourceArn = 'arn:aws:dynamodb:' + helpers.awsRegion + ':' + helpers.awsAccountId + ':table/ab'
       assertValidation({ ResourceArn: resourceArn, Tags: [] },
         'Invalid TableArn: Invalid ResourceArn provided as input ' + resourceArn, done)
     })
 
     it('should return ResourceNotFoundException if Tags are empty', function (done) {
-      var resourceArn = 'arn:aws:dynamodb:' + config.awsRegion + ':' + config.awsAccountId + ':table/' + config.randomString()
+      var resourceArn = 'arn:aws:dynamodb:' + helpers.awsRegion + ':' + helpers.awsAccountId + ':table/' + helpers.randomString()
       assertValidation({ ResourceArn: resourceArn, Tags: [] },
         'Atleast one Tag needs to be provided as Input.', done)
     })
 
     it('should return ResourceNotFoundException if ResourceArn does not exist', function (done) {
-      var resourceArn = 'arn:aws:dynamodb:' + config.awsRegion + ':' + config.awsAccountId + ':table/' + config.randomString()
+      var resourceArn = 'arn:aws:dynamodb:' + helpers.awsRegion + ':' + helpers.awsAccountId + ':table/' + helpers.randomString()
       assertNotFound({ ResourceArn: resourceArn, Tags: [ { Key: 'a', Value: 'b' } ] },
         'Requested resource not found: ResourcArn: ' + resourceArn + ' not found', done)
     })

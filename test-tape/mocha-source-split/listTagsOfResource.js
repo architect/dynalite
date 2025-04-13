@@ -1,5 +1,4 @@
 var helpers = require('./helpers')
-var config = require('./helpers/config')
 
 var target = 'ListTagsOfResource',
   request = helpers.request,
@@ -55,13 +54,13 @@ describe('listTagsOfResource', function () {
     })
 
     it('should return ValidationException for short table name', function (done) {
-      var resourceArn = 'arn:aws:dynamodb:' + config.awsRegion + ':' + config.awsAccountId + ':table/ab'
+      var resourceArn = 'arn:aws:dynamodb:' + helpers.awsRegion + ':' + helpers.awsAccountId + ':table/ab'
       assertValidation({ ResourceArn: resourceArn },
         'Invalid TableArn: Invalid ResourceArn provided as input ' + resourceArn, done)
     })
 
     it('should return ResourceNotFoundException if ResourceArn does not exist', function (done) {
-      var resourceArn = 'arn:aws:dynamodb:' + config.awsRegion + ':' + config.awsAccountId + ':table/' + config.randomString()
+      var resourceArn = 'arn:aws:dynamodb:' + helpers.awsRegion + ':' + helpers.awsAccountId + ':table/' + helpers.randomString()
       assertNotFound({ ResourceArn: resourceArn },
         'Requested resource not found: ResourcArn: ' + resourceArn + ' not found', done)
     })
@@ -71,7 +70,7 @@ describe('listTagsOfResource', function () {
   describe('functionality', function () {
 
     it('should succeed if valid resource and has no tags', function (done) {
-      var resourceArn = 'arn:aws:dynamodb:' + config.awsRegion + ':' + config.awsAccountId + ':table/' + config.testHashTable
+      var resourceArn = 'arn:aws:dynamodb:' + helpers.awsRegion + ':' + helpers.awsAccountId + ':table/' + helpers.testHashTable
 
       request(opts({ ResourceArn: resourceArn }), function (err, res) {
         if (err) return done(err)
@@ -82,7 +81,7 @@ describe('listTagsOfResource', function () {
     })
 
     it('should succeed if valid resource and has multiple tags', function (done) {
-      var resourceArn = 'arn:aws:dynamodb:' + config.awsRegion + ':' + config.awsAccountId + ':table/' + config.testHashTable
+      var resourceArn = 'arn:aws:dynamodb:' + helpers.awsRegion + ':' + helpers.awsAccountId + ':table/' + helpers.testHashTable
 
       request(opts({ ResourceArn: resourceArn }), function (err, res) {
         if (err) return done(err)
