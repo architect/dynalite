@@ -4,7 +4,7 @@
 
 - Make sure to never change the signature of helpers without refactoring all the code that uses them. Use static analysis in that case. You mess up when faced with a lot of things to refactor. Let's NOT make this mistake again.
 
-- When converting to tape test files individually, but when rewriting helpers ALWAYS run all the tests after to make sure we're cuasing regressions
+- When converting to tape - test files individually, but when rewriting helpers ALWAYS run all the tests after to make sure we're cuasing regressions
 
 - ALSO before checkin - run ALL tape tests to make sure we haven't caused regressions 
 
@@ -13,8 +13,8 @@
 | File                                | LOC  | Status      | Notes                                     |
 |-------------------------------------|-----:|-------------|-------------------------------------------|
 | test-tape/mocha-source-split/bench.js | 46   | ✅ Converted | Kept skipped, uses helpers.batchBulkPut, helpers.request |
-| test-tape/mocha-source-split/getItem.part1.js | 52   | 🔄 Pending  |                                           |
-| test-tape/mocha-source-split/describeTable.js | 56   | ⬜ Not started |                                           |
+| test-tape/mocha-source-split/getItem.part1.js | 52   | ✅ Converted | Type checks using helpers.assertType |
+| test-tape/mocha-source-split/describeTable.js | 56   | 🔄 Pending  |                                           |
 | test-tape/mocha-source-split/batchGetItem.part1.js | 61   | ⬜ Not started |                                           |
 | test-tape/mocha-source-split/batchWriteItem.part1.js | 62   | ⬜ Not started |                                           |
 | test-tape/mocha-source-split/describeTimeToLive.js | 71   | ⬜ Not started |                                           |

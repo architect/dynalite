@@ -12,8 +12,8 @@
   "bin": "cli.js",
   "scripts": {
     "build": "for file in ./db/*.pegjs; do pegjs \"$file\"; done",
-    "test": "tape 'test-tape/convert-to-tape/**/*.test.js' | tap-spec",
-    "coverage": "npx nyc@latest tape 'test-tape/convert-to-tape/**/*.test.js' | tap-spec",
+    "test": "node test-tape/run-tape-suite.js | tap-spec",
+    "coverage": "npx nyc@latest node test-tape/run-tape-suite.js | tap-spec",
     "lint": "eslint index.js cli.js actions/ db/ validations/ test-tape/convert-to-tape/ test-tape/scripts/ --fix"
   },
   "engines": {
