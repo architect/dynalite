@@ -38,7 +38,7 @@
 | test-tape/mocha-source-split/createTable.part3.js | 322  | ✅ Converted | Fixed ARN regex, LSI comparison.        |
 | test-tape/mocha-source-split/batchGetItem.part3.js | 343  | ✅ Converted | Includes skipped throughput test.         |
 | test-tape/mocha-source-split/batchGetItem.part2.js | 352  | ✅ Converted |                                           |
-| test-tape/mocha-source-split/getItem.part2.js | 364  | ⬜ Not started |                                           |
+| test-tape/mocha-source-split/getItem.part2.js | 364  | ✅ Converted |                                           |
 | test-tape/mocha-source-split/batchWriteItem.part2.js | 370  | ⬜ Not started |                                           |
 | test-tape/mocha-source-split/deleteItem.part2.js | 382  | ⬜ Not started |                                           |
 | test-tape/mocha-source-split/connection.js | 387  | ⬜ Not started |                                           |
