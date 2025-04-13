@@ -30,8 +30,8 @@
 | test-tape/mocha-source-split/query.part1.js | 132  | ✅ Converted |                                           |
 | test-tape/mocha-source-split/createTable.part1.js | 166  | ✅ Converted |                                           |
 | test-tape/mocha-source-split/updateTable.part3.js | 195  | ✅ Converted | Skipped long-running PAY_PER_REQUEST test |
-| test-tape/mocha-source-split/updateTable.part2.js | 214  | ⬜ Not started |                                           |
-| test-tape/mocha-source-split/getItem.part3.js | 225  | ⬜ Not started |                                           |
+| test-tape/mocha-source-split/updateTable.part2.js | 214  | ✅ Converted |                                           |
+| test-tape/mocha-source-split/getItem.part3.js | 225  | ✅ Converted |                                           |
 | test-tape/mocha-source-split/batchWriteItem.part3.js | 238  | ⬜ Not started |                                           |
 | test-tape/mocha-source-split/deleteItem.part3.js | 244  | ⬜ Not started |                                           |
 | test-tape/mocha-source-split/listTables.js | 268  | ⬜ Not started |                                           |
