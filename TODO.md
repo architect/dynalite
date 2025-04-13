@@ -39,7 +39,7 @@
 | test-tape/mocha-source-split/batchGetItem.part3.js | 343  | ✅ Converted | Includes skipped throughput test.         |
 | test-tape/mocha-source-split/batchGetItem.part2.js | 352  | ✅ Converted |                                           |
 | test-tape/mocha-source-split/getItem.part2.js | 364  | ✅ Converted |                                           |
-| test-tape/mocha-source-split/batchWriteItem.part2.js | 370  | ⬜ Not started |                                           |
+| test-tape/mocha-source-split/batchWriteItem.part2.js | 370  | ✅ Converted |                                           |
 | test-tape/mocha-source-split/deleteItem.part2.js | 382  | ⬜ Not started |                                           |
 | test-tape/mocha-source-split/connection.js | 387  | ⬜ Not started |                                           |
 | test-tape/mocha-source-split/putItem.part2.js | 486  | ⬜ Not started |                                           |
@@ -51,5 +51,5 @@
 | test-tape/mocha-source-split/query.part3.js | 1485 | ⬜ Not started |                                           |
 | test-tape/mocha-source-split/query.part2.js | 1780 | ⬜ Not started |                                           |
 | test-tape/mocha-source-split/scan.part3.js | 2719 | ⬜ Not started |                                           |
-| test-tape/mocha-source-split/helpers/ | N/A  | ⬜ Not started | Split helpers from original helpers.js |
+
 
