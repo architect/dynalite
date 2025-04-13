@@ -279,21 +279,23 @@ test('updateTable - validations - should return LimitExceededException for too m
   ] }),
   function (err, res) {
     if (err) {
-      // Check if the error is the expected LimitExceededException
-      t.equal(err.body.__type, 'com.amazonaws.dynamodb.v20120810#LimitExceededException', 'Error type should match')
-      t.equal(err.body.message, 'Subscriber limit exceeded: Only 1 online index can be created or deleted simultaneously per table', 'Error message should match')
-      t.equal(err.statusCode, 400, 'Status code should be 400')
-      t.end()
+      // If err is populated, it's an unexpected error (e.g., network)
+      t.fail('Unexpected error during request: ' + err)
+      return t.end()
     }
-    else {
-      t.fail('Expected LimitExceededException, but got success. Response: ' + JSON.stringify(res))
-      t.end()
+
+    // If err is null, check the response for the expected HTTP error
+    t.ok(res, 'Response object should exist')
+    if (!res) return t.end() // Guard against res being null/undefined
+
+    t.equal(res.statusCode, 400, 'Status code should be 400 for LimitExceededException')
+    t.ok(res.body && res.body.__type, 'Response body should exist and have __type')
+
+    if (res.body) {
+      t.equal(res.body.__type, 'com.amazonaws.dynamodb.v20120810#LimitExceededException', 'Error type should be LimitExceededException')
+      t.equal(res.body.message, 'Subscriber limit exceeded: Only 1 online index can be created or deleted simultaneously per table', 'Error message should match')
     }
-    // Original Mocha assertions replaced by checks within the error block above
-    // res.body.__type.should.equal('com.amazonaws.dynamodb.v20120810#LimitExceededException')
-    // res.body.message.should.equal('Subscriber limit exceeded: Only 1 online index can be created or deleted simultaneously per table')
-    // res.statusCode.should.equal(400)
-    // done()
+    t.end()
   })
 })
 
