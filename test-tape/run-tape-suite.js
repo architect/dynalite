@@ -14,6 +14,7 @@ require('./convert-to-tape/00-setup.js');
 // As we convert more, add them here or use dynamic loading (e.g., glob)
 require('./convert-to-tape/bench.test.js');
 require('./convert-to-tape/getItem.part1.test.js');
+require('./convert-to-tape/describeTable.test.js');
 
 // Require teardown last - this executes the teardown test
 require('./convert-to-tape/99-teardown.js');

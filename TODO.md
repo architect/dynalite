@@ -14,8 +14,8 @@
 |-------------------------------------|-----:|-------------|-------------------------------------------|
 | test-tape/mocha-source-split/bench.js | 46   | ✅ Converted | Kept skipped, uses helpers.batchBulkPut, helpers.request |
 | test-tape/mocha-source-split/getItem.part1.js | 52   | ✅ Converted | Type checks using helpers.assertType |
-| test-tape/mocha-source-split/describeTable.js | 56   | 🔄 Pending  |                                           |
-| test-tape/mocha-source-split/batchGetItem.part1.js | 61   | ⬜ Not started |                                           |
+| test-tape/mocha-source-split/describeTable.js | 56   | ✅ Converted | Type/validation checks using helpers |
+| test-tape/mocha-source-split/batchGetItem.part1.js | 61   | 🔄 Pending  |                                           |
 | test-tape/mocha-source-split/batchWriteItem.part1.js | 62   | ⬜ Not started |                                           |
 | test-tape/mocha-source-split/describeTimeToLive.js | 71   | ⬜ Not started |                                           |
 | test-tape/mocha-source-split/deleteItem.part1.js | 77   | ⬜ Not started |                                           |
