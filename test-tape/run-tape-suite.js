@@ -14,7 +14,7 @@ require('./convert-to-tape/00-setup.js');
 
 // Dynamically find and require all converted test files
 const testDir = path.join(__dirname, 'convert-to-tape');
-const testFiles = glob.sync('*.test.js', {
+const testFiles = glob.sync('*.js', {
   cwd: testDir,
   absolute: true, // Get absolute paths for require
 });

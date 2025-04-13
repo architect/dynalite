@@ -28,7 +28,7 @@ test('createTable - functionality - should succeed for basic provisioned through
     const desc = res.body.TableDescription
     t.match(desc.TableId, /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[0-9a-f]{4}-[0-9a-f]{8}$/, 'TableId should be a UUID')
     t.ok(desc.CreationDateTime >= createdAt - 5 && desc.CreationDateTime <= createdAt + 5, 'CreationDateTime should be close to now')
-    const expectedArn = `arn:aws:dynamodb:${helpers.awsRegion}:\d+:table/${tableName}`
+    const expectedArn = `arn:aws:dynamodb:${helpers.awsRegion}:\\d{12}:table/${tableName}`
     t.match(desc.TableArn, new RegExp(expectedArn), 'TableArn should match pattern')
 
     // Create expected description for comparison, excluding generated fields
@@ -72,7 +72,7 @@ test('createTable - functionality - should succeed for basic PAY_PER_REQUEST', f
     const desc = res.body.TableDescription
     t.match(desc.TableId, /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[0-9a-f]{4}-[0-9a-f]{8}$/, 'TableId should be a UUID')
     t.ok(desc.CreationDateTime >= createdAt - 5 && desc.CreationDateTime <= createdAt + 5, 'CreationDateTime should be close to now')
-    const expectedArn = `arn:aws:dynamodb:${helpers.awsRegion}:\d+:table/${tableName}`
+    const expectedArn = `arn:aws:dynamodb:${helpers.awsRegion}:\\d{12}:table/${tableName}`
     t.match(desc.TableArn, new RegExp(expectedArn), 'TableArn should match pattern')
 
     // Create expected description for comparison
@@ -171,7 +171,7 @@ test('createTable - functionality - should succeed for LocalSecondaryIndexes', f
 
     t.match(desc.TableId, /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[0-9a-f]{4}-[0-9a-f]{8}$/, 'TableId should be a UUID')
     t.ok(desc.CreationDateTime >= createdAt - 5 && desc.CreationDateTime <= createdAt + 5, 'CreationDateTime should be close to now')
-    const expectedArnPrefix = `arn:aws:dynamodb:${helpers.awsRegion}:\d+:table/${tableName}`
+    const expectedArnPrefix = `arn:aws:dynamodb:${helpers.awsRegion}:\\d{12}:table/${tableName}`
     t.match(desc.TableArn, new RegExp(expectedArnPrefix), 'TableArn should match pattern')
 
     t.ok(desc.LocalSecondaryIndexes, 'LocalSecondaryIndexes should exist')
@@ -192,6 +192,11 @@ test('createTable - functionality - should succeed for LocalSecondaryIndexes', f
 
     // Sort both arrays by IndexName for consistent comparison
     actualLsis.sort((a, b) => a.IndexName.localeCompare(b.IndexName))
+    expectedLsis.forEach(index => {
+      // Add expected fields to match actual structure
+      index.IndexSizeBytes = 0
+      index.ItemCount = 0
+    })
     expectedLsis.sort((a, b) => a.IndexName.localeCompare(b.IndexName))
 
     t.deepEqual(actualLsis, expectedLsis, 'LocalSecondaryIndexes descriptions should match expected structure')
@@ -265,7 +270,7 @@ test('createTable - functionality - should succeed for multiple GlobalSecondaryI
 
     t.match(desc.TableId, /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[0-9a-f]{4}-[0-9a-f]{8}$/, 'TableId should be a UUID')
     t.ok(desc.CreationDateTime >= createdAt - 5 && desc.CreationDateTime <= createdAt + 5, 'CreationDateTime should be close to now')
-    const expectedArnPrefix = `arn:aws:dynamodb:${helpers.awsRegion}:\d+:table/${tableName}`
+    const expectedArnPrefix = `arn:aws:dynamodb:${helpers.awsRegion}:\\d{12}:table/${tableName}`
     t.match(desc.TableArn, new RegExp(expectedArnPrefix), 'TableArn should match pattern')
 
     t.ok(desc.GlobalSecondaryIndexes, 'GlobalSecondaryIndexes should exist')
@@ -361,7 +366,7 @@ test('createTable - functionality - should succeed for PAY_PER_REQUEST GlobalSec
 
     t.match(desc.TableId, /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[0-9a-f]{4}-[0-9a-f]{8}$/, 'TableId should be a UUID')
     t.ok(desc.CreationDateTime >= createdAt - 5 && desc.CreationDateTime <= createdAt + 5, 'CreationDateTime should be close to now')
-    const expectedArnPrefix = `arn:aws:dynamodb:${helpers.awsRegion}:\d+:table/${tableName}`
+    const expectedArnPrefix = `arn:aws:dynamodb:${helpers.awsRegion}:\\d{12}:table/${tableName}`
     t.match(desc.TableArn, new RegExp(expectedArnPrefix), 'TableArn should match pattern')
 
     t.ok(desc.GlobalSecondaryIndexes, 'GlobalSecondaryIndexes should exist')
