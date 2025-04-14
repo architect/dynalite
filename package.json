@@ -12,9 +12,9 @@
   "bin": "cli.js",
   "scripts": {
     "build": "for file in ./db/*.pegjs; do pegjs \"$file\"; done",
-    "test": "npm run lint && mocha --require should --reporter spec -t $([ $REMOTE ] && echo 30s || echo 4s)",
-    "coverage": "npx nyc@latest mocha --require should -t 4s",
-    "lint": "eslint . --fix"
+    "test": "npm run lint && node test-tape/run-tape-suite.js | tap-spec",
+    "coverage": "npx nyc@latest node test-tape/run-tape-suite.js | tap-spec",
+    "lint": "eslint index.js cli.js actions/ db/ validations/ test-tape/convert-to-tape/ test-tape/scripts/ --fix"
   },
   "engines": {
     "node": ">=16"
@@ -40,9 +40,13 @@
     "@architect/eslint-config": "^2.1.1",
     "aws4": "^1.12.0",
     "eslint": "^8.48.0",
-    "mocha": "^10.2.0",
+    "glob": "^11.0.1",
+    "mocha": "^11.1.0",
     "pegjs": "^0.10.0",
-    "should": "^13.2.3"
+    "recast": "^0.23.9",
+    "should": "^13.2.3",
+    "tap-spec": "^5.0.0",
+    "tape": "^5.8.1"
   },
   "keywords": [
     "aws",
@@ -58,11 +62,13 @@
   ],
   "eslintConfig": {
     "extends": "@architect/eslint-config",
-    "env": {
-      "mocha": true
-    },
+    "env": {},
     "rules": {
-      "filenames/match-regex": [ "error", "^[a-zA-Z0-9-_.]+$", true ]
+      "filenames/match-regex": [
+        "error",
+        "^[a-zA-Z0-9-_.]+$",
+        true
+      ]
     }
   }
 }
