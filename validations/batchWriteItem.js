@@ -57,7 +57,7 @@ exports.types = {
 exports.custom = function (data, store) {
   var table, i, request, key, msg
   for (table in data.RequestItems) {
-    if (data.RequestItems[table].some(function (item) { return !Object.keys(item).length })) // eslint-disable-line no-loop-func
+    if (data.RequestItems[table].some(function (item) { return !Object.keys(item).length }))
       return 'Supplied AttributeValue has more than one datatypes set, ' +
         'must contain exactly one of the supported datatypes'
     for (i = 0; i < data.RequestItems[table].length; i++) {

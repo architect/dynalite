@@ -73,9 +73,9 @@ function dynalite (options) {
 
 validOperations.forEach(function (action) {
   action = validations.toLowerFirst(action)
-  // eslint-disable-next-line
+
   actions[action] = require('./actions/' + action)
-  // eslint-disable-next-line
+
   actionValidations[action] = require('./validations/' + action)
 })
 
@@ -169,7 +169,7 @@ function httpHandler (store, req, res) {
       try {
         data = JSON.parse(body)
       }
-      catch (e) {
+      catch {
         return sendData(req, res, { __type: 'com.amazon.coral.service#SerializationException' }, 400)
       }
     }

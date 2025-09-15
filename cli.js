@@ -3,7 +3,7 @@
 var argv = require('minimist')(process.argv.slice(2), { alias: { debug: [ 'd' ], verbose: [ 'v' ] } })
 
 if (argv.help || argv.h) {
-  // eslint-disable-next-line no-console
+
   return console.log([
     '',
     'Usage: dynalite [--port <port>] [--path <path>] [options]',
@@ -33,7 +33,7 @@ if (process.pid == 1) process.on('SIGINT', process.exit)
 var server = require('./index.js')(argv)
   .listen(argv.port || 4567, argv.host || undefined, function () {
     var address = server.address(), protocol = argv.ssl ? 'https' : 'http'
-    // eslint-disable-next-line no-console
+
     var host = argv.host || 'localhost'
     console.log('Dynalite listening at: %s://%s:%s', protocol, host, address.port)
   })

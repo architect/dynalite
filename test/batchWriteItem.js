@@ -638,7 +638,7 @@ describe('batchWriteItem', function () {
             return cb()
           }
           res.statusCode.should.equal(200)
-          // eslint-disable-next-line no-console
+
           console.log([ CAPACITY, res.body.ConsumedCapacity[0].CapacityUnits, totalSize ].join())
           setTimeout(cb, res.body.ConsumedCapacity[0].CapacityUnits * 1000 / CAPACITY)
         })

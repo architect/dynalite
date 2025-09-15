@@ -99,7 +99,7 @@ function request (opts, cb) {
       try {
         res.body = JSON.parse(res.rawBody)
       }
-      catch (e) {
+      catch {
         res.body = res.rawBody
       }
       if (useRemoteDynamo && opts.retries <= MAX_RETRIES &&
@@ -295,7 +295,7 @@ function clearTable (name, keyNames, segments, done) {
     request(opts('Scan', { TableName: name, AttributesToGet: keyNames, Segment: n, TotalSegments: segments }), function (err, res) {
       if (err) return cb(err)
       if (/ProvisionedThroughputExceededException/.test(res.body.__type)) {
-        console.log('ProvisionedThroughputExceededException') // eslint-disable-line no-console
+        console.log('ProvisionedThroughputExceededException')
         return setTimeout(scanSegmentAndDelete, 2000, n, cb)
       }
       else if (res.statusCode != 200) {
@@ -349,7 +349,7 @@ function batchWriteUntilDone (name, actions, cb) {
           batchReq.RequestItems = res.body.UnprocessedItems
         }
         else if (/ProvisionedThroughputExceededException/.test(res.body.__type)) {
-          console.log('ProvisionedThroughputExceededException') // eslint-disable-line no-console
+          console.log('ProvisionedThroughputExceededException')
           return setTimeout(cb, 2000)
         }
         else if (res.statusCode != 200) {
@@ -363,7 +363,7 @@ function batchWriteUntilDone (name, actions, cb) {
       /ProvisionedThroughputExceededException/.test(batchRes.body.__type)
       cb(null, result)
     },
-    cb
+    cb,
   )
 }
 

@@ -262,7 +262,7 @@ function checkValidations (data, validations, custom, store) {
           continue
         }
         else if (/Map/.test(validations.type)) {
-          Object.keys(data).forEach(function (key) { // eslint-disable-line no-loop-func
+          Object.keys(data).forEach(function (key) {
             checkNonRequired('member', data[key], validations.children,
               (parent ? parent + '.' : '') + toLowerFirst(attr) + '.' + key)
           })
@@ -314,7 +314,7 @@ validateFns.keys = function (parent, key, val, data, errors) {
         validateFns[validation]('', '', val[validation], mapKey, [])
       })
     }
-    catch (e) {
+    catch {
       var msgs = Object.keys(val).map(function (validation) {
         if (validation == 'lengthGreaterThanOrEqual')
           return 'Member must have length greater than or equal to ' + val[validation]
@@ -334,7 +334,7 @@ validateFns.values = function (parent, key, val, data, errors) {
         validateFns[validation]('', '', val[validation], data[mapKey], [])
       })
     }
-    catch (e) {
+    catch {
       var msgs = Object.keys(val).map(function (validation) {
         if (validation == 'lengthGreaterThanOrEqual')
           return 'Member must have length greater than or equal to ' + val[validation]
@@ -430,7 +430,7 @@ function checkNum (attr, obj) {
   try {
     bigNum = new Big(obj[attr])
   }
-  catch (e) {
+  catch {
     return 'The parameter cannot be converted to a numeric value: ' + obj[attr]
   }
   if (bigNum.e > 125)

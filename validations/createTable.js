@@ -236,8 +236,8 @@ exports.custom = function (data) {
 
     for (i = 0; i < data.LocalSecondaryIndexes.length; i++) {
       indexName = data.LocalSecondaryIndexes[i].IndexName
-      indexKeys = data.LocalSecondaryIndexes[i].KeySchema.map(function (key) { return key.AttributeName }) // eslint-disable-line no-loop-func
-      if (indexKeys.some(function (key) { return !~defns.indexOf(key) })) // eslint-disable-line no-loop-func
+      indexKeys = data.LocalSecondaryIndexes[i].KeySchema.map(function (key) { return key.AttributeName })
+      if (indexKeys.some(function (key) { return !~defns.indexOf(key) }))
         return 'One or more parameter values were invalid: ' +
           'Some index key attributes are not defined in AttributeDefinitions. ' +
           'Keys: [' + indexKeys.join(', ') + '], AttributeDefinitions: [' + defns.join(', ') + ']'
@@ -287,8 +287,8 @@ exports.custom = function (data) {
 
     for (i = 0; i < data.GlobalSecondaryIndexes.length; i++) {
       indexName = data.GlobalSecondaryIndexes[i].IndexName
-      indexKeys = data.GlobalSecondaryIndexes[i].KeySchema.map(function (key) { return key.AttributeName }) // eslint-disable-line no-loop-func
-      if (indexKeys.some(function (key) { return !~defns.indexOf(key) })) // eslint-disable-line no-loop-func
+      indexKeys = data.GlobalSecondaryIndexes[i].KeySchema.map(function (key) { return key.AttributeName })
+      if (indexKeys.some(function (key) { return !~defns.indexOf(key) }))
         return 'One or more parameter values were invalid: ' +
           'Some index key attributes are not defined in AttributeDefinitions. ' +
           'Keys: [' + indexKeys.join(', ') + '], AttributeDefinitions: [' + defns.join(', ') + ']'

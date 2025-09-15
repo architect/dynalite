@@ -103,7 +103,7 @@ function applyAttributeUpdates (updates, table, item) {
           return db.validationError('Type mismatch for attribute to update')
         if (!item[attr]) item[attr] = {}
         if (!item[attr][type]) item[attr][type] = []
-        var val = type == 'L' ? update.Value[type] : update.Value[type].filter(function (a) { // eslint-disable-line no-loop-func
+        var val = type == 'L' ? update.Value[type] : update.Value[type].filter(function (a) {
           return !~item[attr][type].indexOf(a)
         })
         item[attr][type] = item[attr][type].concat(val)
@@ -115,7 +115,7 @@ function applyAttributeUpdates (updates, table, item) {
         if (item[attr] && !item[attr][type])
           return db.validationError('Type mismatch for attribute to update')
         if (item[attr] && item[attr][type]) {
-          item[attr][type] = item[attr][type].filter(function (val) { // eslint-disable-line no-loop-func
+          item[attr][type] = item[attr][type].filter(function (val) {
             return !~update.Value[type].indexOf(val)
           })
           if (!item[attr][type].length) delete item[attr]
@@ -156,7 +156,7 @@ function applyUpdateExpression (sections, table, item) {
         return db.validationError('An operand in the update expression has an incorrect data type')
       }
       if (alreadyExists) {
-        existing[section.attrType] = existing[section.attrType].filter(function (val) { // eslint-disable-line no-loop-func
+        existing[section.attrType] = existing[section.attrType].filter(function (val) {
           return !~section.val[section.attrType].indexOf(val)
         })
         if (!existing[section.attrType].length) {
@@ -175,7 +175,7 @@ function applyUpdateExpression (sections, table, item) {
       else {
         if (!existing) existing = {}
         if (!existing[section.attrType]) existing[section.attrType] = []
-        existing[section.attrType] = existing[section.attrType].concat(section.val[section.attrType].filter(function (a) { // eslint-disable-line no-loop-func
+        existing[section.attrType] = existing[section.attrType].concat(section.val[section.attrType].filter(function (a) {
           return !~existing[section.attrType].indexOf(a)
         }))
       }

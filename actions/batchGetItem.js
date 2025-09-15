@@ -15,13 +15,13 @@ module.exports = function batchGetItem (store, data, cb) {
     for (table in tableResponses) {
       // Order is pretty random
       // Assign keys before we shuffle
-      tableResponses[table].forEach(function (tableRes, ix) { tableRes._key = data.RequestItems[table].Keys[ix] }) // eslint-disable-line no-loop-func
+      tableResponses[table].forEach(function (tableRes, ix) { tableRes._key = data.RequestItems[table].Keys[ix] })
       shuffle(tableResponses[table])
-      res.Responses[table] = tableResponses[table].map(function (tableRes) { // eslint-disable-line no-loop-func
+      res.Responses[table] = tableResponses[table].map(function (tableRes) {
         if (tableRes.Item) {
           // TODO: This is totally inefficient - should fix this
           var newSize = totalSize + db.itemSize(tableRes.Item)
-          if (newSize > (1024 * 1024 + store.options.maxItemSize - 3)) {
+          if (newSize > ((1024 * 1024) + store.options.maxItemSize - 3)) {
             if (!res.UnprocessedKeys[table]) {
               res.UnprocessedKeys[table] = { Keys: [] }
               if (data.RequestItems[table].AttributesToGet)

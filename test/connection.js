@@ -20,7 +20,7 @@ describe('dynalite connections', function () {
           res.headers['x-amz-crc32'].should.equal('3552371480')
           res.headers['content-length'].should.equal('29')
         }
-        catch (e) {
+        catch {
           // Sometimes it's an HTML page instead of the above
           res.body.should.equal(
             '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" ' +
@@ -30,7 +30,7 @@ describe('dynalite connections', function () {
             '<title>Page Not Found</title>\n' +
             '</head>\n' +
             '<body>Page Not Found</body>\n' +
-            '</html>'
+            '</html>',
           )
           res.headers['x-amz-crc32'].should.equal('2548615100')
           res.headers['content-length'].should.equal('272')
@@ -42,7 +42,7 @@ describe('dynalite connections', function () {
 
     it('should return 413 if request too large', function (done) {
       this.timeout(200000)
-      var body = Array(16 * 1024 * 1024 + 1), i
+      var body = Array((16 * 1024 * 1024) + 1), i
       for (i = 0; i < body.length; i++)
         body[i] = 'a'
 

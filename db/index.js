@@ -47,7 +47,7 @@ function create (options) {
   if (options.maxItemSizeKb == null) options.maxItemSizeKb = exports.MAX_SIZE / 1024
   options.maxItemSize = options.maxItemSizeKb * 1024
 
-  // eslint-disable-next-line
+
   var db = levelup(options.path ? require('leveldown')(options.path) : memdown()),
     subDbs = Object.create(null),
     tableDb = getSubDb('table')
@@ -547,11 +547,11 @@ function valSize (val, type, compress) {
     if (numDigits == 1 && val.c[0] === 0) return 1
     return 1 + Math.ceil(numDigits / 2) + (numDigits % 2 || val.e % 2 ? 0 : 1) + (val.s == -1 ? 1 : 0)
   case 'SS':
-    return val.reduce(function (sum, x) { return sum + valSize(x, 'S') }, 0) // eslint-disable-line no-loop-func
+    return val.reduce(function (sum, x) { return sum + valSize(x, 'S') }, 0)
   case 'BS':
-    return val.reduce(function (sum, x) { return sum + valSize(x, 'B') }, 0) // eslint-disable-line no-loop-func
+    return val.reduce(function (sum, x) { return sum + valSize(x, 'B') }, 0)
   case 'NS':
-    return val.reduce(function (sum, x) { return sum + valSize(x, 'N') }, 0) // eslint-disable-line no-loop-func
+    return val.reduce(function (sum, x) { return sum + valSize(x, 'N') }, 0)
   case 'NULL':
     return 1
   case 'BOOL':

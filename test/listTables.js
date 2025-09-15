@@ -90,7 +90,7 @@ describe('listTables', function () {
         res.statusCode.should.equal(200)
         res.body.TableNames.should.be.an.instanceOf(Array)
         res.headers['x-amzn-requestid'].should.match(/^[0-9A-Z]{52}$/)
-        res.headers['x-amz-crc32'].should.not.be.empty // eslint-disable-line no-unused-expressions
+        res.headers['x-amz-crc32'].should.not.be.empty
         res.headers['content-type'].should.equal('application/json')
         res.headers['content-length'].should.equal(String(Buffer.byteLength(JSON.stringify(res.body), 'utf8')))
         done()
@@ -103,7 +103,7 @@ describe('listTables', function () {
         res.statusCode.should.equal(200)
         res.body.TableNames.should.be.an.instanceOf(Array)
         res.headers['x-amzn-requestid'].should.match(/^[0-9A-Z]{52}$/)
-        res.headers['x-amz-crc32'].should.not.be.empty // eslint-disable-line no-unused-expressions
+        res.headers['x-amz-crc32'].should.not.be.empty
         res.headers['content-type'].should.equal('application/x-amz-json-1.0')
         res.headers['content-length'].should.equal(String(Buffer.byteLength(JSON.stringify(res.body), 'utf8')))
         done()
