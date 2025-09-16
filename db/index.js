@@ -2,12 +2,12 @@ var crypto = require('crypto'),
   events = require('events'),
   async = require('async'),
   Lazy = require('lazy'),
-  levelup = require('levelup'),
-  memdown = require('memdown'),
-  sub = require('subleveldown'),
+  { Level } = require('level'),
+  { MemoryLevel } = require('memory-level'),
   lock = require('lock'),
   Big = require('big.js'),
-  once = require('once')
+  once = require('once'),
+  DatabaseLifecycleManager = require('./lifecycle')
 
 exports.MAX_SIZE = 409600 // TODO: get rid of this? or leave for backwards compat?
 exports.create = create
@@ -47,10 +47,16 @@ function create (options) {
   if (options.maxItemSizeKb == null) options.maxItemSizeKb = exports.MAX_SIZE / 1024
   options.maxItemSize = options.maxItemSizeKb * 1024
 
+  var db = options.path ? new Level(options.path, { valueEncoding: 'json' }) : new MemoryLevel({ valueEncoding: 'json' }),
+    subDbs = Object.create(null)
 
-  var db = levelup(options.path ? require('leveldown')(options.path) : memdown()),
-    subDbs = Object.create(null),
-    tableDb = getSubDb('table')
+  // Create lifecycle manager for graceful shutdown
+  var lifecycleManager = new DatabaseLifecycleManager(db)
+
+  // Wrap the main database with callback compatibility (main db already has JSON encoding)
+  wrapWithCallbacks(db, lifecycleManager)
+
+  var tableDb = getSubDb('table')
 
   // XXX: Is there a better way to get this?
   tableDb.awsAccountId = (process.env.AWS_ACCOUNT_ID || '0000-0000-0000').replace(/[^\d]/g, '')
@@ -82,10 +88,390 @@ function create (options) {
 
   function getSubDb (name) {
     if (!subDbs[name]) {
-      subDbs[name] = sub(db, name, { valueEncoding: 'json' })
+      // Instead of using sublevel, create a wrapper around the main db with prefixed keys
+      // This ensures we use the same JSON encoding as the main database
+      subDbs[name] = createPrefixedDbWrapper(db, name + '~', lifecycleManager)
       subDbs[name].lock = lock.Lock()
     }
     return subDbs[name]
+  }
+
+  function createPrefixedDbWrapper (mainDb, prefix) {
+    return {
+      put: function (key, value, callback) {
+        mainDb.put(prefix + key, value, callback)
+      },
+      get: function (key, callback) {
+        mainDb.get(prefix + key, callback)
+      },
+      del: function (key, callback) {
+        mainDb.del(prefix + key, callback)
+      },
+      batch: function (operations, callback) {
+        const prefixedOps = operations.map(op => ({
+          ...op,
+          key: prefix + op.key,
+        }))
+        mainDb.batch(prefixedOps, callback)
+      },
+      createKeyStream: function (options) {
+        const { Readable } = require('stream')
+        const prefixLength = prefix.length
+
+        // Create a stream that filters keys by prefix and strips the prefix
+        const mainStream = mainDb.createKeyStream(options)
+
+        return new Readable({
+          objectMode: true,
+          read () {
+            // This is a simple pass-through that strips prefixes
+          },
+        }).wrap(mainStream).pipe(new (require('stream').Transform)({
+          objectMode: true,
+          transform (key, encoding, callback) {
+            if (key.startsWith(prefix)) {
+              callback(null, key.substring(prefixLength))
+            }
+            else {
+              callback() // Skip keys that don't match our prefix
+            }
+          },
+        }))
+      },
+      createValueStream: function (options) {
+        // Add prefix to all range options
+        const prefixedOptions = { ...options }
+
+        // Add prefix to existing range options
+        if (prefixedOptions.gte) {
+          prefixedOptions.gte = prefix + prefixedOptions.gte
+        }
+        else if (prefixedOptions.gt) {
+          prefixedOptions.gt = prefix + prefixedOptions.gt
+        }
+        else {
+          prefixedOptions.gte = prefix
+        }
+
+        if (prefixedOptions.lte) {
+          prefixedOptions.lte = prefix + prefixedOptions.lte
+        }
+        else if (prefixedOptions.lt) {
+          prefixedOptions.lt = prefix + prefixedOptions.lt
+        }
+        else {
+          prefixedOptions.lt = prefix + '\xFF'
+        }
+
+        return mainDb.createValueStream(prefixedOptions)
+      },
+      createReadStream: function (options) {
+        // Alias for createValueStream for backward compatibility
+        return this.createValueStream(options)
+      },
+      close: function (callback) {
+        // Don't close the main db
+        if (callback) setImmediate(callback)
+      },
+    }
+  }
+
+
+
+
+
+  function wrapWithCallbacks (levelDb, lifecycleManager) {
+    // Store original promise-based methods
+    const originalPut = levelDb.put.bind(levelDb)
+    const originalGet = levelDb.get.bind(levelDb)
+    const originalDel = levelDb.del.bind(levelDb)
+    const originalBatch = levelDb.batch.bind(levelDb)
+
+    // Override with callback-compatible versions
+    levelDb.put = function (key, value, callback) {
+      if (lifecycleManager && lifecycleManager.getState() === 'closed') {
+        const err = new Error('Database is closed')
+        if (typeof callback === 'function') {
+          setImmediate(callback, err)
+          return
+        }
+        return Promise.reject(err)
+      }
+
+      let operation
+      try {
+        operation = originalPut(key, value)
+      }
+      catch (err) {
+        if (err.code === 'LEVEL_DATABASE_NOT_OPEN') {
+          const dbErr = new Error('Database is closed')
+          if (typeof callback === 'function') {
+            setImmediate(callback, dbErr)
+            return
+          }
+          return Promise.reject(dbErr)
+        }
+        throw err
+      }
+
+      operation = operation.catch(err => {
+        if (err.code === 'LEVEL_DATABASE_NOT_OPEN') {
+          throw new Error('Database is closed')
+        }
+        throw err
+      })
+
+      if (typeof callback === 'function') {
+        const trackedOperation = lifecycleManager ? lifecycleManager.trackOperation(operation) : operation
+        trackedOperation
+          .then(() => setImmediate(callback, null))
+          .catch(err => setImmediate(callback, err))
+      }
+      else {
+        return lifecycleManager ? lifecycleManager.trackOperation(operation) : operation
+      }
+    }
+
+    levelDb.get = function (key, callback) {
+      if (lifecycleManager && lifecycleManager.getState() === 'closed') {
+        const err = new Error('Database is closed')
+        if (typeof callback === 'function') {
+          setImmediate(callback, err)
+          return
+        }
+        return Promise.reject(err)
+      }
+
+      let operation
+      try {
+        operation = originalGet(key)
+      }
+      catch (err) {
+        // Handle synchronous errors from Level
+        if (err.code === 'LEVEL_DATABASE_NOT_OPEN') {
+          const dbErr = new Error('Database is closed')
+          if (typeof callback === 'function') {
+            setImmediate(callback, dbErr)
+            return
+          }
+          return Promise.reject(dbErr)
+        }
+        throw err
+      }
+
+      // Handle asynchronous errors from Level
+      operation = operation.catch(err => {
+        if (err.code === 'LEVEL_DATABASE_NOT_OPEN') {
+          throw new Error('Database is closed')
+        }
+        throw err
+      })
+
+      if (typeof callback === 'function') {
+        const trackedOperation = lifecycleManager ? lifecycleManager.trackOperation(operation) : operation
+        trackedOperation
+          .then(value => setImmediate(callback, null, value))
+          .catch(err => setImmediate(callback, err))
+      }
+      else {
+        return lifecycleManager ? lifecycleManager.trackOperation(operation) : operation
+      }
+    }
+
+    levelDb.del = function (key, callback) {
+      if (lifecycleManager && lifecycleManager.getState() === 'closed') {
+        const err = new Error('Database is closed')
+        if (typeof callback === 'function') {
+          setImmediate(callback, err)
+          return
+        }
+        return Promise.reject(err)
+      }
+
+      let operation
+      try {
+        operation = originalDel(key)
+      }
+      catch (err) {
+        if (err.code === 'LEVEL_DATABASE_NOT_OPEN') {
+          const dbErr = new Error('Database is closed')
+          if (typeof callback === 'function') {
+            setImmediate(callback, dbErr)
+            return
+          }
+          return Promise.reject(dbErr)
+        }
+        throw err
+      }
+
+      operation = operation.catch(err => {
+        if (err.code === 'LEVEL_DATABASE_NOT_OPEN') {
+          throw new Error('Database is closed')
+        }
+        throw err
+      })
+
+      if (typeof callback === 'function') {
+        const trackedOperation = lifecycleManager ? lifecycleManager.trackOperation(operation) : operation
+        trackedOperation
+          .then(() => setImmediate(callback, null))
+          .catch(err => setImmediate(callback, err))
+      }
+      else {
+        return lifecycleManager ? lifecycleManager.trackOperation(operation) : operation
+      }
+    }
+
+    levelDb.batch = function (operations, callback) {
+      if (lifecycleManager && lifecycleManager.getState() === 'closed') {
+        const err = new Error('Database is closed')
+        if (typeof callback === 'function') {
+          setImmediate(callback, err)
+          return
+        }
+        return Promise.reject(err)
+      }
+
+      let operation
+      try {
+        operation = originalBatch(operations)
+      }
+      catch (err) {
+        if (err.code === 'LEVEL_DATABASE_NOT_OPEN') {
+          const dbErr = new Error('Database is closed')
+          if (typeof callback === 'function') {
+            setImmediate(callback, dbErr)
+            return
+          }
+          return Promise.reject(dbErr)
+        }
+        throw err
+      }
+
+      operation = operation.catch(err => {
+        if (err.code === 'LEVEL_DATABASE_NOT_OPEN') {
+          throw new Error('Database is closed')
+        }
+        throw err
+      })
+
+      if (typeof callback === 'function') {
+        const trackedOperation = lifecycleManager ? lifecycleManager.trackOperation(operation) : operation
+        trackedOperation
+          .then(() => setImmediate(callback, null))
+          .catch(err => setImmediate(callback, err))
+      }
+      else {
+        return lifecycleManager ? lifecycleManager.trackOperation(operation) : operation
+      }
+    }
+
+    // Add callback compatibility for close method with lifecycle management
+    const originalClose = levelDb.close.bind(levelDb)
+
+    // Only wrap the main database close method with lifecycle management
+    // Sublevels should not trigger graceful close
+    if (levelDb === db) {
+      levelDb.close = function (callback) {
+        if (lifecycleManager) {
+          return lifecycleManager.gracefulClose(callback)
+        }
+
+        if (typeof callback === 'function') {
+          originalClose()
+            .then(() => setImmediate(callback, null))
+            .catch(err => setImmediate(callback, err))
+        }
+        else {
+          return originalClose()
+        }
+      }
+    }
+    else {
+      // For sublevels, just add callback compatibility without lifecycle management
+      levelDb.close = function (callback) {
+        if (typeof callback === 'function') {
+          originalClose()
+            .then(() => setImmediate(callback, null))
+            .catch(err => setImmediate(callback, err))
+        }
+        else {
+          return originalClose()
+        }
+      }
+    }
+
+    // Store reference to original close for lifecycle manager
+    levelDb.close._original = originalClose
+
+
+
+    // Handle stream methods - convert async iterators to streams
+    levelDb.createKeyStream = function (options) {
+      const { Readable } = require('stream')
+      const iterator = levelDb.keys(options)
+
+      return new Readable({
+        objectMode: true,
+        read () {
+          iterator.next()
+            .then(value => {
+              if (value === undefined) {
+                this.push(null)
+              }
+              else {
+                this.push(value)
+              }
+            })
+            .catch(err => {
+              this.destroy(err)
+            })
+        },
+        destroy (err, callback) {
+          if (iterator.return) {
+            iterator.return()
+              .then(() => callback && callback(err))
+              .catch(() => callback && callback(err))
+          }
+          else {
+            callback && callback(err)
+          }
+        },
+      })
+    }
+
+    levelDb.createValueStream = function (options) {
+      const { Readable } = require('stream')
+      const iterator = levelDb.values(options)
+
+      return new Readable({
+        objectMode: true,
+        read () {
+          iterator.next()
+            .then(value => {
+              if (value === undefined) {
+                this.push(null)
+              }
+              else {
+                this.push(value)
+              }
+            })
+            .catch(err => {
+              this.destroy(err)
+            })
+        },
+        destroy (err, callback) {
+          if (iterator.return) {
+            iterator.return()
+              .then(() => callback && callback(err))
+              .catch(() => callback && callback(err))
+          }
+          else {
+            callback && callback(err)
+          }
+        },
+      })
+    }
   }
 
   function deleteSubDb (name, cb) {
@@ -101,6 +487,22 @@ function create (options) {
     if (typeof checkStatus == 'function') cb = checkStatus
 
     tableDb.get(name, function (err, table) {
+      // Handle database decode errors (corrupted data)
+      if (err && (err.code === 'LEVEL_DECODE_ERROR' || err.message.includes('Could not decode value'))) {
+        // Data is corrupted, treat as not found and clean it up
+        tableDb.del(name, function () {
+          // Ignore cleanup errors
+        })
+        err = new Error('NotFoundError')
+        err.name = 'NotFoundError'
+      }
+
+      // Handle corrupted table entries
+      if (!err && (!table || typeof table !== 'object' || !table.TableStatus)) {
+        err = new Error('NotFoundError')
+        err.name = 'NotFoundError'
+      }
+
       if (!err && checkStatus && (table.TableStatus == 'CREATING' || table.TableStatus == 'DELETING')) {
         err = new Error('NotFoundError')
         err.name = 'NotFoundError'
@@ -140,6 +542,7 @@ function create (options) {
     deleteTagDb: deleteTagDb,
     getTable: getTable,
     recreate: recreate,
+    lifecycleManager: lifecycleManager,
   }
 }
 
@@ -956,7 +1359,7 @@ function queryTable (store, table, data, opts, isLocal, fetchFromItemDb, startKe
 function updateIndexes (store, table, existingItem, item, cb) {
   if (!existingItem && !item) return cb()
   var puts = [], deletes = []
-  ;[ 'Local', 'Global' ].forEach(function (indexType) {
+    ;[ 'Local', 'Global' ].forEach(function (indexType) {
     var indexes = table[indexType + 'SecondaryIndexes'] || []
     var actions = getIndexActions(indexes, existingItem, item, table)
     puts = puts.concat(actions.puts.map(function (action) {

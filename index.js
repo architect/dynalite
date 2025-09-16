@@ -57,14 +57,122 @@ function dynalite (options) {
   // Ensure we close DB when we're closing the server too
   var httpServerClose = server.close, httpServerListen = server.listen
   server.close = function (cb) {
-    store.db.close(function (err) {
-      if (err) return cb(err)
-      // Recreate the store if the user wants to listen again
-      server.listen = function () {
-        store.recreate()
-        httpServerListen.apply(server, arguments)
+    var shutdownTimeout = 30000 // 30 seconds default timeout
+    var shutdownStartTime = Date.now()
+    var timeoutHandle = null
+    var shutdownComplete = false
+
+    if (verbose) console.log('[Dynalite] Starting graceful server shutdown...')
+
+    // Wrapper to ensure callback is only called once
+    function safeCallback (err) {
+      if (shutdownComplete) return
+      shutdownComplete = true
+
+      if (timeoutHandle) {
+        clearTimeout(timeoutHandle)
+        timeoutHandle = null
       }
-      httpServerClose.call(server, cb)
+
+      if (cb) cb(err)
+    }
+
+    // Step 1: Stop accepting new requests
+    httpServerClose.call(server, function (err) {
+      if (err) {
+        if (verbose) console.error('[Dynalite] Error stopping HTTP server:', err)
+        return safeCallback(err)
+      }
+
+      if (verbose) console.log('[Dynalite] HTTP server stopped accepting new requests')
+
+      // Set up timeout handler after HTTP server has closed
+      var remainingTimeout = shutdownTimeout - (Date.now() - shutdownStartTime)
+      if (remainingTimeout <= 0) remainingTimeout = 1000 // At least 1 second
+
+      timeoutHandle = setTimeout(function () {
+        if (shutdownComplete) return
+
+        if (verbose) console.warn('[Dynalite] Shutdown timeout reached, forcing close...')
+
+        if (store.lifecycleManager) {
+          store.lifecycleManager.forceClose(function (err) {
+            if (err && verbose) {
+              console.error('[Dynalite] Error during timeout force close:', err)
+            }
+            // Recreate the store if the user wants to listen again
+            server.listen = function () {
+              store.recreate()
+              httpServerListen.apply(server, arguments)
+            }
+            safeCallback(new Error('Server shutdown timed out after ' + shutdownTimeout + 'ms'))
+          })
+        }
+        else {
+          safeCallback(new Error('Server shutdown timed out after ' + shutdownTimeout + 'ms'))
+        }
+      }, remainingTimeout)
+
+      // Step 2: Wait for pending database operations to complete
+      if (store.lifecycleManager) {
+        var dbTimeout = shutdownTimeout - (Date.now() - shutdownStartTime)
+        if (dbTimeout > 0) {
+          store.lifecycleManager.setShutdownTimeout(dbTimeout)
+        }
+
+        if (verbose) {
+          var pendingOps = store.lifecycleManager.getPendingOperationCount()
+          if (pendingOps > 0) {
+            console.log('[Dynalite] Waiting for ' + pendingOps + ' pending database operations to complete...')
+          }
+        }
+
+        // Step 3: Gracefully close database (waits for operations)
+        store.lifecycleManager.gracefulClose(function (err) {
+          if (err) {
+            if (verbose) console.error('[Dynalite] Error during graceful database shutdown:', err)
+
+            // If graceful shutdown fails, try force close
+            if (verbose) console.log('[Dynalite] Attempting force close of database...')
+            store.lifecycleManager.forceClose(function (forceErr) {
+              if (forceErr && verbose) {
+                console.error('[Dynalite] Error during force close:', forceErr)
+              }
+              // Recreate the store if the user wants to listen again
+              server.listen = function () {
+                store.recreate()
+                httpServerListen.apply(server, arguments)
+              }
+              safeCallback(err) // Return original error
+            })
+            return
+          }
+
+          if (verbose) console.log('[Dynalite] Database closed gracefully')
+
+          // Recreate the store if the user wants to listen again
+          server.listen = function () {
+            store.recreate()
+            httpServerListen.apply(server, arguments)
+          }
+
+          if (verbose) console.log('[Dynalite] Server shutdown complete')
+          safeCallback(null)
+        })
+      }
+      else {
+        // Fallback to original behavior if lifecycle manager not available
+        if (verbose) console.log('[Dynalite] No lifecycle manager available, using direct database close')
+        store.db.close(function (err) {
+          if (err) return safeCallback(err)
+          // Recreate the store if the user wants to listen again
+          server.listen = function () {
+            store.recreate()
+            httpServerListen.apply(server, arguments)
+          }
+          safeCallback(null)
+        })
+      }
     })
   }
 

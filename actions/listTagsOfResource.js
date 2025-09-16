@@ -12,8 +12,23 @@ module.exports = function listTagsOfResource (store, data, cb) {
     }
     if (err) return cb(err)
 
-    db.lazy(store.getTagDb(tableName).createReadStream(), cb).join(function (tags) {
-      cb(null, { Tags: tags.map(function (tag) { return { Key: tag.key, Value: tag.value } }) })
+    // Get both keys and values from the tag database
+    var tagDb = store.getTagDb(tableName)
+    var keys = []
+    var values = []
+
+    db.lazy(tagDb.createKeyStream(), cb).join(function (tagKeys) {
+      keys = tagKeys
+      db.lazy(tagDb.createValueStream(), cb).join(function (tagValues) {
+        values = tagValues
+
+        // Combine keys and values into tag objects
+        var tags = keys.map(function (key, index) {
+          return { Key: key, Value: values[index] }
+        })
+
+        cb(null, { Tags: tags })
+      })
     })
   })
 }

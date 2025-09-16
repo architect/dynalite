@@ -124,7 +124,7 @@ module.exports = function updateTable (store, data, cb) {
 
           tableDb.put(key, table, function (err) {
 
-            if (err && !/Database is not open/.test(err)) console.error(err.stack || err)
+            if (err && !/Database is (not open|closed)/.test(err)) console.error(err.stack || err)
           })
 
         }, store.options.updateTableMs)

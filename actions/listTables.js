@@ -3,17 +3,26 @@ var once = require('once'),
 
 module.exports = function listTables (store, data, cb) {
   cb = once(cb)
-  var opts, limit = data.Limit || 100
+  var opts = {}, limit = data.Limit || 100
 
-  if (data.ExclusiveStartTableName)
-    opts = { gt: data.ExclusiveStartTableName }
+  // Don't use opts.gt since it doesn't work in this LevelDB implementation
+  // We'll filter manually after getting all results
 
   db.lazy(store.tableDb.createKeyStream(opts), cb)
-    .take(limit + 1)
+    .take(Infinity) // Take all items since we need to filter manually
     .join(function (names) {
+      // Filter to implement proper ExclusiveStartTableName behavior
+      // LevelDB's gt option doesn't work properly in this implementation
+      if (data.ExclusiveStartTableName) {
+        names = names.filter(function (name) {
+          return name > data.ExclusiveStartTableName
+        })
+      }
+
+      // Apply limit after filtering
       var result = {}
       if (names.length > limit) {
-        names.splice(limit)
+        names = names.slice(0, limit)
         result.LastEvaluatedTableName = names[names.length - 1]
       }
       result.TableNames = names
