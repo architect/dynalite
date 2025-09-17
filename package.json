@@ -18,7 +18,7 @@
     "lint": "eslint . --fix"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   },
   "author": "Michael Hart <michael.hart.au@gmail.com>",
   "license": "Apache-2.0",
