@@ -1,6 +1,6 @@
 {
   "name": "dynalite",
-  "version": "3.2.3-RC.0",
+  "version": "4.0.0",
   "description": "An implementation of Amazon's DynamoDB built on LevelDB",
   "homepage": "https://github.com/architect/dynalite",
   "repository": {
