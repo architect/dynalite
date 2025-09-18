@@ -2,9 +2,9 @@
 
 ---
 
-## [4.0.0] 2023-tbd
+## [4.0.0]
 
-Hello! After a bit of a hiatus, the [Architect team](https://github.com/architect/dynalite/issues/166) is pleased bring the first new Dynalite release in over two years!
+Hello! After a bit of a hiatus, the [Architect team](https://github.com/architect/dynalite/issues/166) is pleased bring the first new Dynalite release in years!
 
 ### Added
 
@@ -15,9 +15,11 @@ Hello! After a bit of a hiatus, the [Architect team](https://github.com/architec
 
 ### Changed
 
-- [Breaking change] Introduced minimum Node.js version of >= 16; fixes [#169](https://github.com/architect/dynalite/issues/169)
+- Updated Mocha
+- Updated LevelDB
+- Updated ESlint
+- [Breaking change] Introduced minimum Node.js version of >= 20; fixes [#169](https://github.com/architect/dynalite/issues/169)
 - Changed license from MIT to Apache 2.0; see [#166](https://github.com/architect/dynalite/issues/166)
-- Updated dependencies (which themselves dropped support for older versions of Node.js)
 - Updated tests
 - Added Architect Code of Conduct, new CI flow, etc.
 
