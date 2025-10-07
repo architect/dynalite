@@ -20,6 +20,8 @@ var validApis = [ 'DynamoDB_20111205', 'DynamoDB_20120810' ],
   actionValidations = {}
 
 module.exports = dynalite
+module.exports.db = db
+module.exports.httpHandler = httpHandler
 
 /**
  * @param {Object} options - The shape is the same as SpecialType above
@@ -29,16 +31,21 @@ module.exports = dynalite
  * @param {string} [options.key] - SSL private key - if omitted and ssl enabled, self-signed cert will be used
  * @param {string} [options.cert] - SSL certificate - if omitted and ssl enabled, self-signed cert will be used
  * @param {string} [options.ca] - SSL certificate authority - if omitted and ssl enabled, self-signed cert will be used
- * @param {number} [options.createTableMs=500] - Amount of time tables stay in CREATING state
- * @param {number} [options.deleteTableMs=500] - Amount of time tables stay in DELETING state
- * @param {number} [options.updateTableMs=500] - Amount of time tables stay in UPDATING state
+ * @param {number} [options.createTableMs=0] - Amount of time tables stay in CREATING state
+ * @param {number} [options.deleteTableMs=0] - Amount of time tables stay in DELETING state
+ * @param {number} [options.updateTableMs=0] - Amount of time tables stay in UPDATING state
  * @param {number} [options.maxItemSizeKb=400] - Maximum item size
  * @param {string} [options.path] - The path to use for the LevelDB store (in-memory by default)
  *
  * @returns {http.Server | https.Server} - The Dynalite server
  */
 function dynalite (options) {
-  options = options || {}
+  options = {
+    createTableMs: 0,
+    updateTableMs: 0,
+    deleteTableMs: 0,
+    ...(options || {}),
+  }
   if (options.verbose) verbose = true
   if (options.debug) debug = true
 

@@ -6,3 +6,11 @@ v8.log
 package-lock.json
 .nyc_output
 .kiro
+
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
